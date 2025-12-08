@@ -27,7 +27,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { Project, Track } from '../types';
-import { uploadFile, deleteFile, ensureStorageBucket } from '../services/supabaseService';
+import { uploadFile, deleteFile } from '../services/supabaseService';
 import { MOCK_PROJECTS } from '../constants';
 
 // --- Types ---
@@ -94,8 +94,6 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
     const [noteSuccess, setNoteSuccess] = useState(false);
-    const [storageChecked, setStorageChecked] = useState(false);
-    const [storageError, setStorageError] = useState<string | null>(null);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info'; id: string } | null>(null);
 
     const menuRef = useRef<HTMLDivElement>(null);
@@ -113,20 +111,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         setTimeout(() => setToast(null), 5000);
     };
 
-    // --- Storage Bucket Check ---
-    const checkStorageBucket = async () => {
-        try {
-            setStorageError(null);
-            showToast('Checking storage bucket...', 'info');
-            await ensureStorageBucket();
-            setStorageChecked(true);
-            showToast('Storage bucket ready for uploads!', 'success');
-        } catch (error) {
-            console.error('Storage bucket check failed:', error);
-            showToast(`Storage setup failed: ${error.message}`, 'error');
-            setStorageError(`Storage setup failed: ${error.message}`);
-        }
-    };
+
 
     const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -532,20 +517,11 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                         <span>New Folder</span>
                     </button>
                     <button
-                        onClick={checkStorageBucket}
-                        disabled={isUploading}
-                        className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-bold"
-                    >
-                        {isUploading ? <Loader2 size={14} className="animate-spin" /> : <UploadIcon size={14} />}
-                        <span>Setup Storage</span>
-                    </button>
-                    <button
                         onClick={handleUploadClick}
-                        disabled={isUploading}
-                        className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white text-black hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-bold shadow-[0_0_10px_rgba(255,255,255,0.2)]"
+                        className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white text-black hover:bg-neutral-200 transition-colors text-xs font-bold shadow-[0_0_10px_rgba(255,255,255,0.2)]"
                     >
-                        {isUploading ? <Loader2 size={14} className="animate-spin" /> : <UploadIcon size={14} />}
-                        <span>{isUploading ? 'Uploading...' : 'Upload Files'}</span>
+                        <UploadIcon size={14} />
+                        <span>Upload Files</span>
                     </button>
                     <input
                         ref={fileInputRef}

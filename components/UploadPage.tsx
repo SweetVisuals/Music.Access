@@ -23,10 +23,11 @@ import {
     LayoutGrid,
     Columns,
     List,
-    AlertCircle
+    AlertCircle,
+    Loader2
 } from 'lucide-react';
 import { Project, Track } from '../types';
-import { uploadFile, deleteFile } from '../services/supabaseService';
+import { uploadFile, deleteFile, ensureStorageBucket } from '../services/supabaseService';
 import { MOCK_PROJECTS } from '../constants';
 
 // --- Types ---
@@ -93,6 +94,9 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
     const [noteSuccess, setNoteSuccess] = useState(false);
+    const [storageChecked, setStorageChecked] = useState(false);
+    const [storageError, setStorageError] = useState<string | null>(null);
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info'; id: string } | null>(null);
 
     const menuRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -100,6 +104,28 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     // --- File Upload Handler ---
     const handleUploadClick = () => {
         fileInputRef.current?.click();
+    };
+
+    // --- Toast Notifications ---
+    const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+        const id = Date.now().toString();
+        setToast({ message, type, id });
+        setTimeout(() => setToast(null), 5000);
+    };
+
+    // --- Storage Bucket Check ---
+    const checkStorageBucket = async () => {
+        try {
+            setStorageError(null);
+            showToast('Checking storage bucket...', 'info');
+            await ensureStorageBucket();
+            setStorageChecked(true);
+            showToast('Storage bucket ready for uploads!', 'success');
+        } catch (error) {
+            console.error('Storage bucket check failed:', error);
+            showToast(`Storage setup failed: ${error.message}`, 'error');
+            setStorageError(`Storage setup failed: ${error.message}`);
+        }
     };
 
     const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -295,16 +321,21 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
         const fileArray = Array.from(files);
         let successCount = 0;
+        let failedFiles: string[] = [];
+
+        showToast(`Starting upload of ${fileArray.length} file(s)...`, 'info');
 
         try {
             for (let i = 0; i < fileArray.length; i++) {
                 const file = fileArray[i];
                 const fileId = `upload-${Date.now()}-${i}`;
+                const progress = Math.round(((i + 1) / fileArray.length) * 100);
 
                 // Update progress
-                setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
+                setUploadProgress(prev => ({ ...prev, [fileId]: progress }));
 
                 try {
+                    showToast(`Uploading ${file.name}...`, 'info');
                     const result = await uploadFile(file);
 
                     // Create file item in UI
@@ -325,27 +356,33 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                     };
 
                     setItems(prev => [...prev, newFileItem]);
-
-                    // Update progress to complete
-                    setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
                     successCount++;
+                    showToast(`✓ ${file.name} uploaded successfully`, 'success');
 
                 } catch (error) {
                     console.error('Upload failed:', error);
-                    setUploadError(`Failed to upload ${file.name}`);
+                    failedFiles.push(file.name);
+                    showToast(`✗ Failed to upload ${file.name}: ${error.message}`, 'error');
                 }
             }
 
             if (successCount > 0) {
-                setUploadSuccess(`Successfully uploaded ${successCount} file(s)`);
+                const successMessage = `Successfully uploaded ${successCount} file(s)`;
+                setUploadSuccess(successMessage);
+                showToast(successMessage, 'success');
                 // Dispatch event to update storage bar in sidebar
                 window.dispatchEvent(new CustomEvent('storage-updated'));
-                setTimeout(() => setUploadSuccess(null), 3000);
+            }
+
+            if (failedFiles.length > 0) {
+                setUploadError(`${failedFiles.length} file(s) failed to upload`);
             }
 
         } catch (error) {
             console.error('Upload error:', error);
-            setUploadError('Upload failed. Please try again.');
+            const errorMessage = 'Upload failed. Please try again.';
+            setUploadError(errorMessage);
+            showToast(errorMessage, 'error');
         } finally {
             setIsUploading(false);
             setUploadProgress({});
@@ -495,11 +532,20 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                         <span>New Folder</span>
                     </button>
                     <button
-                        onClick={handleUploadClick}
-                        className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white text-black hover:bg-neutral-200 transition-colors text-xs font-bold shadow-[0_0_10px_rgba(255,255,255,0.2)]"
+                        onClick={checkStorageBucket}
+                        disabled={isUploading}
+                        className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-bold"
                     >
-                        <UploadIcon size={14} />
-                        <span>Upload Files</span>
+                        {isUploading ? <Loader2 size={14} className="animate-spin" /> : <UploadIcon size={14} />}
+                        <span>Setup Storage</span>
+                    </button>
+                    <button
+                        onClick={handleUploadClick}
+                        disabled={isUploading}
+                        className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white text-black hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-bold shadow-[0_0_10px_rgba(255,255,255,0.2)]"
+                    >
+                        {isUploading ? <Loader2 size={14} className="animate-spin" /> : <UploadIcon size={14} />}
+                        <span>{isUploading ? 'Uploading...' : 'Upload Files'}</span>
                     </button>
                     <input
                         ref={fileInputRef}
@@ -792,8 +838,32 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                         )}
                     </div>
                 )}
-                {/* Upload Messages */}
-                {(uploadError || uploadSuccess) && (
+                {/* Upload Progress and Messages */}
+                {isUploading && (
+                    <div className="mt-4 p-4 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm">
+                        <div className="flex items-center gap-3 mb-3">
+                            <Loader2 size={16} className="animate-spin text-primary" />
+                            <span className="text-sm font-medium text-white">Uploading files...</span>
+                        </div>
+                        {Object.keys(uploadProgress).length > 0 && (
+                            <div className="space-y-2">
+                                {Object.entries(uploadProgress).map(([fileId, progress]) => (
+                                    <div key={fileId} className="flex items-center gap-3">
+                                        <div className="flex-1 bg-neutral-700 rounded-full h-2">
+                                            <div 
+                                                className="bg-primary h-2 rounded-full transition-all duration-300"
+                                                style={{ width: `${progress}%` }}
+                                            />
+                                        </div>
+                                        <span className="text-xs text-neutral-300 min-w-[3rem]">{progress}%</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {(uploadError || uploadSuccess) && !isUploading && (
                     <div className="mt-4 p-4 rounded-lg border backdrop-blur-sm">
                         {uploadError && (
                             <div className="flex items-center gap-2 text-red-400">
@@ -946,6 +1016,29 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                             )}
                         </>
                     )}
+                </div>
+            )}
+
+            {/* Toast Notifications */}
+            {toast && (
+                <div className="fixed top-4 right-4 z-[200] animate-in slide-in-from-top-2 duration-300">
+                    <div className={`
+                        flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg backdrop-blur-sm border
+                        ${toast.type === 'success' ? 'bg-green-500/90 border-green-400 text-white' : ''}
+                        ${toast.type === 'error' ? 'bg-red-500/90 border-red-400 text-white' : ''}
+                        ${toast.type === 'info' ? 'bg-blue-500/90 border-blue-400 text-white' : ''}
+                    `}>
+                        {toast.type === 'success' && <Check size={16} />}
+                        {toast.type === 'error' && <AlertCircle size={16} />}
+                        {toast.type === 'info' && <Loader2 size={16} className="animate-spin" />}
+                        <span className="text-sm font-medium">{toast.message}</span>
+                        <button
+                            onClick={() => setToast(null)}
+                            className="ml-2 hover:bg-white/20 rounded p-1"
+                        >
+                            <X size={14} />
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

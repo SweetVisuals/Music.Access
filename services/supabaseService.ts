@@ -1003,20 +1003,78 @@ export const getOrdersByUserId = async (userId: string): Promise<Order[]> => {
 
 
 // File upload functions
-export const initializeStorage = async () => {
+
+// Manual function to check and create storage bucket
+export const ensureStorageBucket = async () => {
   try {
-    const { data: buckets } = await supabase.storage.listBuckets();
+    console.log('Checking storage buckets...');
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    
+    if (listError) {
+      console.error('Error listing buckets:', listError);
+      throw listError;
+    }
+
+    console.log('Existing buckets:', buckets);
+
     const assetsBucket = buckets?.find(b => b.name === 'assets');
 
     if (!assetsBucket) {
-      await supabase.storage.createBucket('assets', {
+      console.log('Creating assets bucket...');
+      const { data: newBucket, error: createError } = await supabase.storage.createBucket('assets', {
         public: true,
-        allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'audio/mpeg', 'audio/wav'],
-        fileSizeLimit: 52428800 // 50MB
+        allowedMimeTypes: ['image/*', 'audio/*', 'text/*'],
+        fileSizeLimit: 104857600 // 100MB
       });
+
+      if (createError) {
+        console.error('Error creating bucket:', createError);
+        throw createError;
+      } else {
+        console.log('✅ Assets bucket created successfully:', newBucket);
+        return true;
+      }
+    } else {
+      console.log('✅ Assets bucket already exists:', assetsBucket);
+      return true;
+    }
+  } catch (error) {
+    console.error('❌ Error ensuring storage bucket:', error);
+    throw error;
+  }
+};
+
+export const initializeStorage = async () => {
+  try {
+    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    
+    if (listError) {
+      console.error('Error listing buckets:', listError);
+      return;
+    }
+
+    const assetsBucket = buckets?.find(b => b.name === 'assets');
+
+    if (!assetsBucket) {
+      console.log('Creating assets bucket...');
+      const { data: newBucket, error: createError } = await supabase.storage.createBucket('assets', {
+        public: true,
+        allowedMimeTypes: ['image/*', 'audio/*', 'text/*'],
+        fileSizeLimit: 104857600 // 100MB
+      });
+
+      if (createError) {
+        console.error('Error creating bucket:', createError);
+        throw createError;
+      } else {
+        console.log('Assets bucket created successfully:', newBucket);
+      }
+    } else {
+      console.log('Assets bucket already exists:', assetsBucket);
     }
   } catch (error) {
     console.error('Error initializing storage:', error);
+    // Don't throw here to avoid breaking the upload flow
   }
 }
 
@@ -1024,48 +1082,74 @@ export const uploadFile = async (file: File): Promise<{ assetId: string; storage
   const currentUser = await getCurrentUser();
   if (!currentUser) throw new Error('User not authenticated');
 
-  // Ensure storage is ready (lazy init)
-  await initializeStorage();
+  try {
+    // Ensure storage is ready (lazy init)
+    console.log('Initializing storage...');
+    await initializeStorage();
 
-  // Generate unique file path
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-  const storagePath = `user-uploads/${currentUser.id}/${fileName}`;
+    // Generate unique file path
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const storagePath = `user-uploads/${currentUser.id}/${fileName}`;
 
-  // Upload to Supabase Storage
-  const { error: uploadError } = await supabase.storage
-    .from('assets')
-    .upload(storagePath, file, {
-      upsert: false
-    });
+    console.log('Uploading file to:', storagePath);
 
-  if (uploadError) throw uploadError;
+    // Upload to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('assets')
+      .upload(storagePath, file, {
+        upsert: false
+      });
 
-  // Get Public URL
-  const { data: { publicUrl } } = supabase.storage
-    .from('assets')
-    .getPublicUrl(storagePath);
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      throw new Error(`Upload failed: ${uploadError.message}`);
+    }
 
-  // Create asset record in database
-  const { data: assetData, error: assetError } = await supabase
-    .from('assets')
-    .insert({
-      user_id: currentUser.id,
-      storage_path: storagePath,
-      file_name: file.name,
-      mime_type: file.type,
-      size_bytes: file.size
-    })
-    .select()
-    .single();
+    console.log('File uploaded successfully:', uploadData);
 
-  if (assetError) throw assetError;
+    // Get Public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('assets')
+      .getPublicUrl(storagePath);
 
-  return {
-    assetId: assetData.id,
-    storagePath: storagePath,
-    publicUrl: publicUrl
-  };
+    console.log('Public URL:', publicUrl);
+
+    // Create asset record in database
+    const { data: assetData, error: assetError } = await supabase
+      .from('assets')
+      .insert({
+        user_id: currentUser.id,
+        storage_path: storagePath,
+        file_name: file.name,
+        mime_type: file.type,
+        size_bytes: file.size
+      })
+      .select()
+      .single();
+
+    if (assetError) {
+      console.error('Asset creation error:', assetError);
+      // If asset creation fails, try to clean up the uploaded file
+      try {
+        await supabase.storage.from('assets').remove([storagePath]);
+      } catch (cleanupError) {
+        console.error('Failed to cleanup uploaded file:', cleanupError);
+      }
+      throw new Error(`Failed to create asset record: ${assetError.message}`);
+    }
+
+    console.log('Asset created successfully:', assetData);
+
+    return {
+      assetId: assetData.id,
+      storagePath: storagePath,
+      publicUrl: publicUrl
+    };
+  } catch (error) {
+    console.error('Upload process failed:', error);
+    throw error;
+  }
 };
 
 export const getStorageUsage = async (): Promise<{ used: number; limit: number }> => {

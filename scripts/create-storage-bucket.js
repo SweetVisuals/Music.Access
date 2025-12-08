@@ -27,7 +27,8 @@ async function createStorageBucket() {
       console.log('Creating assets bucket...');
       const { data: newBucket, error: createError } = await supabase.storage.createBucket('assets', {
         public: true,
-        allowedMimeTypes: ['image/*', 'audio/*', 'text/*'],
+        // Allow all file types for maximum flexibility
+        allowedMimeTypes: ['*/*'],
         fileSizeLimit: 52428800 // 50MB (default Supabase limit)
       });
 

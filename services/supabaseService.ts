@@ -1012,7 +1012,7 @@ export const ensureStorageBucket = async () => {
     
     if (listError) {
       console.error('Error listing buckets:', listError);
-      throw listError;
+      throw new Error(`Failed to list buckets: ${listError.message}`);
     }
 
     console.log('Existing buckets:', buckets);
@@ -1023,13 +1023,17 @@ export const ensureStorageBucket = async () => {
       console.log('Creating assets bucket...');
       const { data: newBucket, error: createError } = await supabase.storage.createBucket('assets', {
         public: true,
-        allowedMimeTypes: ['image/*', 'audio/*', 'text/*'],
-        fileSizeLimit: 104857600 // 100MB
+        // Allow all file types for maximum flexibility (archives, audio, images, text, etc.)
+        allowedMimeTypes: ['*/*'],
+        fileSizeLimit: 52428800 // 50MB
       });
 
       if (createError) {
         console.error('Error creating bucket:', createError);
-        throw createError;
+        if (createError.message.includes('row-level security policy')) {
+          throw new Error('Bucket creation requires admin permissions. Please create the "assets" bucket manually in your Supabase dashboard under Storage > Buckets.');
+        }
+        throw new Error(`Failed to create bucket: ${createError.message}`);
       } else {
         console.log('✅ Assets bucket created successfully:', newBucket);
         return true;

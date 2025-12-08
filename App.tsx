@@ -51,6 +51,7 @@ const App: React.FC = () => {
 
   // Get current view from URL path
   const getCurrentViewFromPath = (pathname: string): View => {
+    // Handle profile routes - both @username and /profile
     if (pathname.startsWith('/@') || pathname === '/profile') return 'profile';
     if (pathname === '/upload') return 'upload';
     if (pathname === '/browse-talent') return 'browse-talent';
@@ -99,7 +100,19 @@ const App: React.FC = () => {
   // Update view and profile username when location changes
   useEffect(() => {
     const newView = getCurrentViewFromPath(location.pathname);
-    const newProfileUsername = location.pathname.startsWith('/@') ? decodeURIComponent(location.pathname.substring(2)) : null;
+    let newProfileUsername: string | null = null;
+    
+    if (location.pathname.startsWith('/@')) {
+      try {
+        // Extract username from path and decode URI components
+        const encodedUsername = location.pathname.substring(2);
+        newProfileUsername = decodeURIComponent(encodedUsername);
+      } catch (error) {
+        console.warn('Failed to decode profile username:', location.pathname);
+        // Fallback to raw username if decoding fails
+        newProfileUsername = location.pathname.substring(2);
+      }
+    }
 
     setCurrentView(newView);
     setProfileUsername(newProfileUsername);

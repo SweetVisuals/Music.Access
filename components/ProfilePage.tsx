@@ -80,26 +80,34 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
     // Fetch profile if profileUsername is provided
     useEffect(() => {
-        if (profileUsername && !profile) {
-            const fetchProfile = async () => {
-                setLoading(true);
-                try {
+        const fetchProfile = async () => {
+            setLoading(true);
+            try {
+                if (profileUsername && !profile) {
+                    // Fetch other user's profile
                     const fetchedProfile = await getUserProfileByHandle(profileUsername);
                     if (fetchedProfile) {
                         setUserProfile(fetchedProfile);
+                    } else {
+                        console.warn('Profile not found for username:', profileUsername);
+                        setUserProfile(null);
                     }
-                } catch (error) {
-                    console.error('Failed to fetch profile:', error);
-                } finally {
-                    setLoading(false);
+                } else if (profile) {
+                    // Use current user's profile
+                    setUserProfile(profile);
+                } else {
+                    // No profile to display
+                    setUserProfile(null);
                 }
-            };
-            fetchProfile();
-        } else if (profile) {
-            setUserProfile(profile);
-        } else {
-            setLoading(false);
-        }
+            } catch (error) {
+                console.error('Failed to fetch profile:', error);
+                setUserProfile(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProfile();
     }, [profileUsername, profile]);
 
     // Update localProjects when userProfile changes
@@ -138,7 +146,26 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
     if (!userProfile) {
         return (
-            <ProfileSkeleton />
+            <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+                <div className="flex flex-col items-center justify-center py-32 text-center">
+                    <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center mb-4">
+                        <UserPlus size={32} className="text-neutral-500" />
+                    </div>
+                    <h2 className="text-xl font-bold text-white mb-2">Profile Not Found</h2>
+                    <p className="text-neutral-400 mb-6 max-w-md">
+                        {profileUsername 
+                            ? `The profile "@${profileUsername}" could not be found.`
+                            : 'Unable to load profile information.'
+                        }
+                    </p>
+                    <button 
+                        onClick={() => window.history.back()}
+                        className="px-6 py-2 bg-primary text-black font-bold rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                        Go Back
+                    </button>
+                </div>
+            </div>
         );
     }
 

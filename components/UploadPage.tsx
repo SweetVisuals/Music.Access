@@ -78,6 +78,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     // Interaction State
     const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
     const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+    const [isDraggingFiles, setIsDraggingFiles] = useState(false);
     const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
     const [renamingId, setRenamingId] = useState<string | null>(null);
     const [renameValue, setRenameValue] = useState('');
@@ -287,14 +288,17 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     };
 
     // File Upload
-    const handleFileUpload = async (files: FileList) => {
+    const handleFileUpload = async (files: FileList | File[]) => {
         setIsUploading(true);
         setUploadError(null);
         setUploadSuccess(null);
 
+        const fileArray = Array.from(files);
+        let successCount = 0;
+
         try {
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
+            for (let i = 0; i < fileArray.length; i++) {
+                const file = fileArray[i];
                 const fileId = `upload-${Date.now()}-${i}`;
 
                 // Update progress
@@ -324,6 +328,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
                     // Update progress to complete
                     setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));
+                    successCount++;
 
                 } catch (error) {
                     console.error('Upload failed:', error);
@@ -331,8 +336,12 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 }
             }
 
-            setUploadSuccess(`Successfully uploaded ${files.length} file(s)`);
-            setTimeout(() => setUploadSuccess(null), 3000);
+            if (successCount > 0) {
+                setUploadSuccess(`Successfully uploaded ${successCount} file(s)`);
+                // Dispatch event to update storage bar in sidebar
+                window.dispatchEvent(new CustomEvent('storage-updated'));
+                setTimeout(() => setUploadSuccess(null), 3000);
+            }
 
         } catch (error) {
             console.error('Upload error:', error);
@@ -340,6 +349,25 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         } finally {
             setIsUploading(false);
             setUploadProgress({});
+        }
+    };
+
+    // Handle drag and drop from desktop
+    const handleFileDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOverFolderId(null);
+
+        // Check if files are being dropped from desktop (not internal drag)
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleFileUpload(e.dataTransfer.files);
+            return;
+        }
+
+        // Internal drag and drop (moving items between folders)
+        if (draggedItemId) {
+            setItems(items.map(i => i.id === draggedItemId ? { ...i, parentId: null } : i));
+            setDraggedItemId(null);
         }
     };
 
@@ -363,6 +391,13 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         e.stopPropagation();
         setDragOverFolderId(null);
 
+        // Check if files are being dropped from desktop
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleFileUpload(e.dataTransfer.files);
+            return;
+        }
+
+        // Internal drag and drop (moving items between folders)
         if (draggedItemId && draggedItemId !== targetFolderId) {
             setItems(items.map(i => i.id === draggedItemId ? { ...i, parentId: targetFolderId } : i));
             setDraggedItemId(null);
@@ -517,24 +552,45 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
             {/* Main Content Area */}
             <div
-                className="min-h-[500px] bg-[#050505] border border-white/5 rounded-xl overflow-hidden relative"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                    if (currentFolderId !== null && viewMode === 'grid') {
-                        // Do nothing
-                    } else {
-                        handleDrop(e, null);
+                className={`min-h-[500px] bg-[#050505] border rounded-xl overflow-hidden relative transition-all ${isDraggingFiles ? 'border-primary border-2 bg-primary/5' : 'border-white/5'}`}
+                onDragOver={(e) => {
+                    e.preventDefault();
+                    // Check if dragging files from desktop
+                    if (e.dataTransfer.types.includes('Files')) {
+                        setIsDraggingFiles(true);
                     }
                 }}
+                onDragLeave={(e) => {
+                    // Only reset if leaving the container entirely
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                        setIsDraggingFiles(false);
+                    }
+                }}
+                onDrop={(e) => {
+                    setIsDraggingFiles(false);
+                    handleDrop(e, currentFolderId);
+                }}
             >
+                {/* Drop Zone Overlay */}
+                {isDraggingFiles && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-primary/10 backdrop-blur-sm border-2 border-dashed border-primary rounded-xl">
+                        <div className="text-center">
+                            <UploadIcon size={48} className="mx-auto mb-4 text-primary animate-bounce" />
+                            <p className="text-lg font-bold text-white">Drop files to upload</p>
+                            <p className="text-sm text-neutral-400">Release to upload your files</p>
+                        </div>
+                    </div>
+                )}
                 {viewMode === 'grid' ? (
                     // --- GRID VIEW ---
                     <div className="p-6">
                         {currentItems.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-64 border border-dashed border-neutral-800 rounded-xl text-neutral-600">
-                                <FolderInput size={48} className="mb-4 opacity-50" />
-                                <p className="text-sm font-bold">This folder is empty</p>
-                                <p className="text-xs">Right click to create new items or drag files here.</p>
+                            <div 
+                                className={`flex flex-col items-center justify-center h-64 border border-dashed rounded-xl transition-all ${isDraggingFiles ? 'border-primary bg-primary/10' : 'border-neutral-800 text-neutral-600'}`}
+                            >
+                                <UploadIcon size={48} className={`mb-4 ${isDraggingFiles ? 'text-primary animate-bounce' : 'opacity-50'}`} />
+                                <p className="text-sm font-bold">{isDraggingFiles ? 'Drop files here' : 'This folder is empty'}</p>
+                                <p className="text-xs">{isDraggingFiles ? 'Release to upload your files' : 'Drag and drop files here or click Upload Files'}</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">

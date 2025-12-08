@@ -66,17 +66,28 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
     }, [isLoggedIn, userProfile?.handle]);
 
     useEffect(() => {
-        if (isLoggedIn) {
-            const fetchStorageUsage = async () => {
-                try {
-                    const usage = await getStorageUsage();
-                    setStorageUsage(usage);
-                } catch (error) {
-                    console.error('Failed to fetch storage usage:', error);
-                }
-            };
+        const fetchStorageUsage = async () => {
+            if (!isLoggedIn) return;
+            try {
+                const usage = await getStorageUsage();
+                setStorageUsage(usage);
+            } catch (error) {
+                console.error('Failed to fetch storage usage:', error);
+            }
+        };
+
+        fetchStorageUsage();
+
+        // Listen for storage updates from other components (e.g., profile picture upload)
+        const handleStorageUpdate = () => {
             fetchStorageUsage();
-        }
+        };
+
+        window.addEventListener('storage-updated', handleStorageUpdate);
+
+        return () => {
+            window.removeEventListener('storage-updated', handleStorageUpdate);
+        };
     }, [isLoggedIn]);
 
     const formatStorageSize = (bytes: number): string => {

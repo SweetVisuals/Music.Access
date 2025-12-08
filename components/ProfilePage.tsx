@@ -260,15 +260,24 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             try {
                 const { publicUrl } = await uploadFile(file);
 
-                setUserProfile(prev => prev ? ({ ...prev, [field]: publicUrl }) : null);
-
-                // Persist changes
+                // Persist changes to database first
                 const currentUser = await getCurrentUser();
                 if (currentUser) {
                     await updateUserProfile(currentUser.id, { [field]: publicUrl });
+                    
+                    // Refetch profile to get the updated data from database
+                    const refreshedProfile = await getUserProfile();
+                    if (refreshedProfile) {
+                        setUserProfile(refreshedProfile);
+                    }
+                    
+                    // Dispatch custom event to notify sidebar to refresh storage
+                    window.dispatchEvent(new CustomEvent('storage-updated'));
                 }
             } catch (error) {
                 console.error('Error uploading file:', error);
+                // Revert to previous state on error
+                setUserProfile(prev => prev ? ({ ...prev, [field]: userProfile?.[field] || '' }) : null);
             }
         }
     };

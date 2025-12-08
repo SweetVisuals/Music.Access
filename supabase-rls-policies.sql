@@ -30,7 +30,8 @@ ON assets FOR DELETE
 USING (auth.uid() = user_id);
 
 -- Also enable RLS and create policies for storage objects
--- This allows users to upload files to the assets bucket
+-- NOTE: storage.objects is a BUILT-IN Supabase table (you don't create it)
+-- This table manages all files in your storage buckets
 
 -- Allow authenticated users to upload files to the assets bucket
 CREATE POLICY "Authenticated users can upload files" 

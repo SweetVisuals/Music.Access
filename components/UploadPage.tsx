@@ -307,6 +307,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         const fileArray = Array.from(files);
         let successCount = 0;
         let failedFiles: string[] = [];
+        let errors: string[] = [];
 
         showToast(`Starting upload of ${fileArray.length} file(s)...`, 'info');
 
@@ -320,7 +321,6 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 setUploadProgress(prev => ({ ...prev, [fileId]: progress }));
 
                 try {
-                    showToast(`Uploading ${file.name}...`, 'info');
                     const result = await uploadFile(file);
 
                     // Create file item in UI
@@ -347,7 +347,15 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 } catch (error) {
                     console.error('Upload failed:', error);
                     failedFiles.push(file.name);
-                    showToast(`✗ Failed to upload ${file.name}: ${error.message}`, 'error');
+                    
+                    // Handle specific error types
+                    if (error.message.includes('row-level security policy')) {
+                        errors.push(`Storage bucket permissions not configured. Please create the "assets" bucket in your Supabase dashboard.`);
+                    } else if (error.message.includes('Bucket not found')) {
+                        errors.push(`Storage bucket "assets" doesn't exist. Please create it in Supabase Storage settings.`);
+                    } else {
+                        errors.push(`Failed to upload ${file.name}: ${error.message}`);
+                    }
                 }
             }
 
@@ -360,14 +368,14 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
             }
 
             if (failedFiles.length > 0) {
-                setUploadError(`${failedFiles.length} file(s) failed to upload`);
+                const uniqueErrors = [...new Set(errors)]; // Remove duplicates
+                setUploadError(uniqueErrors.join(' '));
             }
 
         } catch (error) {
             console.error('Upload error:', error);
             const errorMessage = 'Upload failed. Please try again.';
             setUploadError(errorMessage);
-            showToast(errorMessage, 'error');
         } finally {
             setIsUploading(false);
             setUploadProgress({});
@@ -816,22 +824,25 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 )}
                 {/* Upload Progress and Messages */}
                 {isUploading && (
-                    <div className="mt-4 p-4 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm">
-                        <div className="flex items-center gap-3 mb-3">
-                            <Loader2 size={16} className="animate-spin text-primary" />
+                    <div className="mt-6 p-6 bg-neutral-900/20 border border-white/5 rounded-xl backdrop-blur-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
                             <span className="text-sm font-medium text-white">Uploading files...</span>
                         </div>
                         {Object.keys(uploadProgress).length > 0 && (
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 {Object.entries(uploadProgress).map(([fileId, progress]) => (
-                                    <div key={fileId} className="flex items-center gap-3">
-                                        <div className="flex-1 bg-neutral-700 rounded-full h-2">
+                                    <div key={fileId} className="space-y-2">
+                                        <div className="flex items-center justify-between text-xs text-neutral-400">
+                                            <span>File {fileId.split('-').pop()}</span>
+                                            <span>{progress}%</span>
+                                        </div>
+                                        <div className="w-full bg-neutral-800 rounded-full h-1.5">
                                             <div 
-                                                className="bg-primary h-2 rounded-full transition-all duration-300"
+                                                className="bg-gradient-to-r from-primary to-primary/80 h-1.5 rounded-full transition-all duration-500 ease-out"
                                                 style={{ width: `${progress}%` }}
                                             />
                                         </div>
-                                        <span className="text-xs text-neutral-300 min-w-[3rem]">{progress}%</span>
                                     </div>
                                 ))}
                             </div>
@@ -840,17 +851,31 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 )}
 
                 {(uploadError || uploadSuccess) && !isUploading && (
-                    <div className="mt-4 p-4 rounded-lg border backdrop-blur-sm">
+                    <div className="mt-6 p-6 bg-neutral-900/20 border border-white/5 rounded-xl backdrop-blur-sm">
                         {uploadError && (
-                            <div className="flex items-center gap-2 text-red-400">
-                                <AlertCircle size={16} />
-                                <span className="text-sm">{uploadError}</span>
+                            <div className="flex items-start gap-3">
+                                <AlertCircle size={18} className="text-red-400 mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <h4 className="text-sm font-medium text-red-400 mb-1">Upload Failed</h4>
+                                    <p className="text-xs text-neutral-300 leading-relaxed">{uploadError}</p>
+                                    {uploadError.includes('row-level security policy') && (
+                                        <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                            <p className="text-xs text-red-300">
+                                                💡 <strong>Solution:</strong> Create the storage bucket manually in your Supabase dashboard. 
+                                                Go to Storage → Create bucket → Name: "assets" → Set as public.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                         {uploadSuccess && (
-                            <div className="flex items-center gap-2 text-green-400">
-                                <Check size={16} />
-                                <span className="text-sm">{uploadSuccess}</span>
+                            <div className="flex items-center gap-3">
+                                <Check size={18} className="text-green-400" />
+                                <div>
+                                    <h4 className="text-sm font-medium text-green-400">Upload Complete</h4>
+                                    <p className="text-xs text-neutral-300">{uploadSuccess}</p>
+                                </div>
                             </div>
                         )}
                     </div>

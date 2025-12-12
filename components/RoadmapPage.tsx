@@ -347,9 +347,8 @@ const StrategyTab: React.FC = () => {
 
 const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggleDetails, expandedStage }) => {
     // We combine the real templates with placeholders for the remaining 8 stages
-    const allStages = [
-        ...STAGE_TEMPLATES,
-        // Placeholders for the rest of the 10 stages requested
+    // defined placeholders
+    const placeholders = [
         { id: 'stage-3', title: 'Why You?', description: 'Competitive advantage and USP.', iconName: 'Target' },
         { id: 'stage-4', title: 'The Audience', description: 'Who are they and where do they live?', iconName: 'Users' },
         { id: 'stage-5', title: 'The Content Strategy', description: 'Pillars, formats, and frequency.', iconName: 'Video' },
@@ -360,11 +359,20 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
         { id: 'stage-10', title: 'The Moneymakers', description: 'Revenue streams and monetization.', iconName: 'DollarSign' }
     ];
 
+    // Combine and sort
+    const allStages = [
+        ...STAGE_TEMPLATES,
+        ...placeholders.filter(p => !STAGE_TEMPLATES.find(t => t.id === p.id))
+    ].sort((a, b) => {
+        const getNum = (str: string) => parseInt(str.split('-')[1]);
+        return getNum(a.id) - getNum(b.id);
+    });
+
     return (
         <>
             {allStages.map((stage: any, index) => {
                 const status = strategyData[stage.id]?.status || 'not_started';
-                const isReal = index < 2; // Only first 2 are fully implemented with deep wizards
+                const isReal = STAGE_TEMPLATES.some(t => t.id === stage.id);
                 const isExpanded = expandedStage === stage.id;
 
                 return (

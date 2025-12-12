@@ -192,7 +192,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                     />
                                     <SidebarItem
                                         icon={<Map size={14} />}
-                                        label="Roadmap & Planning"
+                                        label="Roadmap"
                                         active={currentView === 'dashboard-roadmap'}
                                         onClick={() => onNavigate('dashboard-roadmap')}
                                     />

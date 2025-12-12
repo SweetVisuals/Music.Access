@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Note } from '../types';
-import { getNotes, createNote, updateNote, deleteNote, getUserAudioFiles, uploadFile } from '../services/supabaseService';
+import { getNotes, createNote, updateNote, deleteNote, getUserFiles, uploadFile } from '../services/supabaseService';
 import {
     Plus,
     Trash2,
@@ -162,7 +162,7 @@ const NotesPage: React.FC = () => {
     const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [audioFiles, setAudioFiles] = useState<any[]>([]); // Real files state
-    
+
     // View State
     const [viewMode, setViewMode] = useState<'editor' | 'browser'>('editor');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state
@@ -195,8 +195,8 @@ const NotesPage: React.FC = () => {
     useEffect(() => {
         const fetchFiles = async () => {
             try {
-                const files = await getUserAudioFiles();
-                setAudioFiles(files);
+                const files = await getUserFiles();
+                setAudioFiles(files.filter(f => f.type === 'audio'));
             } catch (error) {
                 console.error('Failed to load audio files', error);
             }
@@ -298,8 +298,8 @@ const NotesPage: React.FC = () => {
         try {
             await uploadFile(file);
             // Refresh list
-            const files = await getUserAudioFiles();
-            setAudioFiles(files);
+            const files = await getUserFiles();
+            setAudioFiles(files.filter(f => f.type === 'audio'));
             // Auto attach? Maybe. For now just list it.
         } catch (error) {
             console.error('Upload failed', error);

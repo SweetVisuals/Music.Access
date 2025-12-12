@@ -31,6 +31,11 @@ const THEMES = [
     { name: 'Amber', value: 'amber', color: '#f59e0b' }
 ];
 
+const hexToRgb = (hex: string): string | null => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? `${parseInt(result[1], 16)} ${parseInt(result[2], 16)} ${parseInt(result[3], 16)}` : null;
+};
+
 const TopBar: React.FC<TopBarProps> = ({
     projects,
     currentView,
@@ -94,6 +99,20 @@ const TopBar: React.FC<TopBarProps> = ({
         // Optional: Set up real-time subscription here later if needed
     }, [isLoggedIn]);
 
+    // Initialize Theme
+    useEffect(() => {
+        const savedTheme = localStorage.getItem('music_access_theme');
+        if (savedTheme) {
+            const themeOption = THEMES.find(t => t.value === savedTheme);
+            if (themeOption) {
+                const rgb = hexToRgb(themeOption.color);
+                if (rgb) {
+                    document.documentElement.style.setProperty('--primary', rgb);
+                }
+            }
+        }
+    }, []);
+
 
     // Handlers
     const toggleSearchMode = () => {
@@ -130,9 +149,18 @@ const TopBar: React.FC<TopBarProps> = ({
         }, 1500);
     };
 
-    const handleThemeChange = (theme: string) => {
-        console.log("Theme changed to", theme);
-        // Implement theme switching logic here if context is available
+    const handleThemeChange = (themeValue: string) => {
+        console.log("Theme changed to", themeValue);
+
+        const themeOption = THEMES.find(t => t.value === themeValue);
+        if (themeOption) {
+            const rgb = hexToRgb(themeOption.color);
+            if (rgb) {
+                document.documentElement.style.setProperty('--primary', rgb);
+                localStorage.setItem('music_access_theme', themeValue);
+            }
+        }
+        setIsThemeOpen(false);
     };
 
     const handleMarkAllRead = async () => {

@@ -193,10 +193,18 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                                 required: true
                             },
                             {
+                                id: 'associated_era',
+                                label: 'Associated Era / Phase',
+                                type: 'text',
+                                placeholder: 'e.g. "The Red Era" or "Phase 1 - Introduction"',
+                                required: true,
+                                aiEnabled: true
+                            },
+                            {
                                 id: 'timeframe',
                                 label: 'Timeframe',
-                                type: 'text',
-                                placeholder: 'e.g. "June 1st - August 15th" or "Q3 2024"',
+                                type: 'date-range',
+                                placeholder: 'Select dates...',
                                 required: true
                             },
                             {
@@ -212,18 +220,10 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                             {
                                 id: 'platforms',
                                 label: 'Target Platforms',
-                                type: 'select', // Ideally multi-select? Using select for now, user can add multiple items if array, but this is a single field. 
-                                // To support multi-select behavior with current simple select, user might use custom or we rely on them picking the PRIMARY one.
-                                // Or we can change type to 'text' and ask for comma separated?
-                                // Let's stick to 'select' with allowCustom for simplicity or use text if they want multiple.
-                                // Plan said "Add Target Platforms". Let's use a text input for flexibility or a select if we want specific options.
-                                // Given "marketing plan", a list is better. Let's use textarea for "Strategy/Platforms" or just text.
-                                // Let's use 'select' with 'allowSecondary' logic we have in Wizard? No, that's for primary/secondary.
-                                // Let's use a text field for "Key Platforms" for now to fit the UI pattern simply.
-                                type: 'text',
-                                placeholder: 'e.g. Instagram, TikTok, YouTube Shorts',
-                                required: true,
-                                aiEnabled: true
+                                type: 'multiselect',
+                                options: ['Instagram', 'TikTok', 'YouTube', 'Spotify', 'Apple Music', 'Facebook', 'X (Twitter)', 'Threads', 'Snapchat', 'Discord', 'Website', 'Email List'],
+                                placeholder: 'Select platforms...',
+                                required: true
                             },
                             {
                                 id: 'content_types',

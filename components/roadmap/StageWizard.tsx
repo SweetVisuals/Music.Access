@@ -378,205 +378,375 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
         )
     };
 
-    return (
-        <>
-            {/* Backdrop - Low Z-index to sit behind TopBar (z-40) and Sidebar (z-50) */}
-            <div className="fixed inset-0 z-30 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}></div>
+    const renderMultiSelect = (field: StageField, value: string[] | undefined, onChange: (val: string[]) => void) => {
+        const selected = value || [];
+        const toggle = (opt: string) => {
+            if (selected.includes(opt)) {
+                onChange(selected.filter(s => s !== opt));
+            } else {
+                onChange([...selected, opt]);
+            }
+        };
 
-            {/* Modal Container - High Z-index but positioned to clear TopBar/Sidebar */}
-            <div className="fixed inset-0 z-50 top-16 lg:left-64 flex items-center justify-center p-4 sm:p-8 pointer-events-none">
-                <div className="w-full max-w-6xl h-full max-h-[85vh] bg-[#0a0a0a] border border-neutral-800 rounded-2xl flex flex-col shadow-2xl overflow-hidden relative pointer-events-auto">
+        return (
+            <div className="flex flex-wrap gap-2">
+                {field.options?.map(opt => (
+                    <button
+                        key={opt}
+                        onClick={() => toggle(opt)}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${selected.includes(opt)
+                            ? 'bg-white text-black border-white shadow-lg scale-105'
+                            : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
+                            }`}
+                    >
+                        {opt}
+                    </button>
+                ))}
+            </div>
+        );
+    };
 
-                    {/* Header */}
-                    <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
-                        <div>
-                            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                <span className="text-primary">{config.title}</span>
-                                <span className="text-neutral-600">/</span>
-                                <span className="text-neutral-400 font-normal text-sm">Strategy Planning</span>
-                            </h2>
-                        </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white transition-colors">
-                            <X size={20} />
-                        </button>
-                    </div>
+    const renderDateRange = (field: StageField, value: { from: string; to: string } | undefined, onChange: (val: any) => void) => {
+        const val = value || { from: '', to: '' };
+        return (
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                    <label className="text-xs text-neutral-500 ml-1">Start Date</label>
+                    <input
+                        type="date"
+                        value={val.from}
+                        onChange={(e) => onChange({ ...val, from: e.target.value })}
+                        className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20 text-sm"
+                    />
+                </div>
+                <div className="space-y-1">
+                    <label className="text-xs text-neutral-500 ml-1">End Date</label>
+                    <input
+                        type="date"
+                        value={val.to}
+                        onChange={(e) => onChange({ ...val, to: e.target.value })}
+                        className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20 text-sm"
+                    />
+                </div>
+            </div>
+        );
+    };
 
-                    {/* Progress Bar */}
-                    <div className="px-8 pt-6 pb-2">
-                        <div className="flex items-center justify-between relative">
-                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-neutral-800 -z-10"></div>
-                            {config.steps.map((step, idx) => (
-                                <div
-                                    key={step.id}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${currentStepIndex === idx
-                                        ? 'bg-primary text-black border-primary font-bold shadow-[0_0_10px_rgba(var(--primary),0.3)]'
-                                        : currentStepIndex > idx
-                                            ? 'bg-green-500 text-black border-green-500 font-bold'
-                                            : 'bg-neutral-900 text-neutral-500 border-neutral-800'
-                                        } `}
-                                >
-                                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-black/20 text-xs font-mono">
-                                        {currentStepIndex > idx ? <Check size={14} /> : idx + 1}
-                                    </span>
-                                    <span className="text-xs uppercase tracking-wider hidden sm:inline-block">{step.title}</span>
+    const renderField = (field: StageField, value: any, onChange: (val: any) => void, pathPrefix: string = '', onAiRequest?: () => void) => {
+        if (field.type === 'array') {
+            const items = (value as any[]) || [];
+
+            // Helper to add item (mock ID for key)
+            const addItem = () => {
+                const newItem = { _id: Date.now().toString() };
+                onChange([...items, newItem]);
+            };
+
+            const removeItem = (idx: number) => {
+                const newItems = [...items];
+                newItems.splice(idx, 1);
+                onChange(newItems);
+            };
+
+            const updateItem = (idx: number, fieldId: string, val: any) => {
+                const newItems = [...items];
+                newItems[idx] = { ...newItems[idx], [fieldId]: val };
+                onChange(newItems);
+            };
+
+            return (
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {items.map((item, idx) => (
+                            <div key={item._id || idx} className="bg-neutral-900/40 border border-neutral-800 p-4 rounded-xl space-y-4 relative group">
+                                <div className="absolute top-2 right-2">
+                                    <button onClick={() => removeItem(idx)} className="p-1.5 text-neutral-600 hover:text-red-500 transition-colors">
+                                        <Trash2 size={14} />
+                                    </button>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
+                                <h4 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-2">{field.itemLabel || 'Item'} {idx + 1}</h4>
 
-                    {/* Main Content Area */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-                        <div className="p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-300 key={currentStep.id}">
-                            <div className="mb-6">
-                                <h3 className="text-2xl font-bold text-white mb-2">{currentStep.title}</h3>
-                                {currentStep.description && <p className="text-neutral-400">{currentStep.description}</p>}
-                            </div>
-
-                            <div className="space-y-8">
-                                {currentStep.fields.map(field => (
-                                    <div key={field.id} className="space-y-3 bg-neutral-900/20 p-6 rounded-xl border border-neutral-800/50 hover:border-neutral-700 transition-colors">
-
-                                        {/* Field Label (Only show for array if we assume it's a section, else standard label) */}
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex flex-col">
-                                                <label className="text-sm font-bold text-white tracking-wide block">
-                                                    {field.label} {field.required && <span className="text-primary">*</span>}
-                                                </label>
-                                                {field.allowSecondary && (
-                                                    <span className="text-[10px] text-neutral-500 font-medium mt-1">
-                                                        Select Primary & Secondary Options
-                                                    </span>
-                                                )}
-                                            </div>
+                                <div className="space-y-4">
+                                    {field.fields?.map(subField => (
+                                        <div key={subField.id} className="space-y-1">
+                                            <label className="text-xs font-semibold text-neutral-400 ml-1">{subField.label}</label>
+                                            {renderField(
+                                                subField,
+                                                item[subField.id],
+                                                (val) => updateItem(idx, subField.id, val),
+                                                `${pathPrefix}.${idx}.${subField.id}`,
+                                                // Only pass AI handler if enabled for THIS subfield
+                                                subField.aiEnabled ? () => handleAiRequest(subField, `${pathPrefix}.${idx}.${subField.id}`, item[subField.id] || '', (val) => updateItem(idx, subField.id, val)) : undefined
+                                            )}
                                         </div>
-                                        {/* Top Level AI Button Removed (Inline now) */}
-
-                                        {renderField(
-                                            field,
-                                            formData[field.id],
-                                            (val) => updateField(field.id, val),
-                                            undefined,
-                                            field.aiEnabled ? () => openAiHelper(field.id) : undefined
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* AI Helper Overlay */}
-                        {(activeAiField || activeAiTarget) && (
-                            <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-8 animate-in fade-in duration-200">
-                                <div className="w-full max-w-2xl bg-[#0F0F0F] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[600px]">
-                                    <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-gradient-to-r from-primary/5 to-transparent">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                                                <Wand2 size={16} />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-white text-sm">AI Creative Assistant</h4>
-                                                <p className="text-[10px] text-neutral-500">Brainstorming ideas</p>
-                                            </div>
-                                        </div>
-                                        <button onClick={closeAiHelper} className="text-neutral-500 hover:text-white transition-colors">
-                                            <X size={18} />
-                                        </button>
-                                    </div>
-
-                                    <div className="p-6 flex-1 overflow-y-auto">
-                                        {!aiResponse ? (
-                                            <div className="space-y-4">
-                                                <label className="text-xs font-bold text-neutral-400 uppercase">What kind of ideas do you need?</label>
-                                                <textarea
-                                                    autoFocus
-                                                    value={aiPrompt}
-                                                    onChange={(e) => setAiPrompt(e.target.value)}
-                                                    className="w-full h-32 bg-black border border-neutral-800 rounded-xl p-4 text-white text-sm focus:border-primary/50 focus:outline-none"
-                                                    placeholder="Describe what you are looking for..."
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-300">
-                                                <div className="flex items-start gap-3">
-                                                    <Lightbulb size={18} className="text-yellow-500 mt-1 shrink-0" />
-                                                    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed">
-                                                        {aiResponse}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-end gap-3">
-                                        <button
-                                            onClick={closeAiHelper}
-                                            className="px-4 py-2 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                        {!aiResponse ? (
-                                            <button
-                                                onClick={handleAiGenerate}
-                                                disabled={!aiPrompt.trim() || aiLoading}
-                                                className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
-                                            >
-                                                {aiLoading ? (
-                                                    <>Processing...</>
-                                                ) : (
-                                                    <><Sparkles size={14} /> Generate Ideas</>
-                                                )}
-                                            </button>
-                                        ) : (
-                                            <>
-                                                <button
-                                                    onClick={() => { setAiResponse(null); setAiPrompt(''); }}
-                                                    className="px-4 py-2 bg-neutral-800 text-white rounded-lg text-xs font-bold hover:bg-neutral-700 transition-colors"
-                                                >
-                                                    Try Again
-                                                </button>
-                                                <button
-                                                    onClick={applyAiResponse}
-                                                    className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2"
-                                                >
-                                                    <Check size={14} /> Use This Response
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
+                                    ))}
                                 </div>
                             </div>
+                        ))}
+                        {(!field.maxItems || items.length < field.maxItems) && (
+                            <button
+                                onClick={addItem}
+                                className="h-full min-h-[100px] border border-dashed border-neutral-800 rounded-xl flex items-center justify-center text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all gap-2"
+                            >
+                                <Plus size={18} />
+                                <span>Add {field.itemLabel || 'Item'}</span>
+                            </button>
                         )}
                     </div>
-
-                    {/* Footer - No changes needed, uses standard flow */}
-                    <div className="h-20 border-t border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
-                        <button
-                            onClick={handleBack}
-                            disabled={currentStepIndex === 0}
-                            className="px-6 py-2 rounded-lg font-bold text-sm text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                        >
-                            Back
-                        </button>
-
-                        <button
-                            onClick={handleNext}
-                            className="px-8 py-3 bg-primary text-black rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2"
-                        >
-                            {isLastStep ? (
-                                <>
-                                    <Save size={16} /> Save Strategy
-                                </>
-                            ) : (
-                                <>
-                                    Next Step <ChevronRight size={16} />
-                                </>
-                            )}
-                        </button>
-                    </div>
-
                 </div>
-            </div >
-        </>
-    );
+            );
+        }
+
+        if (field.type === 'multiselect') {
+            return renderMultiSelect(field, value, onChange);
+        }
+
+        if (field.type === 'date-range') {
+            return renderDateRange(field, value, onChange);
+        }
+
+        if (field.type === 'checkbox') {
+            return (
+                <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${value ? 'bg-primary border-primary text-black' : 'border-neutral-700 bg-neutral-900 group-hover:border-neutral-500'}`}>
+                        {value && <Check size={12} strokeWidth={4} />}
+                    </div>
+                    <input
+                        type="checkbox"
+                        checked={!!value}
+                        onChange={(e) => onChange(e.target.checked)}
+                        className="hidden"
+                    />
+                    <span className={`text-sm ${value ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-300'}`}>{field.placeholder || field.label}</span>
+                </label>
+            )
+        }
+
+        if (field.type === 'textarea') {
+            return (
+                <div className="relative group/input">
+                    <textarea
+                        value={value || ''}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder={field.placeholder}
+                        className="w-full h-20 bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:ring-1 focus:ring-primary/20 leading-relaxed custom-scrollbar pb-10"
+                    />
+                    {field.aiEnabled && onAiRequest && (
+                        <button
+                            onClick={onAiRequest}
+                            className="absolute right-3 bottom-3 p-1.5 text-neutral-500 hover:text-primary transition-colors hover:bg-white/5 rounded-md"
+                            title="Generate with AI"
+                        >
+                            <Sparkles size={16} />
+                        </button>
+                    )}
+                </div>
+            );
+        }
+
+        // Default 'text' or 'select' (Select handled above? No, wait)
+        return (
+            <div className="w-full">
+
+                return (
+                <>
+                    {/* Backdrop - Low Z-index to sit behind TopBar (z-40) and Sidebar (z-50) */}
+                    <div className="fixed inset-0 z-30 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}></div>
+
+                    {/* Modal Container - High Z-index but positioned to clear TopBar/Sidebar */}
+                    <div className="fixed inset-0 z-50 top-16 lg:left-64 flex items-center justify-center p-4 sm:p-8 pointer-events-none">
+                        <div className="w-full max-w-6xl h-full max-h-[85vh] bg-[#0a0a0a] border border-neutral-800 rounded-2xl flex flex-col shadow-2xl overflow-hidden relative pointer-events-auto">
+
+                            {/* Header */}
+                            <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
+                                <div>
+                                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                        <span className="text-primary">{config.title}</span>
+                                        <span className="text-neutral-600">/</span>
+                                        <span className="text-neutral-400 font-normal text-sm">Strategy Planning</span>
+                                    </h2>
+                                </div>
+                                <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Progress Bar */}
+                            <div className="px-8 pt-6 pb-2">
+                                <div className="flex items-center justify-between relative">
+                                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-neutral-800 -z-10"></div>
+                                    {config.steps.map((step, idx) => (
+                                        <div
+                                            key={step.id}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${currentStepIndex === idx
+                                                ? 'bg-primary text-black border-primary font-bold shadow-[0_0_10px_rgba(var(--primary),0.3)]'
+                                                : currentStepIndex > idx
+                                                    ? 'bg-green-500 text-black border-green-500 font-bold'
+                                                    : 'bg-neutral-900 text-neutral-500 border-neutral-800'
+                                                } `}
+                                        >
+                                            <span className="w-6 h-6 flex items-center justify-center rounded-full bg-black/20 text-xs font-mono">
+                                                {currentStepIndex > idx ? <Check size={14} /> : idx + 1}
+                                            </span>
+                                            <span className="text-xs uppercase tracking-wider hidden sm:inline-block">{step.title}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Main Content Area */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+                                <div className="p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-300 key={currentStep.id}">
+                                    <div className="mb-6">
+                                        <h3 className="text-2xl font-bold text-white mb-2">{currentStep.title}</h3>
+                                        {currentStep.description && <p className="text-neutral-400">{currentStep.description}</p>}
+                                    </div>
+
+                                    <div className="space-y-8">
+                                        {currentStep.fields.map(field => (
+                                            <div key={field.id} className="space-y-3 bg-neutral-900/20 p-6 rounded-xl border border-neutral-800/50 hover:border-neutral-700 transition-colors">
+
+                                                {/* Field Label (Only show for array if we assume it's a section, else standard label) */}
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex flex-col">
+                                                        <label className="text-sm font-bold text-white tracking-wide block">
+                                                            {field.label} {field.required && <span className="text-primary">*</span>}
+                                                        </label>
+                                                        {field.allowSecondary && (
+                                                            <span className="text-[10px] text-neutral-500 font-medium mt-1">
+                                                                Select Primary & Secondary Options
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {/* Top Level AI Button Removed (Inline now) */}
+
+                                                {renderField(
+                                                    field,
+                                                    formData[field.id],
+                                                    (val) => updateField(field.id, val),
+                                                    undefined,
+                                                    field.aiEnabled ? () => openAiHelper(field.id) : undefined
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* AI Helper Overlay */}
+                                {(activeAiField || activeAiTarget) && (
+                                    <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-8 animate-in fade-in duration-200">
+                                        <div className="w-full max-w-2xl bg-[#0F0F0F] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[600px]">
+                                            <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-gradient-to-r from-primary/5 to-transparent">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                                                        <Wand2 size={16} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-white text-sm">AI Creative Assistant</h4>
+                                                        <p className="text-[10px] text-neutral-500">Brainstorming ideas</p>
+                                                    </div>
+                                                </div>
+                                                <button onClick={closeAiHelper} className="text-neutral-500 hover:text-white transition-colors">
+                                                    <X size={18} />
+                                                </button>
+                                            </div>
+
+                                            <div className="p-6 flex-1 overflow-y-auto">
+                                                {!aiResponse ? (
+                                                    <div className="space-y-4">
+                                                        <label className="text-xs font-bold text-neutral-400 uppercase">What kind of ideas do you need?</label>
+                                                        <textarea
+                                                            autoFocus
+                                                            value={aiPrompt}
+                                                            onChange={(e) => setAiPrompt(e.target.value)}
+                                                            className="w-full h-32 bg-black border border-neutral-800 rounded-xl p-4 text-white text-sm focus:border-primary/50 focus:outline-none"
+                                                            placeholder="Describe what you are looking for..."
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-300">
+                                                        <div className="flex items-start gap-3">
+                                                            <Lightbulb size={18} className="text-yellow-500 mt-1 shrink-0" />
+                                                            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed">
+                                                                {aiResponse}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-end gap-3">
+                                                <button
+                                                    onClick={closeAiHelper}
+                                                    className="px-4 py-2 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                {!aiResponse ? (
+                                                    <button
+                                                        onClick={handleAiGenerate}
+                                                        disabled={!aiPrompt.trim() || aiLoading}
+                                                        className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
+                                                    >
+                                                        {aiLoading ? (
+                                                            <>Processing...</>
+                                                        ) : (
+                                                            <><Sparkles size={14} /> Generate Ideas</>
+                                                        )}
+                                                    </button>
+                                                ) : (
+                                                    <>
+                                                        <button
+                                                            onClick={() => { setAiResponse(null); setAiPrompt(''); }}
+                                                            className="px-4 py-2 bg-neutral-800 text-white rounded-lg text-xs font-bold hover:bg-neutral-700 transition-colors"
+                                                        >
+                                                            Try Again
+                                                        </button>
+                                                        <button
+                                                            onClick={applyAiResponse}
+                                                            className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2"
+                                                        >
+                                                            <Check size={14} /> Use This Response
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Footer - No changes needed, uses standard flow */}
+                            <div className="h-20 border-t border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
+                                <button
+                                    onClick={handleBack}
+                                    disabled={currentStepIndex === 0}
+                                    className="px-6 py-2 rounded-lg font-bold text-sm text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    Back
+                                </button>
+
+                                <button
+                                    onClick={handleNext}
+                                    className="px-8 py-3 bg-primary text-black rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2"
+                                >
+                                    {isLastStep ? (
+                                        <>
+                                            <Save size={16} /> Save Strategy
+                                        </>
+                                    ) : (
+                                        <>
+                                            Next Step <ChevronRight size={16} />
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                        </div>
+                    </div >
+                </>
+                );
 };
 
-export default StageWizard;
+                export default StageWizard;

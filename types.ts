@@ -304,7 +304,7 @@ export interface Goal {
 export interface StageField {
   id: string;
   label: string;
-  type: 'text' | 'textarea' | 'select' | 'checkbox' | 'multiselect' | 'array';
+  type: 'text' | 'textarea' | 'select' | 'checkbox' | 'multiselect' | 'array' | 'date-range';
   placeholder?: string;
   options?: string[]; // For select/multiselect
   required?: boolean;

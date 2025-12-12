@@ -17,13 +17,20 @@ import {
     Music,
     TrendingUp,
     BarChart3,
-    Award,
     Edit,
     Trash2,
-    X
+    X,
+    BookOpen,
+    Video,
+    Smartphone,
+    Rocket,
+    BarChart,
+    Check
 } from 'lucide-react';
 import { Goal } from '../types';
 import { getGoals, createGoal, updateGoal, deleteGoal } from '../services/supabaseService';
+import { STAGE_TEMPLATES } from './roadmap/StageTemplates';
+import StageWizard from './roadmap/StageWizard';
 
 interface RoadmapPageProps {
     onNavigate?: (view: View) => void;
@@ -280,69 +287,166 @@ const PlannerTab: React.FC = () => {
 };
 
 const StrategyTab: React.FC = () => {
-    const [openSection, setOpenSection] = useState<number | null>(null);
+    // State
+    const [openWizard, setOpenWizard] = useState<string | null>(null); // Stage ID
+    // Use explicit type slightly looser to avoid index signature issues if strictly checked, but standard Record is fine
+    const [strategyData, setStrategyData] = useState<Record<string, { status: 'not_started' | 'in_progress' | 'completed', data: any }>>({});
+    const [expandedStage, setExpandedStage] = useState<string | null>(null);
 
-    const sections = [
-        { title: "High Level Brand Story", description: "What is the core narrative of your brand? Why do you exist?" },
-        { title: "Define Brand Personality", description: "If your brand was a person, who would they be? (e.g. Rebel, Sage, Jester)" },
-        { title: "Brand Visual Language", description: "Colors, fonts, imagery style, and overall aesthetic." },
-        { title: "Define Period or Era", description: "What is the theme of this specific time period?" },
-        { title: "What's the Campaign?", description: "The specific push or main event (e.g. Album Launch)." },
-        { title: "Content Buckets", description: "The main categories of content you will post (e.g. BTS, Education, Performance)." },
-        { title: "Content Format", description: "Reels, TikToks, Long-form, Carousels, Stories." },
-        { title: "What Platforms To Be On", description: "Where does your audience live? Focus on 1-2 primary platforms." },
-        { title: "How Much Content To Post", description: "Posting consistency and frequency schedule." },
-        { title: "How to Actually Execute", description: "The tactical plan: Batches, schedules, and tools." }
-    ];
+    // Let's define the handlers
+    const handleStartStage = (stageId: string) => {
+        setOpenWizard(stageId);
+    };
 
-    const toggleSection = (index: number) => {
-        setOpenSection(openSection === index ? null : index);
+    const handleSaveStage = (stageId: string, data: any) => {
+        setStrategyData(prev => ({
+            ...prev,
+            [stageId]: {
+                status: 'completed',
+                data: data
+            }
+        }));
+        setOpenWizard(null);
     };
 
     return (
-        <div className="space-y-4 max-w-5xl mx-auto">
-            {sections.map((section, index) => (
-                <div key={index} className={`bg-[#0a0a0a] border rounded-xl overflow-hidden transition-all duration-300 ${openSection === index ? 'border-primary/50 bg-neutral-900/20' : 'border-neutral-800'}`}>
-                    <button
-                        onClick={() => toggleSection(index)}
-                        className="w-full flex items-center justify-between p-6 text-left hover:bg-white/5 transition-colors"
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-sm font-bold transition-colors ${openSection === index ? 'bg-primary text-black border-primary' : 'bg-neutral-900 border-neutral-800 text-neutral-500'
-                                }`}>
-                                {index + 1}
-                            </div>
-                            <h3 className={`text-lg font-bold transition-colors ${openSection === index ? 'text-primary' : 'text-white'}`}>
-                                {section.title}
-                            </h3>
-                        </div>
-                        {openSection === index ? <ChevronDown size={20} className="text-primary rotate-180 transition-transform" /> : <ArrowRight size={20} className="text-neutral-600" />}
-                    </button>
-
-                    {openSection === index && (
-                        <div className="px-6 pb-6 pt-0 animate-in slide-in-from-top-2 duration-200">
-                            <div className="pl-12">
-                                <p className="text-neutral-400 mb-6 text-sm italic">{section.description}</p>
-
-                                <div className="bg-black/50 border border-neutral-800 rounded-xl p-4">
-                                    <textarea
-                                        className="w-full bg-transparent border-none focus:ring-0 text-white text-sm min-h-[150px] resize-none placeholder:text-neutral-700"
-                                        placeholder={`Describe your ${section.title.toLowerCase()} here...`}
-                                    ></textarea>
-                                    <div className="flex justify-end mt-2">
-                                        <button className="px-4 py-2 bg-white/10 text-white text-xs font-bold rounded-lg hover:bg-white/20 transition-colors">
-                                            Save Notes
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+        <div className="space-y-8 max-w-5xl mx-auto">
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h2 className="text-2xl font-black text-white">Strategy Roadmap</h2>
+                    <p className="text-neutral-500">Define your artist identity, era, and execution plan.</p>
                 </div>
-            ))}
+                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2 text-xs font-mono text-neutral-400">
+                    {Object.values(strategyData).filter(s => s.status === 'completed').length} / 10 Stages Completed
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+                <StrategyTabContent
+                    strategyData={strategyData}
+                    onStartStage={handleStartStage}
+                    onToggleDetails={(id: string) => setExpandedStage(expandedStage === id ? null : id)}
+                    expandedStage={expandedStage}
+                />
+            </div>
+
+            {/* Wizard Modal */}
+            {openWizard && (
+                <StageWizardContainer
+                    stageId={openWizard}
+                    onClose={() => setOpenWizard(null)}
+                    onSave={(data: any) => handleSaveStage(openWizard, data)}
+                    initialData={strategyData[openWizard]?.data}
+                />
+            )}
         </div>
     );
 };
+
+// --- Sub-components for StrategyTab (to keep main file clean-ish) ---
+
+const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggleDetails, expandedStage }) => {
+    // We combine the real templates with placeholders for the remaining 8 stages
+    const allStages = [
+        ...STAGE_TEMPLATES,
+        // Placeholders for the rest of the 10 stages requested
+        { id: 'stage-3', title: 'Why You?', description: 'Competitive advantage and USP.', iconName: 'Target' },
+        { id: 'stage-4', title: 'The Audience', description: 'Who are they and where do they live?', iconName: 'Users' },
+        { id: 'stage-5', title: 'The Content Strategy', description: 'Pillars, formats, and frequency.', iconName: 'Video' },
+        { id: 'stage-6', title: 'The Channels', description: 'Primary and secondary platforms.', iconName: 'Smartphone' },
+        { id: 'stage-7', title: 'The Growth Engines', description: 'Organic, paid, and partnerships.', iconName: 'TrendingUp' },
+        { id: 'stage-8', title: 'The Launch Plan', description: 'Pre-launch, launch, and post-launch.', iconName: 'Rocket' },
+        { id: 'stage-9', title: 'The Data & KPIs', description: 'What does success look like?', iconName: 'BarChart' },
+        { id: 'stage-10', title: 'The Moneymakers', description: 'Revenue streams and monetization.', iconName: 'DollarSign' }
+    ];
+
+    return (
+        <>
+            {allStages.map((stage: any, index) => {
+                const status = strategyData[stage.id]?.status || 'not_started';
+                const isReal = index < 2; // Only first 2 are fully implemented with deep wizards
+                const isExpanded = expandedStage === stage.id;
+
+                return (
+                    <div key={stage.id} className={`bg-[#0a0a0a] border rounded-xl overflow-hidden transition-all duration-300 ${status === 'completed' ? 'border-green-500/20' : 'border-neutral-800'}`}>
+                        <div className="flex items-center justify-between p-6">
+                            <div className="flex items-center gap-4">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold border transition-colors ${status === 'completed'
+                                    ? 'bg-green-500 text-black border-green-500'
+                                    : 'bg-neutral-900 border-neutral-800 text-neutral-500'
+                                    }`}>
+                                    {status === 'completed' ? <CheckCircle size={18} /> : index + 1}
+                                </div>
+                                <div>
+                                    <h3 className={`text-lg font-bold ${status === 'completed' ? 'text-green-500' : 'text-white'}`}>
+                                        {stage.title}
+                                    </h3>
+                                    <p className="text-sm text-neutral-500">{stage.description}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                {status === 'completed' && (
+                                    <button
+                                        onClick={() => onToggleDetails(stage.id)}
+                                        className="p-2 hover:bg-white/5 rounded-lg text-neutral-400 hover:text-white transition-colors"
+                                    >
+                                        <ChevronDown size={20} className={`transition-transformDuration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={() => onStartStage(stage.id)}
+                                    disabled={!isReal && index >= 2} // Disable unimplemented stages
+                                    className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${status === 'completed'
+                                        ? 'bg-white/5 text-neutral-400 hover:bg-white/10 hover:text-white'
+                                        : isReal
+                                            ? 'bg-primary text-black hover:bg-primary/90 shadow-lg shadow-primary/10'
+                                            : 'bg-neutral-900 text-neutral-600 cursor-not-allowed border border-neutral-800'
+                                        }`}
+                                >
+                                    {status === 'completed' ? 'Edit' : isReal ? 'Start' : 'Coming Soon'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Expanded Details View */}
+                        {isExpanded && status === 'completed' && (
+                            <div className="px-6 pb-6 pt-0 border-t border-neutral-800/50 bg-neutral-900/10">
+                                <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {Object.entries(strategyData[stage.id].data).map(([key, value]) => (
+                                        <div key={key} className="space-y-1">
+                                            <label className="text-[10px] font-bold text-neutral-500 uppercase">{key.replace(/_/g, ' ')}</label>
+                                            <div className="text-sm text-neutral-300 bg-black/40 p-3 rounded-lg border border-neutral-800/50">
+                                                {String(value)}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
+        </>
+    );
+}
+
+const StageWizardContainer: React.FC<any> = ({ stageId, onClose, onSave, initialData }) => {
+    // Find the config
+    const config = STAGE_TEMPLATES.find(t => t.id === stageId);
+
+    if (!config) return null;
+
+    return (
+        <StageWizard
+            config={config}
+            onClose={onClose}
+            onSave={onSave}
+            initialData={initialData}
+        />
+    );
+}
 
 const RoadmapWizardTab: React.FC = () => {
     const [step, setStep] = useState(1);

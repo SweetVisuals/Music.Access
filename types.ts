@@ -299,6 +299,40 @@ export interface Goal {
   category: 'monthly' | 'quarterly' | 'yearly' | 'custom';
 }
 
+// --- Strategy Roadmap Types ---
+
+export interface StageField {
+  id: string;
+  label: string;
+  type: 'text' | 'textarea' | 'select' | 'checkbox' | 'multiselect';
+  placeholder?: string;
+  options?: string[]; // For select/multiselect
+  required?: boolean;
+}
+
+export interface StageStep {
+  id: string;
+  title: string;
+  description?: string;
+  fields: StageField[];
+}
+
+export interface StrategyStageConfig {
+  id: string;
+  title: string;
+  description: string;
+  iconName: string; // Lucide icon name
+  steps: StageStep[];
+}
+
+export interface StrategyData {
+  [stageId: string]: {
+    status: 'not_started' | 'in_progress' | 'completed';
+    data: Record<string, any>; // fieldId -> value
+    lastUpdated: string;
+  };
+}
+
 export interface DashboardAnalytics {
   totalRevenue: number;
   activeOrders: number;

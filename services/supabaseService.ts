@@ -486,9 +486,6 @@ export const createService = async (service: Partial<Service>) => {
       user_id: currentUser.id,
       title: service.title,
       description: service.description,
-      user_id: currentUser.id,
-      title: service.title,
-      description: service.description,
       price: service.price,
       features: service.features,
       rate_type: service.rateType || 'flat'

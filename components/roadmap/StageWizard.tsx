@@ -1,4 +1,4 @@
-```
+
 import React, { useState, useEffect } from 'react';
 import { StrategyStageConfig, StageField } from '../../types';
 import { Check, ChevronRight, ChevronLeft, X, Save, Sparkles, Lightbulb, Wand2, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
@@ -136,7 +136,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
     const applyAiResponse = () => {
         if (activeAiTarget && aiResponse) {
             const { fieldId, index, subFieldId } = activeAiTarget;
-            
+
             // 1. Get current top-level value
             const topValue = formData[fieldId];
 
@@ -145,7 +145,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                 // Array Item Update
                 const list = [...(Array.isArray(topValue) ? topValue : [])];
                 const item = { ...list[index] };
-                
+
                 // Check if subfield allows secondary (requires finding schema. simpler to assume string for now or check current val?)
                 // Accessing schema for subfield is hard here without passing it.
                 // Improving: Let's assume recursion passed a callback to renderField, but here we are at top level.
@@ -159,10 +159,10 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                 // Top Level Update
                 // Find field config to check allowSecondary
                 const fieldConfig = config.steps.flatMap(s => s.fields).find(f => f.id === fieldId);
-                 if (fieldConfig?.allowSecondary) {
-                     const currentVal = topValue || {};
-                     const secondary = typeof currentVal === 'object' ? currentVal.secondary : '';
-                     updateField(fieldId, { primary: aiResponse, secondary });
+                if (fieldConfig?.allowSecondary) {
+                    const currentVal = topValue || {};
+                    const secondary = typeof currentVal === 'object' ? currentVal.secondary : '';
+                    updateField(fieldId, { primary: aiResponse, secondary });
                 } else {
                     updateField(fieldId, aiResponse);
                 }
@@ -180,7 +180,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
             const s = typeof value === 'object' ? value?.secondary : '';
             return s === option;
         };
-        
+
         const isPrimarySelected = (option: string) => {
             if (!field.allowSecondary) return value === option;
             const p = typeof value === 'object' ? value?.primary : value;
@@ -214,7 +214,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                 <span className="font-bold text-sm text-white">
                                     {item.name || item.title || ((field.itemLabel || 'Item') + ' ' + (idx + 1))}
                                 </span>
-                                <button 
+                                <button
                                     onClick={() => {
                                         const newItems = items.filter((_, i) => i !== idx);
                                         onChange(newItems);
@@ -224,12 +224,12 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                     <Trash2 size={14} />
                                 </button>
                             </div>
-                            
+
                             {/* Item Fields */}
                             <div className="p-4 space-y-6">
                                 {field.fields?.map(subField => (
                                     <div key={subField.id} className="space-y-2">
-                                         <div className="flex items-center justify-between">
+                                        <div className="flex items-center justify-between">
                                             <label className="text-xs font-bold text-neutral-400 uppercase tracking-wider block">
                                                 {subField.label} {subField.required && <span className="text-primary">*</span>}
                                             </label>
@@ -243,8 +243,8 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                             )}
                                         </div>
                                         {renderField(
-                                            subField, 
-                                            item[subField.id], 
+                                            subField,
+                                            item[subField.id],
                                             (val) => {
                                                 const newItem = { ...item, [subField.id]: val };
                                                 const newItems = [...items];
@@ -284,13 +284,12 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                     <button
                                         key={option}
                                         onClick={() => handleOptionToggle(option)}
-                                        className={`px - 4 py - 2 rounded - lg text - xs font - bold border transition - all relative overflow - hidden ${
-    isPri
-        ? 'bg-white text-black border-white shadow-lg scale-105 z-10'
-        : isSec
-            ? 'bg-primary/20 text-primary border-primary shadow-md shadow-primary/10'
-            : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-neutral-200'
-} `}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all relative overflow-hidden ${isPri
+                                                ? 'bg-white text-black border-white shadow-lg scale-105 z-10'
+                                                : isSec
+                                                    ? 'bg-primary/20 text-primary border-primary shadow-md shadow-primary/10'
+                                                    : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-neutral-200'
+                                            } `}
                                     >
                                         {isPri && <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full" />}
                                         {option}
@@ -302,26 +301,26 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                 <button
                                     onClick={() => handleOptionToggle('')} // Clear logic? Or focus?
                                     // Simplified: Focus input below
-                                    className={`px - 4 py - 2 rounded - lg text - xs font - bold border border - dashed transition - all ${
-    // Custom active check
-    (!field.allowSecondary && value && !field.options.includes(value)) ||
-        (field.allowSecondary && typeof value === 'object' && value.primary && !field.options.includes(value.primary))
-        ? 'bg-white/10 text-white border-primary border-solid'
-        : 'bg-transparent border-neutral-700 text-neutral-500 hover:text-white hover:border-neutral-500'
-} `}
+                                    className={`px-4 py-2 rounded-lg text-xs font-bold border border-dashed transition-all ${
+                                        // Custom active check
+                                        (!field.allowSecondary && value && !field.options.includes(value)) ||
+                                            (field.allowSecondary && typeof value === 'object' && value.primary && !field.options.includes(value.primary))
+                                            ? 'bg-white/10 text-white border-primary border-solid'
+                                            : 'bg-transparent border-neutral-700 text-neutral-500 hover:text-white hover:border-neutral-500'
+                                        } `}
                                 >
                                     Custom...
                                 </button>
                             )}
                         </div>
                         {field.allowCustom && (
-                             <div className="relative group/input">
-                                 <input
+                            <div className="relative group/input">
+                                <input
                                     type="text"
                                     value={
-                                        field.allowSecondary 
-                                        ? (typeof value === 'object' ? value.primary : value) || '' 
-                                        : value || ''
+                                        field.allowSecondary
+                                            ? (typeof value === 'object' ? value.primary : value) || ''
+                                            : value || ''
                                     }
                                     onChange={(e) => {
                                         const newVal = e.target.value;
@@ -332,15 +331,14 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                         }
                                     }}
                                     placeholder={field.placeholder || "Type your custom response..."}
-                                    className={`w - full bg - neutral - 900 border border - neutral - 800 rounded - xl px - 4 py - 3 pr - 12 text - white focus: border - primary / 50 focus: outline - none transition - all ${
-    (field.allowSecondary
-        ? (typeof value === 'object' && value.primary && field.options.includes(value.primary))
-        : (value && field.options.includes(value)))
-        ? 'text-neutral-500 italic'
-        : ''
-} `}
-                                 />
-                                  {field.aiEnabled && !activeAiTarget && (
+                                    className={`w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 pr-12 text-white focus:border-primary/50 focus:outline-none transition-all ${(field.allowSecondary
+                                            ? (typeof value === 'object' && value.primary && field.options.includes(value.primary))
+                                            : (value && field.options.includes(value)))
+                                            ? 'text-neutral-500 italic'
+                                            : ''
+                                        } `}
+                                />
+                                {field.aiEnabled && !activeAiTarget && (
                                     <button
                                         onClick={() => openAiHelper(field.id)} // This needs context if inside array... 
                                         // Wait, openAiHelper (top level) only works for top level fields. 
@@ -356,11 +354,11 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                         className="hidden" // Hiding here, handled by wrapper
                                     />
                                 )}
-                             </div>
+                            </div>
                         )}
                     </div>
                 ) : field.type === 'textarea' ? (
-                     <div className="relative group/input">
+                    <div className="relative group/input">
                         <textarea
                             value={value || ''}
                             onChange={(e) => onChange(e.target.value)}
@@ -411,13 +409,12 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                             {config.steps.map((step, idx) => (
                                 <div
                                     key={step.id}
-                                    className={`flex items - center gap - 2 px - 4 py - 2 rounded - full border transition - all ${
-    currentStepIndex === idx
-        ? 'bg-primary text-black border-primary font-bold shadow-[0_0_10px_rgba(var(--primary),0.3)]'
-        : currentStepIndex > idx
-            ? 'bg-green-500 text-black border-green-500 font-bold'
-            : 'bg-neutral-900 text-neutral-500 border-neutral-800'
-} `}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${currentStepIndex === idx
+                                            ? 'bg-primary text-black border-primary font-bold shadow-[0_0_10px_rgba(var(--primary),0.3)]'
+                                            : currentStepIndex > idx
+                                                ? 'bg-green-500 text-black border-green-500 font-bold'
+                                                : 'bg-neutral-900 text-neutral-500 border-neutral-800'
+                                        } `}
                                 >
                                     <span className="w-6 h-6 flex items-center justify-center rounded-full bg-black/20 text-xs font-mono">
                                         {currentStepIndex > idx ? <Check size={14} /> : idx + 1}
@@ -439,7 +436,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                             <div className="space-y-8">
                                 {currentStep.fields.map(field => (
                                     <div key={field.id} className="space-y-3 bg-neutral-900/20 p-6 rounded-xl border border-neutral-800/50 hover:border-neutral-700 transition-colors">
-                                        
+
                                         {/* Field Label (Only show for array if we assume it's a section, else standard label) */}
                                         <div className="flex items-center justify-between mb-2">
                                             <div className="flex flex-col">
@@ -452,8 +449,8 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                                     </span>
                                                 )}
                                             </div>
-                                             {/* Top Level AI Button */}
-                                             {field.aiEnabled && field.type !== 'array' && (
+                                            {/* Top Level AI Button */}
+                                            {field.aiEnabled && field.type !== 'array' && (
                                                 <button
                                                     onClick={() => openAiHelper(field.id)}
                                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-bold hover:bg-primary/20 transition-all group"
@@ -469,11 +466,11 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                 ))}
                             </div>
                         </div>
-        
+
                         {/* AI Helper Overlay */}
                         {(activeAiField || activeAiTarget) && (
                             <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-8 animate-in fade-in duration-200">
-                                 <div className="w-full max-w-2xl bg-[#0F0F0F] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[600px]">
+                                <div className="w-full max-w-2xl bg-[#0F0F0F] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[600px]">
                                     <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-gradient-to-r from-primary/5 to-transparent">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
@@ -488,12 +485,12 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                             <X size={18} />
                                         </button>
                                     </div>
-                                    
+
                                     <div className="p-6 flex-1 overflow-y-auto">
                                         {!aiResponse ? (
                                             <div className="space-y-4">
                                                 <label className="text-xs font-bold text-neutral-400 uppercase">What kind of ideas do you need?</label>
-                                                <textarea 
+                                                <textarea
                                                     autoFocus
                                                     value={aiPrompt}
                                                     onChange={(e) => setAiPrompt(e.target.value)}
@@ -512,16 +509,16 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                             </div>
                                         )}
                                     </div>
-        
+
                                     <div className="p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-end gap-3">
-                                        <button 
+                                        <button
                                             onClick={closeAiHelper}
                                             className="px-4 py-2 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors"
                                         >
                                             Cancel
                                         </button>
                                         {!aiResponse ? (
-                                            <button 
+                                            <button
                                                 onClick={handleAiGenerate}
                                                 disabled={!aiPrompt.trim() || aiLoading}
                                                 className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
@@ -534,13 +531,13 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                             </button>
                                         ) : (
                                             <>
-                                                <button 
+                                                <button
                                                     onClick={() => { setAiResponse(null); setAiPrompt(''); }}
                                                     className="px-4 py-2 bg-neutral-800 text-white rounded-lg text-xs font-bold hover:bg-neutral-700 transition-colors"
                                                 >
                                                     Try Again
                                                 </button>
-                                                <button 
+                                                <button
                                                     onClick={applyAiResponse}
                                                     className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2"
                                                 >
@@ -549,11 +546,11 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                             </>
                                         )}
                                     </div>
-                                 </div>
+                                </div>
                             </div>
                         )}
                     </div>
-    
+
                     {/* Footer - No changes needed, uses standard flow */}
                     <div className="h-20 border-t border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
                         <button
@@ -563,7 +560,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                         >
                             Back
                         </button>
-    
+
                         <button
                             onClick={handleNext}
                             className="px-8 py-3 bg-primary text-black rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2"
@@ -579,7 +576,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                             )}
                         </button>
                     </div>
-    
+
                 </div>
             </div>
         </>

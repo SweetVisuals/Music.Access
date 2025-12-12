@@ -864,7 +864,23 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                 <FileText size={14} className={isSelected ? 'text-black' : 'text-neutral-500'} />
                                             )}
 
-                                            <span className="truncate flex-1">{item.name}</span>
+                                            {renamingId === item.id ? (
+                                                <input
+                                                    autoFocus
+                                                    value={renameValue}
+                                                    onChange={(e) => setRenameValue(e.target.value)}
+                                                    onBlur={handleFinishRename}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
+                                                    className={`
+                                                        flex-1 bg-transparent border-none outline-none text-sm px-1 py-0
+                                                        focus:ring-1 focus:ring-primary/50 rounded
+                                                        ${isSelected ? 'text-black placeholder:text-black/50' : 'text-white placeholder:text-neutral-500'}
+                                                    `}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            ) : (
+                                                <span className="truncate flex-1">{item.name}</span>
+                                            )}
 
                                             {item.type === 'folder' && <ChevronRight size={12} className={isSelected ? 'text-black' : 'text-neutral-600'} />}
                                         </div>

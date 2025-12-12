@@ -385,7 +385,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
             {/* Modal Container - High Z-index but positioned to clear TopBar/Sidebar */}
             <div className="fixed inset-0 z-50 top-16 lg:left-64 flex items-center justify-center p-4 sm:p-8 pointer-events-none">
-                <div className="w-full max-w-7xl h-full max-h-[85vh] bg-[#0a0a0a] border border-neutral-800 rounded-2xl flex flex-col shadow-2xl overflow-hidden relative pointer-events-auto">
+                <div className="w-full max-w-6xl h-full max-h-[85vh] bg-[#0a0a0a] border border-neutral-800 rounded-2xl flex flex-col shadow-2xl overflow-hidden relative pointer-events-auto">
 
                     {/* Header */}
                     <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
@@ -426,7 +426,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
                     {/* Main Content Area */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-                        <div className="p-8 max-w-3xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-300 key={currentStep.id}">
+                        <div className="p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-300 key={currentStep.id}">
                             <div className="mb-6">
                                 <h3 className="text-2xl font-bold text-white mb-2">{currentStep.title}</h3>
                                 {currentStep.description && <p className="text-neutral-400">{currentStep.description}</p>}

@@ -83,6 +83,8 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
     const [renamingId, setRenamingId] = useState<string | null>(null);
     const [renameValue, setRenameValue] = useState('');
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
 
     // Modals State
     const [textEditorItem, setTextEditorItem] = useState<FileSystemItem | null>(null);
@@ -94,7 +96,6 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
     const [noteSuccess, setNoteSuccess] = useState(false);
-    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info'; id: string } | null>(null);
 
     const menuRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -115,11 +116,6 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                     duration: 180, // detailed duration not yet available
                     src: f.url
                 }));
-                // Merge with existing mocked/local items if any? No, just replace or append.
-                // For now, let's just use the DB items + folders? Folders are not persisted!
-                // If we want folders to persist, we need a DB table for them.
-                // Assuming folders are ephemeral for this session or we won't fix folder persistence yet.
-                // We'll just prepend DB files to current items (which are effectively empty initially).
                 setItems(prev => {
                     const folders = prev.filter(i => i.type === 'folder');
                     return [...folders, ...mappedFiles];
@@ -134,13 +130,6 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     // --- File Upload Handler ---
     const handleUploadClick = () => {
         fileInputRef.current?.click();
-    };
-
-    // --- Toast Notifications ---
-    const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-        const id = Date.now().toString();
-        setToast({ message, type, id });
-        setTimeout(() => setToast(null), 5000);
     };
 
 
@@ -170,19 +159,59 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     const handleNavigate = (folderId: string | null) => {
         setCurrentFolderId(folderId);
         setContextMenu(null);
-        // Reset selection path for column view when navigating in grid view
+        setSelectedIds(new Set()); // Clear selection on navigate
+        setLastSelectedId(null);
         if (folderId === null) {
             setSelectedPath([]);
-        } else {
-            // Try to reconstruct path (simple reconstruction)
-            // In a real app, you'd traverse up. Here we just reset to start fresh from this folder in column view if we switched
-            // But generally view modes handle state differently.
         }
     };
 
     const handleNavigateUp = () => {
         if (currentFolder) {
             setCurrentFolderId(currentFolder.parentId);
+            setSelectedIds(new Set());
+            setLastSelectedId(null);
+        }
+    };
+
+    // --- Multi-Select Logic ---
+    // --- Multi-Select Logic ---
+    const handleItemClick = (item: FileSystemItem, e: React.MouseEvent) => {
+        let newSelected = new Set(selectedIds);
+        const currentId = item.id;
+
+        if (e.ctrlKey || e.metaKey || e.shiftKey) {
+            // Range Selection (First ... Last)
+            if (lastSelectedId && currentItems.find(i => i.id === lastSelectedId)) {
+                const lastIdx = currentItems.findIndex(i => i.id === lastSelectedId);
+                const currIdx = currentItems.findIndex(i => i.id === currentId);
+
+                if (lastIdx !== -1 && currIdx !== -1) {
+                    const start = Math.min(lastIdx, currIdx);
+                    const end = Math.max(lastIdx, currIdx);
+
+                    const rangeItems = currentItems.slice(start, end + 1);
+                    rangeItems.forEach(i => newSelected.add(i.id));
+                }
+            } else {
+                newSelected.add(currentId);
+            }
+        } else {
+            // Simple Click = Toggle (User request: "allow multi-select by just clicking")
+            if (newSelected.has(currentId)) {
+                newSelected.delete(currentId);
+            } else {
+                newSelected.add(currentId);
+                setLastSelectedId(currentId); // Anchor for future range
+            }
+        }
+
+        setSelectedIds(newSelected);
+    };
+
+    const handleBackgroundClick = (e: React.MouseEvent) => {
+        if (e.target === e.currentTarget) {
+            setSelectedIds(new Set());
         }
     };
 
@@ -200,6 +229,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         setRenamingId(newFolder.id);
         setRenameValue(newFolder.name);
         setContextMenu(null);
+        setSelectedIds(new Set([newFolder.id]));
     };
 
     const handleCreateTextFile = () => {
@@ -218,44 +248,64 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         setTextEditorItem(newFile); // Open editor immediately
         setEditorContent('');
         setContextMenu(null);
+        setSelectedIds(new Set([newFile.id]));
     };
 
     // Delete
-    // Delete
-    const handleDelete = async (id: string) => {
-        // Recursive delete if folder
-        const idsToDelete = new Set<string>([id]);
+    const handleDelete = async (targetId?: string) => {
+        // If targetId is provided (from context menu), prioritize it.
+        // If targetId is NOT provided, use selectedIds.
+        // If targetId IS provided AND it is NOT in selectedIds, delete only targetId.
+        // If targetId IS provided AND it IS in selectedIds, delete all selectedIds.
 
-        const collectChildren = (parentId: string) => {
-            items.filter(i => i.parentId === parentId).forEach(child => {
-                idsToDelete.add(child.id);
-                if (child.type === 'folder') collectChildren(child.id);
-            });
-        };
-        collectChildren(id);
+        let idsToDelete = new Set<string>();
 
-        // Perform deletion
-        for (const itemId of Array.from(idsToDelete)) {
-            // Identify if it's a real file (Supabase asset) or just a local folder/mock
-            // We assume IDs from Supabase are UUIDs or at least not starting with 'folder-' unless we change that schema
-            // For now, let's try to delete via service if it doesn't look like a local-only folder
+        if (targetId) {
+            if (selectedIds.has(targetId)) {
+                idsToDelete = new Set(selectedIds);
+            } else {
+                idsToDelete = new Set([targetId]);
+            }
+        } else {
+            idsToDelete = new Set(selectedIds);
+        }
+
+        if (idsToDelete.size === 0) return;
+
+        // Recursive delete logic needs to be run for EACH id
+        const finalIdsToDelete = new Set<string>();
+
+        items.forEach(item => {
+            if (idsToDelete.has(item.id)) {
+                // Collect this and children
+                const collect = (pid: string) => {
+                    finalIdsToDelete.add(pid);
+                    items.filter(child => child.parentId === pid).forEach(c => collect(c.id));
+                };
+                collect(item.id);
+            }
+        });
+
+        // Delete from Supabase
+        for (const itemId of Array.from(finalIdsToDelete)) {
             if (!itemId.startsWith('folder-') && !itemId.startsWith('file-')) {
                 try {
                     await deleteFile(itemId);
                 } catch (e) {
                     console.error('Failed to delete remote file', itemId, e);
-                    // Continue deleting locally anyway
                 }
             }
         }
 
-        setItems(items.filter(i => !idsToDelete.has(i.id)));
+        setItems(items.filter(i => !finalIdsToDelete.has(i.id)));
         setContextMenu(null);
+        setSelectedIds(new Set()); // Clear selection
+        setLastSelectedId(null);
 
-        // If deleted item was in path, truncate path
-        if (selectedPath.includes(id)) {
-            const idx = selectedPath.indexOf(id);
-            setSelectedPath(selectedPath.slice(0, idx));
+        // Path cleanup?
+        const remainingPath = selectedPath.filter(id => !finalIdsToDelete.has(id));
+        if (remainingPath.length !== selectedPath.length) {
+            setSelectedPath(remainingPath);
         }
     };
 
@@ -629,6 +679,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                     setIsDraggingFiles(false);
                     handleDrop(e, currentFolderId);
                 }}
+                onClick={handleBackgroundClick} // Deselect on background click
             >
                 {/* Drop Zone Overlay */}
                 {isDraggingFiles && (
@@ -654,69 +705,82 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                         ) : (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                                 {/* FOLDERS */}
-                                {currentItems.filter(i => i.type === 'folder').map(folder => (
-                                    <div
-                                        key={folder.id}
-                                        draggable
-                                        onDragStart={() => setDraggedItemId(folder.id)}
-                                        onDragOver={(e) => { e.preventDefault(); setDragOverFolderId(folder.id); }}
-                                        onDragLeave={() => setDragOverFolderId(null)}
-                                        onDrop={(e) => handleDrop(e, folder.id)}
-                                        onDoubleClick={() => handleNavigate(folder.id)}
-                                        onContextMenu={(e) => handleContextMenu(e, 'folder', folder.id)}
-                                        className={`
-                                        group p-4 bg-neutral-900/30 border rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center relative aspect-square hover:bg-white/5
+                                {currentItems.filter(i => i.type === 'folder').map(folder => {
+                                    const isSelected = selectedIds.has(folder.id);
+                                    return (
+                                        <div
+                                            key={folder.id}
+                                            draggable
+                                            onDragStart={() => setDraggedItemId(folder.id)}
+                                            onDragOver={(e) => { e.preventDefault(); setDragOverFolderId(folder.id); }}
+                                            onDragLeave={() => setDragOverFolderId(null)}
+                                            onDrop={(e) => handleDrop(e, folder.id)}
+                                            onClick={(e) => handleItemClick(folder, e)}
+                                            onDoubleClick={() => handleNavigate(folder.id)}
+                                            onContextMenu={(e) => handleContextMenu(e, 'folder', folder.id)}
+                                            className={`
+                                        group p-4 bg-neutral-900/30 border rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center relative aspect-square
+                                        ${isSelected
+                                                    ? 'border-primary/50 bg-primary/10 shadow-[0_0_15px_rgba(var(--primary),0.1)]'
+                                                    : 'border-transparent hover:bg-white/5 hover:scale-[1.02] hover:shadow-lg'
+                                                }
                                         ${dragOverFolderId === folder.id
-                                                ? 'border-primary bg-primary/10 scale-105 shadow-[0_0_20px_rgba(var(--primary),0.2)]'
-                                                : 'border-transparent'
-                                            }
+                                                    ? 'border-primary bg-primary/10 scale-105 shadow-[0_0_20px_rgba(var(--primary),0.2)]'
+                                                    : ''
+                                                }
                                     `}
-                                    >
-                                        <Folder
-                                            size={32}
-                                            className={`mb-3 transition-colors ${dragOverFolderId === folder.id ? 'text-primary' : 'text-neutral-500 group-hover:text-white'}`}
-                                        />
-                                        {renamingId === folder.id ? (
-                                            <input
-                                                autoFocus
-                                                value={renameValue}
-                                                onChange={(e) => setRenameValue(e.target.value)}
-                                                onBlur={handleFinishRename}
-                                                onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
-                                                className="w-full bg-black border border-primary text-white text-xs px-1 rounded text-center"
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
-                                        ) : (
-                                            <div className="text-xs font-bold text-center truncate w-full px-2 group-hover:text-white text-neutral-300">{folder.name}</div>
-                                        )}
-
-                                        <button
-                                            onClick={(e) => handleContextMenu(e, 'folder', folder.id)}
-                                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-neutral-500 hover:text-white"
                                         >
-                                            <MoreVertical size={14} />
-                                        </button>
-                                    </div>
-                                ))}
+                                            <Folder
+                                                size={32}
+                                                className={`mb-3 transition-colors ${dragOverFolderId === folder.id || isSelected ? 'text-primary' : 'text-neutral-500 group-hover:text-white'}`}
+                                            />
+                                            {renamingId === folder.id ? (
+                                                <input
+                                                    autoFocus
+                                                    value={renameValue}
+                                                    onChange={(e) => setRenameValue(e.target.value)}
+                                                    onBlur={handleFinishRename}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
+                                                    className="w-full bg-black border border-primary text-white text-xs px-1 rounded text-center"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            ) : (
+                                                <div className={`text-xs font-bold text-center truncate w-full px-2 ${isSelected ? 'text-white' : 'group-hover:text-white text-neutral-300'}`}>{folder.name}</div>
+                                            )}
+
+                                            <button
+                                                onClick={(e) => handleContextMenu(e, 'folder', folder.id)}
+                                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-neutral-500 hover:text-white"
+                                            >
+                                                <MoreVertical size={14} />
+                                            </button>
+                                        </div>
+                                    )
+                                })}
 
                                 {/* FILES */}
                                 {currentItems.filter(i => i.type !== 'folder').map(file => {
                                     const isPlayingFile = currentProject?.id === 'upload_browser_proj' && currentTrackId === file.id && isPlaying;
+                                    const isSelected = selectedIds.has(file.id);
+
                                     return (
                                         <div
                                             key={file.id}
                                             draggable
                                             onDragStart={() => setDraggedItemId(file.id)}
-                                            onClick={() => file.type === 'audio' ? handlePlay(file) : null}
-                                            onDoubleClick={() => file.type === 'text' ? openTextEditor(file) : null}
+                                            onClick={(e) => handleItemClick(file, e)}
+                                            onDoubleClick={() => file.type === 'audio' ? handlePlay(file) : file.type === 'text' ? openTextEditor(file) : null}
                                             onContextMenu={(e) => handleContextMenu(e, 'file', file.id)}
                                             className={`
-                                            group bg-neutral-900/30 border border-transparent rounded-xl p-3 flex flex-col items-center relative select-none hover:bg-white/5 transition-all
+                                            group bg-neutral-900/30 border rounded-xl p-3 flex flex-col items-center relative select-none transition-all duration-200
                                             ${draggedItemId === file.id ? 'opacity-50 border-dashed' : ''}
-                                            ${isPlayingFile ? 'border-primary bg-primary/10' : ''}
+                                            ${isSelected
+                                                    ? 'border-primary/50 bg-primary/10 shadow-[0_0_15px_rgba(var(--primary),0.1)]'
+                                                    : 'border-transparent hover:bg-white/5 hover:scale-[1.02] hover:shadow-lg'
+                                                }
                                         `}
                                         >
-                                            <div className="w-full aspect-square rounded-lg bg-neutral-900 flex items-center justify-center mb-3 relative overflow-hidden border border-white/5 group-hover:border-white/20">
+                                            <div className="w-full aspect-square rounded-lg bg-neutral-900 flex items-center justify-center mb-3 relative overflow-hidden border border-white/5">
                                                 {isPlayingFile ? (
                                                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                                                         <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black animate-pulse">
@@ -725,14 +789,18 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        {file.type === 'audio' && <Music size={24} className="text-neutral-600 group-hover:text-primary transition-colors" />}
-                                                        {file.type === 'text' && <FileText size={24} className="text-neutral-600 group-hover:text-white transition-colors" />}
+                                                        {file.type === 'audio' && <Music size={24} className={`transition-colors ${isSelected ? 'text-primary' : 'text-neutral-600 group-hover:text-neutral-400'}`} />}
+                                                        {file.type === 'text' && <FileText size={24} className={`transition-colors ${isSelected ? 'text-white' : 'text-neutral-600 group-hover:text-neutral-400'}`} />}
+                                                        {file.type === 'image' && <div className="w-full h-full"><img src={URL.createObjectURL(new Blob([file.content || '']))} className="w-full h-full object-cover opacity-50" /></div>}
                                                     </>
                                                 )}
 
                                                 {file.type === 'audio' && !isPlayingFile && (
-                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                                                        <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center">
+                                                    <div
+                                                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 cursor-pointer"
+                                                        onClick={(e) => { e.stopPropagation(); handlePlay(file); }}
+                                                    >
+                                                        <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform">
                                                             <Play size={14} fill="black" className="ml-0.5" />
                                                         </div>
                                                     </div>
@@ -750,16 +818,16 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                     onClick={(e) => e.stopPropagation()}
                                                 />
                                             ) : (
-                                                <div className={`text-xs font-bold text-center truncate w-full ${isPlayingFile ? 'text-primary' : 'text-neutral-300'}`}>
+                                                <div className={`text-xs font-bold text-center truncate w-full ${isPlayingFile || isSelected ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-200'}`}>
                                                     {file.name}
                                                 </div>
                                             )}
 
-                                            <div className="text-[10px] text-neutral-500 mt-1">{file.size}</div>
+                                            <div className="text-[10px] text-neutral-600 mt-1">{file.size}</div>
 
                                             <button
                                                 onClick={(e) => handleContextMenu(e, 'file', file.id)}
-                                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-white p-1 bg-black/50 rounded"
+                                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-white p-1 bg-black/50 rounded hover:bg-black/70"
                                             >
                                                 <MoreVertical size={12} />
                                             </button>
@@ -1101,28 +1169,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 </div>
             )}
 
-            {/* Toast Notifications */}
-            {toast && (
-                <div className="fixed top-4 right-4 z-[200] animate-in slide-in-from-top-2 duration-300">
-                    <div className={`
-                        flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg backdrop-blur-sm border
-                        ${toast.type === 'success' ? 'bg-green-500/90 border-green-400 text-white' : ''}
-                        ${toast.type === 'error' ? 'bg-red-500/90 border-red-400 text-white' : ''}
-                        ${toast.type === 'info' ? 'bg-blue-500/90 border-blue-400 text-white' : ''}
-                    `}>
-                        {toast.type === 'success' && <Check size={16} />}
-                        {toast.type === 'error' && <AlertCircle size={16} />}
-                        {toast.type === 'info' && <Loader2 size={16} className="animate-spin" />}
-                        <span className="text-sm font-medium">{toast.message}</span>
-                        <button
-                            onClick={() => setToast(null)}
-                            className="ml-2 hover:bg-white/20 rounded p-1"
-                        >
-                            <X size={14} />
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Toast Notifications - REMOVED */}
         </div>
     );
 };

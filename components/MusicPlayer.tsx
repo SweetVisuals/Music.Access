@@ -30,8 +30,14 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
     React.useEffect(() => {
         if (!audioRef.current || !currentTrack) return;
 
-        // Mock URL if no file is present - In a real app, this would be track.fileUrl
-        const url = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+        // Use the actual file URL from the track data
+        // For uploaded files, this is passed via files.mp3 in the temp project construction
+        const url = currentTrack.files?.mp3 || '';
+
+        if (!url) {
+            console.warn("No audio URL found for track", currentTrack.id);
+            return;
+        }
 
         if (audioRef.current.src !== url) {
             audioRef.current.src = url;

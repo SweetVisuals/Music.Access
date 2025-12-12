@@ -342,7 +342,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                             value={value || ''}
                             onChange={(e) => onChange(e.target.value)}
                             placeholder={field.placeholder}
-                            className="w-full h-32 bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:ring-1 focus:ring-primary/20 leading-relaxed custom-scrollbar pb-10"
+                            className="w-full h-20 bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:ring-1 focus:ring-primary/20 leading-relaxed custom-scrollbar pb-10"
                         />
                         {field.aiEnabled && onAiRequest && (
                             <button

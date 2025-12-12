@@ -166,5 +166,70 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                 ]
             }
         ]
+    },
+    {
+        id: 'stage-3',
+        title: 'The Story Blocks & Campaigns',
+        description: 'Create coordinated series of actions (Campaigns) that tell smaller stories tying into your greater movie.',
+        iconName: 'Clapperboard',
+        steps: [
+            {
+                id: 'campaigns',
+                title: 'Campaign Management',
+                description: 'Define up to 8 distinct campaigns for this era.',
+                fields: [
+                    {
+                        id: 'campaign_list',
+                        label: 'Your Campaigns',
+                        type: 'array',
+                        maxItems: 8,
+                        itemLabel: 'Campaign',
+                        fields: [
+                            {
+                                id: 'name',
+                                label: 'Campaign Name',
+                                type: 'text',
+                                placeholder: 'e.g. "Summer Single Rollout"',
+                                required: true
+                            },
+                            {
+                                id: 'focus',
+                                label: 'Campaign Focus',
+                                type: 'select',
+                                allowCustom: true,
+                                options: ['Single Release', 'Album Rollout', 'Tour / Live', 'Merch Drop', 'Brand Partnership', 'Content Series', 'Community Activation'],
+                                placeholder: 'What is the main goal?',
+                                required: true,
+                                aiEnabled: true
+                            },
+                            {
+                                id: 'concept',
+                                label: 'Campaign Concept',
+                                type: 'textarea',
+                                placeholder: 'The core idea or "hook" of this campaign...',
+                                required: true,
+                                aiEnabled: true
+                            },
+                            {
+                                id: 'themes',
+                                label: 'Campaign Themes',
+                                type: 'textarea',
+                                placeholder: 'Key themes or emotional beats...',
+                                required: true,
+                                aiEnabled: true
+                            },
+                            {
+                                id: 'tie_in',
+                                label: 'Tie-in to Greater Story',
+                                type: 'textarea',
+                                placeholder: 'How does this advance the main "Movie" plot?',
+                                required: true,
+                                aiEnabled: true
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
     }
 ];

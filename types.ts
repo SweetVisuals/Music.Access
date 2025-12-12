@@ -304,13 +304,16 @@ export interface Goal {
 export interface StageField {
   id: string;
   label: string;
-  type: 'text' | 'textarea' | 'select' | 'checkbox' | 'multiselect';
+  type: 'text' | 'textarea' | 'select' | 'checkbox' | 'multiselect' | 'array';
   placeholder?: string;
   options?: string[]; // For select/multiselect
   required?: boolean;
   aiEnabled?: boolean; // Show AI brainstorming button
   allowCustom?: boolean; // Allow custom text input in select
   allowSecondary?: boolean; // Allow selecting a primary and secondary option
+  fields?: StageField[]; // For 'array' type, defines the schema of items
+  maxItems?: number; // Max items for 'array'
+  itemLabel?: string; // Label for items (e.g. "Campaign")
 }
 
 export interface StageStep {

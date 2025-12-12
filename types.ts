@@ -308,6 +308,8 @@ export interface StageField {
   placeholder?: string;
   options?: string[]; // For select/multiselect
   required?: boolean;
+  aiEnabled?: boolean; // Show AI brainstorming button
+  allowCustom?: boolean; // Allow custom text input in select
 }
 
 export interface StageStep {

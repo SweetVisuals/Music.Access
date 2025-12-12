@@ -15,16 +15,20 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                     {
                         id: 'who_are_you',
                         label: 'Who Are You?',
-                        type: 'textarea',
-                        placeholder: 'Describe yourself as an artist...',
-                        required: true
+                        type: 'select',
+                        allowCustom: true,
+                        options: ['The Underdog', 'The Visionary', 'The Rebel', 'The Healer', 'The Storyteller', 'The Virtuoso'],
+                        placeholder: 'Select an archetype or type your own...',
+                        required: true,
+                        aiEnabled: true
                     },
                     {
                         id: 'what_is_the_movie',
                         label: 'What Is The Movie?',
                         type: 'textarea',
                         placeholder: 'If this era was a movie, what is the plot?',
-                        required: true
+                        required: true,
+                        aiEnabled: true
                     }
                 ]
             },
@@ -38,14 +42,16 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                         label: 'Who The Characters Are?',
                         type: 'textarea',
                         placeholder: 'List the key personas or archetypes...',
-                        required: true
+                        required: true,
+                        aiEnabled: true
                     },
                     {
                         id: 'what_are_their_stories',
                         label: 'What Are Their Stories?',
                         type: 'textarea',
                         placeholder: 'Brief background for each character...',
-                        required: true
+                        required: true,
+                        aiEnabled: true
                     }
                 ]
             },
@@ -57,9 +63,12 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                     {
                         id: 'whats_the_position',
                         label: 'Whats The Position?',
-                        type: 'textarea',
-                        placeholder: 'Underdog, Leader, Innovator, etc.',
-                        required: true
+                        type: 'select',
+                        allowCustom: true,
+                        options: ['Mainstream Pop', 'Underground Alternative', 'Luxury/Premium', 'Raw/Gritty Street', 'Futuristic/Experimental', 'Nostalgic/Retro'],
+                        placeholder: 'Select a position or define your own...',
+                        required: true,
+                        aiEnabled: true
                     }
                 ]
             },
@@ -71,8 +80,10 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                     {
                         id: 'how_does_it_look',
                         label: 'How Does it Look?',
-                        type: 'textarea',
-                        placeholder: 'Gritty, Polished, Sci-Fi, Vintage...',
+                        type: 'select',
+                        allowCustom: true,
+                        options: ['Cyberpunk / Sci-Fi', 'Vintage / Retro VHS', 'Minimalist / Clean', 'Dark / Gothic', 'Vibrant / Neon', 'Natural / Organic'],
+                        placeholder: 'Select an aesthetic...',
                         required: true
                     },
                     {
@@ -80,7 +91,8 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                         label: 'Whats The Visual Language?',
                         type: 'textarea',
                         placeholder: 'Specific colors, fonts, textures, camera styles...',
-                        required: true
+                        required: true,
+                        aiEnabled: true
                     }
                 ]
             }
@@ -100,9 +112,12 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                     {
                         id: 'where_do_i_find_myself_now',
                         label: 'Where do I find myself now?',
-                        type: 'textarea',
-                        placeholder: 'Career stage, emotional state, current reception...',
-                        required: true
+                        type: 'select',
+                        allowCustom: true,
+                        options: ['Just Starting Out', 'Rebuilding / Comeback', 'Peaking / Momentum', 'Experimental Phase', 'Pivot / Rebranding'],
+                        placeholder: 'Select your current status...',
+                        required: true,
+                        aiEnabled: true
                     }
                 ]
             },
@@ -116,7 +131,8 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                         label: 'What am I inspired by?',
                         type: 'textarea',
                         placeholder: 'Movies, books, other artists, life events...',
-                        required: true
+                        required: true,
+                        aiEnabled: true
                     },
                     {
                         id: 'consistent_inspirations',
@@ -135,9 +151,12 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                     {
                         id: 'defined_environment',
                         label: 'Can I create a defined environment?',
-                        type: 'textarea',
+                        type: 'select',
+                        allowCustom: true,
+                        options: ['Distopian Future City', 'Lush Fantasy Forest', 'Gritty Urban Streets', 'Digital / Virtual Void', '80s Retro Arcade'],
                         placeholder: 'Describe the physical or digital space of this era...',
-                        required: true
+                        required: true,
+                        aiEnabled: true
                     }
                 ]
             }

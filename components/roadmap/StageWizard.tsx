@@ -356,4 +356,3 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 };
 
 export default StageWizard;
-```

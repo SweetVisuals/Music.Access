@@ -310,6 +310,7 @@ export interface StageField {
   required?: boolean;
   aiEnabled?: boolean; // Show AI brainstorming button
   allowCustom?: boolean; // Allow custom text input in select
+  allowSecondary?: boolean; // Allow selecting a primary and secondary option
 }
 
 export interface StageStep {

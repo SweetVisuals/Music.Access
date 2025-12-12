@@ -51,6 +51,55 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
         setFormData(prev => ({ ...prev, [fieldId]: value }));
     };
 
+    const handleOptionClick = (field: StageField, option: string) => {
+        if (!field.allowSecondary) {
+            updateField(field.id, option);
+            return;
+        }
+
+        const currentVal = formData[field.id] || {};
+        // Normalize
+        const primary = typeof currentVal === 'object' ? currentVal.primary : currentVal;
+        const secondary = typeof currentVal === 'object' ? currentVal.secondary : '';
+
+        if (primary === option) {
+            // Deselect primary -> shift secondary to primary? Or just clear? Let's just clear primary.
+            updateField(field.id, { primary: '', secondary });
+        } else if (secondary === option) {
+            // Deselect secondary
+            updateField(field.id, { primary, secondary: '' });
+        } else {
+            // Select new option
+            if (!primary) {
+                updateField(field.id, { primary: option, secondary });
+            } else {
+                // Set as secondary (replace existing secondary if any)
+                updateField(field.id, { primary, secondary: option });
+            }
+        }
+    };
+
+    const getFieldValue = (field: StageField) => {
+        const val = formData[field.id];
+        if (field.allowSecondary) {
+            const primary = typeof val === 'object' ? val?.primary : val;
+            return primary || '';
+        }
+        return val || '';
+    };
+
+    const isOptionSelected = (field: StageField, option: string) => {
+        const val = formData[field.id];
+        if (field.allowSecondary) {
+            const p = typeof val === 'object' ? val?.primary : val;
+            const s = typeof val === 'object' ? val?.secondary : '';
+            if (p === option) return 'primary';
+            if (s === option) return 'secondary';
+            return false;
+        }
+        return val === option ? 'primary' : false;
+    };
+
     // AI Logic
     const openAiHelper = (fieldId: string) => {
         setActiveAiField(fieldId);
@@ -81,7 +130,16 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
     const applyAiResponse = () => {
         if (activeAiField && aiResponse) {
-            updateField(activeAiField, aiResponse);
+            // If allowSecondary, apply to Primary or Description? Just Primary for now as simple string or merge.
+            // For simplicity, AI just fills the main value (Primary).
+            const field = config.steps.flatMap(s => s.fields).find(f => f.id === activeAiField);
+            if (field?.allowSecondary) {
+                const currentVal = formData[activeAiField] || {};
+                const secondary = typeof currentVal === 'object' ? currentVal.secondary : '';
+                updateField(activeAiField, { primary: aiResponse, secondary });
+            } else {
+                updateField(activeAiField, aiResponse);
+            }
             closeAiHelper();
         }
     };
@@ -144,9 +202,16 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                 {currentStep.fields.map(field => (
                                     <div key={field.id} className="space-y-3 bg-neutral-900/20 p-6 rounded-xl border border-neutral-800/50 hover:border-neutral-700 transition-colors">
                                         <div className="flex items-center justify-between mb-2">
-                                            <label className="text-sm font-bold text-white tracking-wide block">
-                                                {field.label} {field.required && <span className="text-primary">*</span>}
-                                            </label>
+                                            <div className="flex flex-col">
+                                                <label className="text-sm font-bold text-white tracking-wide block">
+                                                    {field.label} {field.required && <span className="text-primary">*</span>}
+                                                </label>
+                                                {field.allowSecondary && (
+                                                    <span className="text-[10px] text-neutral-500 font-medium mt-1">
+                                                        Select Primary & Secondary Options
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* Component Type Rendering */}
@@ -154,24 +219,43 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                             <div className="space-y-4">
                                                 {/* Chip Selection for Options */}
                                                 <div className="flex flex-wrap gap-2">
-                                                    {field.options.map(option => (
-                                                        <button
-                                                            key={option}
-                                                            onClick={() => updateField(field.id, option)}
-                                                            className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${formData[field.id] === option
-                                                                ? 'bg-white text-black border-white shadow-lg'
-                                                                : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-neutral-200'
-                                                                }`}
-                                                        >
-                                                            {option}
-                                                        </button>
-                                                    ))}
+                                                    {field.options.map(option => {
+                                                        const selectionStatus = isOptionSelected(field, option);
+                                                        return (
+                                                            <button
+                                                                key={option}
+                                                                onClick={() => handleOptionClick(field, option)}
+                                                                className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all relative overflow-hidden ${selectionStatus === 'primary'
+                                                                        ? 'bg-white text-black border-white shadow-lg scale-105 z-10'
+                                                                        : selectionStatus === 'secondary'
+                                                                            ? 'bg-primary/20 text-primary border-primary shadow-md shadow-primary/10'
+                                                                            : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-neutral-200'
+                                                                    }`}
+                                                            >
+                                                                {selectionStatus === 'primary' && (
+                                                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full" />
+                                                                )}
+                                                                {option}
+                                                                {selectionStatus === 'secondary' && (
+                                                                    <span className="ml-2 text-[8px] bg-primary text-black px-1 rounded-sm uppercase tracking-tighter">2nd</span>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
                                                     {field.allowCustom && (
                                                         <button
-                                                            onClick={() => updateField(field.id, '')}
-                                                            className={`px-4 py-2 rounded-lg text-xs font-bold border border-dashed transition-all ${!field.options.includes(formData[field.id]) && formData[field.id] !== ''
-                                                                ? 'bg-white/10 text-white border-primary border-solid'
-                                                                : 'bg-transparent border-neutral-700 text-neutral-500 hover:text-white hover:border-neutral-500'
+                                                            onClick={() => {
+                                                                // If custom clicked, clear primary? or just focus input.
+                                                                // We'll let the input handle the value update.
+                                                                // Just a visual trigger for now if we wanted a button.
+                                                                // But we have the input below.
+                                                                // For now, let's just use the button to clear if needed?
+                                                                // Or simpler: Just rely on the input for custom values as "Primary".
+                                                                updateField(field.id, field.allowSecondary ? { ...formData[field.id], primary: '' } : '');
+                                                            }}
+                                                            className={`px-4 py-2 rounded-lg text-xs font-bold border border-dashed transition-all ${(field.allowSecondary ? formData[field.id]?.primary : formData[field.id]) && !field.options.includes(field.allowSecondary ? formData[field.id]?.primary : formData[field.id])
+                                                                    ? 'bg-white/10 text-white border-primary border-solid'
+                                                                    : 'bg-transparent border-neutral-700 text-neutral-500 hover:text-white hover:border-neutral-500'
                                                                 }`}
                                                         >
                                                             Custom...
@@ -184,10 +268,18 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                                     <div className="relative group/input">
                                                         <input
                                                             type="text"
-                                                            value={formData[field.id] || ''}
-                                                            onChange={(e) => updateField(field.id, e.target.value)}
+                                                            value={getFieldValue(field)}
+                                                            onChange={(e) => {
+                                                                const newVal = e.target.value;
+                                                                if (field.allowSecondary) {
+                                                                    const current = formData[field.id] || {};
+                                                                    updateField(field.id, { ...current, primary: newVal });
+                                                                } else {
+                                                                    updateField(field.id, newVal);
+                                                                }
+                                                            }}
                                                             placeholder={field.placeholder || "Type your custom response..."}
-                                                            className={`w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 pr-12 text-white focus:border-primary/50 focus:outline-none transition-all ${field.options.includes(formData[field.id]) ? 'text-neutral-500 italic' : ''
+                                                            className={`w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 pr-12 text-white focus:border-primary/50 focus:outline-none transition-all ${field.options.includes(getFieldValue(field)) ? 'text-neutral-500 italic' : ''
                                                                 }`}
                                                         />
                                                         {field.aiEnabled && (

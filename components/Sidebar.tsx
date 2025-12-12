@@ -24,7 +24,8 @@ import {
     ChevronRight,
     LogIn,
     X,
-    Target
+    Target,
+    Map
 } from 'lucide-react';
 import { View, UserProfile, TalentProfile } from '../types';
 import { getTalentProfiles, getStorageUsage } from '../services/supabaseService';
@@ -190,10 +191,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                         onClick={() => onNavigate('dashboard-manage')}
                                     />
                                     <SidebarItem
-                                        icon={<Target size={14} />}
-                                        label="Goals"
-                                        active={currentView === 'dashboard-goals'}
-                                        onClick={() => onNavigate('dashboard-goals')}
+                                        icon={<Map size={14} />}
+                                        label="Roadmap & Planning"
+                                        active={currentView === 'dashboard-roadmap'}
+                                        onClick={() => onNavigate('dashboard-roadmap')}
                                     />
                                 </nav>
                             </div>

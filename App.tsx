@@ -22,7 +22,7 @@ import GetHelpPage from './components/GetHelpPage';
 import AuthModal from './components/AuthModal';
 import { TermsPage, PrivacyPage } from './components/LegalPages';
 import InvoicesPage from './components/InvoicesPage';
-import GoalsPage from './components/GoalsPage';
+import RoadmapPage from './components/RoadmapPage';
 import NotLoggedInState from './components/NotLoggedInState';
 import { getProjects, getUserProfile, supabase, signOut, updateUserProfile, getCurrentUser } from './services/supabaseService';
 import { Project, FilterState, View, UserProfile } from './types';
@@ -71,7 +71,8 @@ const App: React.FC = () => {
       if (pathname === '/dashboard/settings') return 'dashboard-settings';
       if (pathname === '/dashboard/help') return 'dashboard-help';
       if (pathname === '/dashboard/invoices') return 'dashboard-invoices';
-      if (pathname === '/dashboard/goals') return 'dashboard-goals';
+      if (pathname === '/dashboard/invoices') return 'dashboard-invoices';
+      if (pathname === '/dashboard/roadmap') return 'dashboard-roadmap';
       if (pathname === '/dashboard/orders') return 'dashboard-orders';
       if (pathname === '/dashboard/studio') return 'dashboard-studio';
       if (pathname === '/dashboard/sales') return 'dashboard-sales';
@@ -101,7 +102,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const newView = getCurrentViewFromPath(location.pathname);
     let newProfileUsername: string | null = null;
-    
+
     if (location.pathname.startsWith('/@')) {
       try {
         // Extract username from path and decode URI components
@@ -304,7 +305,7 @@ const App: React.FC = () => {
         'dashboard-analytics': '/dashboard/analytics',
         'dashboard-wallet': '/dashboard/wallet',
         'dashboard-settings': '/dashboard/settings',
-        'dashboard-goals': '/dashboard/goals',
+        'dashboard-roadmap': '/dashboard/roadmap',
         'dashboard-help': '/dashboard/help'
       };
       const path = pathMap[view] || '/';
@@ -336,7 +337,7 @@ const App: React.FC = () => {
         'dashboard-analytics': '/dashboard/analytics',
         'dashboard-wallet': '/dashboard/wallet',
         'dashboard-settings': '/dashboard/settings',
-        'dashboard-goals': '/dashboard/goals',
+        'dashboard-roadmap': '/dashboard/roadmap',
         'dashboard-help': '/dashboard/help'
       };
       const path = pathMap[view] || '/';
@@ -548,7 +549,8 @@ const App: React.FC = () => {
               currentView !== 'dashboard-settings' &&
               currentView !== 'dashboard-help' &&
               currentView !== 'dashboard-invoices' &&
-              currentView !== 'dashboard-goals') && (
+              currentView !== 'dashboard-invoices' &&
+              currentView !== 'dashboard-roadmap') && (
                 isLoggedIn ? (
                   <DashboardPage
                     view={currentView}
@@ -569,9 +571,9 @@ const App: React.FC = () => {
               isLoggedIn ? <InvoicesPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
             )}
 
-            {/* Goals Page */}
-            {currentView === 'dashboard-goals' && (
-              isLoggedIn ? <GoalsPage onNavigate={(view) => handleNavigate(view as View)} /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+            {/* Roadmap & Planning Page */}
+            {currentView === 'dashboard-roadmap' && (
+              isLoggedIn ? <RoadmapPage onNavigate={(view) => handleNavigate(view as View)} /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
             )}
 
           </main>

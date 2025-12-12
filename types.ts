@@ -279,7 +279,7 @@ export type View =
   | 'dashboard-messages'
   | 'dashboard-analytics'
   | 'dashboard-settings'
-  | 'dashboard-goals'
+  | 'dashboard-roadmap'
   | 'dashboard-help'
   | 'settings'
   | 'help'

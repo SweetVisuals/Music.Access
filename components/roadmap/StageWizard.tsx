@@ -212,7 +212,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                             {/* Item Header */}
                             <div className="flex items-center justify-between p-4 bg-white/5 border-b border-white/5">
                                 <span className="font-bold text-sm text-white">
-                                    {item.name || item.title || `${ field.itemLabel || 'Item' } ${ idx + 1 } `}
+                                    {item.name || item.title || ((field.itemLabel || 'Item') + ' ' + (idx + 1))}
                                 </span>
                                 <button 
                                     onClick={() => {
@@ -413,10 +413,10 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                     key={step.id}
                                     className={`flex items - center gap - 2 px - 4 py - 2 rounded - full border transition - all ${
     currentStepIndex === idx
-    ? 'bg-primary text-black border-primary font-bold shadow-[0_0_10px_rgba(var(--primary),0.3)]'
-    : currentStepIndex > idx
-        ? 'bg-green-500 text-black border-green-500 font-bold'
-        : 'bg-neutral-900 text-neutral-500 border-neutral-800'
+        ? 'bg-primary text-black border-primary font-bold shadow-[0_0_10px_rgba(var(--primary),0.3)]'
+        : currentStepIndex > idx
+            ? 'bg-green-500 text-black border-green-500 font-bold'
+            : 'bg-neutral-900 text-neutral-500 border-neutral-800'
 } `}
                                 >
                                     <span className="w-6 h-6 flex items-center justify-center rounded-full bg-black/20 text-xs font-mono">

@@ -175,15 +175,14 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     };
 
     // --- Multi-Select Logic ---
-    // --- Multi-Select Logic ---
     const handleItemClick = (item: FileSystemItem, e: React.MouseEvent) => {
         let newSelected = new Set(selectedIds);
         const currentId = item.id;
 
         if (e.ctrlKey || e.metaKey || e.shiftKey) {
             // Range Selection (First ... Last)
-            if (lastSelectedId && currentItems.find(i => i.id === lastSelectedId)) {
-                const lastIdx = currentItems.findIndex(i => i.id === lastSelectedId);
+            if (anchorSelectedId && currentItems.find(i => i.id === anchorSelectedId)) {
+                const lastIdx = currentItems.findIndex(i => i.id === anchorSelectedId);
                 const currIdx = currentItems.findIndex(i => i.id === currentId);
 
                 if (lastIdx !== -1 && currIdx !== -1) {
@@ -202,7 +201,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 newSelected.delete(currentId);
             } else {
                 newSelected.add(currentId);
-                setLastSelectedId(currentId); // Anchor for future range
+                setAnchorSelectedId(currentId); // Anchor for future range
             }
         }
 

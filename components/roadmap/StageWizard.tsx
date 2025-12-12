@@ -251,7 +251,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                                 newItems[idx] = newItem;
                                                 onChange(newItems);
                                             },
-                                            `${ pathPrefix }.${ idx }.${ subField.id } `
+                                            (pathPrefix ? pathPrefix + '.' : '') + idx + '.' + subField.id
                                         )}
                                     </div>
                                 ))}

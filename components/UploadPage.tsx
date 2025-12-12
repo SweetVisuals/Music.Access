@@ -27,7 +27,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { Project, Track } from '../types';
-import { uploadFile, deleteFile, getUserAudioFiles } from '../services/supabaseService';
+import { uploadFile, deleteFile, getUserFiles, createFolder, updateAsset } from '../services/supabaseService';
 import { MOCK_PROJECTS } from '../constants';
 
 // --- Types ---
@@ -104,22 +104,20 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     useEffect(() => {
         const loadFiles = async () => {
             try {
-                const dbFiles = await getUserAudioFiles();
+                const dbFiles = await getUserFiles();
                 const mappedFiles: FileSystemItem[] = dbFiles.map((f: any) => ({
                     id: f.id,
-                    parentId: null, // Initial load puts everything in root
+                    parentId: f.parentId || null,
                     name: f.name,
-                    type: (f.type && f.type.startsWith('audio')) ? 'audio' : 'text',
+                    type: (f.type === 'folder') ? 'folder' : (f.type && f.type.startsWith('audio')) ? 'audio' : 'text',
                     size: f.size,
-                    created: new Date().toLocaleDateString(), // TODO: add created_at to supabaseService return
+                    created: new Date().toLocaleDateString(), // TODO: use f.created_at
                     format: f.name.split('.').pop()?.toUpperCase(),
                     duration: 180, // detailed duration not yet available
                     src: f.url
                 }));
-                setItems(prev => {
-                    const folders = prev.filter(i => i.type === 'folder');
-                    return [...folders, ...mappedFiles];
-                });
+                // Force state update with new files
+                setItems(mappedFiles);
             } catch (error) {
                 console.error("Failed to load files:", error);
             }
@@ -215,20 +213,27 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     };
 
     // Create
-    const handleCreateFolder = () => {
-        const newFolder: FileSystemItem = {
-            id: `folder-${Date.now()}`,
-            parentId: currentFolderId,
-            name: 'New Folder',
-            type: 'folder',
-            size: '-',
-            created: new Date().toLocaleDateString()
-        };
-        setItems([...items, newFolder]);
-        setRenamingId(newFolder.id);
-        setRenameValue(newFolder.name);
-        setContextMenu(null);
-        setSelectedIds(new Set([newFolder.id]));
+    const handleCreateFolder = async () => {
+        try {
+            const newFolderData = await createFolder('New Folder', currentFolderId);
+
+            const newFolder: FileSystemItem = {
+                id: newFolderData.id,
+                parentId: currentFolderId,
+                name: newFolderData.name,
+                type: 'folder',
+                size: '-',
+                created: newFolderData.created || new Date().toLocaleDateString()
+            };
+
+            setItems(prev => [...prev, newFolder]);
+            setRenamingId(newFolder.id);
+            setRenameValue(newFolder.name);
+            setContextMenu(null);
+            setSelectedIds(new Set([newFolder.id]));
+        } catch (e) {
+            console.error("Failed to create folder", e);
+        }
     };
 
     const handleCreateTextFile = () => {
@@ -287,12 +292,10 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
         // Delete from Supabase
         for (const itemId of Array.from(finalIdsToDelete)) {
-            if (!itemId.startsWith('folder-') && !itemId.startsWith('file-')) {
-                try {
-                    await deleteFile(itemId);
-                } catch (e) {
-                    console.error('Failed to delete remote file', itemId, e);
-                }
+            try {
+                await deleteFile(itemId);
+            } catch (e) {
+                console.error('Failed to delete remote file', itemId, e);
             }
         }
 
@@ -315,9 +318,19 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         setContextMenu(null);
     };
 
-    const handleFinishRename = () => {
+    const handleFinishRename = async () => {
         if (renamingId) {
-            setItems(items.map(i => i.id === renamingId ? { ...i, name: renameValue } : i));
+            try {
+                // Optimistic update
+                setItems(items.map(i => i.id === renamingId ? { ...i, name: renameValue } : i));
+
+                // Persist logic
+                if (!renamingId.startsWith('file-')) { // Skip local text files for now unless we add persistence for them
+                    await updateAsset(renamingId, { name: renameValue });
+                }
+            } catch (e) {
+                console.error("Failed to rename", e);
+            }
             setRenamingId(null);
         }
     };
@@ -494,21 +507,37 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     };
 
     // Drag & Drop
-    const handleDrop = (e: React.DragEvent, targetFolderId: string | null) => {
+    // Drag & Drop
+    const handleDrop = async (e: React.DragEvent, targetFolderId: string | null) => {
         e.preventDefault();
         e.stopPropagation();
         setDragOverFolderId(null);
 
         // Check if files are being dropped from desktop
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            // TODO: adjust upload to support targetFolderId
+            // For now, it uploads to currentFolderId which might be different if dropped on a subfolder in grid view
+            // We should arguably update currentFolderId or pass target to handleFileUpload
             handleFileUpload(e.dataTransfer.files);
             return;
         }
 
         // Internal drag and drop (moving items between folders)
         if (draggedItemId && draggedItemId !== targetFolderId) {
-            setItems(items.map(i => i.id === draggedItemId ? { ...i, parentId: targetFolderId } : i));
-            setDraggedItemId(null);
+            const item = items.find(i => i.id === draggedItemId);
+            if (item) {
+                // Optimistic update
+                setItems(items.map(i => i.id === draggedItemId ? { ...i, parentId: targetFolderId } : i));
+                setDraggedItemId(null);
+
+                // Persist
+                try {
+                    await updateAsset(draggedItemId, { parentId: targetFolderId });
+                } catch (e) {
+                    console.error("Failed to move item", e);
+                    // Revert on fail?
+                }
+            }
         }
     };
 
@@ -521,31 +550,33 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
     // --- Column View Logic ---
     const getColumns = () => {
+        // Enforce 4 fixed columns for navigation + 1 info column (handled in render)
         const cols: { items: FileSystemItem[], selectedId: string | null }[] = [];
 
-        // Root Column
+        // Column 1: Root
         cols.push({
             items: items.filter(i => i.parentId === null),
             selectedId: selectedPath[0] || null
         });
 
-        // Subsequent Columns
-        for (let i = 0; i < selectedPath.length; i++) {
-            const id = selectedPath[i];
-            const item = items.find(x => x.id === id);
-
-            if (item && item.type === 'folder') {
-                const children = items.filter(x => x.parentId === id);
-                // Only add next column if there are children or it's a folder
-                cols.push({
-                    items: children,
-                    selectedId: selectedPath[i + 1] || null
-                });
-            } else if (item) {
-                // It's a file, show preview column?
-                // Standard column view shows file info/preview in the last column
+        // Columns 2, 3, 4
+        for (let i = 0; i < 3; i++) {
+            if (selectedPath.length >= (i + 1)) {
+                const parentId = selectedPath[i];
+                const parent = items.find(item => item.id === parentId);
+                if (parent && parent.type === 'folder') {
+                    cols.push({
+                        items: items.filter(item => item.parentId === parentId),
+                        selectedId: selectedPath[i + 1] || null
+                    });
+                } else {
+                    cols.push({ items: [], selectedId: null });
+                }
+            } else {
+                cols.push({ items: [], selectedId: null });
             }
         }
+
         return cols;
     };
 
@@ -554,17 +585,11 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         const newPath = selectedPath.slice(0, depth);
         newPath.push(item.id);
         setSelectedPath(newPath);
-
-        if (item.type !== 'folder') {
-            // If file, maybe play or show preview?
-            // For now, just select it. Play on double click or specific action.
-        }
     };
 
-    // Get selected file for preview column
+    // Get selected file for info column
     const lastSelectedId = selectedPath[selectedPath.length - 1];
     const lastSelectedItem = items.find(i => i.id === lastSelectedId);
-    const showPreviewColumn = lastSelectedItem && lastSelectedItem.type !== 'folder';
 
     return (
         <div
@@ -838,22 +863,43 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                     </div>
                 ) : (
                     // --- COLUMN VIEW ---
-                    <div className="flex h-[600px] overflow-x-auto custom-scrollbar divide-x divide-white/5">
+                    <div className="grid grid-cols-5 h-[600px] divide-x divide-white/5">
                         {getColumns().map((col, colIndex) => (
-                            <div key={colIndex} className="w-64 shrink-0 overflow-y-auto custom-scrollbar bg-neutral-900/20">
+                            <div key={colIndex} className="overflow-y-auto custom-scrollbar bg-neutral-900/20 relative">
+                                {col.items.length === 0 && (
+                                    <div className="absolute inset-0 flex items-center justify-center text-neutral-700 pointer-events-none">
+                                        <span className="text-xs">Empty</span>
+                                    </div>
+                                )}
                                 {col.items.map(item => {
                                     const isSelected = col.selectedId === item.id;
                                     const isPlayingFile = currentProject?.id === 'upload_browser_proj' && currentTrackId === item.id && isPlaying;
+                                    const isDropTarget = dragOverFolderId === item.id;
 
                                     return (
                                         <div
                                             key={item.id}
+                                            draggable
+                                            onDragStart={() => setDraggedItemId(item.id)}
+                                            onDragOver={(e) => {
+                                                if (item.type === 'folder') {
+                                                    e.preventDefault();
+                                                    setDragOverFolderId(item.id);
+                                                }
+                                            }}
+                                            onDragLeave={() => setDragOverFolderId(null)}
+                                            onDrop={(e) => {
+                                                if (item.type === 'folder') {
+                                                    handleDrop(e, item.id);
+                                                }
+                                            }}
                                             onClick={() => handleColumnItemClick(item, colIndex)}
                                             onContextMenu={(e) => handleContextMenu(e, item.type === 'folder' ? 'folder' : 'file', item.id)}
                                             className={`
-                                            flex items-center gap-2 px-4 py-2 text-sm cursor-pointer whitespace-nowrap border-b border-transparent
+                                            flex items-center gap-2 px-4 py-2 text-sm cursor-pointer whitespace-nowrap border-b border-white/5
                                             ${isSelected ? 'bg-primary text-black font-bold' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}
                                             ${isPlayingFile && !isSelected ? 'text-primary' : ''}
+                                            ${isDropTarget ? 'bg-primary/20 ring-2 ring-inset ring-primary' : ''}
                                         `}
                                         >
                                             {item.type === 'folder' ? (
@@ -872,9 +918,8 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                     onBlur={handleFinishRename}
                                                     onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
                                                     className={`
-                                                        flex-1 bg-transparent border-none outline-none text-sm px-1 py-0
-                                                        focus:ring-1 focus:ring-primary/50 rounded
-                                                        ${isSelected ? 'text-black placeholder:text-black/50' : 'text-white placeholder:text-neutral-500'}
+                                                        flex-1 bg-transparent border-none outline-none text-sm px-0 py-0
+                                                        ${isSelected ? 'text-black placeholder:text-black/50 selection:bg-neutral-900 selection:text-white' : 'text-white placeholder:text-neutral-500 selection:bg-primary selection:text-black'}
                                                     `}
                                                     onClick={(e) => e.stopPropagation()}
                                                 />
@@ -889,49 +934,65 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                             </div>
                         ))}
 
-                        {/* Preview Column */}
-                        {showPreviewColumn && lastSelectedItem && (
-                            <div className="w-80 shrink-0 bg-[#080808] p-8 flex flex-col items-center text-center border-l border-white/10">
-                                <div className="w-32 h-32 bg-neutral-900 rounded-2xl border border-white/10 flex items-center justify-center mb-6 shadow-2xl relative">
-                                    {lastSelectedItem.type === 'audio' ? (
-                                        <Music size={48} className="text-neutral-600" />
-                                    ) : (
-                                        <FileText size={48} className="text-neutral-600" />
-                                    )}
+                        {/* Preview Column (Always Visible) */}
+                        <div className="bg-[#080808] p-8 flex flex-col items-center text-center overflow-y-auto custom-scrollbar">
+                            {lastSelectedItem ? (
+                                <>
+                                    <div className="w-32 h-32 bg-neutral-900 rounded-2xl border border-white/10 flex items-center justify-center mb-6 shadow-2xl relative">
+                                        {lastSelectedItem.type === 'audio' ? (
+                                            <Music size={48} className="text-neutral-600" />
+                                        ) : lastSelectedItem.type === 'folder' ? (
+                                            <Folder size={48} className="text-neutral-600" />
+                                        ) : (
+                                            <FileText size={48} className="text-neutral-600" />
+                                        )}
 
-                                    {lastSelectedItem.type === 'audio' && (
-                                        <button
-                                            onClick={() => handlePlay(lastSelectedItem)}
-                                            className="absolute -bottom-4 -right-4 w-12 h-12 bg-primary text-black rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-                                        >
-                                            {(currentProject?.id === 'upload_browser_proj' && currentTrackId === lastSelectedItem.id && isPlaying)
-                                                ? <Pause size={20} fill="black" />
-                                                : <Play size={20} fill="black" className="ml-1" />
-                                            }
-                                        </button>
-                                    )}
-                                </div>
-
-                                <h3 className="text-xl font-bold text-white mb-2 break-all">{lastSelectedItem.name}</h3>
-                                <p className="text-sm text-neutral-500 font-mono mb-6">{lastSelectedItem.size} • {lastSelectedItem.format || lastSelectedItem.type.toUpperCase()}</p>
-
-                                <div className="w-full space-y-4">
-                                    <div className="bg-white/5 rounded-lg p-4 text-left">
-                                        <div className="text-[10px] text-neutral-500 uppercase font-bold mb-2">Information</div>
-                                        <div className="grid grid-cols-2 gap-y-2 text-xs">
-                                            <span className="text-neutral-400">Created</span>
-                                            <span className="text-white text-right">{lastSelectedItem.created}</span>
-                                            <span className="text-neutral-400">Duration</span>
-                                            <span className="text-white text-right">{lastSelectedItem.duration ? `${Math.floor(lastSelectedItem.duration / 60)}:${(lastSelectedItem.duration % 60).toString().padStart(2, '0')}` : '-'}</span>
-                                        </div>
+                                        {lastSelectedItem.type === 'audio' && (
+                                            <button
+                                                onClick={() => handlePlay(lastSelectedItem)}
+                                                className="absolute -bottom-4 -right-4 w-12 h-12 bg-primary text-black rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+                                            >
+                                                {(currentProject?.id === 'upload_browser_proj' && currentTrackId === lastSelectedItem.id && isPlaying)
+                                                    ? <Pause size={20} fill="black" />
+                                                    : <Play size={20} fill="black" />
+                                                }
+                                            </button>
+                                        )}
                                     </div>
 
-                                    <button className="w-full py-3 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold text-white transition-colors">
-                                        Download File
-                                    </button>
+                                    <h3 className="text-xl font-bold text-white mb-2 break-all">{lastSelectedItem.name}</h3>
+                                    <p className="text-sm text-neutral-500 font-mono mb-6">{lastSelectedItem.size} • {lastSelectedItem.format || lastSelectedItem.type.toUpperCase()}</p>
+
+                                    <div className="w-full space-y-4">
+                                        <div className="bg-white/5 rounded-lg p-4 text-left">
+                                            <div className="text-[10px] text-neutral-500 uppercase font-bold mb-2">Information</div>
+                                            <div className="grid grid-cols-2 gap-y-2 text-xs">
+                                                <span className="text-neutral-400">Created</span>
+                                                <span className="text-white text-right">{lastSelectedItem.created}</span>
+                                                <span className="text-neutral-400">Type</span>
+                                                <span className="text-white text-right capitalized">{lastSelectedItem.type}</span>
+                                                {lastSelectedItem.duration && (
+                                                    <>
+                                                        <span className="text-neutral-400">Duration</span>
+                                                        <span className="text-white text-right">{Math.floor(lastSelectedItem.duration / 60)}:{(lastSelectedItem.duration % 60).toString().padStart(2, '0')}</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <button className="w-full py-3 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold text-white transition-colors">
+                                            Download File
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full text-neutral-600">
+                                    <Info size={48} className="mb-4 opacity-50" />
+                                    <p className="text-sm font-bold">No Item Selected</p>
+                                    <p className="text-xs opacity-70">Select a file or folder to view details</p>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 )}
                 {/* Upload Progress and Messages - Redesigned */}

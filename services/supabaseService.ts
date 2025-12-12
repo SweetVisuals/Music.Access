@@ -1229,7 +1229,48 @@ export const deleteFile = async (assetId: string): Promise<void> => {
 };
 
 
-export const getUserAudioFiles = async (): Promise<any[]> => {
+export const createFolder = async (name: string, parentId: string | null = null): Promise<any> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  const { data, error } = await supabase
+    .from('assets')
+    .insert({
+      user_id: currentUser.id,
+      storage_path: `folder-${Date.now()}`, // Virtual path for folder
+      file_name: name,
+      mime_type: 'application/vnd.antigravity.folder',
+      size_bytes: 0,
+      parent_id: parentId // Assuming column exists, if not we might need to use metadata or another strategy
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    name: data.file_name,
+    type: 'folder',
+    parentId: data.parent_id,
+    created: new Date(data.created_at).toLocaleDateString()
+  };
+};
+
+export const updateAsset = async (assetId: string, updates: { name?: string; parentId?: string | null }) => {
+  const updatePayload: any = {};
+  if (updates.name !== undefined) updatePayload.file_name = updates.name;
+  if (updates.parentId !== undefined) updatePayload.parent_id = updates.parentId;
+
+  const { error } = await supabase
+    .from('assets')
+    .update(updatePayload)
+    .eq('id', assetId);
+
+  if (error) throw error;
+};
+
+export const getUserFiles = async (): Promise<any[]> => {
   const currentUser = await getCurrentUser();
   if (!currentUser) return [];
 
@@ -1237,23 +1278,31 @@ export const getUserAudioFiles = async (): Promise<any[]> => {
     .from('assets')
     .select('*')
     .eq('user_id', currentUser.id)
-    .ilike('mime_type', 'audio%')
     .order('created_at', { ascending: false });
 
   if (error) throw error;
 
   return data.map(asset => {
-    const { data: { publicUrl } } = supabase.storage
-      .from('assets')
-      .getPublicUrl(asset.storage_path);
+    // Only generate URL for real files
+    const isFolder = asset.mime_type === 'application/vnd.antigravity.folder';
+    let publicUrl = '';
+
+    if (!isFolder) {
+      const { data: { publicUrl: url } } = supabase.storage
+        .from('assets')
+        .getPublicUrl(asset.storage_path);
+      publicUrl = url;
+    }
 
     return {
       id: asset.id,
       name: asset.file_name,
-      size: (asset.size_bytes / (1024 * 1024)).toFixed(1) + ' MB',
-      duration: '--:--', // Duration not stored in metadata yet
+      size: isFolder ? '-' : (asset.size_bytes / (1024 * 1024)).toFixed(2) + ' MB',
+      duration: '--:--',
       url: publicUrl,
-      type: asset.mime_type
+      type: isFolder ? 'folder' : (asset.mime_type.startsWith('audio') ? 'audio' : asset.mime_type.startsWith('image') ? 'image' : 'text'),
+      parentId: asset.parent_id,
+      originalType: asset.mime_type
     };
   });
 };

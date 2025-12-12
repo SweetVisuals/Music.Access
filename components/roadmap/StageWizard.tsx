@@ -87,255 +87,273 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
     };
 
     return (
-        <div className="fixed inset-0 top-16 lg:left-64 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-4xl h-[85vh] bg-[#0a0a0a] border border-neutral-800 rounded-2xl flex flex-col shadow-2xl overflow-hidden relative">
+        <>
+            {/* Backdrop - Low Z-index to sit behind TopBar (z-40) and Sidebar (z-50) */}
+            <div className="fixed inset-0 z-30 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}></div>
 
-                {/* Header */}
-                <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
-                    <div>
-                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                            <span className="text-primary">{config.title}</span>
-                            <span className="text-neutral-600">/</span>
-                            <span className="text-neutral-400 font-normal text-sm">Strategy Planning</span>
-                        </h2>
-                    </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white transition-colors">
-                        <X size={20} />
-                    </button>
-                </div>
+            {/* Modal Container - High Z-index but positioned to clear TopBar/Sidebar */}
+            <div className="fixed inset-0 z-50 top-16 lg:left-64 flex items-center justify-center p-4 sm:p-8 pointer-events-none">
+                <div className="w-full max-w-4xl h-full max-h-[85vh] bg-[#0a0a0a] border border-neutral-800 rounded-2xl flex flex-col shadow-2xl overflow-hidden relative pointer-events-auto">
 
-                {/* Progress Bar */}
-                <div className="px-8 pt-6 pb-2">
-                    <div className="flex items-center justify-between relative">
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-neutral-800 -z-10"></div>
-                        {config.steps.map((step, idx) => (
-                            <div
-                                key={step.id}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${currentStepIndex === idx
-                                    ? 'bg-primary text-black border-primary font-bold shadow-[0_0_10px_rgba(var(--primary),0.3)]'
-                                    : currentStepIndex > idx
-                                        ? 'bg-green-500 text-black border-green-500 font-bold'
-                                        : 'bg-neutral-900 text-neutral-500 border-neutral-800'
-                                    }`}
-                            >
-                                <span className="w-6 h-6 flex items-center justify-center rounded-full bg-black/20 text-xs font-mono">
-                                    {currentStepIndex > idx ? <Check size={14} /> : idx + 1}
-                                </span>
-                                <span className="text-xs uppercase tracking-wider hidden sm:inline-block">{step.title}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Main Content Area */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-                    <div className="p-8 max-w-3xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-300 key={currentStep.id}">
-                        <div className="mb-6">
-                            <h3 className="text-2xl font-bold text-white mb-2">{currentStep.title}</h3>
-                            {currentStep.description && <p className="text-neutral-400">{currentStep.description}</p>}
+                    {/* Header */}
+                    <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
+                        <div>
+                            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                <span className="text-primary">{config.title}</span>
+                                <span className="text-neutral-600">/</span>
+                                <span className="text-neutral-400 font-normal text-sm">Strategy Planning</span>
+                            </h2>
                         </div>
+                        <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white transition-colors">
+                            <X size={20} />
+                        </button>
+                    </div>
 
-                        <div className="space-y-8">
-                            {currentStep.fields.map(field => (
-                                <div key={field.id} className="space-y-3 bg-neutral-900/20 p-6 rounded-xl border border-neutral-800/50 hover:border-neutral-700 transition-colors">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-sm font-bold text-white tracking-wide block">
-                                            {field.label} {field.required && <span className="text-primary">*</span>}
-                                        </label>
-                                        {field.aiEnabled && (
-                                            <button
-                                                onClick={() => openAiHelper(field.id)}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-bold hover:bg-primary/20 transition-all group"
-                                            >
-                                                <Sparkles size={12} className="group-hover:animate-pulse" />
-                                                <span>Brainstorm with AI</span>
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* Component Type Rendering */}
-                                    {field.type === 'select' && field.options ? (
-                                        <div className="space-y-4">
-                                            {/* Chip Selection for Options */}
-                                            <div className="flex flex-wrap gap-2">
-                                                {field.options.map(option => (
-                                                    <button
-                                                        key={option}
-                                                        onClick={() => updateField(field.id, option)}
-                                                        className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${formData[field.id] === option
-                                                            ? 'bg-white text-black border-white shadow-lg'
-                                                            : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-neutral-200'
-                                                            }`}
-                                                    >
-                                                        {option}
-                                                    </button>
-                                                ))}
-                                                {field.allowCustom && (
-                                                    <button
-                                                        onClick={() => updateField(field.id, '')}
-                                                        className={`px-4 py-2 rounded-lg text-xs font-bold border border-dashed transition-all ${!field.options.includes(formData[field.id]) && formData[field.id] !== ''
-                                                            ? 'bg-white/10 text-white border-primary border-solid'
-                                                            : 'bg-transparent border-neutral-700 text-neutral-500 hover:text-white hover:border-neutral-500'
-                                                            }`}
-                                                    >
-                                                        Custom...
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            {/* Custom Input (Show if value is not in options or explicitly typing) */}
-                                            {field.allowCustom && (
-                                                <div className="relative">
-                                                    <input
-                                                        type="text"
-                                                        value={formData[field.id] || ''}
-                                                        onChange={(e) => updateField(field.id, e.target.value)}
-                                                        placeholder={field.placeholder || "Type your custom response..."}
-                                                        className={`w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-primary/50 focus:outline-none transition-all ${field.options.includes(formData[field.id]) ? 'text-neutral-500 italic' : ''
-                                                            }`}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : field.type === 'textarea' ? (
-                                        <div className="relative">
-                                            <textarea
-                                                value={formData[field.id] || ''}
-                                                onChange={(e) => updateField(field.id, e.target.value)}
-                                                placeholder={field.placeholder}
-                                                className="w-full h-32 bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:ring-1 focus:ring-primary/20 leading-relaxed custom-scrollbar"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <input
-                                            type={field.type}
-                                            value={formData[field.id] || ''}
-                                            onChange={(e) => updateField(field.id, e.target.value)}
-                                            placeholder={field.placeholder}
-                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20"
-                                        />
-                                    )}
+                    {/* Progress Bar */}
+                    <div className="px-8 pt-6 pb-2">
+                        <div className="flex items-center justify-between relative">
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-neutral-800 -z-10"></div>
+                            {config.steps.map((step, idx) => (
+                                <div
+                                    key={step.id}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${currentStepIndex === idx
+                                        ? 'bg-primary text-black border-primary font-bold shadow-[0_0_10px_rgba(var(--primary),0.3)]'
+                                        : currentStepIndex > idx
+                                            ? 'bg-green-500 text-black border-green-500 font-bold'
+                                            : 'bg-neutral-900 text-neutral-500 border-neutral-800'
+                                        }`}
+                                >
+                                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-black/20 text-xs font-mono">
+                                        {currentStepIndex > idx ? <Check size={14} /> : idx + 1}
+                                    </span>
+                                    <span className="text-xs uppercase tracking-wider hidden sm:inline-block">{step.title}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    {/* AI Helper Overlay */}
-                    {activeAiField && (
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-8 animate-in fade-in duration-200">
-                            <div className="w-full max-w-2xl bg-[#0F0F0F] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[600px]">
-                                <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-gradient-to-r from-primary/5 to-transparent">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                                            <Wand2 size={16} />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-white text-sm">AI Creative Assistant</h4>
-                                            <p className="text-[10px] text-neutral-500">Brainstorming ideas for this field</p>
-                                        </div>
-                                    </div>
-                                    <button onClick={closeAiHelper} className="text-neutral-500 hover:text-white transition-colors">
-                                        <X size={18} />
-                                    </button>
-                                </div>
+                    {/* Main Content Area */}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+                        <div className="p-8 max-w-3xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-300 key={currentStep.id}">
+                            <div className="mb-6">
+                                <h3 className="text-2xl font-bold text-white mb-2">{currentStep.title}</h3>
+                                {currentStep.description && <p className="text-neutral-400">{currentStep.description}</p>}
+                            </div>
 
-                                <div className="p-6 flex-1 overflow-y-auto">
-                                    {!aiResponse ? (
-                                        <div className="space-y-4">
-                                            <label className="text-xs font-bold text-neutral-400 uppercase">What kind of ideas do you need?</label>
-                                            <textarea
-                                                autoFocus
-                                                value={aiPrompt}
-                                                onChange={(e) => setAiPrompt(e.target.value)}
-                                                className="w-full h-32 bg-black border border-neutral-800 rounded-xl p-4 text-white text-sm focus:border-primary/50 focus:outline-none"
-                                                placeholder="e.g. Give me 3 options for a futuristic branding style..."
-                                            />
-                                            <div className="text-xs text-neutral-600">
-                                                I will analyze the context of your project and suggest creative directions.
-                                            </div>
+                            <div className="space-y-8">
+                                {currentStep.fields.map(field => (
+                                    <div key={field.id} className="space-y-3 bg-neutral-900/20 p-6 rounded-xl border border-neutral-800/50 hover:border-neutral-700 transition-colors">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="text-sm font-bold text-white tracking-wide block">
+                                                {field.label} {field.required && <span className="text-primary">*</span>}
+                                            </label>
                                         </div>
-                                    ) : (
-                                        <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-300">
-                                            <div className="flex items-start gap-3">
-                                                <Lightbulb size={18} className="text-yellow-500 mt-1 shrink-0" />
-                                                <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed">
-                                                    {aiResponse}
+
+                                        {/* Component Type Rendering */}
+                                        {field.type === 'select' && field.options ? (
+                                            <div className="space-y-4">
+                                                {/* Chip Selection for Options */}
+                                                <div className="flex flex-wrap gap-2">
+                                                    {field.options.map(option => (
+                                                        <button
+                                                            key={option}
+                                                            onClick={() => updateField(field.id, option)}
+                                                            className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${formData[field.id] === option
+                                                                ? 'bg-white text-black border-white shadow-lg'
+                                                                : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-neutral-200'
+                                                                }`}
+                                                        >
+                                                            {option}
+                                                        </button>
+                                                    ))}
+                                                    {field.allowCustom && (
+                                                        <button
+                                                            onClick={() => updateField(field.id, '')}
+                                                            className={`px-4 py-2 rounded-lg text-xs font-bold border border-dashed transition-all ${!field.options.includes(formData[field.id]) && formData[field.id] !== ''
+                                                                ? 'bg-white/10 text-white border-primary border-solid'
+                                                                : 'bg-transparent border-neutral-700 text-neutral-500 hover:text-white hover:border-neutral-500'
+                                                                }`}
+                                                        >
+                                                            Custom...
+                                                        </button>
+                                                    )}
                                                 </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
 
-                                <div className="p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-end gap-3">
-                                    <button
-                                        onClick={closeAiHelper}
-                                        className="px-4 py-2 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    {!aiResponse ? (
-                                        <button
-                                            onClick={handleAiGenerate}
-                                            disabled={!aiPrompt.trim() || aiLoading}
-                                            className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
-                                        >
-                                            {aiLoading ? (
-                                                <>Processing...</>
-                                            ) : (
-                                                <><Sparkles size={14} /> Generate Ideas</>
-                                            )}
-                                        </button>
-                                    ) : (
-                                        <>
-                                            <button
-                                                onClick={() => { setAiResponse(null); setAiPrompt(''); }}
-                                                className="px-4 py-2 bg-neutral-800 text-white rounded-lg text-xs font-bold hover:bg-neutral-700 transition-colors"
-                                            >
-                                                Try Again
-                                            </button>
-                                            <button
-                                                onClick={applyAiResponse}
-                                                className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2"
-                                            >
-                                                <Check size={14} /> Use This Response
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
+                                                {/* Custom Input (Show if value is not in options or explicitly typing) */}
+                                                {field.allowCustom && (
+                                                    <div className="relative group/input">
+                                                        <input
+                                                            type="text"
+                                                            value={formData[field.id] || ''}
+                                                            onChange={(e) => updateField(field.id, e.target.value)}
+                                                            placeholder={field.placeholder || "Type your custom response..."}
+                                                            className={`w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 pr-12 text-white focus:border-primary/50 focus:outline-none transition-all ${field.options.includes(formData[field.id]) ? 'text-neutral-500 italic' : ''
+                                                                }`}
+                                                        />
+                                                        {field.aiEnabled && (
+                                                            <button
+                                                                onClick={() => openAiHelper(field.id)}
+                                                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-neutral-800 text-neutral-400 rounded-lg hover:text-primary hover:bg-primary/10 transition-all opacity-50 group-hover/input:opacity-100"
+                                                                title="Get AI Ideas"
+                                                            >
+                                                                <Sparkles size={14} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : field.type === 'textarea' ? (
+                                            <div className="relative group/input">
+                                                <textarea
+                                                    value={formData[field.id] || ''}
+                                                    onChange={(e) => updateField(field.id, e.target.value)}
+                                                    placeholder={field.placeholder}
+                                                    className="w-full h-32 bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:ring-1 focus:ring-primary/20 leading-relaxed custom-scrollbar pb-10"
+                                                />
+                                                {field.aiEnabled && (
+                                                    <button
+                                                        onClick={() => openAiHelper(field.id)}
+                                                        className="absolute right-3 bottom-3 flex items-center gap-2 px-3 py-1.5 bg-neutral-800 text-neutral-400 rounded-lg text-[10px] font-bold hover:text-primary hover:bg-neutral-700 transition-all opacity-70 group-hover/input:opacity-100 border border-white/5"
+                                                    >
+                                                        <Sparkles size={12} />
+                                                        <span>AI Assist</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="relative group/input">
+                                                <input
+                                                    type={field.type}
+                                                    value={formData[field.id] || ''}
+                                                    onChange={(e) => updateField(field.id, e.target.value)}
+                                                    placeholder={field.placeholder}
+                                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                    )}
-                </div>
 
-                {/* Footer */}
-                <div className="h-20 border-t border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
-                    <button
-                        onClick={handleBack}
-                        disabled={currentStepIndex === 0}
-                        className="px-6 py-2 rounded-lg font-bold text-sm text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                    >
-                        Back
-                    </button>
+                        {/* AI Helper Overlay */}
+                        {activeAiField && (
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-8 animate-in fade-in duration-200">
+                                <div className="w-full max-w-2xl bg-[#0F0F0F] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[600px]">
+                                    <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-gradient-to-r from-primary/5 to-transparent">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                                                <Wand2 size={16} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-white text-sm">AI Creative Assistant</h4>
+                                                <p className="text-[10px] text-neutral-500">Brainstorming ideas for this field</p>
+                                            </div>
+                                        </div>
+                                        <button onClick={closeAiHelper} className="text-neutral-500 hover:text-white transition-colors">
+                                            <X size={18} />
+                                        </button>
+                                    </div>
 
-                    <button
-                        onClick={handleNext}
-                        className="px-8 py-3 bg-primary text-black rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2"
-                    >
-                        {isLastStep ? (
-                            <>
-                                <Save size={16} /> Save Strategy
-                            </>
-                        ) : (
-                            <>
-                                Next Step <ChevronRight size={16} />
-                            </>
+                                    <div className="p-6 flex-1 overflow-y-auto">
+                                        {!aiResponse ? (
+                                            <div className="space-y-4">
+                                                <label className="text-xs font-bold text-neutral-400 uppercase">What kind of ideas do you need?</label>
+                                                <textarea
+                                                    autoFocus
+                                                    value={aiPrompt}
+                                                    onChange={(e) => setAiPrompt(e.target.value)}
+                                                    className="w-full h-32 bg-black border border-neutral-800 rounded-xl p-4 text-white text-sm focus:border-primary/50 focus:outline-none"
+                                                    placeholder="e.g. Give me 3 options for a futuristic branding style..."
+                                                />
+                                                <div className="text-xs text-neutral-600">
+                                                    I will analyze the context of your project and suggest creative directions.
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-300">
+                                                <div className="flex items-start gap-3">
+                                                    <Lightbulb size={18} className="text-yellow-500 mt-1 shrink-0" />
+                                                    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed">
+                                                        {aiResponse}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-end gap-3">
+                                        <button
+                                            onClick={closeAiHelper}
+                                            className="px-4 py-2 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        {!aiResponse ? (
+                                            <button
+                                                onClick={handleAiGenerate}
+                                                disabled={!aiPrompt.trim() || aiLoading}
+                                                className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
+                                            >
+                                                {aiLoading ? (
+                                                    <>Processing...</>
+                                                ) : (
+                                                    <><Sparkles size={14} /> Generate Ideas</>
+                                                )}
+                                            </button>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    onClick={() => { setAiResponse(null); setAiPrompt(''); }}
+                                                    className="px-4 py-2 bg-neutral-800 text-white rounded-lg text-xs font-bold hover:bg-neutral-700 transition-colors"
+                                                >
+                                                    Try Again
+                                                </button>
+                                                <button
+                                                    onClick={applyAiResponse}
+                                                    className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2"
+                                                >
+                                                    <Check size={14} /> Use This Response
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         )}
-                    </button>
-                </div>
+                    </div>
 
+                    {/* Footer */}
+                    <div className="h-20 border-t border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
+                        <button
+                            onClick={handleBack}
+                            disabled={currentStepIndex === 0}
+                            className="px-6 py-2 rounded-lg font-bold text-sm text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Back
+                        </button>
+
+                        <button
+                            onClick={handleNext}
+                            className="px-8 py-3 bg-primary text-black rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2"
+                        >
+                            {isLastStep ? (
+                                <>
+                                    <Save size={16} /> Save Strategy
+                                </>
+                            ) : (
+                                <>
+                                    Next Step <ChevronRight size={16} />
+                                </>
+                            )}
+                        </button>
+                    </div>
+
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 
 export default StageWizard;
+```

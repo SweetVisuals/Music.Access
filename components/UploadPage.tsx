@@ -347,7 +347,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 } catch (error) {
                     console.error('Upload failed:', error);
                     failedFiles.push(file.name);
-                    
+
                     // Handle specific error types
                     if (error.message.includes('row-level security policy')) {
                         errors.push(`Storage bucket permissions not configured. Please create the "assets" bucket in your Supabase dashboard.`);
@@ -615,7 +615,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                     // --- GRID VIEW ---
                     <div className="p-6">
                         {currentItems.length === 0 ? (
-                            <div 
+                            <div
                                 className={`flex flex-col items-center justify-center h-64 border border-dashed rounded-xl transition-all ${isDraggingFiles ? 'border-primary bg-primary/10' : 'border-neutral-800 text-neutral-600'}`}
                             >
                                 <UploadIcon size={48} className={`mb-4 ${isDraggingFiles ? 'text-primary animate-bounce' : 'opacity-50'}`} />
@@ -822,60 +822,112 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                         )}
                     </div>
                 )}
-                {/* Upload Progress and Messages */}
+                {/* Upload Progress and Messages - Redesigned */}
                 {isUploading && (
-                    <div className="mt-6 p-6 bg-neutral-900/20 border border-white/5 rounded-xl backdrop-blur-sm">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                            <span className="text-sm font-medium text-white">Uploading files...</span>
+                    <div className="fixed bottom-6 right-6 z-50 w-96 bg-[#111] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300">
+                        <div className="p-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="relative">
+                                    <div className="w-2.5 h-2.5 bg-primary rounded-full animate-pulse absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+                                    <div className="w-8 h-8 bg-primary/20 rounded-full animate-ping opacity-75"></div>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-white">Uploading Files</h4>
+                                    <p className="text-[10px] text-neutral-400">{Object.keys(uploadProgress).length} file(s) in queue</p>
+                                </div>
+                            </div>
                         </div>
-                        {Object.keys(uploadProgress).length > 0 && (
-                            <div className="space-y-3">
-                                {Object.entries(uploadProgress).map(([fileId, progress]) => (
-                                    <div key={fileId} className="space-y-2">
-                                        <div className="flex items-center justify-between text-xs text-neutral-400">
-                                            <span>File {fileId.split('-').pop()}</span>
-                                            <span>{progress}%</span>
+
+                        <div className="p-2 max-h-64 overflow-y-auto custom-scrollbar">
+                            {Object.entries(uploadProgress).map(([fileId, progress]) => (
+                                <div key={fileId} className="p-3 mb-1 rounded-xl bg-neutral-900/50 border border-transparent hover:border-white/5 transition-colors group">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                            <div className="w-8 h-8 rounded-lg bg-neutral-800 flex items-center justify-center flex-shrink-0">
+                                                {fileId.includes('audio') ? <Music size={14} className="text-neutral-400" /> : <FileText size={14} className="text-neutral-400" />}
+                                            </div>
+                                            <span className="text-xs font-medium text-neutral-300 truncate">File {fileId.split('-').pop()}</span>
                                         </div>
-                                        <div className="w-full bg-neutral-800 rounded-full h-1.5">
-                                            <div 
-                                                className="bg-gradient-to-r from-primary to-primary/80 h-1.5 rounded-full transition-all duration-500 ease-out"
-                                                style={{ width: `${progress}%` }}
-                                            />
+                                        <span className="text-xs font-bold text-primary">{progress}%</span>
+                                    </div>
+                                    <div className="w-full bg-neutral-800 rounded-full h-1 overflow-hidden">
+                                        <div
+                                            className="bg-primary h-full rounded-full transition-all duration-300 ease-out relative"
+                                            style={{ width: `${progress}%` }}
+                                        >
+                                            <div className="absolute inset-0 bg-white/20 animate-[shimmer_1s_infinite]"></div>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 
                 {(uploadError || uploadSuccess) && !isUploading && (
-                    <div className="mt-6 p-6 bg-neutral-900/20 border border-white/5 rounded-xl backdrop-blur-sm">
+                    <div className="fixed bottom-6 right-6 z-50 w-96 animate-in slide-in-from-bottom-5 fade-in duration-300">
                         {uploadError && (
-                            <div className="flex items-start gap-3">
-                                <AlertCircle size={18} className="text-red-400 mt-0.5 flex-shrink-0" />
-                                <div>
-                                    <h4 className="text-sm font-medium text-red-400 mb-1">Upload Failed</h4>
-                                    <p className="text-xs text-neutral-300 leading-relaxed">{uploadError}</p>
-                                    {uploadError.includes('row-level security policy') && (
-                                        <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                            <p className="text-xs text-red-300">
-                                                💡 <strong>Solution:</strong> Create the storage bucket manually in your Supabase dashboard. 
-                                                Go to Storage → Create bucket → Name: "assets" → Set as public.
-                                            </p>
-                                        </div>
-                                    )}
+                            <div className="bg-[#1a0505] border border-red-500/20 rounded-2xl shadow-2xl overflow-hidden">
+                                <div className="p-4 flex items-start gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0 border border-red-500/20">
+                                        <AlertCircle size={20} className="text-red-500" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="text-sm font-bold text-red-100 mb-1">Upload Failed</h4>
+                                        <p className="text-xs text-red-200/70 leading-relaxed mb-3">
+                                            {uploadError.includes('row-level security policy')
+                                                ? "Permission denied. Please ensure you are logged in and have the correct access rights."
+                                                : uploadError}
+                                        </p>
+
+                                        {uploadError.includes('row-level security policy') && (
+                                            <div className="space-y-2">
+                                                <div className="px-3 py-2 bg-red-500/5 rounded-lg border border-red-500/10">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <Info size={12} className="text-red-400" />
+                                                        <span className="text-[10px] font-bold text-red-300 uppercase tracking-wider">Troubleshooting</span>
+                                                    </div>
+                                                    <p className="text-[10px] text-red-400/80">
+                                                        The storage bucket "assets" might be missing or private.
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => setUploadError(null)}
+                                                    className="text-xs font-medium text-red-400 hover:text-red-300 transition-colors"
+                                                >
+                                                    Dismiss
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {!uploadError.includes('row-level security policy') && (
+                                            <button
+                                                onClick={() => setUploadError(null)}
+                                                className="text-xs font-medium text-red-400 hover:text-red-300 transition-colors mt-1"
+                                            >
+                                                Dismiss
+                                            </button>
+                                        )}
+                                    </div>
+                                    <button onClick={() => setUploadError(null)} className="text-red-400/50 hover:text-red-400 transition-colors">
+                                        <X size={16} />
+                                    </button>
                                 </div>
                             </div>
                         )}
+
                         {uploadSuccess && (
-                            <div className="flex items-center gap-3">
-                                <Check size={18} className="text-green-400" />
-                                <div>
-                                    <h4 className="text-sm font-medium text-green-400">Upload Complete</h4>
-                                    <p className="text-xs text-neutral-300">{uploadSuccess}</p>
+                            <div className="bg-[#051a05] border border-green-500/20 rounded-2xl shadow-2xl overflow-hidden p-4 flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 border border-green-500/20">
+                                    <Check size={20} className="text-green-500" />
                                 </div>
+                                <div className="flex-1">
+                                    <h4 className="text-sm font-bold text-green-100">Upload Complete</h4>
+                                    <p className="text-xs text-green-200/70">{uploadSuccess}</p>
+                                </div>
+                                <button onClick={() => setUploadSuccess(null)} className="text-green-400/50 hover:text-green-400 transition-colors">
+                                    <X size={16} />
+                                </button>
                             </div>
                         )}
                     </div>

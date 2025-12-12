@@ -365,7 +365,7 @@ const App: React.FC = () => {
           onClose={() => setIsMobileMenuOpen(false)}
         />
 
-        {/* Main Layout Container - Adjusted padding for mobile */}
+        {/* Main Layout Container - Adjusted padding for mobile and smaller sidebar */}
         <div className="flex-1 flex flex-col lg:pl-64 relative w-full">
           <TopBar
             projects={projects}
@@ -382,15 +382,15 @@ const App: React.FC = () => {
             onMenuClick={() => setIsMobileMenuOpen(true)}
           />
 
-          <main className="flex-1 overflow-y-auto pt-24 lg:pt-32 pb-32 scroll-smooth">
+          <main className="flex-1 overflow-y-auto pt-20 lg:pt-28 pb-32 scroll-smooth">
 
             {currentView === 'home' && (
-              <div className="max-w-[1600px] mx-auto px-4 lg:px-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="max-w-[1800px] mx-auto px-3 lg:px-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {isLoggedIn && !gemsClaimedToday && !profileLoading && userProfile && (
-                  <div className="mb-6 mt-4 lg:mt-0 p-4 bg-gradient-to-r from-primary/20 to-transparent border border-primary/20 rounded-xl flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary animate-pulse">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z" /></svg>
+                  <div className="mb-4 mt-3 lg:mt-0 p-3 bg-gradient-to-r from-primary/20 to-transparent border border-primary/20 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-primary animate-pulse">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z" /></svg>
                       </div>
                       <div>
                         <h3 className="font-bold text-white text-sm">Daily Reward Available!</h3>
@@ -399,7 +399,7 @@ const App: React.FC = () => {
                     </div>
                     <button
                       onClick={handleClaimDailyGems}
-                      className="px-4 py-2 bg-primary text-black font-bold rounded-lg text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
+                      className="px-3 py-1.5 bg-primary text-black font-bold rounded-lg text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
                     >
                       Claim 10 Gems
                     </button>
@@ -409,24 +409,24 @@ const App: React.FC = () => {
                 <FilterBar filters={filters} onFilterChange={setFilters} />
 
                 {error && (
-                  <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-xs rounded-lg font-mono text-center">
+                  <div className="mb-3 p-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-xs rounded-lg font-mono text-center">
                     {error}
                   </div>
                 )}
 
                 {loading ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-4 pb-20">
-                    {[...Array(8)].map((_, i) => (
-                      <div key={i} className="h-[340px]">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mt-3 pb-20">
+                    {[...Array(12)].map((_, i) => (
+                      <div key={i} className="h-[320px]">
                         <ProjectSkeleton />
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-4 pb-20">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mt-3 pb-20">
                     {filteredProjects.length > 0 ? (
                       filteredProjects.map(project => (
-                        <div key={project.id} className="h-[340px]">
+                        <div key={project.id} className="h-[320px]">
                           <ProjectCard
                             project={project}
                             currentTrackId={currentTrackId}

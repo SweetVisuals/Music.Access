@@ -20,6 +20,9 @@ import {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY!;
 
+console.log('Supabase URL:', SUPABASE_URL);
+console.log('Supabase Key exists:', !!SUPABASE_ANON_KEY);
+
 // Create Supabase client
 export const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -61,11 +64,16 @@ export const signUp = async (email: string, password: string, username: string, 
 };
 
 export const signIn = async (email: string, password: string) => {
+  console.log('Attempting sign in for:', email);
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password
   });
-  if (error) throw error;
+  if (error) {
+    console.error('Sign in error:', error);
+    throw error;
+  }
+  console.log('Sign in successful');
   return data;
 };
 
@@ -1094,7 +1102,7 @@ export const uploadFile = async (file: File): Promise<{ assetId: string; storage
     // Generate unique file path
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const storagePath = `user-uploads/${currentUser.id}/${fileName}`;
+    const storagePath = `${currentUser.id}/${fileName}`;
 
     console.log('Uploading file to:', storagePath);
 

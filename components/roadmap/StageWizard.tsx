@@ -448,136 +448,133 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                                     </span>
                                                 )}
                                             </div>
-                                                )}
                                         </div>
                                         {/* Top Level AI Button Removed (Inline now) */}
-                                    </div>
 
-                                        {
-                                        renderField(
+                                        {renderField(
                                             field,
                                             formData[field.id],
                                             (val) => updateField(field.id, val),
-                                undefined,
+                                            undefined,
                                             field.aiEnabled ? () => openAiHelper(field.id) : undefined
                                         )}
-                            </div>
-                                ))}
-                        </div>
-                    </div>
-
-                    {/* AI Helper Overlay */}
-                    {(activeAiField || activeAiTarget) && (
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-8 animate-in fade-in duration-200">
-                            <div className="w-full max-w-2xl bg-[#0F0F0F] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[600px]">
-                                <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-gradient-to-r from-primary/5 to-transparent">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                                            <Wand2 size={16} />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-white text-sm">AI Creative Assistant</h4>
-                                            <p className="text-[10px] text-neutral-500">Brainstorming ideas</p>
-                                        </div>
                                     </div>
-                                    <button onClick={closeAiHelper} className="text-neutral-500 hover:text-white transition-colors">
-                                        <X size={18} />
-                                    </button>
-                                </div>
+                                ))}
+                            </div>
+                        </div>
 
-                                <div className="p-6 flex-1 overflow-y-auto">
-                                    {!aiResponse ? (
-                                        <div className="space-y-4">
-                                            <label className="text-xs font-bold text-neutral-400 uppercase">What kind of ideas do you need?</label>
-                                            <textarea
-                                                autoFocus
-                                                value={aiPrompt}
-                                                onChange={(e) => setAiPrompt(e.target.value)}
-                                                className="w-full h-32 bg-black border border-neutral-800 rounded-xl p-4 text-white text-sm focus:border-primary/50 focus:outline-none"
-                                                placeholder="Describe what you are looking for..."
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-300">
-                                            <div className="flex items-start gap-3">
-                                                <Lightbulb size={18} className="text-yellow-500 mt-1 shrink-0" />
-                                                <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed">
-                                                    {aiResponse}
-                                                </div>
+                        {/* AI Helper Overlay */}
+                        {(activeAiField || activeAiTarget) && (
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-8 animate-in fade-in duration-200">
+                                <div className="w-full max-w-2xl bg-[#0F0F0F] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[600px]">
+                                    <div className="p-6 border-b border-neutral-800 flex justify-between items-center bg-gradient-to-r from-primary/5 to-transparent">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                                                <Wand2 size={16} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-white text-sm">AI Creative Assistant</h4>
+                                                <p className="text-[10px] text-neutral-500">Brainstorming ideas</p>
                                             </div>
                                         </div>
-                                    )}
-                                </div>
-
-                                <div className="p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-end gap-3">
-                                    <button
-                                        onClick={closeAiHelper}
-                                        className="px-4 py-2 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors"
-                                    >
-                                        Cancel
-                                    </button>
-                                    {!aiResponse ? (
-                                        <button
-                                            onClick={handleAiGenerate}
-                                            disabled={!aiPrompt.trim() || aiLoading}
-                                            className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
-                                        >
-                                            {aiLoading ? (
-                                                <>Processing...</>
-                                            ) : (
-                                                <><Sparkles size={14} /> Generate Ideas</>
-                                            )}
+                                        <button onClick={closeAiHelper} className="text-neutral-500 hover:text-white transition-colors">
+                                            <X size={18} />
                                         </button>
-                                    ) : (
-                                        <>
+                                    </div>
+
+                                    <div className="p-6 flex-1 overflow-y-auto">
+                                        {!aiResponse ? (
+                                            <div className="space-y-4">
+                                                <label className="text-xs font-bold text-neutral-400 uppercase">What kind of ideas do you need?</label>
+                                                <textarea
+                                                    autoFocus
+                                                    value={aiPrompt}
+                                                    onChange={(e) => setAiPrompt(e.target.value)}
+                                                    className="w-full h-32 bg-black border border-neutral-800 rounded-xl p-4 text-white text-sm focus:border-primary/50 focus:outline-none"
+                                                    placeholder="Describe what you are looking for..."
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-300">
+                                                <div className="flex items-start gap-3">
+                                                    <Lightbulb size={18} className="text-yellow-500 mt-1 shrink-0" />
+                                                    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-sm text-neutral-300 whitespace-pre-wrap leading-relaxed">
+                                                        {aiResponse}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-end gap-3">
+                                        <button
+                                            onClick={closeAiHelper}
+                                            className="px-4 py-2 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        {!aiResponse ? (
                                             <button
-                                                onClick={() => { setAiResponse(null); setAiPrompt(''); }}
-                                                className="px-4 py-2 bg-neutral-800 text-white rounded-lg text-xs font-bold hover:bg-neutral-700 transition-colors"
+                                                onClick={handleAiGenerate}
+                                                disabled={!aiPrompt.trim() || aiLoading}
+                                                className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
                                             >
-                                                Try Again
+                                                {aiLoading ? (
+                                                    <>Processing...</>
+                                                ) : (
+                                                    <><Sparkles size={14} /> Generate Ideas</>
+                                                )}
                                             </button>
-                                            <button
-                                                onClick={applyAiResponse}
-                                                className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2"
-                                            >
-                                                <Check size={14} /> Use This Response
-                                            </button>
-                                        </>
-                                    )}
+                                        ) : (
+                                            <>
+                                                <button
+                                                    onClick={() => { setAiResponse(null); setAiPrompt(''); }}
+                                                    className="px-4 py-2 bg-neutral-800 text-white rounded-lg text-xs font-bold hover:bg-neutral-700 transition-colors"
+                                                >
+                                                    Try Again
+                                                </button>
+                                                <button
+                                                    onClick={applyAiResponse}
+                                                    className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2"
+                                                >
+                                                    <Check size={14} /> Use This Response
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Footer - No changes needed, uses standard flow */}
-                <div className="h-20 border-t border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
-                    <button
-                        onClick={handleBack}
-                        disabled={currentStepIndex === 0}
-                        className="px-6 py-2 rounded-lg font-bold text-sm text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                    >
-                        Back
-                    </button>
-
-                    <button
-                        onClick={handleNext}
-                        className="px-8 py-3 bg-primary text-black rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2"
-                    >
-                        {isLastStep ? (
-                            <>
-                                <Save size={16} /> Save Strategy
-                            </>
-                        ) : (
-                            <>
-                                Next Step <ChevronRight size={16} />
-                            </>
                         )}
-                    </button>
-                </div>
+                    </div>
 
-            </div>
-        </div >
+                    {/* Footer - No changes needed, uses standard flow */}
+                    <div className="h-20 border-t border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
+                        <button
+                            onClick={handleBack}
+                            disabled={currentStepIndex === 0}
+                            className="px-6 py-2 rounded-lg font-bold text-sm text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Back
+                        </button>
+
+                        <button
+                            onClick={handleNext}
+                            className="px-8 py-3 bg-primary text-black rounded-lg font-bold text-sm hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2"
+                        >
+                            {isLastStep ? (
+                                <>
+                                    <Save size={16} /> Save Strategy
+                                </>
+                            ) : (
+                                <>
+                                    Next Step <ChevronRight size={16} />
+                                </>
+                            )}
+                        </button>
+                    </div>
+
+                </div>
+            </div >
         </>
     );
 };

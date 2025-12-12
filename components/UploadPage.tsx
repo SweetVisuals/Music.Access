@@ -27,7 +27,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { Project, Track } from '../types';
-import { uploadFile, deleteFile } from '../services/supabaseService';
+import { uploadFile, deleteFile, getUserAudioFiles } from '../services/supabaseService';
 import { MOCK_PROJECTS } from '../constants';
 
 // --- Types ---
@@ -98,6 +98,38 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
     const menuRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // --- Load Files on Mount ---
+    useEffect(() => {
+        const loadFiles = async () => {
+            try {
+                const dbFiles = await getUserAudioFiles();
+                const mappedFiles: FileSystemItem[] = dbFiles.map((f: any) => ({
+                    id: f.id,
+                    parentId: null, // Initial load puts everything in root
+                    name: f.name,
+                    type: (f.type && f.type.startsWith('audio')) ? 'audio' : 'text',
+                    size: f.size,
+                    created: new Date().toLocaleDateString(), // TODO: add created_at to supabaseService return
+                    format: f.name.split('.').pop()?.toUpperCase(),
+                    duration: 180, // detailed duration not yet available
+                    src: f.url
+                }));
+                // Merge with existing mocked/local items if any? No, just replace or append.
+                // For now, let's just use the DB items + folders? Folders are not persisted!
+                // If we want folders to persist, we need a DB table for them.
+                // Assuming folders are ephemeral for this session or we won't fix folder persistence yet.
+                // We'll just prepend DB files to current items (which are effectively empty initially).
+                setItems(prev => {
+                    const folders = prev.filter(i => i.type === 'folder');
+                    return [...folders, ...mappedFiles];
+                });
+            } catch (error) {
+                console.error("Failed to load files:", error);
+            }
+        };
+        loadFiles();
+    }, []);
 
     // --- File Upload Handler ---
     const handleUploadClick = () => {
@@ -309,7 +341,6 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         let failedFiles: string[] = [];
         let errors: string[] = [];
 
-        showToast(`Starting upload of ${fileArray.length} file(s)...`, 'info');
 
         try {
             for (let i = 0; i < fileArray.length; i++) {
@@ -342,7 +373,6 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
                     setItems(prev => [...prev, newFileItem]);
                     successCount++;
-                    showToast(`✓ ${file.name} uploaded successfully`, 'success');
 
                 } catch (error) {
                     console.error('Upload failed:', error);
@@ -362,7 +392,6 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
             if (successCount > 0) {
                 const successMessage = `Successfully uploaded ${successCount} file(s)`;
                 setUploadSuccess(successMessage);
-                showToast(successMessage, 'success');
                 // Dispatch event to update storage bar in sidebar
                 window.dispatchEvent(new CustomEvent('storage-updated'));
             }

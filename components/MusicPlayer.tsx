@@ -19,18 +19,8 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
         return currentProject.tracks.find(t => t.id === currentTrackId);
     }, [currentProject, currentTrackId]);
 
-    if (!currentProject || !currentTrack) {
-        return (
-            <div className={`fixed bottom-0 left-0 lg:left-64 right-0 h-10 bg-black/40 border-t border-white/5 flex items-center justify-end px-6 z-40 backdrop-blur-md transition-transform duration-300 ${isMinimized ? 'translate-y-full' : 'translate-y-0'}`}>
-                <div className="flex items-center space-x-2">
-                    <div className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-pulse"></div>
-                    <span className="text-neutral-600 text-[10px] font-mono uppercase tracking-wider">System Idle</span>
-                </div>
-            </div>
-        )
-    }
-
     // --- AUDIO & TRACKING LOGIC ---
+    // Moved hooks to the top level to avoid conditional hook execution violations
     const audioRef = React.useRef<HTMLAudioElement>(null);
     const [playDuration, setPlayDuration] = useState(0);
     const [hasRecordedPlay, setHasRecordedPlay] = useState(false);
@@ -87,14 +77,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
     const handleTimeUpdate = () => {
         if (!audioRef.current) return;
 
-        // Accumulate play time? simpler: just check current time if continuous
-        // But user might seek. 
         // "1 play should count as 20 seconds worth of playback"
-        // Simplest interpretation: If currentTime > 20s. 
-        // Better: check dropped frames? No.
-        // We will just use the current time > 20 as a proxy for "listened for 20s" if we assume linear playback.
-        // Or increment a counter every second.
-
         if (!hasRecordedPlay && audioRef.current.currentTime >= 20) {
             recordPlayEvent();
         }
@@ -123,6 +106,18 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
         setHasRecordedPlay(true);
         console.log("Play counted for track", currentTrackId);
     };
+
+    // Conditional rendering AFTER all hooks
+    if (!currentProject || !currentTrack) {
+        return (
+            <div className={`fixed bottom-0 left-0 lg:left-64 right-0 h-10 bg-black/40 border-t border-white/5 flex items-center justify-end px-6 z-40 backdrop-blur-md transition-transform duration-300 ${isMinimized ? 'translate-y-full' : 'translate-y-0'}`}>
+                <div className="flex items-center space-x-2">
+                    <div className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-pulse"></div>
+                    <span className="text-neutral-600 text-[10px] font-mono uppercase tracking-wider">System Idle</span>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={`

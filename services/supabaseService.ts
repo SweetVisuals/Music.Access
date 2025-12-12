@@ -1057,12 +1057,15 @@ export const ensureStorageBucket = async () => {
 };
 
 // Consolidated storage initialization
+// Consolidated storage initialization
 export const initializeStorage = async () => {
   try {
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
 
+    // If we can't list buckets (e.g., RLS), we just assume 'assets' might exist or we can't create it anyway.
+    // We proceed silently.
     if (listError) {
-      console.error('Error listing buckets:', listError);
+      // console.warn('Could not list buckets (likely RLS). Proceeding with assumption that "assets" bucket exists.');
       return;
     }
 
@@ -1077,13 +1080,19 @@ export const initializeStorage = async () => {
       });
 
       if (createError) {
-        console.error('Error creating bucket:', createError);
-        // Do not throw, as it might already exist or be strict
+        // RLS error is expected for non-admin users if they try to create a bucket
+        if (createError.message.includes('row-level security') || createError.message.includes('violates row-level security policy')) {
+          // This is fine, the bucket probably exists or we just can't create it.
+          // We suppress this error to avoid confusing the user since upload might still work if bucket exists.
+          console.log('Bucket creation skipped (RLS restricted). Assuming bucket exists and is managed by admin.');
+        } else {
+          console.error('Error creating bucket:', createError);
+        }
       } else {
         console.log('Assets bucket created successfully:', newBucket);
       }
     } else {
-      console.log('Assets bucket already exists:', assetsBucket);
+      // console.log('Assets bucket already exists:', assetsBucket);
     }
   } catch (error) {
     console.error('Error initializing storage:', error);

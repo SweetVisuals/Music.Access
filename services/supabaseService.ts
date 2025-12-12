@@ -1017,7 +1017,7 @@ export const ensureStorageBucket = async () => {
   try {
     console.log('Checking storage buckets...');
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-    
+
     if (listError) {
       console.error('Error listing buckets:', listError);
       throw new Error(`Failed to list buckets: ${listError.message}`);
@@ -1056,10 +1056,11 @@ export const ensureStorageBucket = async () => {
   }
 };
 
+// Consolidated storage initialization
 export const initializeStorage = async () => {
   try {
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-    
+
     if (listError) {
       console.error('Error listing buckets:', listError);
       return;
@@ -1071,13 +1072,13 @@ export const initializeStorage = async () => {
       console.log('Creating assets bucket...');
       const { data: newBucket, error: createError } = await supabase.storage.createBucket('assets', {
         public: true,
-        allowedMimeTypes: ['image/*', 'audio/*', 'text/*'],
-        fileSizeLimit: 104857600 // 100MB
+        allowedMimeTypes: ['*/*'], // Allow all types
+        fileSizeLimit: 52428800 // 50MB (max allowed by project)
       });
 
       if (createError) {
         console.error('Error creating bucket:', createError);
-        throw createError;
+        // Do not throw, as it might already exist or be strict
       } else {
         console.log('Assets bucket created successfully:', newBucket);
       }
@@ -1086,7 +1087,6 @@ export const initializeStorage = async () => {
     }
   } catch (error) {
     console.error('Error initializing storage:', error);
-    // Don't throw here to avoid breaking the upload flow
   }
 }
 

@@ -84,7 +84,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     const [renamingId, setRenamingId] = useState<string | null>(null);
     const [renameValue, setRenameValue] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
+    const [anchorSelectedId, setAnchorSelectedId] = useState<string | null>(null);
 
     // Modals State
     const [textEditorItem, setTextEditorItem] = useState<FileSystemItem | null>(null);
@@ -160,7 +160,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         setCurrentFolderId(folderId);
         setContextMenu(null);
         setSelectedIds(new Set()); // Clear selection on navigate
-        setLastSelectedId(null);
+        setAnchorSelectedId(null);
         if (folderId === null) {
             setSelectedPath([]);
         }
@@ -170,7 +170,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         if (currentFolder) {
             setCurrentFolderId(currentFolder.parentId);
             setSelectedIds(new Set());
-            setLastSelectedId(null);
+            setAnchorSelectedId(null);
         }
     };
 
@@ -300,7 +300,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         setItems(items.filter(i => !finalIdsToDelete.has(i.id)));
         setContextMenu(null);
         setSelectedIds(new Set()); // Clear selection
-        setLastSelectedId(null);
+        setAnchorSelectedId(null);
 
         // Path cleanup?
         const remainingPath = selectedPath.filter(id => !finalIdsToDelete.has(id));

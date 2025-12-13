@@ -41,6 +41,7 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
     const [activeTab, setActiveTab] = useState<'planner' | 'strategy' | 'wizard'>('planner');
     const [goals, setGoals] = useState<Goal[]>([]);
     const [loadingGoals, setLoadingGoals] = useState(true);
+    const [isGoalsExpanded, setIsGoalsExpanded] = useState(false);
 
     // Goals State (Copied from GoalsPage logic)
     const [showCreateGoalModal, setShowCreateGoalModal] = useState(false);
@@ -135,50 +136,55 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
 
             {/* Goals Section (Compact) */}
             <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 cursor-pointer" onClick={() => setIsGoalsExpanded(!isGoalsExpanded)}>
                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
                         <Target className="text-primary" size={18} />
                         Active Goals
+                        <ChevronDown size={16} className={`text-neutral-500 transition-transform ${isGoalsExpanded ? 'rotate-180' : ''}`} />
                     </h2>
                     <button className="text-xs font-bold text-neutral-500 hover:text-white transition-colors">
-                        View All Goals
+                        {isGoalsExpanded ? 'Collapse' : 'Expand'}
                     </button>
                 </div>
 
-                {loadingGoals ? (
-                    <div className="h-24 bg-white/5 animate-pulse rounded-xl"></div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {goals.slice(0, 4).map(goal => { // Show top 4 goals
-                            const progress = calculateProgress(goal.current, goal.target);
-                            return (
-                                <div key={goal.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-lg p-4 hover:border-neutral-700 transition-colors">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className={`p-1.5 rounded-md border ${getGoalColor(goal.type)}`}>
-                                            {getGoalIcon(goal.type)}
+                {isGoalsExpanded && (
+                    <>
+                        {loadingGoals ? (
+                            <div className="h-24 bg-white/5 animate-pulse rounded-xl"></div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in slide-in-from-top-2 duration-200">
+                                {goals.slice(0, 4).map(goal => { // Show top 4 goals
+                                    const progress = calculateProgress(goal.current, goal.target);
+                                    return (
+                                        <div key={goal.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-lg p-4 hover:border-neutral-700 transition-colors">
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div className={`p-1.5 rounded-md border ${getGoalColor(goal.type)}`}>
+                                                    {getGoalIcon(goal.type)}
+                                                </div>
+                                                <span className="text-[10px] uppercase font-bold text-neutral-500">{goal.category}</span>
+                                            </div>
+                                            <h3 className="text-sm font-bold text-white truncate mb-1">{goal.title}</h3>
+                                            <div className="w-full bg-neutral-900 rounded-full h-1.5 mb-2">
+                                                <div className="bg-primary h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                                            </div>
+                                            <div className="flex justify-between text-[10px] text-neutral-500">
+                                                <span>{Math.round(progress)}%</span>
+                                                <span>{goal.current} / {goal.target}</span>
+                                            </div>
                                         </div>
-                                        <span className="text-[10px] uppercase font-bold text-neutral-500">{goal.category}</span>
-                                    </div>
-                                    <h3 className="text-sm font-bold text-white truncate mb-1">{goal.title}</h3>
-                                    <div className="w-full bg-neutral-900 rounded-full h-1.5 mb-2">
-                                        <div className="bg-primary h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
-                                    </div>
-                                    <div className="flex justify-between text-[10px] text-neutral-500">
-                                        <span>{Math.round(progress)}%</span>
-                                        <span>{goal.current} / {goal.target}</span>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                    );
+                                })}
 
-                        {/* Add Goal Button */}
-                        <button className="bg-white/5 border border-dashed border-neutral-800 rounded-lg p-4 hover:bg-white/10 hover:border-neutral-600 transition-all flex flex-col items-center justify-center gap-2 group">
-                            <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 group-hover:bg-primary group-hover:text-black transition-colors">
-                                <Plus size={16} />
+                                {/* Add Goal Button */}
+                                <button className="bg-white/5 border border-dashed border-neutral-800 rounded-lg p-4 hover:bg-white/10 hover:border-neutral-600 transition-all flex flex-col items-center justify-center gap-2 group">
+                                    <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 group-hover:bg-primary group-hover:text-black transition-colors">
+                                        <Plus size={16} />
+                                    </div>
+                                    <span className="text-xs font-bold text-neutral-400 group-hover:text-white">Add New Goal</span>
+                                </button>
                             </div>
-                            <span className="text-xs font-bold text-neutral-400 group-hover:text-white">Add New Goal</span>
-                        </button>
-                    </div>
+                        )}
+                    </>
                 )}
             </div>
 
@@ -318,7 +324,7 @@ const StrategyTab: React.FC = () => {
                     <p className="text-neutral-500">Define your artist identity, era, and execution plan.</p>
                 </div>
                 <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2 text-xs font-mono text-neutral-400">
-                    {Object.values(strategyData).filter(s => s.status === 'completed').length} / 10 Stages Completed
+                    {Object.values(strategyData).filter((s: any) => s.status === 'completed').length} / {STAGE_TEMPLATES.length} Stages Completed
                 </div>
             </div>
 
@@ -347,35 +353,14 @@ const StrategyTab: React.FC = () => {
 // --- Sub-components for StrategyTab (to keep main file clean-ish) ---
 
 const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggleDetails, expandedStage }) => {
-    // We combine the real templates with placeholders for the remaining 8 stages
-    // defined placeholders
-    const placeholders = [
-        { id: 'stage-3', title: 'Why You?', description: 'Competitive advantage and USP.', iconName: 'Target' },
-        { id: 'stage-4', title: 'The Audience', description: 'Who are they and where do they live?', iconName: 'Users' },
-        { id: 'stage-5', title: 'The Content Strategy', description: 'Pillars, formats, and frequency.', iconName: 'Video' },
-        { id: 'stage-6', title: 'The Channels', description: 'Primary and secondary platforms.', iconName: 'Smartphone' },
-        { id: 'stage-7', title: 'The Growth Engines', description: 'Organic, paid, and partnerships.', iconName: 'TrendingUp' },
-        { id: 'stage-8', title: 'The Launch Plan', description: 'Pre-launch, launch, and post-launch.', iconName: 'Rocket' },
-        { id: 'stage-9', title: 'The Data & KPIs', description: 'What does success look like?', iconName: 'BarChart' },
-        { id: 'stage-10', title: 'The Moneymakers', description: 'Revenue streams and monetization.', iconName: 'DollarSign' }
-    ];
-
-    // Combine and sort
-    const allStages = [
-        ...STAGE_TEMPLATES,
-        ...placeholders.filter(p => !STAGE_TEMPLATES.find(t => t.id === p.id))
-    ].sort((a, b) => {
-        const getNum = (str: string) => parseInt(str.split('-')[1]);
-        return getNum(a.id) - getNum(b.id);
-    });
 
     return (
         <div className="w-full pb-12 pt-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 px-4 w-full">
-                {allStages.map((stage: any, index) => {
+                {STAGE_TEMPLATES.map((stage: any, index) => {
                     const status = strategyData[stage.id]?.status || 'not_started';
-                    const isReal = STAGE_TEMPLATES.some(t => t.id === stage.id);
-                    const isLocked = !isReal && index >= 2;
+                    // No locking logic needed anymore as all stages are real
+                    const isLocked = false;
 
                     return (
                         <div key={stage.id} className="flex flex-col group h-full">

@@ -1,5 +1,6 @@
 import { StrategyStageConfig } from '../../types';
 
+
 export const STAGE_TEMPLATES: StrategyStageConfig[] = [
     {
         id: 'stage-1',
@@ -103,7 +104,7 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
     },
     {
         id: 'stage-2',
-        title: 'The Period Or Era',
+        title: 'Define Period or Era',
         description: 'Contextualize your work within a specific time or theme.',
         iconName: 'Clock',
         steps: [
@@ -169,14 +170,14 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
     },
     {
         id: 'stage-3',
-        title: 'The Story Blocks & Campaigns',
-        description: 'Create coordinated series of actions (Campaigns) that tell smaller stories tying into your greater movie.',
+        title: "What's the Campaign?",
+        description: 'Define the major campaigns that tell the story of this era.',
         iconName: 'Clapperboard',
         steps: [
             {
                 id: 'campaigns',
                 title: 'Campaign Management',
-                description: 'Define up to 8 distinct campaigns for this era.',
+                description: 'Define distinct campaigns for this era.',
                 fields: [
                     {
                         id: 'campaign_list',
@@ -193,21 +194,6 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                                 required: true
                             },
                             {
-                                id: 'associated_era',
-                                label: 'Associated Era / Phase',
-                                type: 'text',
-                                placeholder: 'e.g. "The Red Era" or "Phase 1 - Introduction"',
-                                required: true,
-                                aiEnabled: true
-                            },
-                            {
-                                id: 'timeframe',
-                                label: 'Timeframe',
-                                type: 'date-range',
-                                placeholder: 'Select dates...',
-                                required: true
-                            },
-                            {
                                 id: 'focus',
                                 label: 'Main Focus',
                                 type: 'select',
@@ -218,41 +204,203 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                                 aiEnabled: true
                             },
                             {
-                                id: 'platforms',
-                                label: 'Target Platforms',
-                                type: 'multiselect',
-                                options: ['Instagram', 'TikTok', 'YouTube', 'Spotify', 'Apple Music', 'Facebook', 'X (Twitter)', 'Threads', 'Snapchat', 'Discord', 'Website', 'Email List'],
-                                placeholder: 'Select platforms...',
-                                required: true
-                            },
-                            {
-                                id: 'content_types',
-                                label: 'Content Mix',
-                                type: 'textarea', // Textarea to list types
-                                placeholder: 'e.g. 3x Reels/week, 1x MV Teaser, Daily Stories...',
-                                required: true,
-                                aiEnabled: true
-                            },
-                            {
                                 id: 'concept',
                                 label: 'Campaign Concept',
                                 type: 'textarea',
                                 placeholder: 'The core idea or "hook" of this campaign...',
                                 required: true,
                                 aiEnabled: true
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'stage-4',
+        title: 'Content Buckets',
+        description: 'Categorize your content pillars.',
+        iconName: 'Layout',
+        steps: [
+            {
+                id: 'buckets',
+                title: 'Content Pillars',
+                description: 'What are the main categories of content you will produce?',
+                fields: [
+                    {
+                        id: 'bucket_list',
+                        label: 'Content Buckets',
+                        type: 'array',
+                        maxItems: 5,
+                        itemLabel: 'Bucket',
+                        fields: [
+                            {
+                                id: 'name',
+                                label: 'Bucket Name',
+                                type: 'text',
+                                placeholder: 'e.g. "Behind the Scenes", "Music Teasers", "Lifestyle"',
+                                required: true
                             },
                             {
-                                id: 'themes',
-                                label: 'Key Themes',
+                                id: 'percentage',
+                                label: 'Mix Percentage',
+                                type: 'text',
+                                placeholder: 'e.g. 40%',
+                                required: true
+                            },
+                            {
+                                id: 'description',
+                                label: 'Description',
                                 type: 'textarea',
-                                placeholder: 'Emotional beats, visual style, keywords...',
+                                placeholder: 'What goes in this bucket?',
                                 required: true,
                                 aiEnabled: true
-                            },
+                            }
                         ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'stage-5',
+        title: 'Content Format',
+        description: 'Determine the formats for your content.',
+        iconName: 'Video',
+        steps: [
+            {
+                id: 'formats',
+                title: 'Media Formats',
+                description: 'How will you present your content?',
+                fields: [
+                    {
+                        id: 'primary_formats',
+                        label: 'Primary Formats',
+                        type: 'multiselect',
+                        options: ['Short-form Video (Reels/TikTok)', 'Long-form Video (YouTube)', 'Static Images', 'Carousel Posts', 'Text/Threads', 'Live Streaming'],
+                        placeholder: 'Select your main formats...',
+                        required: true
+                    },
+                    {
+                        id: 'style_guide',
+                        label: 'Format Style Guide',
+                        type: 'textarea',
+                        placeholder: 'Notes on editing style, specific filters, or camera angles...',
+                        required: false,
+                        aiEnabled: true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'stage-6',
+        title: 'What Platforms To Be On',
+        description: 'Choose your battlefields.',
+        iconName: 'Smartphone',
+        steps: [
+            {
+                id: 'platforms',
+                title: 'Platform Strategy',
+                description: 'Where will you be most active?',
+                fields: [
+                    {
+                        id: 'primary_platform',
+                        label: 'Primary Platform',
+                        type: 'select',
+                        options: ['Instagram', 'TikTok', 'YouTube', 'Spotify', 'Twitter/X'],
+                        placeholder: 'Select your #1 priority...',
+                        required: true
+                    },
+                    {
+                        id: 'secondary_platforms',
+                        label: 'Secondary Platforms',
+                        type: 'multiselect',
+                        options: ['Instagram', 'TikTok', 'YouTube', 'Spotify', 'Twitter/X', 'Discord', 'Snapchat', 'Facebook', 'LinkedIn'],
+                        placeholder: 'Select supporting platforms...',
+                        required: false
+                    },
+                    {
+                        id: 'platform_roles',
+                        label: 'Platform Roles',
+                        type: 'textarea',
+                        placeholder: 'Define the purpose of each platform (e.g. TikTok for discovery, IG for community)...',
+                        required: true,
+                        aiEnabled: true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'stage-7',
+        title: 'How Much Content To Post',
+        description: 'Define your posting cadence.',
+        iconName: 'BarChart3',
+        steps: [
+            {
+                id: 'frequency',
+                title: 'Posting Schedule',
+                description: 'Set your commitment levels.',
+                fields: [
+                    {
+                        id: 'daily_frequency',
+                        label: 'Daily Frequency',
+                        type: 'select',
+                        options: ['1x Day', '2x Day', '3x+ Day', 'Every other day', 'Weekly'],
+                        placeholder: 'How often will you post?',
+                        required: true
+                    },
+                    {
+                        id: 'cadence_notes',
+                        label: 'Cadence Notes',
+                        type: 'textarea',
+                        placeholder: 'e.g. Mornings for motivation, evenings for music...',
+                        required: false,
+                        aiEnabled: true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'stage-8',
+        title: 'How to Actually Execute',
+        description: 'Operationalize your plan.',
+        iconName: 'Zap',
+        steps: [
+            {
+                id: 'execution',
+                title: 'Execution & Workflow',
+                description: 'How will you get it done?',
+                fields: [
+                    {
+                        id: 'tools',
+                        label: 'Tools & Software',
+                        type: 'multiselect',
+                        options: ['CapCut', 'Premiere Pro', 'Canva', 'Notion', 'Davinci Resolve', 'Logic Pro'],
+                        placeholder: 'Select tools...',
+                        required: false
+                    },
+                    {
+                        id: 'team',
+                        label: 'Team / Collaborators',
+                        type: 'textarea',
+                        placeholder: 'Who is helping? (Photographers, editors, etc.)',
+                        required: false
+                    },
+                    {
+                        id: 'batching_strategy',
+                        label: 'Batching Strategy',
+                        type: 'textarea',
+                        placeholder: 'e.g. Film everything on Mondays, Edit on Tuesdays...',
+                        required: true,
+                        aiEnabled: true
                     }
                 ]
             }
         ]
     }
 ];
+

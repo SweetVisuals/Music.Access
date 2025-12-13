@@ -366,7 +366,7 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                         <div key={stage.id} className="flex flex-col group h-full">
                             {/* Card */}
                             <div className={`
-                                w-full h-[320px] flex flex-col relative
+                                w-full h-[200px] flex flex-col relative
                                 rounded-xl border backdrop-blur-sm transition-all duration-300
                                 hover:translate-y-[-4px] hover:shadow-xl
                                 ${status === 'completed'
@@ -378,16 +378,16 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                             `}>
                                 {/* Header Image / Icon Area */}
                                 <div className={`
-                                    h-24 w-full border-b flex items-center justify-center relative overflow-hidden
+                                    h-16 w-full border-b flex items-center justify-center relative overflow-hidden
                                     ${status === 'completed' ? 'border-green-500/20 bg-green-500/5' : 'border-neutral-800 bg-black/20'}
                                 `}>
-                                    <div className="absolute top-3 right-3 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
+                                    <div className="absolute top-2 right-2 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
                                         Step {String(index + 1).padStart(2, '0')}
                                     </div>
 
                                     {/* Icon Circle */}
                                     <div className={`
-                                        w-12 h-12 rounded-full flex items-center justify-center border-2 shadow-lg z-10
+                                        w-10 h-10 rounded-full flex items-center justify-center border-2 shadow-lg z-10
                                         ${status === 'completed'
                                             ? 'bg-green-500 text-black border-green-400'
                                             : isLocked
@@ -395,7 +395,7 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                                 : 'bg-neutral-900 text-primary border-primary/30 group-hover:scale-110 transition-transform duration-300'
                                         }
                                     `}>
-                                        {status === 'completed' ? <CheckCircle size={24} /> : <div className="text-lg font-bold">{index + 1}</div>}
+                                        {status === 'completed' ? <CheckCircle size={18} /> : <div className="text-sm font-bold">{index + 1}</div>}
                                     </div>
 
                                     {/* Background decorative glow */}
@@ -403,11 +403,11 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                 </div>
 
                                 {/* Content */}
-                                <div className="p-4 flex-1 flex flex-col">
-                                    <h3 className={`text-sm font-bold mb-1.5 ${status === 'completed' ? 'text-green-400' : 'text-white'}`}>
+                                <div className="p-3 flex-1 flex flex-col">
+                                    <h3 className={`text-xs font-bold mb-1 ${status === 'completed' ? 'text-green-400' : 'text-white'}`}>
                                         {stage.title}
                                     </h3>
-                                    <p className="text-xs text-neutral-400 leading-snug mb-4 flex-1 line-clamp-3">
+                                    <p className="text-[10px] text-neutral-400 leading-snug mb-2 flex-1 line-clamp-2">
                                         {stage.description}
                                     </p>
 

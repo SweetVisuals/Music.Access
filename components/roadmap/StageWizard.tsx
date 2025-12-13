@@ -215,20 +215,29 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                 const item = items[idx] || {};
 
                 return (
-                    <div className="h-full flex flex-col">
+                    <div className="h-full flex flex-col animate-in slide-in-from-right duration-300">
                         <div className="flex items-center justify-between mb-6 pb-4 border-b border-neutral-800">
-                            <div>
-                                <h3 className="text-xl font-bold text-white">
-                                    {focusedArrayItem.isNew ? `Add New ${field.itemLabel || 'Item'}` : `Edit ${field.itemLabel || 'Item'}`}
-                                </h3>
-                                <p className="text-sm text-neutral-500">Fill out the details below.</p>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => setFocusedArrayItem(null)}
+                                    className="p-2 -ml-2 text-neutral-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                                    title="Go Back"
+                                >
+                                    <ChevronLeft size={24} />
+                                </button>
+                                <div>
+                                    <h3 className="text-xl font-bold text-white">
+                                        {focusedArrayItem.isNew ? `Add New ${field.itemLabel || 'Item'}` : `Edit ${field.itemLabel || 'Item'}`}
+                                    </h3>
+                                    <p className="text-sm text-neutral-500">Fill out the details below.</p>
+                                </div>
                             </div>
                             <button
                                 onClick={handleSaveFocusedItem}
                                 className="px-6 py-2 bg-white text-black font-bold rounded-lg hover:bg-neutral-200 transition-colors flex items-center gap-2"
                             >
                                 <Save size={16} />
-                                {focusedArrayItem.isNew ? 'Save Campaign' : 'Save Changes'}
+                                {focusedArrayItem.isNew ? 'Save' : 'Save Changes'}
                             </button>
                         </div>
 
@@ -386,9 +395,9 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                             <button
                                 onClick={() => handleOptionToggle('')}
                                 className={`px-4 py-2 rounded-lg text-xs font-bold border border-dashed transition-all ${(!field.allowSecondary && value && !field.options.includes(value)) ||
-                                        (field.allowSecondary && typeof value === 'object' && value.primary && !field.options.includes(value.primary))
-                                        ? 'bg-white/10 text-white border-primary border-solid'
-                                        : 'bg-transparent border-neutral-700 text-neutral-500 hover:text-white hover:border-neutral-500'
+                                    (field.allowSecondary && typeof value === 'object' && value.primary && !field.options.includes(value.primary))
+                                    ? 'bg-white/10 text-white border-primary border-solid'
+                                    : 'bg-transparent border-neutral-700 text-neutral-500 hover:text-white hover:border-neutral-500'
                                     } `}
                             >
                                 Custom...

@@ -368,3 +368,27 @@ export interface DashboardAnalytics {
     statusColor: string;
   }>;
 }
+
+// --- Roadmap & Calendar Types ---
+
+export interface Strategy {
+  id: string;
+  userId: string;
+  stageId: string;
+  data: Record<string, any>;
+  status: 'not_started' | 'in_progress' | 'completed';
+  lastUpdated: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  userId: string;
+  title: string;
+  description?: string;
+  startDate: string; // ISO string
+  endDate?: string; // ISO string
+  type: 'campaign' | 'content' | 'meeting' | 'milestone' | 'era' | 'task';
+  platform?: 'instagram' | 'tiktok' | 'youtube' | 'spotify' | 'other';
+  status: 'pending' | 'completed' | 'cancelled';
+  metadata?: Record<string, any>; // e.g., linkedCampaignId, contentFormat
+}

@@ -1,11 +1,12 @@
 import { StrategyStageConfig } from '../../types';
 
 
+
 export const STAGE_TEMPLATES: StrategyStageConfig[] = [
     {
         id: 'stage-1',
-        title: 'The Story',
-        description: 'Define your core narrative, identity, and visual language.',
+        title: 'High Level Brand Story',
+        description: 'Define your core narrative and identity.',
         iconName: 'BookOpen',
         steps: [
             {
@@ -25,10 +26,10 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                         aiEnabled: true
                     },
                     {
-                        id: 'what_is_the_movie',
-                        label: 'What Is The Movie?',
+                        id: 'what_is_the_world',
+                        label: 'What Is The World?',
                         type: 'textarea',
-                        placeholder: 'If this era was a movie, what is the plot?',
+                        placeholder: 'Describe the world/universe this project inhabits...',
                         required: true,
                         aiEnabled: true
                     }
@@ -37,7 +38,7 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
             {
                 id: 'narrative',
                 title: 'Characters & Narrative',
-                description: 'Flesh out the world and its inhabitants.',
+                description: 'Flesh out the universe and its inhabitants.',
                 fields: [
                     {
                         id: 'who_are_the_characters',
@@ -56,11 +57,19 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                         aiEnabled: true
                     }
                 ]
-            },
+            }
+        ]
+    },
+    {
+        id: 'stage-2',
+        title: 'Define Brand Personality',
+        description: 'Where does this sit in the culture?',
+        iconName: 'User',
+        steps: [
             {
                 id: 'positioning',
                 title: 'Positioning',
-                description: 'Where does this sit in the culture?',
+                description: 'Define your cultural stance.',
                 fields: [
                     {
                         id: 'whats_the_position',
@@ -74,7 +83,15 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                         aiEnabled: true
                     }
                 ]
-            },
+            }
+        ]
+    },
+    {
+        id: 'stage-3',
+        title: 'Brand Visual Language',
+        description: 'Define the aesthetic look and feel.',
+        iconName: 'Eye',
+        steps: [
             {
                 id: 'visuals',
                 title: 'Visual Language',
@@ -103,7 +120,7 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
         ]
     },
     {
-        id: 'stage-2',
+        id: 'stage-4',
         title: 'Define Period or Era',
         description: 'Contextualize your work within a specific time or theme.',
         iconName: 'Clock',
@@ -169,7 +186,7 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
         ]
     },
     {
-        id: 'stage-3',
+        id: 'stage-5',
         title: "What's the Campaign?",
         description: 'Define the major campaigns that tell the story of this era.',
         iconName: 'Clapperboard',
@@ -218,7 +235,7 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
         ]
     },
     {
-        id: 'stage-4',
+        id: 'stage-6',
         title: 'Content Buckets',
         description: 'Categorize your content pillars.',
         iconName: 'Layout',
@@ -264,7 +281,7 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
         ]
     },
     {
-        id: 'stage-5',
+        id: 'stage-7',
         title: 'Content Format',
         description: 'Determine the formats for your content.',
         iconName: 'Video',
@@ -295,7 +312,7 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
         ]
     },
     {
-        id: 'stage-6',
+        id: 'stage-8',
         title: 'What Platforms To Be On',
         description: 'Choose your battlefields.',
         iconName: 'Smartphone',
@@ -334,7 +351,7 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
         ]
     },
     {
-        id: 'stage-7',
+        id: 'stage-9',
         title: 'How Much Content To Post',
         description: 'Define your posting cadence.',
         iconName: 'BarChart3',
@@ -365,7 +382,7 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
         ]
     },
     {
-        id: 'stage-8',
+        id: 'stage-10',
         title: 'How to Actually Execute',
         description: 'Operationalize your plan.',
         iconName: 'Zap',

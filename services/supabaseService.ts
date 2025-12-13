@@ -2186,3 +2186,131 @@ export const createNotification = async (notification: Partial<Notification>) =>
 
   if (error) throw error;
 };
+
+// --- Roadmap Strategy Functions ---
+
+export const getStrategies = async (): Promise<Strategy[]> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return [];
+
+  const { data, error } = await supabase
+    .from('strategies')
+    .select('*')
+    .eq('user_id', currentUser.id);
+
+  if (error) {
+    console.error('Error fetching strategies:', error);
+    return [];
+  }
+
+  return data.map(s => ({
+    id: s.id,
+    userId: s.user_id,
+    stageId: s.stage_id,
+    data: s.data,
+    status: s.status,
+    lastUpdated: s.updated_at
+  }));
+};
+
+export const saveStrategy = async (stageId: string, data: any, status: 'in_progress' | 'completed' = 'completed') => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  // Upsert strategy
+  const { error } = await supabase
+    .from('strategies')
+    .upsert({
+      user_id: currentUser.id,
+      stage_id: stageId,
+      data: data,
+      status: status,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,stage_id' });
+
+  if (error) throw error;
+};
+
+// --- Calendar Event Functions ---
+
+export const getCalendarEvents = async (startDate: Date, endDate: Date): Promise<CalendarEvent[]> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return [];
+
+  const { data, error } = await supabase
+    .from('calendar_events')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .gte('start_date', startDate.toISOString())
+    .lte('start_date', endDate.toISOString());
+
+  if (error) {
+    console.error('Error fetching calendar events:', error);
+    return [];
+  }
+
+  return data.map(e => ({
+    id: e.id,
+    userId: e.user_id,
+    title: e.title,
+    description: e.description,
+    startDate: e.start_date,
+    endDate: e.end_date,
+    type: e.type,
+    platform: e.platform,
+    status: e.status,
+    metadata: e.metadata
+  }));
+};
+
+export const createCalendarEvent = async (event: Partial<CalendarEvent>) => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  const { data, error } = await supabase
+    .from('calendar_events')
+    .insert({
+      user_id: currentUser.id,
+      title: event.title,
+      description: event.description,
+      start_date: event.startDate,
+      end_date: event.endDate,
+      type: event.type,
+      platform: event.platform,
+      status: event.status || 'pending',
+      metadata: event.metadata || {}
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const updateCalendarEvent = async (eventId: string, updates: Partial<CalendarEvent>) => {
+  const updateObj: any = {};
+  if (updates.title !== undefined) updateObj.title = updates.title;
+  if (updates.description !== undefined) updateObj.description = updates.description;
+  if (updates.startDate !== undefined) updateObj.start_date = updates.startDate;
+  if (updates.endDate !== undefined) updateObj.end_date = updates.endDate;
+  if (updates.type !== undefined) updateObj.type = updates.type;
+  if (updates.platform !== undefined) updateObj.platform = updates.platform;
+  if (updates.status !== undefined) updateObj.status = updates.status;
+  if (updates.metadata !== undefined) updateObj.metadata = updates.metadata;
+
+  const { error } = await supabase
+    .from('calendar_events')
+    .update(updateObj)
+    .eq('id', eventId);
+
+  if (error) throw error;
+};
+
+export const deleteCalendarEvent = async (eventId: string) => {
+  const { error } = await supabase
+    .from('calendar_events')
+    .delete()
+    .eq('id', eventId);
+
+  if (error) throw error;
+};

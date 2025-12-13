@@ -25,7 +25,8 @@ import {
     Smartphone,
     Rocket,
     BarChart,
-    Check
+    Check,
+    Lock
 } from 'lucide-react';
 import { Goal } from '../types';
 import { getGoals, createGoal, updateGoal, deleteGoal } from '../services/supabaseService';

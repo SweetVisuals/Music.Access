@@ -370,7 +370,6 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
     });
 
     return (
-    return (
         <div className="w-full pb-12 pt-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 px-4 w-full">
                 {allStages.map((stage: any, index) => {

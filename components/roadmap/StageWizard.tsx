@@ -132,13 +132,13 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
         };
 
         return (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
                 {field.options?.map(opt => (
                     <button
                         key={opt}
                         onClick={() => toggle(opt)}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${selected.includes(opt)
-                            ? 'bg-white text-black border-white shadow-lg scale-105'
+                        className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-all ${selected.includes(opt)
+                            ? 'bg-white text-black border-white shadow-sm scale-105'
                             : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200'
                             }`}
                     >
@@ -152,23 +152,23 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
     const renderDateRange = (field: StageField, value: { from: string; to: string } | undefined, onChange: (val: any) => void) => {
         const val = value || { from: '', to: '' };
         return (
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                    <label className="text-xs text-neutral-500 ml-1">Start Date</label>
+            <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-0.5">
+                    <label className="text-[10px] text-neutral-500 ml-1">Start Date</label>
                     <input
                         type="date"
                         value={val.from}
                         onChange={(e) => onChange({ ...val, from: e.target.value })}
-                        className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20 text-xs"
+                        className="w-full bg-neutral-900 border border-neutral-800 rounded-md px-2 py-1 text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20 text-[10px]"
                     />
                 </div>
-                <div className="space-y-1">
-                    <label className="text-xs text-neutral-500 ml-1">End Date</label>
+                <div className="space-y-0.5">
+                    <label className="text-[10px] text-neutral-500 ml-1">End Date</label>
                     <input
                         type="date"
                         value={val.to}
                         onChange={(e) => onChange({ ...val, to: e.target.value })}
-                        className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20 text-xs"
+                        className="w-full bg-neutral-900 border border-neutral-800 rounded-md px-2 py-1 text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20 text-[10px]"
                     />
                 </div>
             </div>
@@ -352,7 +352,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                         value={value || ''}
                         onChange={(e) => onChange(e.target.value)}
                         placeholder={field.placeholder}
-                        className="w-full h-14 bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:ring-1 focus:ring-primary/20 leading-relaxed custom-scrollbar pb-6"
+                        className="w-full h-12 bg-neutral-900 border border-neutral-800 rounded-md px-2 py-1.5 text-[10px] text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:ring-1 focus:ring-primary/20 leading-snug custom-scrollbar"
                     />
                     {field.aiEnabled && onAiRequest && (
                         <button
@@ -369,8 +369,8 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
         if (field.type === 'select' && field.options) {
             return (
-                <div className="space-y-4">
-                    <div className="flex flex-wrap gap-2">
+                <div className="space-y-2">
+                    <div className="flex flex-wrap gap-1.5">
                         {field.options.map(option => {
                             const isPri = isPrimarySelected(option);
                             const isSec = isSecondarySelected(option);
@@ -378,23 +378,23 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                 <button
                                     key={option}
                                     onClick={() => handleOptionToggle(option)}
-                                    className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all relative overflow-hidden ${isPri
-                                        ? 'bg-white text-black border-white shadow-lg scale-105 z-10'
+                                    className={`px-2.5 py-1 rounded-md text-[10px] font-bold border transition-all relative overflow-hidden ${isPri
+                                        ? 'bg-white text-black border-white shadow-sm scale-105 z-10'
                                         : isSec
-                                            ? 'bg-primary/20 text-primary border-primary shadow-md shadow-primary/10'
+                                            ? 'bg-primary/20 text-primary border-primary shadow-sm shadow-primary/10'
                                             : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-neutral-200'
                                         } `}
                                 >
-                                    {isPri && <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full" />}
+                                    {isPri && <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full" />}
                                     {option}
-                                    {isSec && <span className="ml-2 text-[8px] bg-primary text-black px-1 rounded-sm uppercase tracking-tighter">2nd</span>}
+                                    {isSec && <span className="ml-1 text-[7px] bg-primary text-black px-0.5 rounded-sm uppercase tracking-tighter">2nd</span>}
                                 </button>
                             );
                         })}
                         {field.allowCustom && (
                             <button
                                 onClick={() => handleOptionToggle('')}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold border border-dashed transition-all ${(!field.allowSecondary && value && !field.options.includes(value)) ||
+                                className={`px-2.5 py-1 rounded-md text-[10px] font-bold border border-dashed transition-all ${(!field.allowSecondary && value && !field.options.includes(value)) ||
                                     (field.allowSecondary && typeof value === 'object' && value.primary && !field.options.includes(value.primary))
                                     ? 'bg-white/10 text-white border-primary border-solid'
                                     : 'bg-transparent border-neutral-700 text-neutral-500 hover:text-white hover:border-neutral-500'
@@ -421,8 +421,8 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                         onChange(newVal);
                                     }
                                 }}
-                                placeholder={field.placeholder || "Type your custom response..."}
-                                className={`w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 pr-12 text-xs text-white focus:border-primary/50 focus:outline-none transition-all ${(field.allowSecondary
+                                placeholder={field.placeholder || "Type custom..."}
+                                className={`w-full bg-neutral-900 border border-neutral-800 rounded-md px-2 py-1 pr-8 text-[10px] text-white focus:border-primary/50 focus:outline-none transition-all ${(field.allowSecondary
                                     ? (typeof value === 'object' && value.primary && field.options.includes(value.primary))
                                     : (value && field.options.includes(value)))
                                     ? 'text-neutral-500 italic'
@@ -443,7 +443,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                     value={value || ''}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={field.placeholder}
-                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 pr-10 text-xs text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20"
+                    className="w-full bg-neutral-900 border border-neutral-800 rounded-md px-2 py-1 pr-8 text-[10px] text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20"
                 />
                 {field.aiEnabled && onAiRequest && (
                     <button
@@ -463,12 +463,12 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
         <>
             <div className="fixed inset-0 z-30 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}></div>
 
-            <div className="fixed inset-0 z-50 top-16 lg:left-64 flex items-center justify-center p-2 sm:p-3 pointer-events-none">
-                <div className="w-full max-w-5xl h-full max-h-[85vh] bg-[#0a0a0a] border border-neutral-800 rounded-xl flex flex-col shadow-2xl overflow-hidden relative pointer-events-auto">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-2 pointer-events-none">
+                <div className="w-full max-w-5xl h-[85vh] bg-[#0a0a0a] border border-neutral-800 rounded-lg flex flex-col shadow-2xl overflow-hidden relative pointer-events-auto">
 
-                    {/* Header - HIDDEN IF FOCUSED */}
+                    {/* Header - Compact */}
                     {!isFocusedMode && (
-                        <div className="h-14 border-b border-neutral-800 flex items-center justify-between px-5 bg-neutral-900/50">
+                        <div className="h-10 border-b border-neutral-800 flex items-center justify-between px-3 bg-neutral-900/50 shrink-0">
                             <div>
                                 <h2 className="text-base font-bold text-white flex items-center gap-2">
                                     <span className="text-primary text-sm">{config.title}</span>
@@ -476,31 +476,31 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                     <span className="text-neutral-500 font-normal text-xs">Strategy</span>
                                 </h2>
                             </div>
-                            <button onClick={onClose} className="p-1.5 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white transition-colors">
-                                <X size={16} />
+                            <button onClick={onClose} className="p-1 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white transition-colors">
+                                <X size={14} />
                             </button>
                         </div>
                     )}
 
-                    {/* Progress Bar - HIDDEN IF FOCUSED */}
+                    {/* Progress Bar - Ultra Compact */}
                     {!isFocusedMode && (
-                        <div className="px-5 pt-4 pb-2">
+                        <div className="px-3 py-1.5 shrink-0 bg-black/40 border-b border-neutral-800">
                             <div className="flex items-center justify-between relative">
-                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-neutral-800 -z-10"></div>
+                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[1px] bg-neutral-800 -z-10"></div>
                                 {config.steps.map((step, idx) => (
                                     <div
                                         key={step.id}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all ${currentStepIndex === idx
-                                            ? 'bg-primary text-black border-primary font-bold shadow-[0_0_10px_rgba(var(--primary),0.3)]'
+                                        className={`flex items-center justify-center w-5 h-5 rounded-full border transition-all ${currentStepIndex === idx
+                                            ? 'bg-primary text-black border-primary font-bold shadow-sm'
                                             : currentStepIndex > idx
-                                                ? 'bg-green-500 text-black border-green-500 font-bold'
-                                                : 'bg-neutral-900 text-neutral-500 border-neutral-800'
+                                                ? 'bg-green-500 text-black border-green-500'
+                                                : 'bg-neutral-900 text-neutral-600 border-neutral-800'
                                             } `}
+                                        title={step.title}
                                     >
-                                        <span className="w-5 h-5 flex items-center justify-center rounded-full bg-black/20 text-[10px] font-mono">
-                                            {currentStepIndex > idx ? <Check size={10} /> : idx + 1}
+                                        <span className="text-[9px] font-mono leading-none">
+                                            {currentStepIndex > idx ? <Check size={8} /> : idx + 1}
                                         </span>
-                                        <span className="text-[10px] uppercase tracking-wider hidden sm:inline-block">{step.title}</span>
                                     </div>
                                 ))}
                             </div>
@@ -508,30 +508,30 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                     )}
 
                     {/* Main Content Area */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-                        <div className={`p-5 space-y-5 animate-in slide-in-from-bottom-4 duration-300 key={currentStep.id} ${isFocusedMode ? 'h-full flex flex-col' : ''}`}>
+                    <div className="flex-1 overflow-y-auto custom-scrollbar relative p-3">
+                        <div className={`space-y-3 animate-in slide-in-from-bottom-2 duration-300 key={currentStep.id} ${isFocusedMode ? 'h-full flex flex-col' : ''}`}>
 
                             {!isFocusedMode ? (
                                 // STANDARD VIEW
                                 <>
-                                    <div className="mb-4">
-                                        <h3 className="text-lg font-bold text-white mb-1">{currentStep.title}</h3>
-                                        {currentStep.description && <p className="text-neutral-500 text-xs">{currentStep.description}</p>}
+                                    <div className="mb-2 shrink-0">
+                                        <h3 className="text-sm font-bold text-white mb-0.5">{currentStep.title}</h3>
+                                        {currentStep.description && <p className="text-neutral-500 text-[10px]">{currentStep.description}</p>}
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pb-2">
                                         {currentStep.fields.map(field => {
                                             const isWide = ['textarea', 'array', 'multiselect'].includes(field.type);
                                             return (
-                                                <div key={field.id} className={`space-y-1.5 bg-neutral-900/20 p-3 rounded-xl border border-neutral-800/50 hover:border-neutral-700 transition-colors ${isWide ? 'col-span-1 md:col-span-2' : ''}`}>
-                                                    <div className="flex items-center justify-between mb-1">
+                                                <div key={field.id} className={`space-y-1 bg-neutral-900/20 p-2 rounded-lg border border-neutral-800/50 hover:border-neutral-700 transition-colors ${isWide ? 'col-span-1 md:col-span-2' : ''}`}>
+                                                    <div className="flex items-center justify-between mb-0.5">
                                                         <div className="flex flex-col">
-                                                            <label className="text-[10px] font-bold text-neutral-300 tracking-wide block uppercase">
+                                                            <label className="text-[9px] font-bold text-neutral-300 tracking-wide block uppercase">
                                                                 {field.label} {field.required && <span className="text-primary">*</span>}
                                                             </label>
                                                             {field.allowSecondary && (
-                                                                <span className="text-[8px] text-neutral-600 font-medium mt-0.5">
-                                                                    Select Primary & Secondary Options
+                                                                <span className="text-[8px] text-neutral-600 font-medium mt-0">
+                                                                    Priority
                                                                 </span>
                                                             )}
                                                         </div>
@@ -651,26 +651,26 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
                     {/* Footer - HIDDEN IF FOCUSED */}
                     {!isFocusedMode && (
-                        <div className="h-16 border-t border-neutral-800 flex items-center justify-between px-5 bg-neutral-900/50">
+                        <div className="h-12 border-t border-neutral-800 flex items-center justify-between px-3 bg-neutral-900/50 shrink-0">
                             <button
                                 onClick={handleBack}
                                 disabled={currentStepIndex === 0}
-                                className="px-6 py-2 rounded-lg font-bold text-sm text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                className="px-4 py-1.5 rounded-md font-bold text-xs text-neutral-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                             >
                                 Back
                             </button>
 
                             <button
                                 onClick={handleNext}
-                                className="px-6 py-2 bg-primary text-black rounded-lg font-bold text-xs hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2"
+                                className="px-5 py-2 bg-primary text-black rounded-md font-bold text-[10px] hover:bg-primary/90 transition-colors shadow-sm flex items-center gap-1.5"
                             >
                                 {isLastStep ? (
                                     <>
-                                        <Save size={16} /> Save Strategy
+                                        <Save size={12} /> Save
                                     </>
                                 ) : (
                                     <>
-                                        Next Step <ChevronRight size={16} />
+                                        Next <ChevronRight size={12} />
                                     </>
                                 )}
                             </button>

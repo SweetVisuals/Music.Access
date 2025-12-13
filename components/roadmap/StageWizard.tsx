@@ -352,7 +352,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                         value={value || ''}
                         onChange={(e) => onChange(e.target.value)}
                         placeholder={field.placeholder}
-                        className="w-full h-20 bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:ring-1 focus:ring-primary/20 leading-relaxed custom-scrollbar pb-8"
+                        className="w-full h-14 bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:ring-1 focus:ring-primary/20 leading-relaxed custom-scrollbar pb-6"
                     />
                     {field.aiEnabled && onAiRequest && (
                         <button
@@ -519,30 +519,33 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                         {currentStep.description && <p className="text-neutral-500 text-xs">{currentStep.description}</p>}
                                     </div>
 
-                                    <div className="space-y-8">
-                                        {currentStep.fields.map(field => (
-                                            <div key={field.id} className="space-y-2 bg-neutral-900/20 p-4 rounded-xl border border-neutral-800/50 hover:border-neutral-700 transition-colors">
-                                                <div className="flex items-center justify-between mb-1.5">
-                                                    <div className="flex flex-col">
-                                                        <label className="text-[10px] font-bold text-neutral-300 tracking-wide block uppercase">
-                                                            {field.label} {field.required && <span className="text-primary">*</span>}
-                                                        </label>
-                                                        {field.allowSecondary && (
-                                                            <span className="text-[8px] text-neutral-600 font-medium mt-0.5">
-                                                                Select Primary & Secondary Options
-                                                            </span>
-                                                        )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {currentStep.fields.map(field => {
+                                            const isWide = ['textarea', 'array', 'multiselect'].includes(field.type);
+                                            return (
+                                                <div key={field.id} className={`space-y-1.5 bg-neutral-900/20 p-3 rounded-xl border border-neutral-800/50 hover:border-neutral-700 transition-colors ${isWide ? 'col-span-1 md:col-span-2' : ''}`}>
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <div className="flex flex-col">
+                                                            <label className="text-[10px] font-bold text-neutral-300 tracking-wide block uppercase">
+                                                                {field.label} {field.required && <span className="text-primary">*</span>}
+                                                            </label>
+                                                            {field.allowSecondary && (
+                                                                <span className="text-[8px] text-neutral-600 font-medium mt-0.5">
+                                                                    Select Primary & Secondary Options
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
+                                                    {renderField(
+                                                        field,
+                                                        formData[field.id],
+                                                        (val) => updateField(field.id, val),
+                                                        undefined,
+                                                        field.aiEnabled ? () => openAiHelper(field.id) : undefined
+                                                    )}
                                                 </div>
-                                                {renderField(
-                                                    field,
-                                                    formData[field.id],
-                                                    (val) => updateField(field.id, val),
-                                                    undefined,
-                                                    field.aiEnabled ? () => openAiHelper(field.id) : undefined
-                                                )}
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </>
                             ) : (

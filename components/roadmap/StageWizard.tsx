@@ -159,7 +159,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                         type="date"
                         value={val.from}
                         onChange={(e) => onChange({ ...val, from: e.target.value })}
-                        className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20 text-sm"
+                        className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20 text-sm"
                     />
                 </div>
                 <div className="space-y-1">
@@ -168,7 +168,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                         type="date"
                         value={val.to}
                         onChange={(e) => onChange({ ...val, to: e.target.value })}
-                        className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20 text-sm"
+                        className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20 text-sm"
                     />
                 </div>
             </div>
@@ -216,7 +216,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
                 return (
                     <div className="h-full flex flex-col animate-in slide-in-from-right duration-300">
-                        <div className="flex items-center justify-between mb-6 pb-4 border-b border-neutral-800">
+                        <div className="flex items-center justify-between mb-4 pb-3 border-b border-neutral-800">
                             <div className="flex items-center gap-4">
                                 <button
                                     onClick={() => setFocusedArrayItem(null)}
@@ -226,7 +226,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                     <ChevronLeft size={24} />
                                 </button>
                                 <div>
-                                    <h3 className="text-xl font-bold text-white">
+                                    <h3 className="text-lg font-bold text-white">
                                         {focusedArrayItem.isNew ? `Add New ${field.itemLabel || 'Item'}` : `Edit ${field.itemLabel || 'Item'}`}
                                     </h3>
                                     <p className="text-sm text-neutral-500">Fill out the details below.</p>
@@ -242,7 +242,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                         </div>
 
                         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                            <div className="grid grid-cols-1 gap-6 pb-20">
+                            <div className="grid grid-cols-1 gap-4 pb-16">
                                 {field.fields?.map(subField => (
                                     <div key={subField.id} className="space-y-2">
                                         <div className="flex items-center justify-between">
@@ -352,7 +352,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                         value={value || ''}
                         onChange={(e) => onChange(e.target.value)}
                         placeholder={field.placeholder}
-                        className="w-full h-20 bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:ring-1 focus:ring-primary/20 leading-relaxed custom-scrollbar pb-10"
+                        className="w-full h-20 bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:ring-1 focus:ring-primary/20 leading-relaxed custom-scrollbar pb-8"
                     />
                     {field.aiEnabled && onAiRequest && (
                         <button
@@ -422,7 +422,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                     }
                                 }}
                                 placeholder={field.placeholder || "Type your custom response..."}
-                                className={`w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 pr-12 text-white focus:border-primary/50 focus:outline-none transition-all ${(field.allowSecondary
+                                className={`w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 pr-12 text-sm text-white focus:border-primary/50 focus:outline-none transition-all ${(field.allowSecondary
                                     ? (typeof value === 'object' && value.primary && field.options.includes(value.primary))
                                     : (value && field.options.includes(value)))
                                     ? 'text-neutral-500 italic'
@@ -443,7 +443,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                     value={value || ''}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={field.placeholder}
-                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 pr-10 text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20"
+                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 pr-10 text-sm text-white focus:border-primary/50 focus:outline-none transition-all focus:ring-1 focus:ring-primary/20"
                 />
                 {field.aiEnabled && onAiRequest && (
                     <button
@@ -463,15 +463,15 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
         <>
             <div className="fixed inset-0 z-30 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}></div>
 
-            <div className="fixed inset-0 z-50 top-16 lg:left-64 flex items-center justify-center p-4 sm:p-8 pointer-events-none">
+            <div className="fixed inset-0 z-50 top-16 lg:left-64 flex items-center justify-center p-4 sm:p-4 pointer-events-none">
                 <div className="w-full max-w-6xl h-full max-h-[85vh] bg-[#0a0a0a] border border-neutral-800 rounded-2xl flex flex-col shadow-2xl overflow-hidden relative pointer-events-auto">
 
                     {/* Header - HIDDEN IF FOCUSED */}
                     {!isFocusedMode && (
-                        <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
+                        <div className="h-14 border-b border-neutral-800 flex items-center justify-between px-5 bg-neutral-900/50">
                             <div>
                                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <span className="text-primary">{config.title}</span>
+                                    <span className="text-primary text-base">{config.title}</span>
                                     <span className="text-neutral-600">/</span>
                                     <span className="text-neutral-400 font-normal text-sm">Strategy Planning</span>
                                 </h2>
@@ -484,7 +484,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
                     {/* Progress Bar - HIDDEN IF FOCUSED */}
                     {!isFocusedMode && (
-                        <div className="px-8 pt-6 pb-2">
+                        <div className="px-5 pt-4 pb-2">
                             <div className="flex items-center justify-between relative">
                                 <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-neutral-800 -z-10"></div>
                                 {config.steps.map((step, idx) => (
@@ -509,22 +509,22 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
                     {/* Main Content Area */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-                        <div className={`p-8 space-y-8 animate-in slide-in-from-bottom-4 duration-300 key={currentStep.id} ${isFocusedMode ? 'h-full flex flex-col' : ''}`}>
+                        <div className={`p-5 space-y-5 animate-in slide-in-from-bottom-4 duration-300 key={currentStep.id} ${isFocusedMode ? 'h-full flex flex-col' : ''}`}>
 
                             {!isFocusedMode ? (
                                 // STANDARD VIEW
                                 <>
                                     <div className="mb-6">
-                                        <h3 className="text-2xl font-bold text-white mb-2">{currentStep.title}</h3>
+                                        <h3 className="text-xl font-bold text-white mb-2">{currentStep.title}</h3>
                                         {currentStep.description && <p className="text-neutral-400">{currentStep.description}</p>}
                                     </div>
 
                                     <div className="space-y-8">
                                         {currentStep.fields.map(field => (
-                                            <div key={field.id} className="space-y-3 bg-neutral-900/20 p-6 rounded-xl border border-neutral-800/50 hover:border-neutral-700 transition-colors">
+                                            <div key={field.id} className="space-y-2 bg-neutral-900/20 p-4 rounded-xl border border-neutral-800/50 hover:border-neutral-700 transition-colors">
                                                 <div className="flex items-center justify-between mb-2">
                                                     <div className="flex flex-col">
-                                                        <label className="text-sm font-bold text-white tracking-wide block">
+                                                        <label className="text-xs font-bold text-white tracking-wide block">
                                                             {field.label} {field.required && <span className="text-primary">*</span>}
                                                         </label>
                                                         {field.allowSecondary && (
@@ -648,7 +648,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
                     {/* Footer - HIDDEN IF FOCUSED */}
                     {!isFocusedMode && (
-                        <div className="h-20 border-t border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
+                        <div className="h-16 border-t border-neutral-800 flex items-center justify-between px-5 bg-neutral-900/50">
                             <button
                                 onClick={handleBack}
                                 disabled={currentStepIndex === 0}

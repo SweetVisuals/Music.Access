@@ -370,21 +370,21 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
     });
 
     return (
-        <div className="w-full overflow-x-auto custom-scrollbar pb-12 pt-4">
-            <div className="flex items-stretch gap-4 px-4 min-w-max">
+    return (
+        <div className="w-full pb-12 pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 px-4 w-full">
                 {allStages.map((stage: any, index) => {
                     const status = strategyData[stage.id]?.status || 'not_started';
                     const isReal = STAGE_TEMPLATES.some(t => t.id === stage.id);
-                    const isLast = index === allStages.length - 1;
                     const isLocked = !isReal && index >= 2;
 
                     return (
-                        <div key={stage.id} className="flex items-center group">
+                        <div key={stage.id} className="flex flex-col group h-full">
                             {/* Card */}
                             <div className={`
-                                w-[320px] h-[400px] flex flex-col relative
-                                rounded-2xl border backdrop-blur-sm transition-all duration-300
-                                hover:translate-y-[-4px] hover:shadow-2xl
+                                w-full h-[320px] flex flex-col relative
+                                rounded-xl border backdrop-blur-sm transition-all duration-300
+                                hover:translate-y-[-4px] hover:shadow-xl
                                 ${status === 'completed'
                                     ? 'bg-green-500/10 border-green-500/30 hover:shadow-green-500/20'
                                     : isLocked
@@ -394,16 +394,16 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                             `}>
                                 {/* Header Image / Icon Area */}
                                 <div className={`
-                                    h-32 w-full border-b flex items-center justify-center relative overflow-hidden
+                                    h-24 w-full border-b flex items-center justify-center relative overflow-hidden
                                     ${status === 'completed' ? 'border-green-500/20 bg-green-500/5' : 'border-neutral-800 bg-black/20'}
                                 `}>
-                                    <div className="absolute top-4 right-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                                    <div className="absolute top-3 right-3 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
                                         Step {String(index + 1).padStart(2, '0')}
                                     </div>
 
                                     {/* Icon Circle */}
                                     <div className={`
-                                        w-16 h-16 rounded-full flex items-center justify-center border-2 shadow-lg z-10
+                                        w-12 h-12 rounded-full flex items-center justify-center border-2 shadow-lg z-10
                                         ${status === 'completed'
                                             ? 'bg-green-500 text-black border-green-400'
                                             : isLocked
@@ -411,13 +411,7 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                                 : 'bg-neutral-900 text-primary border-primary/30 group-hover:scale-110 transition-transform duration-300'
                                         }
                                     `}>
-                                        {/* Dynamic Icon based on stage config could go here, using a generic map or just text for now if imports missing */}
-                                        {/* For safety using hardcoded generic or the one from map if available. 
-                                            The stage object has iconName. Ideally we map this string to a component, 
-                                            but to avoid huge switch statement here without mapping, I'll use a generic or simple match.
-                                        */}
-                                        {/* Simulating icon lookup or just generic */}
-                                        {status === 'completed' ? <CheckCircle size={32} /> : <div className="text-2xl font-bold">{index + 1}</div>}
+                                        {status === 'completed' ? <CheckCircle size={24} /> : <div className="text-lg font-bold">{index + 1}</div>}
                                     </div>
 
                                     {/* Background decorative glow */}
@@ -425,11 +419,11 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                 </div>
 
                                 {/* Content */}
-                                <div className="p-6 flex-1 flex flex-col">
-                                    <h3 className={`text-xl font-bold mb-2 ${status === 'completed' ? 'text-green-400' : 'text-white'}`}>
+                                <div className="p-4 flex-1 flex flex-col">
+                                    <h3 className={`text-sm font-bold mb-1.5 ${status === 'completed' ? 'text-green-400' : 'text-white'}`}>
                                         {stage.title}
                                     </h3>
-                                    <p className="text-sm text-neutral-400 leading-relaxed mb-6 flex-1">
+                                    <p className="text-xs text-neutral-400 leading-snug mb-4 flex-1 line-clamp-3">
                                         {stage.description}
                                     </p>
 
@@ -439,7 +433,7 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                             onClick={() => onStartStage(stage.id)}
                                             disabled={isLocked}
                                             className={`
-                                                w-full py-3 rounded-xl font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2
+                                                w-full py-2.5 rounded-lg font-bold text-xs tracking-wide transition-all flex items-center justify-center gap-1.5
                                                 ${status === 'completed'
                                                     ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/20'
                                                     : isLocked
@@ -449,23 +443,16 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                             `}
                                         >
                                             {status === 'completed' ? (
-                                                <>Edit Strategy <div className="w-1.5 h-1.5 rounded-full bg-green-500 ml-1"></div></>
+                                                <>Edit <div className="w-1.5 h-1.5 rounded-full bg-green-500 ml-1"></div></>
                                             ) : isLocked ? (
-                                                <><Lock size={14} /> Locked</>
+                                                <><Lock size={12} /> Locked</>
                                             ) : (
-                                                <>Start Phase <ArrowRight size={14} /></>
+                                                <>Start <ArrowRight size={12} /></>
                                             )}
                                         </button>
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Arrow Connector */}
-                            {!isLast && (
-                                <div className="px-4 text-neutral-700">
-                                    <ArrowRight size={24} className={`${status === 'completed' ? 'text-green-500/50' : ''}`} />
-                                </div>
-                            )}
                         </div>
                     );
                 })}

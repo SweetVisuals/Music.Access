@@ -29,12 +29,21 @@ import {
     Lock
 } from 'lucide-react';
 import { Goal } from '../types';
-import { getGoals, getStrategies, saveStrategy, getCalendarEvents, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from '../services/supabaseService';
+import { getGoals, getStrategies, saveStrategy, getCalendarEvents, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, saveStrategyToCalendar, getCurrentUser, markStageStarted } from '../services/supabaseService';
+// ... imports
+
+// ... inside RoadmapPage component
+
+
+
+// ... inside StrategyTabContent
+
+
 import { STAGE_TEMPLATES } from './roadmap/StageTemplates';
 import StageWizard from './roadmap/StageWizard';
 import EraTimeline from './roadmap/EraTimeline';
 import CalendarEventModal from './roadmap/CalendarEventModal';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isWithinInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isWithinInterval, isValid, parseISO } from 'date-fns';
 
 interface RoadmapPageProps {
     onNavigate?: (view: View) => void;
@@ -105,107 +114,120 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
 
     // ------------------------------
 
+    const [openStrategyWizard, setOpenStrategyWizard] = useState<string | null>(null);
+
     return (
         <div className="w-full max-w-[1800px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
 
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-3xl font-black text-white mb-2 flex items-center gap-3">
-                        <Map className="text-primary" size={32} />
-                        Roadmap & Planning
-                    </h1>
-                    <p className="text-neutral-500 text-sm">Plan your career trajectory, manage campaigns, and track goals.</p>
+            {/* Header & Goals Section - Collapsible */}
+            <div className={`transition-all duration-700 ease-in-out overflow-hidden ${openStrategyWizard ? 'max-h-0 opacity-0 mb-0' : 'max-h-[800px] opacity-100 mb-8'}`}>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+
+                    <div>
+                        <h1 className="text-3xl font-black text-white mb-2 flex items-center gap-3">
+                            <Map className="text-primary" size={32} />
+                            Roadmap & Planning
+                        </h1>
+                        <p className="text-neutral-500 text-sm">Plan your career trajectory, manage campaigns, and track goals.</p>
+                    </div>
+
+                    <div className="flex bg-neutral-900/50 p-1 rounded-lg border border-neutral-800">
+                        <button
+                            onClick={() => setActiveTab('planner')}
+                            className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'planner' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            <CalendarIcon size={14} />
+                            Calendar & Planner
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('strategy')}
+                            className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'strategy' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            <Layout size={14} />
+                            Strategy Roadmap
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('wizard')}
+                            className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'wizard' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            <PenTool size={14} />
+                            Roadmap Creator
+                        </button>
+                    </div>
                 </div>
 
-                <div className="flex bg-neutral-900/50 p-1 rounded-lg border border-neutral-800">
-                    <button
-                        onClick={() => setActiveTab('planner')}
-                        className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'planner' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'
-                            }`}
-                    >
-                        <CalendarIcon size={14} />
-                        Calendar & Planner
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('strategy')}
-                        className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'strategy' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'
-                            }`}
-                    >
-                        <Layout size={14} />
-                        Strategy Roadmap
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('wizard')}
-                        className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'wizard' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'
-                            }`}
-                    >
-                        <PenTool size={14} />
-                        Roadmap Creator
-                    </button>
-                </div>
-            </div>
+                {/* Goals Section (Compact) */}
+                <div className="mb-8">
+                    <div className="flex items-center justify-between mb-4 cursor-pointer" onClick={() => setIsGoalsExpanded(!isGoalsExpanded)}>
+                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                            <Target className="text-primary" size={18} />
+                            Active Goals
+                            <ChevronDown size={16} className={`text-neutral-500 transition-transform ${isGoalsExpanded ? 'rotate-180' : ''}`} />
+                        </h2>
+                        <button className="text-xs font-bold text-neutral-500 hover:text-white transition-colors">
+                            {isGoalsExpanded ? 'Collapse' : 'Expand'}
+                        </button>
+                    </div>
 
-            {/* Goals Section (Compact) */}
-            <div className="mb-8">
-                <div className="flex items-center justify-between mb-4 cursor-pointer" onClick={() => setIsGoalsExpanded(!isGoalsExpanded)}>
-                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Target className="text-primary" size={18} />
-                        Active Goals
-                        <ChevronDown size={16} className={`text-neutral-500 transition-transform ${isGoalsExpanded ? 'rotate-180' : ''}`} />
-                    </h2>
-                    <button className="text-xs font-bold text-neutral-500 hover:text-white transition-colors">
-                        {isGoalsExpanded ? 'Collapse' : 'Expand'}
-                    </button>
-                </div>
-
-                {isGoalsExpanded && (
-                    <>
-                        {loadingGoals ? (
-                            <div className="h-24 bg-white/5 animate-pulse rounded-xl"></div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in slide-in-from-top-2 duration-200">
-                                {goals.slice(0, 4).map(goal => { // Show top 4 goals
-                                    const progress = calculateProgress(goal.current, goal.target);
-                                    return (
-                                        <div key={goal.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-lg p-4 hover:border-neutral-700 transition-colors">
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div className={`p-1.5 rounded-md border ${getGoalColor(goal.type)}`}>
-                                                    {getGoalIcon(goal.type)}
+                    {isGoalsExpanded && (
+                        <>
+                            {loadingGoals ? (
+                                <div className="h-24 bg-white/5 animate-pulse rounded-xl"></div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in slide-in-from-top-2 duration-200">
+                                    {goals.slice(0, 4).map(goal => { // Show top 4 goals
+                                        const progress = calculateProgress(goal.current, goal.target);
+                                        return (
+                                            <div key={goal.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-lg p-4 hover:border-neutral-700 transition-colors">
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div className={`p-1.5 rounded-md border ${getGoalColor(goal.type)}`}>
+                                                        {getGoalIcon(goal.type)}
+                                                    </div>
+                                                    <span className="text-[10px] uppercase font-bold text-neutral-500">{goal.category}</span>
                                                 </div>
-                                                <span className="text-[10px] uppercase font-bold text-neutral-500">{goal.category}</span>
+                                                <h3 className="text-sm font-bold text-white truncate mb-1">{goal.title}</h3>
+                                                <div className="w-full bg-neutral-900 rounded-full h-1.5 mb-2">
+                                                    <div className="bg-primary h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                                                </div>
+                                                <div className="flex justify-between text-[10px] text-neutral-500">
+                                                    <span>{Math.round(progress)}%</span>
+                                                    <span>{goal.current} / {goal.target}</span>
+                                                </div>
                                             </div>
-                                            <h3 className="text-sm font-bold text-white truncate mb-1">{goal.title}</h3>
-                                            <div className="w-full bg-neutral-900 rounded-full h-1.5 mb-2">
-                                                <div className="bg-primary h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
-                                            </div>
-                                            <div className="flex justify-between text-[10px] text-neutral-500">
-                                                <span>{Math.round(progress)}%</span>
-                                                <span>{goal.current} / {goal.target}</span>
-                                            </div>
+                                        );
+                                    })}
+
+                                    {/* Add Goal Button */}
+                                    <button className="bg-white/5 border border-dashed border-neutral-800 rounded-lg p-4 hover:bg-white/10 hover:border-neutral-600 transition-all flex flex-col items-center justify-center gap-2 group">
+                                        <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 group-hover:bg-primary group-hover:text-black transition-colors">
+                                            <Plus size={16} />
                                         </div>
-                                    );
-                                })}
+                                        <span className="text-xs font-bold text-neutral-400 group-hover:text-white">Add New Goal</span>
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
 
-                                {/* Add Goal Button */}
-                                <button className="bg-white/5 border border-dashed border-neutral-800 rounded-lg p-4 hover:bg-white/10 hover:border-neutral-600 transition-all flex flex-col items-center justify-center gap-2 group">
-                                    <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 group-hover:bg-primary group-hover:text-black transition-colors">
-                                        <Plus size={16} />
-                                    </div>
-                                    <span className="text-xs font-bold text-neutral-400 group-hover:text-white">Add New Goal</span>
-                                </button>
-                            </div>
-                        )}
-                    </>
-                )}
+                <div className="h-px bg-neutral-800"></div>
             </div>
-
-            <div className="h-px bg-neutral-800 mb-8"></div>
 
             {/* Main Content Area */}
             <div className="min-h-[500px]">
                 {activeTab === 'planner' && <PlannerTab strategies={strategies} />}
-                {activeTab === 'strategy' && <StrategyTab strategies={strategies} onUpdate={fetchStrategies} />}
+
+                {activeTab === 'strategy' && (
+                    <StrategyTab
+                        strategies={strategies}
+                        onUpdate={fetchStrategies}
+                        openWizard={openStrategyWizard}
+                        setOpenWizard={setOpenStrategyWizard}
+                    />
+                )}
                 {activeTab === 'wizard' && <RoadmapWizardTab />}
             </div>
 
@@ -283,6 +305,31 @@ const PlannerTab: React.FC<{ strategies: Strategy[] }> = ({ strategies }) => {
 
     // Derived: Campaigns for EraTimeline
     const activeCampaigns = events.filter(e => e.type === 'campaign');
+
+    // Derived: Strategy Campaigns for Calendar Coloring
+    const strategyCampaigns = React.useMemo(() => {
+        const stage5 = strategies.find(s => s.id === 'stage-5');
+        if (!stage5?.data?.campaigns) return [];
+        return (stage5.data.campaigns as any[]).map((c, i) => {
+            const start = c.dates?.from ? new Date(c.dates.from) : undefined;
+            const end = c.dates?.to ? new Date(c.dates.to) : undefined;
+            // Define styles: [bg, text, border]
+            const palettes = [
+                ['bg-indigo-500/10', 'text-indigo-400', 'border-indigo-500/20'],
+                ['bg-emerald-500/10', 'text-emerald-400', 'border-emerald-500/20'],
+                ['bg-orange-500/10', 'text-orange-400', 'border-orange-500/20'],
+                ['bg-pink-500/10', 'text-pink-400', 'border-pink-500/20'],
+                ['bg-cyan-500/10', 'text-cyan-400', 'border-cyan-500/20']
+            ];
+            const theme = palettes[i % palettes.length];
+            return {
+                name: c.name,
+                start,
+                end,
+                style: { bg: theme[0], text: theme[1], border: theme[2] }
+            };
+        }).filter(c => c.start && c.end && isValid(c.start) && isValid(c.end));
+    }, [strategies]);
 
     const getTypeColor = (type: string) => {
         switch (type) {
@@ -369,15 +416,29 @@ const PlannerTab: React.FC<{ strategies: Strategy[] }> = ({ strategies }) => {
                             const isToday = isSameDay(day, new Date());
                             const dayEvents = events.filter(e => isSameDay(new Date(e.startDate), day));
 
+                            // Check for Active Strategy Campaign
+                            const activeStrategyCampaign = strategyCampaigns.find(c =>
+                                c.start && c.end && isWithinInterval(day, { start: c.start, end: c.end })
+                            );
+
                             return (
                                 <div
                                     key={day.toISOString()}
                                     className={`
-                                        border-r border-b border-neutral-800/50 p-2 relative group transition-colors cursor-pointer
-                                        ${isToday ? 'bg-primary/5' : 'hover:bg-white/5'}
+                                        border-r border-b p-2 relative group transition-colors cursor-pointer flex flex-col gap-1
+                                        ${activeStrategyCampaign
+                                            ? `${activeStrategyCampaign.style.bg} ${activeStrategyCampaign.style.border}`
+                                            : `border-neutral-800/50 ${isToday ? 'bg-primary/5' : 'hover:bg-white/5'}`
+                                        }
                                     `}
                                     onClick={() => handleAddEvent(day)}
                                 >
+                                    {/* Campaign Label (if active) - Show on every day or just start? Show on every day for "colour coded" feel, maybe a small badge */}
+                                    {activeStrategyCampaign && (
+                                        <div className={`text-[8px] font-black uppercase tracking-wider truncate px-1 rounded-sm opacity-80 ${activeStrategyCampaign.style.text}`}>
+                                            {activeStrategyCampaign.name}
+                                        </div>
+                                    )}
                                     <div className="flex justify-between items-start mb-2">
                                         <span className={`
                                             text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full
@@ -429,30 +490,52 @@ const PlannerTab: React.FC<{ strategies: Strategy[] }> = ({ strategies }) => {
 
 // --- Strategy Tab ---
 
+
 interface StrategyTabProps {
     strategies: Strategy[];
     onUpdate: () => void;
+    openWizard: string | null;
+    setOpenWizard: (id: string | null) => void;
 }
 
-const StrategyTab: React.FC<StrategyTabProps> = ({ strategies, onUpdate }) => {
+const StrategyTab: React.FC<StrategyTabProps> = ({ strategies, onUpdate, openWizard, setOpenWizard }) => {
     // Convert strategies array to map for easier lookup
     const strategyMap = strategies.reduce((acc, curr) => {
         acc[curr.stageId] = { status: curr.status, data: curr.data };
         return acc;
     }, {} as Record<string, { status: 'not_started' | 'in_progress' | 'completed', data: any }>);
 
-    const [openWizard, setOpenWizard] = useState<string | null>(null); // Stage ID
     const [expandedStage, setExpandedStage] = useState<string | null>(null);
 
-    const handleStartStage = (stageId: string) => {
+    const handleStartStage = async (stageId: string) => {
         setOpenWizard(stageId);
+        // Removed immediate markStageStarted to prevent "Continue" status before editing
     };
 
-    const handleSaveStage = async (stageId: string, data: any) => {
+    const handleSaveStage = async (stageId: string, data: any, status: 'in_progress' | 'completed' = 'completed') => {
         try {
-            await saveStrategy(stageId, data);
-            setOpenWizard(null);
-            onUpdate(); // Reload
+            await saveStrategy(stageId, data, status);
+
+            // Sync to Calendar if this is the Campaign stage AND it's completed
+            // (We might want to sync visible campaigns even if in_progress, but let's stick to completed for now or checks)
+            // Sync to Calendar if this is a relevant stage (Campaigns, Content, Schedule) AND it's completed (or saving progress)
+            // We sync even on progress save to keep calendar updated interactively
+            if (['stage-5', 'stage-6', 'stage-9'].includes(stageId)) {
+                const user = await getCurrentUser();
+                if (user) {
+                    // We pass 'data' but the service will likely re-fetch full state to ensure cross-stage consistency
+                    await saveStrategyToCalendar(user.id, data);
+
+                    // Trigger a refresh of the events in the PlannerTab if they share state/context
+                    // For now, this is a distinct side-effect.
+                }
+            }
+
+            // Only close if completed, otherwise just update without closing (for auto-save/progress)
+            if (status === 'completed') {
+                setOpenWizard(null);
+            }
+            onUpdate(); // Reload strategies
         } catch (e) {
             console.error("Failed to save strategy", e);
         }
@@ -460,32 +543,40 @@ const StrategyTab: React.FC<StrategyTabProps> = ({ strategies, onUpdate }) => {
 
     return (
         <div className="space-y-8 max-w-5xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h2 className="text-2xl font-black text-white">Strategy Roadmap</h2>
-                    <p className="text-neutral-500">Define your artist identity, era, and execution plan.</p>
+            {!openWizard && (
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 className="text-2xl font-black text-white">Strategy Roadmap</h2>
+                        <p className="text-neutral-500">Define your artist identity, era, and execution plan.</p>
+                    </div>
+                    <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2 text-xs font-mono text-neutral-400">
+                        {strategies.filter(s => s.status === 'completed').length} / {STAGE_TEMPLATES.length} Stages Completed
+                    </div>
                 </div>
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2 text-xs font-mono text-neutral-400">
-                    {strategies.filter(s => s.status === 'completed').length} / {STAGE_TEMPLATES.length} Stages Completed
+            )}
+
+            {/* Content: Show Grid OR Wizard (Inline) */}
+            {!openWizard ? (
+                <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-left-4 duration-500">
+                    <StrategyTabContent
+                        strategyData={strategyMap}
+                        onStartStage={handleStartStage}
+                        onToggleDetails={(id: string) => setExpandedStage(expandedStage === id ? null : id)}
+                        expandedStage={expandedStage}
+                    />
                 </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-                <StrategyTabContent
-                    strategyData={strategyMap}
-                    onStartStage={handleStartStage}
-                    onToggleDetails={(id: string) => setExpandedStage(expandedStage === id ? null : id)}
-                    expandedStage={expandedStage}
-                />
-            </div>
-
-            {/* Wizard Modal */}
-            {openWizard && (
+            ) : (
                 <StageWizardContainer
                     stageId={openWizard}
                     onClose={() => setOpenWizard(null)}
-                    onSave={(data: any) => handleSaveStage(openWizard, data)}
+                    onSave={(data: any) => handleSaveStage(openWizard, data, 'completed')}
+                    onSaveProgress={(data: any) => handleSaveStage(openWizard, data, 'in_progress')}
+                    onSaveAndNext={(data: any, nextId: string) => {
+                        handleSaveStage(openWizard, data, 'completed');
+                        setOpenWizard(nextId);
+                    }}
                     initialData={strategyMap[openWizard]?.data}
+                    strategyData={strategyMap}
                 />
             )}
         </div>
@@ -495,12 +586,14 @@ const StrategyTab: React.FC<StrategyTabProps> = ({ strategies, onUpdate }) => {
 // --- Sub-components for StrategyTab (Unchanged logic, passed via props) ---
 const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggleDetails, expandedStage }) => {
 
+
     return (
         <div className="w-full pb-12 pt-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 px-4 w-full">
                 {STAGE_TEMPLATES.map((stage: any, index) => {
                     const status = strategyData[stage.id]?.status || 'not_started';
                     const isLocked = false;
+                    const isInProgress = status === 'in_progress';
 
                     return (
                         <div key={stage.id} className="flex flex-col group h-full">
@@ -511,15 +604,17 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                 hover:translate-y-[-4px] hover:shadow-xl
                                 ${status === 'completed'
                                     ? 'bg-green-500/10 border-green-500/30 hover:shadow-green-500/20'
-                                    : isLocked
-                                        ? 'bg-neutral-900/40 border-neutral-800/50 opacity-60'
-                                        : 'bg-neutral-900/60 border-neutral-800 hover:border-primary/50 hover:shadow-primary/10'
+                                    : isInProgress
+                                        ? 'bg-primary/5 border-primary/30 shadow-primary/5'
+                                        : isLocked
+                                            ? 'bg-neutral-900/40 border-neutral-800/50 opacity-60'
+                                            : 'bg-neutral-900/60 border-neutral-800 hover:border-primary/50 hover:shadow-primary/10'
                                 }
                             `}>
                                 {/* Header Image / Icon Area */}
                                 <div className={`
                                     h-16 w-full border-b flex items-center justify-center relative overflow-hidden
-                                    ${status === 'completed' ? 'border-green-500/20 bg-green-500/5' : 'border-neutral-800 bg-black/20'}
+                                    ${status === 'completed' ? 'border-green-500/20 bg-green-500/5' : isInProgress ? 'border-primary/20 bg-primary/5' : 'border-neutral-800 bg-black/20'}
                                 `}>
                                     <div className="absolute top-2 right-2 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
                                         Step {String(index + 1).padStart(2, '0')}
@@ -527,12 +622,14 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
 
                                     {/* Icon Circle */}
                                     <div className={`
-                                        w-10 h-10 rounded-full flex items-center justify-center border-2 shadow-lg z-10
+                                        w-10 h-10 rounded-full flex items-center justify-center border-2 shadow-lg z-10 transition-all duration-500
                                         ${status === 'completed'
                                             ? 'bg-green-500 text-black border-green-400'
-                                            : isLocked
-                                                ? 'bg-neutral-800 text-neutral-600 border-neutral-700'
-                                                : 'bg-neutral-900 text-primary border-primary/30 group-hover:scale-110 transition-transform duration-300'
+                                            : isInProgress
+                                                ? 'bg-neutral-900 text-primary border-primary animate-pulse'
+                                                : isLocked
+                                                    ? 'bg-neutral-800 text-neutral-600 border-neutral-700'
+                                                    : 'bg-neutral-900 text-primary border-primary/30 group-hover:scale-110'
                                         }
                                     `}>
                                         {status === 'completed' ? <CheckCircle size={18} /> : <div className="text-sm font-bold">{index + 1}</div>}
@@ -540,11 +637,16 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
 
                                     {/* Background decorative glow */}
                                     {!isLocked && <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />}
+
+                                    {/* In Progress Indicator */}
+                                    {isInProgress && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary/50 animate-pulse"></div>
+                                    )}
                                 </div>
 
                                 {/* Content */}
                                 <div className="p-3 flex-1 flex flex-col">
-                                    <h3 className={`text-xs font-bold mb-1 ${status === 'completed' ? 'text-green-400' : 'text-white'}`}>
+                                    <h3 className={`text-xs font-bold mb-1 ${status === 'completed' ? 'text-green-400' : isInProgress ? 'text-primary' : 'text-white'}`}>
                                         {stage.title}
                                     </h3>
                                     <p className="text-[10px] text-neutral-400 leading-snug mb-2 flex-1 line-clamp-2">
@@ -560,14 +662,18 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                                 w-full py-2.5 rounded-lg font-bold text-xs tracking-wide transition-all flex items-center justify-center gap-1.5
                                                 ${status === 'completed'
                                                     ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/20'
-                                                    : isLocked
-                                                        ? 'bg-neutral-800 text-neutral-500 border border-neutral-700 cursor-not-allowed'
-                                                        : 'bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/10'
+                                                    : isInProgress
+                                                        ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20 shadow-lg shadow-primary/5'
+                                                        : isLocked
+                                                            ? 'bg-neutral-800 text-neutral-500 border border-neutral-700 cursor-not-allowed'
+                                                            : 'bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/10'
                                                 }
                                             `}
                                         >
                                             {status === 'completed' ? (
                                                 <>Edit <div className="w-1.5 h-1.5 rounded-full bg-green-500 ml-1"></div></>
+                                            ) : isInProgress ? (
+                                                <>Continue <ArrowRight size={12} className="animate-pulse" /></>
                                             ) : isLocked ? (
                                                 <><Lock size={12} /> Locked</>
                                             ) : (
@@ -585,14 +691,22 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
     );
 }
 
-const StageWizardContainer: React.FC<any> = ({ stageId, onClose, onSave, initialData }) => {
+const StageWizardContainer: React.FC<any> = ({ stageId, onClose, onSave, onSaveAndNext, onSaveProgress, initialData }) => {
     const config = STAGE_TEMPLATES.find(t => t.id === stageId);
+
+    // Find next stage
+    const currentIndex = STAGE_TEMPLATES.findIndex(t => t.id === stageId);
+    const nextStage = STAGE_TEMPLATES[currentIndex + 1];
+
     if (!config) return null;
     return (
         <StageWizard
             config={config}
             onClose={onClose}
             onSave={onSave}
+            onSaveProgress={onSaveProgress}
+            onSaveAndNext={nextStage ? (data) => onSaveAndNext(data, nextStage.id) : undefined}
+            nextStageTitle={nextStage?.title}
             initialData={initialData}
         />
     );

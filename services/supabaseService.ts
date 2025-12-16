@@ -2314,3 +2314,226 @@ export const deleteCalendarEvent = async (eventId: string) => {
 
   if (error) throw error;
 };
+
+export const saveStrategyToCalendar = async (userId: string, strategyData: any) => {
+  // We need the FULL strategy data to do a complete sync. 
+  // If 'strategyData' passed is just one stage, we should fetch the rest or rely on caller passing full state.
+  // For robustness, let's fetch the latest state from DB to ensure we have all stages.
+  let allStrategies = [];
+  try {
+    const { data } = await supabase.from('strategies').select('*').eq('user_id', userId);
+    allStrategies = data || [];
+  } catch (e) {
+    console.error("Failed to fetch full strategies for sync", e);
+    return; // Safety abort
+  }
+
+  // Helper to get data for a specific stage
+  const getStageData = (id: string) => allStrategies.find((s: any) => s.stage_id === id)?.data || {};
+
+  const stage4 = getStageData('stage-4'); // Era
+  const stage5 = getStageData('stage-5'); // Campaigns
+  const stage6 = getStageData('stage-6'); // Content Buckets (for looking up platform/details)
+  const stage9 = getStageData('stage-9'); // Weekly Schedule
+
+  // 1. cleanup existing strategy events
+  const { error: deleteError } = await supabase
+    .from('calendar_events')
+    .delete()
+    .eq('user_id', userId)
+    .ilike('metadata->>source', 'roadmap_strategy_%'); // Matches roadmap_strategy_era, roadmap_strategy_campaign, roadmap_strategy_daily
+
+  if (deleteError) {
+    console.error('Error cleaning up old strategy events:', deleteError);
+  }
+
+  const eventsToInsert: any[] = [];
+
+  // --- A. ERA EVENTS (Stage 4) ---
+  // Goal: Show the Era as a long spanning event or milestone? 
+  // Let's make it a background event or just a "Start of Era" milestone if we don't support spans well visually yet.
+  // Actually, let's look for dates. Stage 4 often doesn't have explicit dates in this template (just concept).
+  // If no dates, we skip or use today. Let's skip Era event for now unless we find a date field in future.
+  // ... Wait, user asked to "add a day to day plan... campaign, era". 
+  // If Stage 5 has campaigns, the "Era" is effectively the sum of campaigns + some buffer?
+  // Let's add a "Start of Era" milestone if we have a title.
+  if (stage4.era_title) {
+    // We don't have a start date for the Era in the form. Let's use the start of the first campaign or Today.
+    let eraStart = new Date();
+    if (stage5.campaigns && stage5.campaigns.length > 0) {
+      const dates = stage5.campaigns.map((c: any) => c.dates?.from ? new Date(c.dates.from) : null).filter(Boolean);
+      if (dates.length > 0) {
+        eraStart = new Date(Math.min(...dates));
+      }
+    }
+
+    eventsToInsert.push({
+      user_id: userId,
+      title: `Era: ${stage4.era_title}`,
+      start_date: eraStart.toISOString(),
+      end_date: null, // Point in time for start? Or maybe end of year? Let's do point in time "Launch"
+      type: 'milestone',
+      status: 'pending',
+      description: stage4.era_narrative || 'New Era Begins',
+      metadata: { source: 'roadmap_strategy_era', stage_id: 'stage-4' }
+    });
+  }
+
+
+  // --- B. CAMPAIGN EVENTS (Stage 5) ---
+  const campaigns = stage5.campaigns || [];
+  let minDate = new Date();
+  let maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() + 90); // Default 90 days horizon if no campaigns
+
+  if (campaigns.length > 0) {
+    // Adjust horizon to fit campaigns
+    const endDates = campaigns.map((c: any) => c.dates?.to ? new Date(c.dates.to) : null).filter(Boolean);
+    if (endDates.length > 0) {
+      maxDate = new Date(Math.max(...endDates));
+      // Cap at 1 year to prevent insane loops if user puts year 2030
+      const limit = new Date();
+      limit.setFullYear(limit.getFullYear() + 1);
+      if (maxDate > limit) maxDate = limit;
+    }
+
+    campaigns.forEach((c: any) => {
+      let cStart = new Date();
+      let cEnd = new Date();
+      if (c.dates?.from) cStart = new Date(c.dates.from);
+      if (c.dates?.to) cEnd = new Date(c.dates.to);
+
+      eventsToInsert.push({
+        user_id: userId,
+        title: c.name || 'Campaign',
+        start_date: cStart.toISOString(),
+        end_date: cEnd.toISOString(),
+        type: 'campaign', // Special styling
+        status: 'pending',
+        description: `Goal: ${c.goal}\nFocus: ${c.purpose}`,
+        metadata: { source: 'roadmap_strategy_campaign', stage_id: 'stage-5', campaign_name: c.name }
+      });
+    });
+  }
+
+  // --- C. WEEKLY SCHEDULE (Stage 9 + Stage 6 Data) ---
+  // We need to project the weekly schedule onto the calendar for the duration of the "active planning period" (minDate to maxDate)
+  const weeklyPlan = stage9.weekly_plan || {}; // { 'Monday': [ { type, name } ] }
+  const bucketList = stage6.bucket_list || [];
+
+  // Helper to find bucket details
+  const getBucketDetails = (name: string) => bucketList.find((b: any) => b.name === name);
+
+  // Helper: Iterate days from Start to End
+  const currentDateIterator = new Date(minDate);
+  // If minDate is in past by a lot, maybe start from Today?
+  // Let's start from Today or minDate, whichever is later, to avoid backfilling history endlessly?
+  // Actually, user might want to see plan for whole campaign range. Let's stick to campaign range or Today -> +90d.
+  // If campaigns start in future, we start there. If they started already, we might backfill a bit or just start today.
+  // Let's simple start `new Date()` (Today) -> `maxDate`.
+  const projectionStart = new Date();
+  const projectionEnd = new Date(maxDate);
+  // Ensure we go at least 30 days if maxDate is close
+  if (projectionEnd.getTime() - projectionStart.getTime() < 30 * 24 * 60 * 60 * 1000) {
+    projectionEnd.setDate(projectionStart.getDate() + 60);
+  }
+
+  // Map day names to getDay() index
+  const dayMap: Record<string, number> = { 'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6 };
+
+  for (let d = new Date(projectionStart); d <= projectionEnd; d.setDate(d.getDate() + 1)) {
+    const dayOfWeekIndex = d.getDay();
+    const dayName = Object.keys(dayMap).find(key => dayMap[key] === dayOfWeekIndex);
+
+    if (dayName && weeklyPlan[dayName]) {
+      const dailyItems = weeklyPlan[dayName];
+      dailyItems.forEach((item: any) => {
+        // item: { type: 'campaign' | 'bucket', name: '...' }
+
+        let title = item.name;
+        let metaType = item.type; // 'campaign' or 'bucket'
+        let description = '';
+        let platform = '';
+        let eventType = 'content'; // Default for calendar 'type' column
+
+        if (metaType === 'bucket') {
+          const bucket = getBucketDetails(item.name);
+          if (bucket) {
+            // If bucket has "Primary Platforms", use the first one
+            if (bucket.platforms && bucket.platforms.length > 0) platform = bucket.platforms[0];
+            description = `Format: ${bucket.formats?.join(', ') || 'Any'}`;
+          }
+          eventType = 'content';
+        } else if (metaType === 'campaign') {
+          // For campaign daily tasks, usually means "Work on X" or "Post for X"
+          eventType = 'campaign'; // Or 'milestone'? Let's keep 'campaign' type or 'marketing'
+          description = 'Campaign Activity';
+        }
+
+        eventsToInsert.push({
+          user_id: userId,
+          title: title,
+          start_date: new Date(d).toISOString(), // Clone d
+          end_date: null, // Point event
+          type: eventType,
+          platform: platform,
+          status: 'pending',
+          description: description,
+          metadata: {
+            source: 'roadmap_strategy_daily',
+            day_template: dayName,
+            item_name: item.name,
+            item_type: metaType
+          }
+        });
+      });
+    }
+  }
+
+  if (eventsToInsert.length > 0) {
+    // Chunk inserts if too many? Supabase can handle a few hundreds. 
+    // 90 days * 3 items = 270 rows. Should be fine.
+    const { error: insertError } = await supabase
+      .from('calendar_events')
+      .insert(eventsToInsert);
+
+    if (insertError) {
+      console.error('Error syncing strategy to calendar:', insertError);
+    }
+  }
+};
+
+
+export const markStageStarted = async (stageId: string) => {
+  const user = await getCurrentUser();
+  if (!user) return;
+
+  // Check if it exists first
+  const { data: existing } = await supabase
+    .from('strategies')
+    .select('status')
+    .eq('user_id', user.id)
+    .eq('stage_id', stageId)
+    .single();
+
+  if (!existing) {
+    // Create new entry with in_progress
+    const { error } = await supabase
+      .from('strategies')
+      .insert({
+        user_id: user.id,
+        stage_id: stageId,
+        data: {},
+        status: 'in_progress'
+      });
+    if (error) console.error('Error marking stage started:', error);
+  } else if (existing.status === 'not_started') {
+    // Update to in_progress if not started
+    const { error } = await supabase
+      .from('strategies')
+      .update({ status: 'in_progress' })
+      .eq('user_id', user.id)
+      .eq('stage_id', stageId);
+    if (error) console.error('Error marking stage started:', error);
+  }
+};

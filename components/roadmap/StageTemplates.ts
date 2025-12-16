@@ -5,55 +5,63 @@ import { StrategyStageConfig } from '../../types';
 export const STAGE_TEMPLATES: StrategyStageConfig[] = [
     {
         id: 'stage-1',
-        title: 'High Level Brand Story',
-        description: 'Define your core narrative and identity.',
+        title: 'Brand Identity & Core',
+        description: 'Define the soul of your artist project.',
         iconName: 'BookOpen',
         steps: [
             {
-                id: 'identity',
-                title: 'Identity & Core',
-                description: ' Establish who you are and what this project represents.',
+                id: 'core_identity',
+                title: 'The Core',
+                description: 'Who are you at the deepest level?',
                 fields: [
                     {
-                        id: 'who_are_you',
-                        label: 'Who Are You?',
+                        id: 'archetype',
+                        label: 'Primary Archetype',
                         type: 'select',
                         allowCustom: true,
                         allowSecondary: true,
-                        options: ['The Underdog', 'The Visionary', 'The Rebel', 'The Healer', 'The Storyteller', 'The Virtuoso'],
-                        placeholder: 'Select an archetype or type your own...',
+                        options: ['Rebel', 'Sage', 'Lover', 'Jester', 'Magician', 'Ruler', 'Hero', 'Creator', 'Caregiver', 'Explorer', 'Innocent', 'Everyman'],
+                        placeholder: 'Select your primary archetype...',
                         required: true,
                         aiEnabled: true
                     },
                     {
-                        id: 'what_is_the_world',
-                        label: 'What Is The World?',
+                        id: 'mission_statement',
+                        label: 'Mission Statement',
                         type: 'textarea',
-                        placeholder: 'Describe the world/universe this project inhabits...',
+                        placeholder: 'Why does this project exist? What is your promise to the world?',
                         required: true,
                         aiEnabled: true
+                    },
+                    {
+                        id: 'core_values',
+                        label: 'Core Values',
+                        type: 'multiselect',
+                        options: ['Authenticity', 'Innovation', 'Community', 'Rebellion', 'Transparency', 'Excellence', 'Sustainability', 'Inclusivity', 'Mystery', 'Energy'],
+                        placeholder: 'Select up to 5 core values...',
+                        required: true
                     }
                 ]
             },
             {
-                id: 'narrative',
-                title: 'Characters & Narrative',
-                description: 'Flesh out the universe and its inhabitants.',
+                id: 'brand_voice',
+                title: 'Voice & Tone',
+                description: 'How do you speak to your audience?',
                 fields: [
                     {
-                        id: 'who_are_the_characters',
-                        label: 'Who The Characters Are?',
-                        type: 'textarea',
-                        placeholder: 'List the key personas or archetypes...',
-                        required: true,
-                        aiEnabled: true
+                        id: 'tone_keywords',
+                        label: 'Tone Keywords',
+                        type: 'multiselect',
+                        options: ['Witty', 'Serious', 'Inspirational', 'Aggressive', 'Chill', 'Cryptic', 'Educational', 'Vulnerable', 'Confident', 'Sarcastic'],
+                        placeholder: 'Select tones...',
+                        required: true
                     },
                     {
-                        id: 'what_are_their_stories',
-                        label: 'What Are Their Stories?',
+                        id: 'vocabulary_rules',
+                        label: 'Vocabulary & Slang',
                         type: 'textarea',
-                        placeholder: 'Brief background for each character...',
-                        required: true,
+                        placeholder: 'Specific words you use or avoid. (e.g. "We call our fans Initiates, never fans")',
+                        required: false,
                         aiEnabled: true
                     }
                 ]
@@ -62,23 +70,95 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
     },
     {
         id: 'stage-2',
-        title: 'Define Brand Personality',
-        description: 'Where does this sit in the culture?',
-        iconName: 'User',
+        title: 'Market & Culture',
+        description: 'Where do you fit in the cultural landscape?',
+        iconName: 'Globe',
         steps: [
             {
-                id: 'positioning',
-                title: 'Positioning',
-                description: 'Define your cultural stance.',
+                id: 'target_audience',
+                title: 'Target Audience',
+                description: 'Who are you speaking to?',
                 fields: [
                     {
-                        id: 'whats_the_position',
-                        label: 'Whats The Position?',
+                        id: 'age_range_main',
+                        label: 'Main Age Range',
+                        type: 'select',
+                        options: ['13-17', '18-24', '25-34', '35-44', '45+'],
+                        allowCustom: true,
+                        placeholder: 'Select primary age group...',
+                        required: true
+                    },
+                    {
+                        id: 'age_range_secondary',
+                        label: 'Secondary Age Range',
+                        type: 'select',
+                        options: ['13-17', '18-24', '25-34', '35-44', '45+'],
+                        allowCustom: true,
+                        placeholder: 'Select secondary age group...',
+                        required: false
+                    },
+                    {
+                        id: 'gender_split',
+                        label: 'Gender Split',
                         type: 'select',
                         allowCustom: true,
-                        allowSecondary: true,
-                        options: ['Mainstream Pop', 'Underground Alternative', 'Luxury/Premium', 'Raw/Gritty Street', 'Futuristic/Experimental', 'Nostalgic/Retro'],
-                        placeholder: 'Select a position or define your own...',
+                        options: ['Male Dominant', 'Female Dominant', 'Balanced', 'Non-Binary/Queer Focus'],
+                        placeholder: 'Select gender demographic...',
+                        required: true
+                    },
+                    {
+                        id: 'location',
+                        label: 'Location',
+                        type: 'multiselect',
+                        allowCustom: true,
+                        options: ['Worldwide', 'USA', 'UK', 'Europe', 'Asia', 'Latin America', 'Africa', 'Australia'],
+                        placeholder: 'Select key locations...',
+                        required: true
+                    },
+                    {
+                        id: 'audience_personas',
+                        label: 'Audience Personas',
+                        type: 'array',
+                        maxItems: 3,
+                        itemLabel: 'Persona',
+                        fields: [
+                            {
+                                id: 'name',
+                                label: 'Persona Name',
+                                type: 'text',
+                                placeholder: 'e.g. "The Curated Hipster"',
+                                required: true
+                            },
+                            {
+                                id: 'traits',
+                                label: 'Key Traits',
+                                type: 'textarea',
+                                placeholder: 'What do they like? Where do they hang out?',
+                                required: true
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'competition',
+                title: 'Competitive Landscape',
+                description: 'Who else is in your lane?',
+                fields: [
+                    {
+                        id: 'similar_artists',
+                        label: 'Similar Artists',
+                        type: 'multiselect',
+                        options: [], // User should type custom
+                        allowCustom: true,
+                        placeholder: 'Type artists...',
+                        required: true
+                    },
+                    {
+                        id: 'differentiation',
+                        label: 'Your "X-Factor"',
+                        type: 'textarea',
+                        placeholder: 'What makes you different from the names above?',
                         required: true,
                         aiEnabled: true
                     }
@@ -88,32 +168,63 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
     },
     {
         id: 'stage-3',
-        title: 'Brand Visual Language',
-        description: 'Define the aesthetic look and feel.',
+        title: 'Visual Universe',
+        description: 'The look and feel of your brand.',
         iconName: 'Eye',
         steps: [
             {
-                id: 'visuals',
-                title: 'Visual Language',
-                description: 'Define the aesthetic look and feel.',
+                id: 'color_palette',
+                title: 'Color & Aesthetics',
+                description: 'Define your visual DNA.',
                 fields: [
                     {
-                        id: 'how_does_it_look',
-                        label: 'How Does it Look?',
-                        type: 'select',
-                        allowCustom: true,
-                        allowSecondary: true,
-                        options: ['Cyberpunk / Sci-Fi', 'Vintage / Retro VHS', 'Minimalist / Clean', 'Dark / Gothic', 'Vibrant / Neon', 'Natural / Organic'],
-                        placeholder: 'Select an aesthetic...',
+                        id: 'primary_colors',
+                        label: 'Primary Colors',
+                        type: 'textarea',
+                        placeholder: 'Hex codes or descriptive names (e.g. "Electric Blue, Matte Black")',
                         required: true
                     },
                     {
-                        id: 'whats_the_visual_language',
-                        label: 'Whats The Visual Language?',
+                        id: 'aesthetic_style',
+                        label: 'Aesthetic Style',
+                        type: 'select',
+                        allowCustom: true,
+                        options: ['Cyberpunk', 'Y2K', 'Grunge', 'Minimalist', 'Baroque', 'Street Luxury', 'Ethereal', 'Industrial', 'Retro-Futurism'],
+                        placeholder: 'Select a visual style...',
+                        required: true
+                    },
+                    {
+                        id: 'fashion_notes',
+                        label: 'Fashion & Styling',
                         type: 'textarea',
-                        placeholder: 'Specific colors, fonts, textures, camera styles...',
-                        required: true,
+                        placeholder: 'Clothing brands, silhouettes, accessories...',
+                        required: false,
                         aiEnabled: true
+                    }
+                ]
+            },
+            {
+                id: 'visual_content',
+                title: 'Imagery & Typography',
+                description: 'Fonts and photo styles.',
+                fields: [
+                    {
+                        id: 'typography',
+                        label: 'Typography Preferences',
+                        type: 'multiselect',
+                        allowCustom: true,
+                        options: ['Serif (Classic)', 'Sans Serif (Modern)', 'Script (Elegant)', 'Display (Bold)', 'Monospace (Tech)', 'Handwritten (Personal)'],
+                        placeholder: 'Select font styles...',
+                        required: false
+                    },
+                    {
+                        id: 'imagery_themes',
+                        label: 'Imagery Themes',
+                        type: 'multiselect',
+                        allowCustom: true,
+                        options: ['Film Grain', 'High Flash', 'Studio Portraits', 'Candid/Raw', 'Abstract/3D', 'Nature/Organic', 'Urban/Concrete'],
+                        placeholder: 'Select imagery themes...',
+                        required: true
                     }
                 ]
             }
@@ -121,65 +232,51 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
     },
     {
         id: 'stage-4',
-        title: 'Define Period or Era',
-        description: 'Contextualize your work within a specific time or theme.',
+        title: 'The Era Definition',
+        description: 'Contextualize your current artistic chapter.',
         iconName: 'Clock',
         steps: [
             {
-                id: 'context',
-                title: 'Current Context',
-                description: 'Where do you stand right now?',
+                id: 'era_concept',
+                title: 'Era Concept',
+                description: 'What is this chapter called?',
                 fields: [
                     {
-                        id: 'where_do_i_find_myself_now',
-                        label: 'Where do I find myself now?',
-                        type: 'select',
-                        allowCustom: true,
-                        allowSecondary: true,
-                        options: ['Just Starting Out', 'Rebuilding / Comeback', 'Peaking / Momentum', 'Experimental Phase', 'Pivot / Rebranding'],
-                        placeholder: 'Select your current status...',
+                        id: 'era_title',
+                        label: 'Era Title',
+                        type: 'text',
+                        placeholder: 'e.g. "The Red Era" or "The Rebirth"',
+                        required: true
+                    },
+                    {
+                        id: 'era_narrative',
+                        label: 'Story Arc',
+                        type: 'textarea',
+                        placeholder: 'Beginning, Middle, and End of this era\'s story...',
                         required: true,
                         aiEnabled: true
                     }
                 ]
             },
             {
-                id: 'inspiration',
-                title: 'Inspirations',
-                description: 'What is fueling this era?',
+                id: 'era_world',
+                title: 'World Building',
+                description: 'Where does this era live?',
                 fields: [
                     {
-                        id: 'what_am_i_inspired_by',
-                        label: 'What am I inspired by?',
+                        id: 'setting_description',
+                        label: 'The World Setting',
                         type: 'textarea',
-                        placeholder: 'Movies, books, other artists, life events...',
+                        placeholder: 'Is it a digital void? A lush garden? A dystopian city?',
                         required: true,
                         aiEnabled: true
                     },
                     {
-                        id: 'consistent_inspirations',
-                        label: 'Are there any consistent inspirations?',
+                        id: 'characters',
+                        label: 'Key Characters/Alter Egos',
                         type: 'textarea',
-                        placeholder: 'Themes that always come back in your work...',
+                        placeholder: 'Are you playing a character? Who else is involved?',
                         required: false
-                    }
-                ]
-            },
-            {
-                id: 'environment',
-                title: 'World Building',
-                description: 'Create the space for this work to live.',
-                fields: [
-                    {
-                        id: 'defined_environment',
-                        label: 'Can I create a defined environment?',
-                        type: 'select',
-                        allowCustom: true,
-                        allowSecondary: true,
-                        options: ['Distopian Future City', 'Lush Fantasy Forest', 'Gritty Urban Streets', 'Digital / Virtual Void', '80s Retro Arcade'],
-                        placeholder: 'Describe the physical or digital space of this era...',
-                        required: true,
-                        aiEnabled: true
                     }
                 ]
             }
@@ -187,48 +284,97 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
     },
     {
         id: 'stage-5',
-        title: "What's the Campaign?",
-        description: 'Define the major campaigns that tell the story of this era.',
-        iconName: 'Clapperboard',
+        title: 'Campaign Architecture',
+        description: 'Plan your major marketing moves.',
+        iconName: 'Flag',
         steps: [
             {
                 id: 'campaigns',
-                title: 'Campaign Management',
-                description: 'Define distinct campaigns for this era.',
+                title: 'Major Campaigns',
+                description: 'Define the big beats of this era.',
                 fields: [
                     {
                         id: 'campaign_list',
-                        label: 'Your Campaigns',
+                        label: 'Campaigns',
                         type: 'array',
-                        maxItems: 8,
+                        maxItems: 4,
                         itemLabel: 'Campaign',
                         fields: [
                             {
                                 id: 'name',
                                 label: 'Campaign Name',
                                 type: 'text',
-                                placeholder: 'e.g. "Summer Single Rollout"',
+                                placeholder: 'e.g. "Lead Single Rollout"',
                                 required: true
                             },
                             {
-                                id: 'focus',
-                                label: 'Main Focus',
+                                id: 'goal',
+                                label: 'Primary Goal',
                                 type: 'select',
-                                allowCustom: true,
-                                options: ['Single Release', 'Album Rollout', 'Tour / Live', 'Merch Drop', 'Brand Partnership', 'Content Series', 'Community Activation'],
-                                placeholder: 'What is the primary goal?',
-                                required: true,
-                                aiEnabled: true
+                                options: ['Awareness (Reach)', 'Engagement (Community)', 'Conversion (Sales/Streams)', 'Retention (Loyalty)'],
+                                required: true
                             },
                             {
-                                id: 'concept',
-                                label: 'Campaign Concept',
+                                id: 'target_audience',
+                                label: 'Target Audience',
+                                type: 'multiselect',
+                                source: 'stage-2.audience_personas',
+                                placeholder: 'Select personas from Stage 2...',
+                                required: false,
+                                allowCustom: true
+                            },
+                            {
+                                id: 'dates',
+                                label: 'Campaign Dates',
+                                type: 'date-range',
+                                placeholder: 'Select range',
+                                required: true
+                            },
+                            {
+                                id: 'purpose',
+                                label: 'Strategic Purpose',
                                 type: 'textarea',
-                                placeholder: 'The core idea or "hook" of this campaign...',
+                                placeholder: 'Why are we doing this? e.g. "To build hype before the album drop..."',
+                                required: true
+                            },
+                            {
+                                id: 'effectiveness',
+                                label: 'Effectiveness Strategy',
+                                type: 'textarea',
+                                placeholder: 'How will this be effective? e.g. "Using high-contrast visuals to stop the scroll..."',
+                                required: true
+                            },
+                            {
+                                id: 'phases',
+                                label: 'Phases',
+                                type: 'textarea',
+                                placeholder: '1. Tease, 2. Launch, 3. Sustain...',
                                 required: true,
                                 aiEnabled: true
                             }
                         ]
+                    }
+                ]
+            },
+            {
+                id: 'budget_kpi',
+                title: 'Resources & Goals',
+                description: 'What are we spending and what are we measuring?',
+                fields: [
+                    {
+                        id: 'budget_allocation',
+                        label: 'Budget Focus',
+                        type: 'select',
+                        options: ['Content Production Heavy', 'Ad Spend Heavy', 'PR/Playlist Heavy', 'Influencer Marketing Heavy', 'Balanced'],
+                        required: true
+                    },
+                    {
+                        id: 'kpis',
+                        label: 'Key Performance Indicators (KPIs)',
+                        type: 'multiselect',
+                        options: ['Spotify Monthly Listeners', 'Instagram Followers', 'TikTok Views', 'Email Subscribers', 'Merch Sales', 'Ticket Sales'],
+                        placeholder: 'What metrics matter most?',
+                        required: true
                     }
                 ]
             }
@@ -236,45 +382,99 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
     },
     {
         id: 'stage-6',
-        title: 'Content Buckets',
-        description: 'Categorize your content pillars.',
+        title: 'Content Pillars & Mix',
+        description: 'What are you actually posting?',
         iconName: 'Layout',
         steps: [
             {
-                id: 'buckets',
+                id: 'pillars',
                 title: 'Content Pillars',
-                description: 'What are the main categories of content you will produce?',
+                description: 'The main categories of your content.',
                 fields: [
                     {
                         id: 'bucket_list',
                         label: 'Content Buckets',
                         type: 'array',
-                        maxItems: 5,
+                        maxItems: 99, // Increase limit as we are grouping
                         itemLabel: 'Bucket',
+                        groupBySource: 'stage-5.campaigns',
                         fields: [
                             {
                                 id: 'name',
                                 label: 'Bucket Name',
                                 type: 'text',
-                                placeholder: 'e.g. "Behind the Scenes", "Music Teasers", "Lifestyle"',
+                                placeholder: 'e.g. "Studio Vlogs", "Music Snippets"',
                                 required: true
                             },
                             {
-                                id: 'percentage',
-                                label: 'Mix Percentage',
+                                id: 'campaign_assignment',
+                                label: 'Assign to Campaign(s)',
+                                type: 'multiselect',
+                                source: 'stage-5.campaigns',
+                                placeholder: 'Select active campaigns...',
+                                required: false,
+                                allowCustom: true
+                            },
+                            {
+                                id: 'formats',
+                                label: 'Content Formats',
+                                type: 'multiselect',
+                                options: ['Short-form Video (Reels/TikTok)', 'Long-form Video', 'Carousel/Photo', 'Text/Thread', 'Live Stream', 'Audio Only'],
+                                required: true
+                            },
+                            {
+                                id: 'platforms',
+                                label: 'Primary Platforms',
+                                type: 'multiselect',
+                                options: ['TikTok', 'Instagram', 'YouTube', 'Twitter/X', 'LinkedIn', 'Snapchat', 'Twitch'],
+                                required: true
+                            },
+                            {
+                                id: 'frequency',
+                                label: 'Posting Frequency',
+                                type: 'select',
+                                options: ['Daily', '4-5x / Week', '2-3x / Week', 'Weekly', 'Bi-Weekly', 'Monthly'],
+                                required: true
+                            },
+                            {
+                                id: 'tone',
+                                label: 'Tone & Vibe',
+                                type: 'select',
+                                options: ['Educational', 'Entertaining', 'Inspirational', 'Personal/Vulnerable', 'Promotional/Sales', 'Abstract/Artistic'],
+                                allowCustom: true,
+                                required: true
+                            },
+                            {
+                                id: 'ratio',
+                                label: 'Target Mix %',
                                 type: 'text',
                                 placeholder: 'e.g. 40%',
-                                required: true
-                            },
-                            {
-                                id: 'description',
-                                label: 'Description',
-                                type: 'textarea',
-                                placeholder: 'What goes in this bucket?',
-                                required: true,
-                                aiEnabled: true
+                                required: false
                             }
                         ]
+                    }
+                ]
+            },
+            {
+                id: 'series_ideas',
+                title: 'Recurring Series',
+                description: 'Formats you can repeat.',
+                fields: [
+                    {
+                        id: 'series_concepts',
+                        label: 'Series Concepts',
+                        type: 'textarea',
+                        placeholder: 'e.g. "Sample Flip Fridays" - every Friday I flip a sample...',
+                        required: true,
+                        aiEnabled: true
+                    },
+                    {
+                        id: 'value_prop',
+                        label: 'Value Proposition',
+                        type: 'textarea',
+                        placeholder: 'Why will people come back for this?',
+                        required: false,
+                        aiEnabled: true
                     }
                 ]
             }
@@ -282,30 +482,77 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
     },
     {
         id: 'stage-7',
-        title: 'Content Format',
-        description: 'Determine the formats for your content.',
-        iconName: 'Video',
+        title: 'Asset & Format Strategy',
+        description: 'How you package your art.',
+        iconName: 'Image',
         steps: [
             {
-                id: 'formats',
-                title: 'Media Formats',
-                description: 'How will you present your content?',
+                id: 'production_tiers',
+                title: 'Production Tiers',
+                description: 'Balancing quality and quantity.',
                 fields: [
                     {
-                        id: 'primary_formats',
-                        label: 'Primary Formats',
-                        type: 'multiselect',
-                        options: ['Short-form Video (Reels/TikTok)', 'Long-form Video (YouTube)', 'Static Images', 'Carousel Posts', 'Text/Threads', 'Live Streaming'],
-                        placeholder: 'Select your main formats...',
+                        id: 'production_balance',
+                        label: 'Production Mix Strategy',
+                        type: 'select',
+                        options: ['80% Lo-Fi / 20% Hi-Fi (Volume Focus)', '50% Lo-Fi / 50% Hi-Fi (Balanced)', '20% Lo-Fi / 80% Hi-Fi (Premium Focus)'],
                         required: true
                     },
                     {
-                        id: 'style_guide',
-                        label: 'Format Style Guide',
-                        type: 'textarea',
-                        placeholder: 'Notes on editing style, specific filters, or camera angles...',
-                        required: false,
-                        aiEnabled: true
+                        id: 'hi_fi_types',
+                        label: 'Hi-Fi Content Types',
+                        type: 'multiselect',
+                        options: ['Official Music Videos', 'High-End Visualizers', 'Professional Photoshoots', 'Live Performance Sessions', 'Documentaries/Mini-Docs', 'Cinematic Trailers'],
+                        required: true
+                    },
+                    {
+                        id: 'lo_fi_types',
+                        label: 'Lo-Fi Content Types',
+                        type: 'multiselect',
+                        options: ['BTS / Studio Vlogs', 'TikTok/Reels Trends', 'Memes & Edits', 'Fan Replies / Q&A', 'Demos / Works in Progress', 'Personal Updates'],
+                        required: true
+                    }
+                ]
+            },
+            {
+                id: 'asset_checklist',
+                title: 'Asset Checklist',
+                description: 'Essential items for launch.',
+                fields: [
+                    {
+                        id: 'core_assets',
+                        label: 'Core Assets Needed',
+                        type: 'multiselect',
+                        options: ['Cover Art (3000px)', 'Spotify Canvas (9:16 Video)', 'Artist Bio (Short & Long)', 'Press Photos (High Res)', 'Logo / Watermark / Font Pack', 'Teaser Clips (15s/30s)'],
+                        required: true
+                    },
+                    {
+                        id: 'format_specs',
+                        label: 'Format Specifications',
+                        type: 'multiselect',
+                        options: ['9:16 Vertical (Reels/TikTok)', '16:9 Landscape (YouTube)', '1:1 Square (Feed/Profile)', '4:5 Portrait (IG Feed)'],
+                        required: true
+                    }
+                ]
+            },
+            {
+                id: 'creative_team',
+                title: 'Creative Tools & Team',
+                description: 'Resources to execute.',
+                fields: [
+                    {
+                        id: 'editing_tools',
+                        label: 'Creation Tools to Use',
+                        type: 'multiselect',
+                        options: ['CapCut (Mobile)', 'Premiere Pro / Final Cut', 'Canva (Design)', 'Photoshop / Lightroom', 'DaVinci Resolve', 'Logic/Ableton (Audio)'],
+                        required: true
+                    },
+                    {
+                        id: 'team_needs',
+                        label: 'Team Requirements',
+                        type: 'multiselect',
+                        options: ['DIY (Solo)', 'Videographer', 'Graphic Designer', 'Video Editor', 'Stylist / MUA', 'Creative Director'],
+                        required: true
                     }
                 ]
             }
@@ -313,38 +560,56 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
     },
     {
         id: 'stage-8',
-        title: 'What Platforms To Be On',
-        description: 'Choose your battlefields.',
-        iconName: 'Smartphone',
+        title: 'Distribution & Growth',
+        description: 'Getting eyes and ears on the work.',
+        iconName: 'Share2',
         steps: [
             {
-                id: 'platforms',
-                title: 'Platform Strategy',
-                description: 'Where will you be most active?',
+                id: 'channels',
+                title: 'Channel Strategy',
+                description: 'Where do you win?',
                 fields: [
                     {
                         id: 'primary_platform',
-                        label: 'Primary Platform',
+                        label: 'Primary Platform (The Hub)',
                         type: 'select',
                         options: ['Instagram', 'TikTok', 'YouTube', 'Spotify', 'Twitter/X'],
-                        placeholder: 'Select your #1 priority...',
                         required: true
                     },
                     {
                         id: 'secondary_platforms',
-                        label: 'Secondary Platforms',
+                        label: 'Secondary Platforms (Amplifiers)',
                         type: 'multiselect',
-                        options: ['Instagram', 'TikTok', 'YouTube', 'Spotify', 'Twitter/X', 'Discord', 'Snapchat', 'Facebook', 'LinkedIn'],
-                        placeholder: 'Select supporting platforms...',
-                        required: false
+                        options: ['Instagram', 'TikTok', 'YouTube Shorts', 'Snapchat', 'Facebook', 'LinkedIn', 'Threads'],
+                        required: true
                     },
                     {
-                        id: 'platform_roles',
-                        label: 'Platform Roles',
-                        type: 'textarea',
-                        placeholder: 'Define the purpose of each platform (e.g. TikTok for discovery, IG for community)...',
-                        required: true,
-                        aiEnabled: true
+                        id: 'growth_tools',
+                        label: 'Growth Accelerators',
+                        type: 'multiselect',
+                        options: ['Paid Ads (Meta/TikTok)', 'Influencer Campaigns', 'Playlist Pitching (Editorial/User)', 'Collabs / Features', 'Remix Competitions', 'Street Team / Guerrilla Marketing'],
+                        required: true
+                    }
+                ]
+            },
+            {
+                id: 'community',
+                title: 'Community Funnel',
+                description: 'Turning listeners into fans.',
+                fields: [
+                    {
+                        id: 'funnel_steps',
+                        label: 'Conversion Funnel Points',
+                        type: 'multiselect',
+                        options: ['Direct to DSP (Linkfire)', 'Email List / SMS Signup', 'Discord / Telegram Community', 'Patreon / Membership', 'Merch Store Direct', 'Website / Blog'],
+                        required: true
+                    },
+                    {
+                        id: 'fan_activation',
+                        label: 'Fan Activation Tactics',
+                        type: 'multiselect',
+                        options: ['Live Q&As / AMAs', 'Listening Parties', 'UGC Challenges (Use Sound)', 'Exclusive Presale Access', 'Meet & Greets', 'Digital Collectibles / POAPs'],
+                        required: true
                     }
                 ]
             }
@@ -352,30 +617,50 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
     },
     {
         id: 'stage-9',
-        title: 'How Much Content To Post',
-        description: 'Define your posting cadence.',
+        title: 'Cadence & Consistency',
+        description: 'The heartbeat of your plan.',
         iconName: 'BarChart3',
         steps: [
             {
-                id: 'frequency',
-                title: 'Posting Schedule',
-                description: 'Set your commitment levels.',
+                id: 'schedule_overview',
+                title: 'Weekly Core Schedule',
+                description: 'Build your weekly routine.',
                 fields: [
                     {
-                        id: 'daily_frequency',
-                        label: 'Daily Frequency',
+                        id: 'frequency_tier',
+                        label: 'Overall Intensity',
                         type: 'select',
-                        options: ['1x Day', '2x Day', '3x+ Day', 'Every other day', 'Weekly'],
-                        placeholder: 'How often will you post?',
+                        options: ['Maintenance (1-2x/week)', 'Growth (3-4x/week)', 'Sprint (Daily)', 'Viral (2-3x/day)'],
+                        required: true,
+                        fullWidth: true
+                    },
+                    {
+                        id: 'weekly_plan',
+                        label: 'Standard Week Plan',
+                        type: 'weekly-schedule',
+                        required: true,
+                        description: 'Assign Campaigns and Content Buckets to specific days.'
+                    }
+                ]
+            },
+            {
+                id: 'sustainability',
+                title: 'Long-Term Sustainability',
+                description: 'Avoiding burnout.',
+                fields: [
+                    {
+                        id: 'burnout_prevention',
+                        label: 'Burnout Safeguards',
+                        type: 'multiselect',
+                        options: ['Buffer Weeks (Pre-scheduled breaks)', 'Repurposing Strategy (Recycle hits)', 'Content Bank (Evergreen backlog)', 'Delegation (Hiring help)', 'Digital Detox Days'],
                         required: true
                     },
                     {
-                        id: 'cadence_notes',
-                        label: 'Cadence Notes',
-                        type: 'textarea',
-                        placeholder: 'e.g. Mornings for motivation, evenings for music...',
-                        required: false,
-                        aiEnabled: true
+                        id: 'content_batching',
+                        label: 'Production Workflow',
+                        type: 'select',
+                        options: ['Daily Creation', 'Weekly Batching', 'Monthly Batching', 'Outsourced'],
+                        required: true
                     }
                 ]
             }
@@ -383,41 +668,124 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
     },
     {
         id: 'stage-10',
-        title: 'How to Actually Execute',
-        description: 'Operationalize your plan.',
+        title: 'Launch & Optimization',
+        description: 'How to actually get it done.',
         iconName: 'Zap',
         steps: [
             {
-                id: 'execution',
-                title: 'Execution & Workflow',
-                description: 'How will you get it done?',
+                id: 'release_admin',
+                title: 'Release Administration',
+                description: 'Technical setup and housekeeping.',
                 fields: [
                     {
-                        id: 'tools',
-                        label: 'Tools & Software',
+                        id: 'distro_metadata',
+                        label: 'Distribution & Metadata',
                         type: 'multiselect',
-                        options: ['CapCut', 'Premiere Pro', 'Canva', 'Notion', 'Davinci Resolve', 'Logic Pro'],
-                        placeholder: 'Select tools...',
-                        required: false
+                        options: ['Audio Uploaded to Distributor', 'ISRC Codes Generated', 'Lyrics Submitted', 'Splits / Royalty Sheets Signed', 'Release Date Locked', 'Copyright Registered'],
+                        required: true,
+                        fullWidth: true
                     },
                     {
-                        id: 'team',
-                        label: 'Team / Collaborators',
-                        type: 'textarea',
-                        placeholder: 'Who is helping? (Photographers, editors, etc.)',
-                        required: false
+                        id: 'dsp_prep',
+                        label: 'DSP Preparedness',
+                        type: 'multiselect',
+                        options: ['Spotify Artist Pick Updated', 'Spotify Canvas (8s Video) Uploaded', 'Apple Music Motion Art (optional)', 'Updated Bio on All Platforms', 'New Press Photos Uploaded', 'Social Links Verified'],
+                        required: true,
+                        fullWidth: true
                     },
                     {
-                        id: 'batching_strategy',
-                        label: 'Batching Strategy',
+                        id: 'smart_links',
+                        label: 'Smart Links & Pre-Saves',
+                        type: 'text',
+                        placeholder: 'Paste your Linkfire / Pre-save URL here...',
+                        required: true,
+                        fullWidth: true
+                    }
+                ]
+            },
+            {
+                id: 'launch_protocol',
+                title: 'The Launch Day Protocol',
+                description: 'Execute the drop with precision.',
+                fields: [
+                    {
+                        id: 'run_of_show',
+                        label: 'Launch Day Run of Show',
+                        type: 'array',
+                        maxItems: 20,
+                        itemLabel: 'Action Item',
+                        fields: [
+                            {
+                                id: 'time',
+                                label: 'Time',
+                                type: 'text',
+                                placeholder: 'e.g. 9:00 AM',
+                                required: true
+                            },
+                            {
+                                id: 'action',
+                                label: 'Action',
+                                type: 'text',
+                                placeholder: 'e.g. Post "Out Now" Reel',
+                                required: true
+                            },
+                            {
+                                id: 'platform',
+                                label: 'Platform',
+                                type: 'select',
+                                options: ['Instagram', 'TikTok', 'Twitter/X', 'YouTube', 'Email/SMS', 'Discord'],
+                                required: true
+                            }
+                        ]
+                    },
+                    {
+                        id: 'announcement_copy',
+                        label: 'The Announcement',
                         type: 'textarea',
-                        placeholder: 'e.g. Film everything on Mondays, Edit on Tuesdays...',
+                        placeholder: 'Draft your main "Out Now" caption. Tell the story one last time.',
                         required: true,
                         aiEnabled: true
+                    }
+                ]
+            },
+            {
+                id: 'post_launch',
+                title: 'Momentum & Optimization',
+                description: 'Keep the energy alive.',
+                fields: [
+                    {
+                        id: 'sustainability_actions',
+                        label: 'Post-Launch Actions',
+                        type: 'multiselect',
+                        options: ['Repost Fan Stories', 'Reply to All DMs/Comments', 'Send "Thank You" Email to Superfans', 'Update Website Homepage', 'Submit to Third-Party Playlists'],
+                        required: true
+                    },
+                    {
+                        id: 'content_waterfall',
+                        label: 'Content Waterfall',
+                        type: 'multiselect',
+                        options: ['Lyric Video', 'Visualizer', 'Acoustic Version', 'Remix Pack', 'Behind the Scenes Doc', 'Merch Drop'],
+                        required: true
+                    },
+                    {
+                        id: 'pivot_scenarios',
+                        label: 'Pivot Scenarios',
+                        type: 'textarea',
+                        placeholder: 'If the song goes viral on TikTok, what do we do? If it flops, what is the backup plan?',
+                        required: false,
+                        aiEnabled: true
+                    },
+                    {
+                        id: 'review_cycle',
+                        label: 'Review Rhythm',
+                        type: 'select',
+                        options: ['Daily Stats Check (First Week)', 'Weekly Strategy Review', 'Monthly Deep Dive', 'Quarterly Pivot'],
+                        required: true
                     }
                 ]
             }
         ]
     }
+
 ];
 

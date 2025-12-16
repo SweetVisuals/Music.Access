@@ -240,7 +240,7 @@ const TopBar: React.FC<TopBarProps> = ({
                         : 'absolute top-1/2 -translate-y-1/2 hidden lg:block'
                     }
                 ${!mobileSearchOpen ? 'lg:left-1/2 lg:-translate-x-1/2' : ''}
-                ${!mobileSearchOpen && isFocused ? 'lg:w-[28rem] xl:w-[36rem]' : 'lg:w-80'}
+                ${!mobileSearchOpen && isFocused ? 'lg:w-[40rem] xl:w-[50rem]' : 'lg:w-[32rem]'}
             `}
             >
                 {mobileSearchOpen && (
@@ -364,7 +364,7 @@ const TopBar: React.FC<TopBarProps> = ({
                 )}
 
                 {/* Group 1: Balances */}
-                {isLoggedIn && (
+                {isLoggedIn && !isFocused && (
                     <div className="hidden sm:flex items-center gap-2">
                         {/* Daily Claim Button */}
                         {!gemsClaimedToday && !profileLoading && userProfile && (

@@ -683,7 +683,7 @@ const NotesPage: React.FC = () => {
                 {!isAiExpanded && (
                     <button
                         onClick={handleCreateNote}
-                        className="lg:hidden fixed right-6 bottom-24 w-14 h-14 bg-primary text-black rounded-full shadow-[0_4px_20px_rgba(var(--primary-rgb),0.3)] flex items-center justify-center z-40 active:scale-90 transition-transform"
+                        className="lg:hidden fixed right-6 bottom-28 w-14 h-14 bg-primary text-black rounded-full shadow-[0_4px_20px_rgba(var(--primary-rgb),0.3)] flex items-center justify-center z-[60] active:scale-90 transition-transform"
                     >
                         <Plus size={28} strokeWidth={2.5} />
                     </button>

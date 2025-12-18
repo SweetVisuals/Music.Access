@@ -217,6 +217,40 @@ const NotesPage: React.FC = () => {
     const [aiResponse, setAiResponse] = useState<string | null>(null);
     const [aiLoading, setAiLoading] = useState(false);
     const [cursorIndex, setCursorIndex] = useState(0);
+    const [selection, setSelection] = useState<{ start: number, end: number, text: string } | null>(null);
+
+    const checkSelection = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+        const target = e.currentTarget;
+        if (target.selectionStart !== target.selectionEnd) {
+            const text = target.value.substring(target.selectionStart, target.selectionEnd);
+            if (text.trim().length > 0) {
+                setSelection({
+                    start: target.selectionStart,
+                    end: target.selectionEnd,
+                    text: text.trim()
+                });
+                return;
+            }
+        }
+        setSelection(null);
+    };
+
+    const handleAiRhymeSearch = async () => {
+        if (!selection) return;
+        setIsAiRhymeLoading(true);
+        try {
+            const rhymes = await getRhymesForWord(selection.text);
+            setAiRhymes(rhymes);
+            if (window.innerWidth < 1024) {
+                setIsSidebarOpen(true);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsAiRhymeLoading(false);
+            setSelection(null);
+        }
+    };
 
     // Refs for syncing scroll
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -413,7 +447,8 @@ const NotesPage: React.FC = () => {
                 if (group && groupToColor[group]) {
                     colorClass = groupToColor[group];
                 } else {
-                    colorClass = 'text-transparent';
+                    // FIX: Visible text for non-rhymes in active mode
+                    colorClass = 'text-neutral-500';
                 }
             }
             return <span key={i} className={`${colorClass} transition-colors duration-300`}>{token}</span>;
@@ -462,13 +497,27 @@ const NotesPage: React.FC = () => {
                 )}
 
                 {/* Text Editor Area */}
-                <div className="flex-1 relative font-mono text-xs lg:text-sm leading-relaxed overflow-y-auto custom-scrollbar">
+                <div className="flex-1 relative font-mono text-xs lg:text-sm leading-relaxed overflow-y-auto custom-scrollbar no-scrollbar scrollbar-hide">
+
+                    {/* Selection Popup */}
+                    {selection && (
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-2 w-max max-w-[90vw]">
+                            <button
+                                onClick={handleAiRhymeSearch}
+                                className="flex items-center gap-2 bg-neutral-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-primary/30 active:scale-95 transition-all backdrop-blur-md"
+                            >
+                                <Brain size={16} className="text-primary" />
+                                <span className="text-xs font-bold">Rhyme "{selection.text}"</span>
+                            </button>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 grid-rows-1 min-h-full">
-                        <div className="grid grid-cols-1 grid-rows-1 w-full h-full overflow-y-auto relative no-scrollbar">
+                        <div className="grid grid-cols-1 grid-rows-1 w-full h-full overflow-y-auto relative no-scrollbar scrollbar-hide">
                             {/* Layer 1: Backdrop */}
                             <div
                                 ref={backdropRef}
-                                className="col-start-1 row-start-1 p-5 lg:p-8 whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono text-base lg:text-sm leading-relaxed text-transparent"
+                                className="col-start-1 row-start-1 p-4 lg:p-8 whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono text-base lg:text-sm leading-relaxed text-transparent"
                             >
                                 {activeNote && renderHighlightedText(activeNote.content + ' ')}
                             </div>
@@ -477,7 +526,7 @@ const NotesPage: React.FC = () => {
                             <textarea
                                 ref={textareaRef}
                                 className={`
-                                    col-start-1 row-start-1 w-full h-full bg-transparent p-5 lg:p-8 resize-none overflow-hidden focus:outline-none z-10 font-mono text-base lg:text-sm leading-relaxed whitespace-pre-wrap break-words
+                                    col-start-1 row-start-1 w-full h-full bg-transparent p-4 lg:p-8 resize-none overflow-hidden focus:outline-none z-10 font-mono text-base lg:text-sm leading-relaxed whitespace-pre-wrap break-words
                                     ${rhymeMode ? 'text-transparent caret-white' : 'text-neutral-300 caret-white'}
                                 `}
                                 value={activeNote ? activeNote.content : ''}
@@ -485,7 +534,11 @@ const NotesPage: React.FC = () => {
                                     handleUpdateContentWrapper(e.target.value);
                                     handleSelectionChange(e);
                                 }}
-                                onSelect={handleSelectionChange}
+                                onSelect={(e) => {
+                                    handleSelectionChange(e);
+                                    checkSelection(e);
+                                }}
+                                onBlur={() => setTimeout(() => setSelection(null), 200)}
                                 placeholder="Start writing your lyrics or production notes here..."
                                 spellCheck={false}
                             />
@@ -708,33 +761,42 @@ const NotesPage: React.FC = () => {
                     {activeNote ? (
                         <>
                             {/* Editor Toolbar */}
-                            <div className="h-14 border-b border-neutral-800 flex items-center justify-between px-4 lg:px-6 bg-neutral-900/30 z-20 shrink-0">
-                                <div className="flex items-center gap-2 lg:gap-4">
+                            <div className="h-14 lg:h-14 lg:border-b border-neutral-800 flex items-center justify-between px-4 lg:px-6 bg-[#050505] lg:bg-neutral-900/30 z-20 shrink-0 sticky top-0">
+                                <div className="flex items-center gap-3 w-full">
                                     <button
                                         onClick={() => setIsSidebarOpen(true)}
                                         className="lg:hidden p-2 -ml-2 text-neutral-400 hover:text-white"
                                     >
-                                        <Book size={18} />
+                                        <Book size={20} />
                                     </button>
 
-                                    {viewMode === 'browser' && (
-                                        <button
-                                            onClick={() => setViewMode('editor')}
-                                            className="p-1.5 hover:bg-white/5 rounded text-neutral-400 hover:text-white mr-2"
-                                        >
-                                            <ChevronLeft size={16} />
-                                        </button>
-                                    )}
-                                    <div className="flex flex-col justify-center min-w-0">
+                                    <div className="flex-1 min-w-0">
+                                        {/* Note Title Input - Styled as App Bar Title */}
                                         <input
                                             value={activeNote.title}
                                             onChange={(e) => handleUpdateTitle(e.target.value)}
-                                            className="bg-transparent border-none text-sm font-bold text-white focus:outline-none p-0 placeholder-neutral-600 truncate w-full"
+                                            className="bg-transparent border-none text-base lg:text-sm font-black lg:font-bold text-white focus:outline-none p-0 placeholder-neutral-700 w-full"
                                             placeholder="Untitled Note"
                                         />
-                                        <span className="text-[10px] text-neutral-500 font-mono hidden sm:block">
-                                            {viewMode === 'editor' ? 'Editing Mode' : 'Select Audio Attachment'}
-                                        </span>
+                                    </div>
+
+                                    {/* Desktop Controls (Hidden on Mobile) */}
+                                    <div className="hidden lg:flex items-center gap-3">
+                                        {viewMode === 'editor' && (
+                                            <button
+                                                onClick={() => setRhymeMode(!rhymeMode)}
+                                                className={`
+                                                    flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wide transition-all
+                                                    ${rhymeMode
+                                                        ? 'bg-primary text-black shadow-[0_0_15px_rgba(var(--primary),0.3)]'
+                                                        : 'text-neutral-500 hover:text-white hover:bg-white/5 border border-white/5'
+                                                    }
+                                                `}
+                                            >
+                                                <Highlighter size={12} />
+                                                <span className="inline">Rhymes</span>
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -845,32 +907,21 @@ const NotesPage: React.FC = () => {
 
             {/* Mobile Bottom Toolbar */}
             {activeNote && (
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#080808] border-t border-neutral-800 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex items-center justify-around z-40">
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#080808] border-t border-neutral-800 p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex items-center justify-around z-40 h-14">
                     <button
                         onClick={() => setRhymeMode(!rhymeMode)}
-                        className={`flex flex-col items-center gap-1 ${rhymeMode ? 'text-primary' : 'text-neutral-500'}`}
+                        className={`flex flex-col items-center gap-0.5 ${rhymeMode ? 'text-primary' : 'text-neutral-500'}`}
                     >
-                        <Highlighter size={20} />
-                        <span className="text-[9px] font-bold">Rhymes</span>
+                        <Highlighter size={18} />
+                        <span className="text-[10px] font-bold">Rhymes</span>
                     </button>
 
                     <button
                         onClick={() => setViewMode(viewMode === 'editor' ? 'browser' : 'editor')}
-                        className={`flex flex-col items-center gap-1 ${viewMode === 'browser' ? 'text-white' : 'text-neutral-500'}`}
+                        className={`flex flex-col items-center gap-0.5 ${viewMode === 'browser' ? 'text-white' : 'text-neutral-500'}`}
                     >
-                        {viewMode === 'editor' ? <FolderOpen size={20} /> : <FileText size={20} />}
-                        <span className="text-[9px] font-bold">{viewMode === 'editor' ? 'Attach' : 'Editor'}</span>
-                    </button>
-
-                    <button
-                        onClick={() => {
-                            if (activeNote) {
-                                navigator.clipboard.writeText(activeNote.content);
-                            }
-                        }}
-                        className="flex flex-col items-center gap-1 text-neutral-500 active:text-white"
-                    >
-                        <span className="text-[9px] font-bold">Copy</span>
+                        {viewMode === 'editor' ? <FolderOpen size={18} /> : <FileText size={18} />}
+                        <span className="text-[10px] font-bold">{viewMode === 'editor' ? 'Attach' : 'Editor'}</span>
                     </button>
                 </div>
             )}

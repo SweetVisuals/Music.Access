@@ -224,6 +224,8 @@ const NotesPage: React.FC = () => {
     const [cursorIndex, setCursorIndex] = useState(0);
     const [selection, setSelection] = useState<{ start: number, end: number, text: string } | null>(null);
     const [textSize, setTextSize] = useState<'xs' | 'sm' | 'base' | 'lg'>('xs'); // New text size state
+    const [isAiExpanded, setIsAiExpanded] = useState(false);
+    const [isSizeExpanded, setIsSizeExpanded] = useState(false);
 
     const checkSelection = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
         const target = e.currentTarget;
@@ -487,29 +489,6 @@ const NotesPage: React.FC = () => {
                     className="bg-transparent border-none text-sm font-bold text-white focus:outline-none p-0 placeholder-neutral-600 w-full truncate min-w-0"
                     placeholder="Untitled Note"
                 />
-                {/* Font Size Toggle for Mobile */}
-                <div className="flex items-center gap-0.5 bg-neutral-800 rounded-lg p-0.5 shrink-0 ml-1">
-                    <button
-                        onClick={() => setTextSize(prev => prev === 'xs' ? 'xs' : prev === 'sm' ? 'xs' : prev === 'base' ? 'sm' : 'base')}
-                        className={`p-1.5 rounded transition-colors ${textSize === 'xs' ? 'text-neutral-600 cursor-not-allowed' : 'text-neutral-400 hover:text-white'}`}
-                        disabled={textSize === 'xs'}
-                    >
-                        <Minus size={10} />
-                    </button>
-                    <span className="text-[9px] font-mono w-4 text-center text-neutral-400">
-                        {textSize === 'xs' && 'Aa'}
-                        {textSize === 'sm' && 'Aa+'}
-                        {textSize === 'base' && 'LG'}
-                        {textSize === 'lg' && 'XL'}
-                    </span>
-                    <button
-                        onClick={() => setTextSize(prev => prev === 'xs' ? 'sm' : prev === 'sm' ? 'base' : prev === 'base' ? 'lg' : 'lg')}
-                        className={`p-1.5 rounded transition-colors ${textSize === 'lg' ? 'text-neutral-600 cursor-not-allowed' : 'text-neutral-400 hover:text-white'}`}
-                        disabled={textSize === 'lg'}
-                    >
-                        <Plus size={10} />
-                    </button>
-                </div>
             </div>,
             target
         );
@@ -555,8 +534,8 @@ const NotesPage: React.FC = () => {
                     </div>
                 )}
 
-                {/* Text Editor Area - Added bottom padding for AI Panel */}
-                <div className="flex-1 relative font-mono leading-relaxed overflow-y-auto custom-scrollbar bg-[#050505] pb-24 lg:pb-0">
+                {/* Text Editor Area - Added bottom padding for Bottom Bar */}
+                <div className="flex-1 relative font-mono leading-relaxed overflow-y-auto custom-scrollbar bg-[#050505] pb-32 lg:pb-0">
 
                     {/* Selection Popup */}
                     {selection && (
@@ -628,29 +607,109 @@ const NotesPage: React.FC = () => {
                         </div>
                     )}
 
-                    {/* AI Input */}
-                    <div className="p-2 flex gap-2 items-center">
-                        <div className="flex-1 relative">
-                            <Sparkles size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${aiLoading ? 'text-primary animate-pulse' : 'text-neutral-500'}`} />
-                            <input
-                                value={aiPrompt}
-                                onChange={(e) => setAiPrompt(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-full pl-9 pr-10 py-3 text-xs text-white focus:outline-none focus:border-primary/50 placeholder-neutral-600 font-mono transition-colors"
-                                placeholder="Ask AI..."
-                                disabled={aiLoading}
-                            />
-                            <button
-                                onClick={handleAiSubmit}
-                                disabled={aiLoading || !aiPrompt.trim()}
-                                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1.5 bg-neutral-800 text-white rounded-full disabled:opacity-50"
-                            >
-                                <ArrowRight size={12} />
-                            </button>
+                </div>
+
+                {/* Mobile Bottom Control Bar */}
+                <div className="lg:hidden absolute bottom-0 left-0 right-0 z-[45] bg-[#080808]/95 backdrop-blur border-t border-neutral-800 pb-[env(safe-area-inset-bottom)]">
+                    <div className="flex flex-col">
+                        {/* Font Size Row (Expanded) */}
+                        {isSizeExpanded && (
+                            <div className="flex items-center justify-between p-3 bg-neutral-900/50 border-b border-neutral-800 animate-in slide-in-from-bottom-2">
+                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest px-1">Text Size</span>
+                                <div className="flex items-center gap-1.5 bg-neutral-800 rounded-lg p-1 mr-1">
+                                    <button
+                                        onClick={() => setTextSize(prev => prev === 'xs' ? 'xs' : prev === 'sm' ? 'xs' : prev === 'base' ? 'sm' : 'base')}
+                                        className={`p-2 rounded ${textSize === 'xs' ? 'text-neutral-600' : 'text-white hover:bg-white/10'}`}
+                                        disabled={textSize === 'xs'}
+                                    >
+                                        <Minus size={16} />
+                                    </button>
+                                    <span className="text-xs font-bold text-white w-14 text-center">
+                                        {textSize === 'xs' && 'Small'}
+                                        {textSize === 'sm' && 'Medium'}
+                                        {textSize === 'base' && 'Large'}
+                                        {textSize === 'lg' && 'Huge'}
+                                    </span>
+                                    <button
+                                        onClick={() => setTextSize(prev => prev === 'xs' ? 'sm' : prev === 'sm' ? 'base' : prev === 'base' ? 'lg' : 'lg')}
+                                        className={`p-2 rounded ${textSize === 'lg' ? 'text-neutral-600' : 'text-white hover:bg-white/10'}`}
+                                        disabled={textSize === 'lg'}
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="h-16 flex items-center px-4 gap-4">
+                            {isAiExpanded ? (
+                                <div className="flex-1 flex gap-3 items-center animate-in fade-in slide-in-from-right-2">
+                                    <button
+                                        onClick={() => setIsAiExpanded(false)}
+                                        className="p-1 text-neutral-500 hover:text-white"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                    <div className="flex-1 relative">
+                                        <Sparkles size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${aiLoading ? 'text-primary animate-pulse' : 'text-neutral-500'}`} />
+                                        <input
+                                            autoFocus
+                                            value={aiPrompt}
+                                            onChange={(e) => setAiPrompt(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
+                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-full pl-9 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-primary/50 placeholder-neutral-600"
+                                            placeholder="Ask AI..."
+                                            disabled={aiLoading}
+                                        />
+                                        <button
+                                            onClick={handleAiSubmit}
+                                            disabled={aiLoading || !aiPrompt.trim()}
+                                            className="absolute right-1 top-1/2 -translate-y-1/2 p-2 bg-primary text-black rounded-full disabled:opacity-50"
+                                        >
+                                            <ArrowRight size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex-1 flex items-center justify-around translate-y-[-2px]">
+                                    <button
+                                        onClick={() => { setIsSizeExpanded(!isSizeExpanded); setIsAiExpanded(false); }}
+                                        className={`flex flex-col items-center gap-1 transition-all ${isSizeExpanded ? 'text-primary' : 'text-neutral-500 hover:text-white'}`}
+                                    >
+                                        <Type size={20} />
+                                        <span className="text-[10px] font-bold uppercase tracking-tight">Size</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => { setIsAiExpanded(true); setIsSizeExpanded(false); }}
+                                        className="flex flex-col items-center gap-1 text-neutral-500 hover:text-white"
+                                    >
+                                        <Sparkles size={20} />
+                                        <span className="text-[10px] font-bold uppercase tracking-tight">AI Assist</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => setRhymeMode(!rhymeMode)}
+                                        className={`flex flex-col items-center gap-1 transition-all ${rhymeMode ? 'text-primary' : 'text-neutral-500 hover:text-white'}`}
+                                    >
+                                        <Highlighter size={20} />
+                                        <span className="text-[10px] font-bold uppercase tracking-tight">Rhymes</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
 
+                {/* Restore Mobile FAB */}
+                {!isAiExpanded && (
+                    <button
+                        onClick={handleCreateNote}
+                        className="lg:hidden fixed right-6 bottom-24 w-14 h-14 bg-primary text-black rounded-full shadow-[0_4px_20px_rgba(var(--primary-rgb),0.3)] flex items-center justify-center z-40 active:scale-90 transition-transform"
+                    >
+                        <Plus size={28} strokeWidth={2.5} />
+                    </button>
+                )}
             </div>
 
             {/* Rhyme Sidebar */}

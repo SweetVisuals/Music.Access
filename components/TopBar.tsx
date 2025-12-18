@@ -572,6 +572,11 @@ const TopBar: React.FC<TopBarProps> = ({
                 </button>
             )}
 
+            {/* Mobile Page Title Portal Target */}
+            {!mobileSearchOpen && (
+                <div id="mobile-page-title" className="lg:hidden flex-1 flex justify-center items-center px-2 min-w-0"></div>
+            )}
+
             {/* SEARCH BAR */}
             <div
                 className={`

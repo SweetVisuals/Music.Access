@@ -219,7 +219,7 @@ const TopBar: React.FC<TopBarProps> = ({
     }, [setIsCartOpen]);
 
     return (
-        <header className="h-16 fixed top-0 right-0 left-0 lg:left-64 z-40 bg-[#050505]/90 backdrop-blur-lg border-b border-white/5 flex items-center px-3 lg:px-6 justify-between lg:justify-end gap-4">
+        <header className="h-16 fixed top-0 right-0 left-0 lg:left-64 z-40 bg-[#050505]/90 backdrop-blur-lg border-b border-white/5 flex items-center px-3 lg:px-6 justify-between gap-4">
 
             {/* Hamburger Menu (Mobile) - Hide if search open */}
             {!mobileSearchOpen && (
@@ -237,10 +237,9 @@ const TopBar: React.FC<TopBarProps> = ({
                 transition-all duration-300 z-30
                 ${mobileSearchOpen
                         ? 'absolute inset-0 bg-[#050505] flex items-center px-4 z-50'
-                        : 'absolute top-1/2 -translate-y-1/2 hidden lg:block'
+                        : 'hidden lg:flex flex-1 justify-center px-4'
                     }
-                ${!mobileSearchOpen ? 'lg:left-1/2 lg:-translate-x-1/2' : ''}
-                ${!mobileSearchOpen && isFocused ? 'lg:w-[35rem] xl:w-[45rem]' : 'lg:w-[24rem] xl:w-[32rem]'}
+                ${!mobileSearchOpen && isFocused ? 'lg:max-w-[35rem] xl:max-w-[45rem] w-full' : 'lg:max-w-[24rem] xl:max-w-[32rem] w-full'}
             `}
             >
                 {mobileSearchOpen && (

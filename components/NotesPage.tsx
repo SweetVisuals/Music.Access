@@ -495,47 +495,47 @@ const NotesPage: React.FC = () => {
     };
 
     const renderEditorView = () => (
-        <div className="flex-1 flex overflow-hidden relative">
-            <div className="flex-1 flex flex-col relative w-full h-full">
-                {/* Portal for Mobile Title */}
-                <MobileTitlePortal />
+        <div className="flex-1 flex flex-col relative w-full h-full overflow-hidden">
+            {/* Portal for Mobile Title */}
+            <MobileTitlePortal />
 
-                {/* Embedded Audio Player */}
-                {activeNote && activeNote.attachedAudio && (
-                    <div className="h-12 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-3 lg:px-6 shrink-0 z-20">
-                        {audioPlaying && (
-                            <audio
-                                src={audioFiles.find(f => f.name === activeNote.attachedAudio)?.url}
-                                autoPlay
-                                onEnded={() => setAudioPlaying(false)}
-                                onError={(e) => console.log('Audio error', e)}
-                            />
-                        )}
+            {/* Embedded Audio Player */}
+            {activeNote && activeNote.attachedAudio && (
+                <div className="h-12 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-3 lg:px-6 shrink-0 z-20">
+                    {audioPlaying && (
+                        <audio
+                            src={audioFiles.find(f => f.name === activeNote.attachedAudio)?.url}
+                            autoPlay
+                            onEnded={() => setAudioPlaying(false)}
+                            onError={(e) => console.log('Audio error', e)}
+                        />
+                    )}
 
-                        <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-6 h-6 bg-primary/20 rounded flex items-center justify-center text-primary shrink-0">
-                                <Music size={12} />
-                            </div>
-                            <div className="min-w-0">
-                                <div className="text-xs font-bold text-white truncate">{activeNote.attachedAudio}</div>
-                            </div>
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-6 h-6 bg-primary/20 rounded flex items-center justify-center text-primary shrink-0">
+                            <Music size={12} />
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                            <button
-                                onClick={() => setAudioPlaying(!audioPlaying)}
-                                className="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform"
-                            >
-                                {audioPlaying ? <Pause size={12} fill="black" /> : <Play size={12} fill="black" className="ml-0.5" />}
-                            </button>
-                            <button onClick={handleDetachFile} className="text-neutral-500 hover:text-red-500">
-                                <X size={14} />
-                            </button>
+                        <div className="min-w-0">
+                            <div className="text-xs font-bold text-white truncate">{activeNote.attachedAudio}</div>
                         </div>
                     </div>
-                )}
+                    <div className="flex items-center gap-3 shrink-0">
+                        <button
+                            onClick={() => setAudioPlaying(!audioPlaying)}
+                            className="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform"
+                        >
+                            {audioPlaying ? <Pause size={12} fill="black" /> : <Play size={12} fill="black" className="ml-0.5" />}
+                        </button>
+                        <button onClick={handleDetachFile} className="text-neutral-500 hover:text-red-500">
+                            <X size={14} />
+                        </button>
+                    </div>
+                </div>
+            )}
 
-                {/* Text Editor Area - Added bottom padding for Bottom Bar */}
-                <div className="flex-1 relative font-mono leading-relaxed overflow-y-auto custom-scrollbar bg-[#050505] pb-32 lg:pb-0">
+            {/* Text Editor Wrap - Handles scrolling and sticky bar */}
+            <div className="flex-1 flex flex-col relative overflow-hidden">
+                <div className="flex-1 relative font-mono leading-relaxed overflow-y-auto custom-scrollbar bg-[#050505] scrollbar-hide-mobile">
 
                     {/* Selection Popup */}
                     {selection && (
@@ -551,14 +551,14 @@ const NotesPage: React.FC = () => {
                     )}
 
                     <div className="grid grid-cols-1 grid-rows-1 min-h-full">
-                        <div className="grid grid-cols-1 grid-rows-1 w-full h-full overflow-y-auto relative no-scrollbar scrollbar-hide">
+                        <div className="grid grid-cols-1 grid-rows-1 w-full h-full relative">
                             {/* Layer 1: Backdrop - Using textSize state */}
                             <div
                                 ref={backdropRef}
                                 className={`
-                                    col-start-1 row-start-1 p-5 lg:p-8 whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono leading-relaxed text-transparent
-                                    ${textSize === 'xs' ? 'text-xs' : textSize === 'sm' ? 'text-sm' : textSize === 'base' ? 'text-base' : 'text-lg'}
-                                `}
+                                col-start-1 row-start-1 p-5 lg:p-8 whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono leading-relaxed text-transparent
+                                ${textSize === 'xs' ? 'text-xs' : textSize === 'sm' ? 'text-sm' : textSize === 'base' ? 'text-base' : 'text-lg'}
+                            `}
                             >
                                 {activeNote && renderHighlightedText(activeNote.content + ' ')}
                             </div>
@@ -567,10 +567,10 @@ const NotesPage: React.FC = () => {
                             <textarea
                                 ref={textareaRef}
                                 className={`
-                                    col-start-1 row-start-1 w-full h-full bg-transparent p-5 lg:p-8 resize-none overflow-hidden focus:outline-none z-10 font-mono leading-relaxed whitespace-pre-wrap break-words
-                                    ${textSize === 'xs' ? 'text-xs' : textSize === 'sm' ? 'text-sm' : textSize === 'base' ? 'text-base' : 'text-lg'}
-                                    ${rhymeMode ? 'text-transparent caret-white' : 'text-neutral-300 caret-white'}
-                                `}
+                                col-start-1 row-start-1 w-full h-full bg-transparent p-5 lg:p-8 resize-none overflow-hidden focus:outline-none z-10 font-mono leading-relaxed whitespace-pre-wrap break-words
+                                ${textSize === 'xs' ? 'text-xs' : textSize === 'sm' ? 'text-sm' : textSize === 'base' ? 'text-base' : 'text-lg'}
+                                ${rhymeMode ? 'text-transparent caret-white' : 'text-neutral-300 caret-white'}
+                            `}
                                 value={activeNote ? activeNote.content : ''}
                                 onChange={(e) => {
                                     handleUpdateContentWrapper(e.target.value);
@@ -586,27 +586,6 @@ const NotesPage: React.FC = () => {
                             />
                         </div>
                     </div>
-                </div>
-
-                {/* Mobile AI Sticky Panel */}
-                <div className="lg:hidden absolute bottom-0 left-0 right-0 z-30 bg-[#080808]/95 backdrop-blur border-t border-neutral-800 pb-[calc(0.5rem+env(safe-area-inset-bottom))] shadow-[0_-5px_15px_rgba(0,0,0,0.5)]">
-                    {/* AI Response Display */}
-                    {aiResponse && (
-                        <div className="p-3 bg-neutral-900/95 border-b border-primary/20 max-h-40 overflow-y-auto animate-in slide-in-from-bottom-5">
-                            <div className="flex justify-between items-start gap-2 mb-2">
-                                <h4 className="text-[10px] font-bold text-primary uppercase tracking-wider flex items-center gap-1">
-                                    <Sparkles size={10} /> AI Suggestion
-                                </h4>
-                                <button onClick={() => setAiResponse(null)} className="text-neutral-500 hover:text-white"><X size={12} /></button>
-                            </div>
-                            <p className="text-xs text-white leading-relaxed whitespace-pre-wrap">{aiResponse}</p>
-                            <div className="flex justify-end mt-2 gap-2">
-                                <button onClick={() => setAiResponse(null)} className="text-neutral-500 text-[10px] font-bold px-2 py-1">Discard</button>
-                                <button onClick={insertAiResponse} className="bg-primary text-black text-[10px] font-bold px-3 py-1 rounded">Insert</button>
-                            </div>
-                        </div>
-                    )}
-
                 </div>
 
                 {/* Mobile Bottom Control Bar */}
@@ -653,7 +632,6 @@ const NotesPage: React.FC = () => {
                                     <div className="flex-1 relative">
                                         <Sparkles size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${aiLoading ? 'text-primary animate-pulse' : 'text-neutral-500'}`} />
                                         <input
-                                            autoFocus
                                             value={aiPrompt}
                                             onChange={(e) => setAiPrompt(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
@@ -712,8 +690,8 @@ const NotesPage: React.FC = () => {
                 )}
             </div>
 
-            {/* Rhyme Sidebar */}
-            <div className="hidden lg:flex w-60 bg-[#080808] border-l border-neutral-800 flex-col z-20">
+            {/* Rhyme Sidebar (Desktop Only) */}
+            <div className="hidden lg:flex w-64 bg-[#080808] border-l border-neutral-800 flex-col shrink-0">
                 <div className="p-4 border-b border-neutral-800 bg-neutral-900/20">
                     <div className="flex items-center justify-between mb-2">
                         <h3 className="text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-2">
@@ -769,6 +747,11 @@ const NotesPage: React.FC = () => {
         </div>
     );
 
+
+
+
+
+
     const renderBrowserView = () => (
         <div className="flex-1 p-4 lg:p-8 overflow-y-auto">
             <div className="max-w-4xl mx-auto">
@@ -783,12 +766,12 @@ const NotesPage: React.FC = () => {
                             key={file.id}
                             onClick={() => handleAttachFile(file.name)}
                             className={`
-                                p-4 rounded-xl border bg-neutral-900/50 cursor-pointer transition-all group
-                                ${activeNote && activeNote.attachedAudio === file.name
+                            p-4 rounded-xl border bg-neutral-900/50 cursor-pointer transition-all group
+                            ${activeNote && activeNote.attachedAudio === file.name
                                     ? 'border-primary bg-primary/10 shadow-[0_0_20px_rgba(var(--primary),0.15)]'
                                     : 'border-white/5 hover:border-white/20 hover:bg-white/5'
                                 }
-                            `}
+                        `}
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <div className="p-3 bg-black/50 rounded-lg text-neutral-400 group-hover:text-white">
@@ -828,11 +811,11 @@ const NotesPage: React.FC = () => {
     return (
         <div className={`
             w-full max-w-[1600px] mx-auto animate-in fade-in duration-500 flex flex-col overflow-hidden
-            fixed inset-0 top-16 z-30 bg-[#050505] lg:relative lg:top-0 lg:h-[calc(100vh_-_8rem)] lg:pt-4 lg:px-8 lg:bg-transparent
+            fixed inset-x-0 bottom-0 top-16 z-30 bg-[#050505] lg:relative lg:top-0 lg:h-[calc(100vh_-_8rem)] lg:pt-4 lg:px-8 lg:bg-transparent
         `}>
             {/* Header - Desktop Only */}
             <div className={`
-                hidden lg:flex items-end justify-between transition-all duration-500 ease-in-out overflow-hidden
+                hidden lg:flex items-end justify-between transition-all duration-500 ease-in-out shrink-0
                 ${activeNote ? 'lg:max-h-40 lg:opacity-100 lg:mb-6 lg:pointer-events-auto' : 'max-h-40 opacity-100 mb-6'}
             `}>
                 <div>
@@ -849,15 +832,14 @@ const NotesPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="flex-1 flex bg-[#0a0a0a] lg:border-t lg:border-b border-neutral-800 lg:border lg:rounded-xl overflow-hidden shadow-none lg:shadow-2xl relative">
-
+            <div className="flex-1 flex bg-[#0a0a0a] lg:border border-neutral-800 lg:rounded-xl overflow-hidden shadow-none lg:shadow-2xl relative">
                 {/* Sidebar */}
                 <div className={`
-                absolute inset-y-0 left-0 z-30 w-64 border-r border-neutral-800 flex flex-col bg-[#080808] transition-transform duration-300
-                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                lg:relative lg:translate-x-0
+                    absolute inset-y-0 left-0 z-50 w-64 border-r border-neutral-800 flex flex-col bg-[#080808] transition-transform duration-300
+                    ${isSidebarOpen ? 'translate-x-0 shadow-[20px_0_50px_rgba(0,0,0,0.8)]' : '-translate-x-full'}
+                    lg:relative lg:translate-x-0 lg:shadow-none
                 `}>
-                    <div className="p-4 border-b border-neutral-800 flex items-center justify-between">
+                    <div className="p-4 border-b border-neutral-800 flex items-center justify-between shrink-0">
                         <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                             <FileText size={14} className="text-primary" />
                             My Notebook
@@ -874,7 +856,7 @@ const NotesPage: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                    <div className="px-4 mb-4">
+                    <div className="px-4 mb-4 shrink-0">
                         <div className="relative mt-4">
                             <input className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-primary/50 pl-8" placeholder="Search notes..." />
                             <FileText size={12} className="absolute left-2.5 top-2.5 text-neutral-500" />
@@ -890,12 +872,12 @@ const NotesPage: React.FC = () => {
                                     setIsSidebarOpen(false);
                                 }}
                                 className={`
-                                    p-3 rounded-lg border cursor-pointer transition-all group relative
-                                    ${activeNoteId === note.id
+                                p-3 rounded-lg border cursor-pointer transition-all group relative
+                                ${activeNoteId === note.id
                                         ? 'bg-primary/10 border-primary/20'
                                         : 'border-transparent hover:bg-white/5'
                                     }
-                                `}
+                            `}
                             >
                                 <div className="flex justify-between items-start mb-1">
                                     <h4 className={`text-sm font-bold truncate pr-4 ${activeNoteId === note.id ? 'text-primary' : 'text-neutral-300'}`}>{note.title}</h4>
@@ -917,116 +899,118 @@ const NotesPage: React.FC = () => {
                     </div>
                 </div>
 
-            </div>
-
-            {isSidebarOpen && (
-                <div
-                    className="absolute inset-0 bg-black/80 z-20 lg:hidden"
-                    onClick={() => setIsSidebarOpen(false)}
-                ></div>
-            )}
-
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col bg-[#050505] relative w-full">
-                {activeNote ? (
-                    <>
-                        {/* Desktop Controls (Hidden on Mobile) */}
-                        <div className="hidden lg:flex h-14 border-b border-neutral-800 items-center justify-between px-6 bg-neutral-900/30 z-20 shrink-0">
-                            <div className="flex items-center gap-4">
-                                {viewMode === 'browser' && (
-                                    <button onClick={() => setViewMode('editor')} className="p-1.5 hover:bg-white/5 rounded"><ChevronLeft size={16} /></button>
-                                )}
-                                <input
-                                    value={activeNote.title}
-                                    onChange={(e) => handleUpdateTitle(e.target.value)}
-                                    className="bg-transparent border-none text-sm font-bold text-white focus:outline-none p-0 w-64"
-                                    placeholder="Untitled Note"
-                                />
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {viewMode === 'editor' && (
-                                    <button
-                                        onClick={() => setRhymeMode(!rhymeMode)}
-                                        className={`
+                {/* Main Content Area */}
+                <div className="flex-1 flex flex-col bg-[#050505] relative w-full overflow-hidden">
+                    {activeNote ? (
+                        <div className="flex-1 flex flex-col overflow-hidden">
+                            {/* Desktop Controls (Hidden on Mobile) */}
+                            <div className="hidden lg:flex h-14 border-b border-neutral-800 items-center justify-between px-6 bg-neutral-900/30 z-20 shrink-0">
+                                <div className="flex items-center gap-4">
+                                    {viewMode === 'browser' && (
+                                        <button onClick={() => setViewMode('editor')} className="p-1.5 hover:bg-white/5 rounded"><ChevronLeft size={16} /></button>
+                                    )}
+                                    <input
+                                        value={activeNote.title}
+                                        onChange={(e) => handleUpdateTitle(e.target.value)}
+                                        className="bg-transparent border-none text-sm font-bold text-white focus:outline-none p-0 w-64"
+                                        placeholder="Untitled Note"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {viewMode === 'editor' && (
+                                        <button
+                                            onClick={() => setRhymeMode(!rhymeMode)}
+                                            className={`
                                                     flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wide transition-all
                                                     ${rhymeMode
-                                                ? 'bg-primary text-black shadow-[0_0_15px_rgba(var(--primary),0.3)]'
-                                                : 'text-neutral-500 hover:text-white hover:bg-white/5 border border-white/5'
-                                            }
+                                                    ? 'bg-primary text-black shadow-[0_0_15px_rgba(var(--primary),0.3)]'
+                                                    : 'text-neutral-500 hover:text-white hover:bg-white/5 border border-white/5'
+                                                }
                                                 `}
+                                        >
+                                            <Highlighter size={12} />
+                                            <span className="hidden sm:inline">Rhymes</span>
+                                        </button>
+                                    )}
+                                    <div className="w-px h-4 bg-neutral-800 hidden sm:block"></div>
+                                    <button
+                                        onClick={() => setViewMode(viewMode === 'editor' ? 'browser' : 'editor')}
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase border border-neutral-700 text-neutral-400 hover:text-white hover:border-white"
                                     >
-                                        <Highlighter size={12} />
-                                        <span className="hidden sm:inline">Rhymes</span>
+                                        {viewMode === 'editor' ? <FolderOpen size={12} /> : <FileText size={12} />}
+                                        <span>{viewMode === 'editor' ? 'Attach' : 'Editor'}</span>
                                     </button>
+                                </div>
+                            </div>
+
+                            {/* Main Content Switcher */}
+                            {viewMode === 'editor' ? renderEditorView() : renderBrowserView()}
+
+                            {/* Desktop AI Assistant Panel (Hidden on Mobile) */}
+                            <div className="hidden lg:block p-4 bg-[#080808] border-t border-neutral-800 z-20 shrink-0">
+                                {aiResponse && (
+                                    <div className="mb-4 p-4 bg-neutral-900/80 border border-primary/20 rounded-lg relative animate-in slide-in-from-bottom-2 max-h-60 overflow-y-auto custom-scrollbar">
+                                        <div className="flex items-start gap-3">
+                                            <div className="p-1.5 bg-primary/10 rounded text-primary mt-1">
+                                                <Sparkles size={14} />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="text-xs font-bold text-white mb-1">AI Suggestion</h4>
+                                                <p className="text-xs text-neutral-300 leading-relaxed whitespace-pre-wrap">{aiResponse}</p>
+                                            </div>
+                                            <button onClick={() => setAiResponse(null)} className="text-neutral-500 hover:text-white"><X size={14} /></button>
+                                        </div>
+                                        <div className="flex justify-end mt-3 gap-2">
+                                            <button onClick={() => setAiResponse(null)} className="text-[10px] font-bold text-neutral-500 hover:text-white px-3 py-1.5">Discard</button>
+                                            <button onClick={insertAiResponse} className="text-[10px] font-bold bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded border border-white/5">Insert to Note</button>
+                                        </div>
+                                    </div>
                                 )}
-                                <div className="w-px h-4 bg-neutral-800 hidden sm:block"></div>
-                                <button
-                                    onClick={() => setViewMode(viewMode === 'editor' ? 'browser' : 'editor')}
-                                    className="flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase border border-neutral-700 text-neutral-400 hover:text-white hover:border-white"
-                                >
-                                    {viewMode === 'editor' ? <FolderOpen size={12} /> : <FileText size={12} />}
-                                    <span>{viewMode === 'editor' ? 'Attach' : 'Editor'}</span>
-                                </button>
+
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Sparkles size={14} className={`text-primary ${aiLoading ? 'animate-pulse' : ''}`} />
+                                    </div>
+                                    <input
+                                        value={aiPrompt}
+                                        onChange={(e) => setAiPrompt(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
+                                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg pl-10 pr-12 py-3 text-xs text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 placeholder-neutral-500 transition-all font-mono"
+                                        placeholder="Ask AI for advice, ideas, structure..."
+                                        disabled={aiLoading}
+                                    />
+                                    <button
+                                        onClick={handleAiSubmit}
+                                        disabled={aiLoading || !aiPrompt.trim()}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <Send size={12} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
-
-                        {/* Main Content Switcher */}
-                        {viewMode === 'editor' ? renderEditorView() : renderBrowserView()}
-
-                        {/* Desktop AI Assistant Panel (Hidden on Mobile) */}
-                        <div className="hidden lg:block p-4 bg-[#080808] border-t border-neutral-800 z-20">
-                            {aiResponse && (
-                                <div className="mb-4 p-4 bg-neutral-900/80 border border-primary/20 rounded-lg relative animate-in slide-in-from-bottom-2 max-h-60 overflow-y-auto custom-scrollbar">
-                                    <div className="flex items-start gap-3">
-                                        <div className="p-1.5 bg-primary/10 rounded text-primary mt-1">
-                                            <Sparkles size={14} />
-                                        </div>
-                                        <div className="flex-1">
-                                            <h4 className="text-xs font-bold text-white mb-1">AI Suggestion</h4>
-                                            <p className="text-xs text-neutral-300 leading-relaxed whitespace-pre-wrap">{aiResponse}</p>
-                                        </div>
-                                        <button onClick={() => setAiResponse(null)} className="text-neutral-500 hover:text-white"><X size={14} /></button>
-                                    </div>
-                                    <div className="flex justify-end mt-3 gap-2">
-                                        <button onClick={() => setAiResponse(null)} className="text-[10px] font-bold text-neutral-500 hover:text-white px-3 py-1.5">Discard</button>
-                                        <button onClick={insertAiResponse} className="text-[10px] font-bold bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded border border-white/5">Insert to Note</button>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Sparkles size={14} className={`text-primary ${aiLoading ? 'animate-pulse' : ''}`} />
-                                </div>
-                                <input
-                                    value={aiPrompt}
-                                    onChange={(e) => setAiPrompt(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
-                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg pl-10 pr-12 py-3 text-xs text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 placeholder-neutral-500 transition-all font-mono"
-                                    placeholder="Ask AI for advice, ideas, structure..."
-                                    disabled={aiLoading}
-                                />
-                                <button
-                                    onClick={handleAiSubmit}
-                                    disabled={aiLoading || !aiPrompt.trim()}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <Send size={12} />
-                                </button>
+                    ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center text-neutral-600 p-8 text-center">
+                            <div className="w-16 h-16 bg-neutral-900 rounded-2xl flex items-center justify-center mb-4">
+                                <FileText size={32} />
                             </div>
+                            <h3 className="text-lg font-bold text-white mb-2">No Note Selected</h3>
+                            <p className="text-sm max-w-xs mb-6">Select a note from the sidebar or create a new one to start writing.</p>
+                            <button
+                                onClick={handleCreateNote}
+                                className="px-6 py-3 bg-white text-black font-bold rounded-xl hover:scale-105 transition-transform"
+                            >
+                                Create New Note
+                            </button>
                         </div>
-                    </>
-                ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-neutral-500 bg-dot-grid">
-                        <div className="w-16 h-16 bg-neutral-900 rounded-2xl border border-neutral-800 flex items-center justify-center mb-4 shadow-xl rotate-3">
-                            <FileText size={32} className="opacity-50" />
-                        </div>
-                        <h3 className="text-lg font-bold text-white mb-1">Select a Note</h3>
-                        <p className="text-xs">Choose a note from the sidebar or create a new one.</p>
-                        <button onClick={handleCreateNote} className="mt-6 lg:hidden px-6 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-xs font-bold">
-                            Create New Note
-                        </button>
-                    </div>
+                    )}
+                </div>
+
+                {isSidebarOpen && (
+                    <div
+                        className="absolute inset-0 bg-black/80 z-[48] lg:hidden"
+                        onClick={() => setIsSidebarOpen(false)}
+                    ></div>
                 )}
             </div>
         </div>

@@ -464,7 +464,12 @@ const NotesPage: React.FC = () => {
 
     // Title Portal Component
     const MobileTitlePortal = () => {
-        const target = document.getElementById('mobile-page-title');
+        const [target, setTarget] = useState<HTMLElement | null>(null);
+
+        useEffect(() => {
+            setTarget(document.getElementById('mobile-page-title'));
+        }, []);
+
         if (!target || !activeNote) return null;
 
         return createPortal(

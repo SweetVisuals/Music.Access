@@ -400,7 +400,7 @@ const NotesPage: React.FC = () => {
     };
 
     return (
-        <div className="w-full h-[calc(100vh-14rem)] max-w-[1600px] mx-auto pb-20 pt-6 px-4 lg:px-8 animate-in fade-in duration-500 flex flex-col">
+        <div className="w-full h-[calc(100vh-8rem)] lg:h-[calc(100vh-14rem)] max-w-[1600px] mx-auto pb-4 lg:pb-20 pt-4 lg:pt-6 px-4 lg:px-8 animate-in fade-in duration-500 flex flex-col">
 
             <div className="flex items-end justify-between mb-6">
                 <div>
@@ -745,7 +745,7 @@ const NotesPage: React.FC = () => {
                             {/* Bottom AI Assistant Panel */}
                             <div className="p-4 bg-[#080808] border-t border-neutral-800 z-20">
                                 {aiResponse && (
-                                    <div className="mb-4 p-4 bg-neutral-900/80 border border-primary/20 rounded-lg relative animate-in slide-in-from-bottom-2">
+                                    <div className="mb-4 p-4 bg-neutral-900/80 border border-primary/20 rounded-lg relative animate-in slide-in-from-bottom-2 max-h-60 overflow-y-auto custom-scrollbar">
                                         <div className="flex items-start gap-3">
                                             <div className="p-1.5 bg-primary/10 rounded text-primary mt-1">
                                                 <Sparkles size={14} />

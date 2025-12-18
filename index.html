@@ -1,78 +1,90 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MusicAccess</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&family=Dancing+Script:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              mono: ['JetBrains Mono', 'monospace'],
-              signature: ['Dancing Script', 'cursive'],
-            },
-            colors: {
-              neutral: {
-                850: '#1f1f1f',
-                900: '#171717',
-                950: '#0a0a0a', // Deep black/grey for terminal feel
-              },
-              primary: 'rgb(var(--primary) / <alpha-value>)',
-            },
-            animation: {
-              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            }
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>MusicAccess</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&family=Dancing+Script:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            signature: ['Dancing Script', 'cursive'],
           },
+          colors: {
+            neutral: {
+              850: '#1f1f1f',
+              900: '#171717',
+              950: '#0a0a0a', // Deep black/grey for terminal feel
+            },
+            primary: 'rgb(var(--primary) / <alpha-value>)',
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }
         },
-      }
-    </script>
-    <style>
-      :root {
-        --primary: 249 115 22; /* Default Orange */
-      }
+      },
+    }
+  </script>
+  <style>
+    :root {
+      --primary: 249 115 22;
+      /* Default Orange */
+    }
 
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #333; 
-        border-radius: 3px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #555; 
-      }
+    html {
+      background-color: #050505;
+    }
 
-      /* --- TERMINAL (Default) --- */
-      .bg-dot-grid {
-        background-color: #050505;
-        background-image: radial-gradient(#222 1px, transparent 1px);
-        background-size: 24px 24px;
-      }
 
-      /* Glass Effect Utilities */
-      .glass-panel {
-        background: rgba(10, 10, 10, 0.7);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-      }
-      
-      .glass-panel-lighter {
-        background: rgba(20, 20, 20, 0.6);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-      }
-    </style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    /* --- TERMINAL (Default) --- */
+    .bg-dot-grid {
+      background-color: #050505;
+      background-image: radial-gradient(#222 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Glass Effect Utilities */
+    .glass-panel {
+      background: rgba(10, 10, 10, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-panel-lighter {
+      background: rgba(20, 20, 20, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+  </style>
   <script type="importmap">
 {
   "imports": {
@@ -85,8 +97,10 @@
 }
 </script>
 </head>
-  <body class="bg-dot-grid text-gray-200 overflow-hidden antialiased transition-colors duration-500">
-    <div id="root" class="h-screen flex flex-col"></div>
+
+<body class="bg-dot-grid text-gray-200 overflow-hidden antialiased transition-colors duration-500">
+  <div id="root" class="h-screen flex flex-col"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>

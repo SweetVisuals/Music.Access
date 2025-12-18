@@ -41,8 +41,8 @@ export const generateCreativeDescription = async (project: Project): Promise<str
 export const askAiAssistant = async (query: string, contextProjects: Project[]): Promise<string> => {
   try {
     const model = 'gemini-2.5-flash';
-    
-    const projectSummary = contextProjects.map(p => 
+
+    const projectSummary = contextProjects.map(p =>
       `- ${p.title} by ${p.producer} (${p.genre}, ${p.bpm}BPM, ${p.key})`
     ).join('\n');
 
@@ -73,19 +73,19 @@ export const askAiAssistant = async (query: string, contextProjects: Project[]):
 export const getWritingAssistance = async (userPrompt: string, currentText: string): Promise<string> => {
   try {
     const model = 'gemini-2.5-flash';
-    
+
     const prompt = `
-      You are a creative writing assistant for a musician/lyricist.
-      
       Current Lyrics/Notes:
       "${currentText}"
       
       User Request:
       "${userPrompt}"
       
-      Provide helpful, creative, and specific advice, ideas, or structural suggestions. 
-      If suggesting lyrics, match the vibe of the current text.
-      Keep the response concise and actionable.
+      Provide *strictly* the content requested (lyrics, rhymes, structure, or ideas). 
+      - Do NOT include "Here is your...", "Sure!", or any conversational filler.
+      - Output valid text ready to be inserted directly into the note.
+      - If suggesting lyrics, match the vibe and rhyme scheme of the current text.
+      - Keep it concise.
     `;
 
     const response = await ai.models.generateContent({

@@ -240,7 +240,7 @@ const TopBar: React.FC<TopBarProps> = ({
                         : 'absolute top-1/2 -translate-y-1/2 hidden lg:block'
                     }
                 ${!mobileSearchOpen ? 'lg:left-1/2 lg:-translate-x-1/2' : ''}
-                ${!mobileSearchOpen && isFocused ? 'lg:w-[40rem] xl:w-[50rem]' : 'lg:w-[32rem]'}
+                ${!mobileSearchOpen && isFocused ? 'lg:w-[35rem] xl:w-[45rem]' : 'lg:w-[24rem] xl:w-[32rem]'}
             `}
             >
                 {mobileSearchOpen && (

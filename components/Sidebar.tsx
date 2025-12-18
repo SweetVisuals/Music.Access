@@ -110,7 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
             )}
 
             <aside className={`
-        fixed inset-y-0 left-0 z-50 w-full sm:w-72 lg:w-64 bg-[#050505] border-r border-neutral-800 flex flex-col font-sans transition-transform duration-300 ease-in-out transform h-[100dvh] lg:h-screen
+        fixed inset-y-0 left-0 z-50 w-full lg:w-64 bg-[#050505] lg:border-r border-neutral-800 flex flex-col font-sans transition-transform duration-300 ease-in-out transform h-[100dvh] lg:h-screen
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
       `}>
                 {/* Logo Area */}
@@ -452,53 +452,53 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                 </div>
 
                 {/* Footer - Storage & Profile or Guest */}
-                <div className="p-3 border-t border-neutral-800 bg-[#080808] shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+                <div className="p-4 border-t border-neutral-800 bg-[#080808] shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))]">
 
                     {isLoggedIn ? (
                         <>
                             {/* Storage Info */}
-                            <div className="mb-3 px-1">
+                            <div className="mb-4 px-0.5">
                                 <div className="flex justify-between items-end mb-2">
-                                    <span className="text-[9px] font-medium text-neutral-400">Storage</span>
-                                    <span className="text-[8px] font-mono text-neutral-500 font-bold">{formatStorageSize(storageUsage.used)} / {formatStorageSize(storageUsage.limit)}</span>
+                                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Storage</span>
+                                    <span className="text-[9px] font-mono text-neutral-500 font-bold">{formatStorageSize(storageUsage.used)} / {formatStorageSize(storageUsage.limit)}</span>
                                 </div>
-                                <div className="h-1 w-full bg-neutral-800 rounded-full overflow-hidden">
+                                <div className="h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-white rounded-full transition-all duration-300"
+                                        className="h-full bg-primary rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(var(--primary),0.3)]"
                                         style={{ width: `${Math.min((storageUsage.used / storageUsage.limit) * 100, 100)}%` }}
                                     ></div>
                                 </div>
                             </div>
 
-                            <div className="h-px bg-neutral-800 mb-3"></div>
+                            <div className="h-px bg-neutral-800/50 mb-4"></div>
 
                             {/* User Profile */}
                             {profileLoading || !userProfile ? (
-                                <div className="flex items-center gap-2 p-1.5 -mx-1">
+                                <div className="flex items-center gap-3 p-1">
                                     {/* Avatar Skeleton */}
-                                    <div className="h-7 w-7 rounded-md bg-neutral-800 animate-pulse shrink-0"></div>
+                                    <div className="h-9 w-9 rounded-lg bg-neutral-800 animate-pulse shrink-0"></div>
 
-                                    <div className="flex-1 min-w-0 space-y-1.5">
+                                    <div className="flex-1 min-w-0 space-y-2">
                                         {/* Username Skeleton */}
-                                        <div className="h-2.5 w-16 bg-neutral-800 animate-pulse rounded"></div>
+                                        <div className="h-3 w-20 bg-neutral-800 animate-pulse rounded"></div>
                                         {/* Email Skeleton */}
-                                        <div className="h-1.5 w-20 bg-neutral-800 animate-pulse rounded"></div>
+                                        <div className="h-2 w-28 bg-neutral-800 animate-pulse rounded"></div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-2 group cursor-pointer hover:bg-white/5 p-1.5 -mx-1 rounded-lg transition-colors" onClick={() => window.location.href = `/@${userProfile?.handle || 'user'}`}>
+                                <div className="flex items-center gap-3 group cursor-pointer hover:bg-white/5 p-1.5 -mx-1.5 rounded-xl transition-all" onClick={() => window.location.href = `/@${userProfile?.handle || 'user'}`}>
                                     {/* Avatar - Square */}
-                                    <div className="h-7 w-7 rounded-md bg-blue-500/20 border border-blue-500/30 flex items-center justify-center overflow-hidden relative shrink-0">
+                                    <div className="h-9 w-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden relative shrink-0 group-hover:border-primary/40 transition-colors">
                                         <img src={userProfile?.avatar || 'https://i.pravatar.cc/150?u=user'} alt={userProfile?.username || 'User'} className="h-full w-full object-cover" />
                                     </div>
 
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-[10px] font-bold text-white truncate group-hover:text-primary transition-colors">{userProfile?.username || 'User'}</div>
-                                        <div className="text-[9px] text-neutral-500 truncate font-mono">{userProfile?.email || 'user@example.com'}</div>
+                                        <div className="text-[11px] font-bold text-white truncate group-hover:text-primary transition-colors">{userProfile?.username || 'User'}</div>
+                                        <div className="text-[10px] text-neutral-500 truncate font-mono mt-0.5">{userProfile?.email || 'user@example.com'}</div>
                                     </div>
 
-                                    <button className="text-neutral-500 hover:text-white transition-colors">
-                                        <MoreVertical size={12} />
+                                    <button className="p-2 text-neutral-500 hover:text-white transition-colors hover:bg-white/5 rounded-lg">
+                                        <MoreVertical size={14} />
                                     </button>
                                 </div>
                             )}

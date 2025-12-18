@@ -1,4 +1,3 @@
-```
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Note } from '../types';
 import { getNotes, createNote, updateNote, deleteNote, getUserFiles, uploadFile } from '../services/supabaseService';
@@ -42,9 +41,6 @@ const MOCK_RHYMES: Record<string, string[]> = {
     'all': ['Ball', 'Call', 'Fall', 'Tall', 'Wall', 'Small', 'Hall', 'Stall'],
     'eep': ['Deep', 'Keep', 'Sleep', 'Sweep', 'Weep', 'Creep', 'Steep', 'Sheep']
 };
-
-// MOCK_AUDIO_FILES removed in favor of real storage
-
 
 const RHYME_COLORS = [
     'text-blue-400',
@@ -104,7 +100,7 @@ const analyzeRhymeScheme = (text: string, accent: 'US' | 'UK' = 'US') => {
         if (silentEMatch) {
             const [_, vowel] = silentEMatch;
             // Rough grouping: a_e -> long_a, i_e -> long_i, etc.
-            return `long_${ vowel } `;
+            return `long_${vowel}`;
         }
 
         // 3. Vowel Teams & Standard Suffixes
@@ -130,7 +126,7 @@ const analyzeRhymeScheme = (text: string, accent: 'US' | 'UK' = 'US') => {
         if (vowels === 'y' && coda === '' && lower.length > 3) return 'long_e';
 
         // Fallback: Exact Vowel+Coda match (Cat -> at, Dog -> og)
-        return `${ vowels }_${ coda } `;
+        return `${vowels}_${coda}`;
     };
 
     words.forEach(w => {
@@ -303,7 +299,6 @@ const NotesPage: React.FC = () => {
             // Refresh list
             const files = await getUserFiles();
             setAudioFiles(files.filter(f => f.type === 'audio'));
-            // Auto attach? Maybe. For now just list it.
         } catch (error) {
             console.error('Upload failed', error);
             alert('Upload failed: ' + (error as any).message);
@@ -358,31 +353,25 @@ const NotesPage: React.FC = () => {
     // --- Content Handler Wrapper ---
     const handleUpdateContentWrapper = (newContent: string) => {
         handleUpdateContent(newContent);
-        
+
         // Check for "Enter" or end of sentence triggers to fetch AI rhymes
-        // We look at the difference to see if the last char added was a newline or punctuation space
         const lastChar = newContent.slice(-1);
         const prevLastChar = activeNote?.content.slice(-1) || '';
-        
-        // Trigger if user typed newline or space after punctuation
+
         if ((lastChar === '\n' && prevLastChar !== '\n') || (lastChar === ' ' && /[.?!,]/.test(prevLastChar))) {
-             // Extract last meaningful word
-             const words = newContent.trim().split(/\s+/);
-             const lastWord = words[words.length - 1]?.replace(/[^a-zA-Z]/g, '');
-             
-             if (lastWord && lastWord.length > 2) {
-                 setIsAiRhymeLoading(true);
-                 getRhymesForWord(lastWord).then(rhymes => {
-                     setAiRhymes(rhymes);
-                     setIsAiRhymeLoading(false);
-                 }).catch(() => setIsAiRhymeLoading(false));
-             }
-        } else if (newContent.length < (activeNote?.content.length || 0)) {
-            // If deleting, maybe clear rhymes if we deleted the target word? 
-            // For now, keep them until new trigger for stability.
+            const words = newContent.trim().split(/\s+/);
+            const lastWord = words[words.length - 1]?.replace(/[^a-zA-Z]/g, '');
+
+            if (lastWord && lastWord.length > 2) {
+                setIsAiRhymeLoading(true);
+                getRhymesForWord(lastWord).then(rhymes => {
+                    setAiRhymes(rhymes);
+                    setIsAiRhymeLoading(false);
+                }).catch(() => setIsAiRhymeLoading(false));
+            }
         }
     };
-    
+
     // --- Manual Sidebar Suggestion Logic (Legacy/Fallback) ---
     const getLastWord = (text: string, index: number) => {
         if (!text) return '';
@@ -394,15 +383,12 @@ const NotesPage: React.FC = () => {
     const currentWord = activeNote ? getLastWord(activeNote.content, cursorIndex) : '';
 
     const getRhymeSuggestions = (word: string) => {
-        if (aiRhymes.length > 0 && word === currentWord) return aiRhymes; // Use AI rhymes if they match current context roughly
-        // Actually, let's prioritize AI rhymes if they exist and are recent. 
-        // Simple heuristic: If we have AI rhymes, show them. If not, fallback.
+        if (aiRhymes.length > 0 && word === currentWord) return aiRhymes;
         if (aiRhymes.length > 0) return aiRhymes;
 
         if (!word || word.length < 2) return [];
         const lowerWord = word.toLowerCase();
 
-        // Fallback to static list for suggestions sidebar
         for (const suffix in MOCK_RHYMES) {
             if (lowerWord.endsWith(suffix)) {
                 return MOCK_RHYMES[suffix];
@@ -413,39 +399,217 @@ const NotesPage: React.FC = () => {
 
     const suggestions = aiRhymes.length > 0 ? aiRhymes : getRhymeSuggestions(currentWord);
 
-    // --- Rendering Highlighting ---
+    // --- Highlighting Renderer ---
     const renderHighlightedText = (text: string) => {
         if (!text) return null;
-
-        // Split text by delimiters but capture them to reconstruct text exactly
         const tokens = text.split(/([^a-zA-Z0-9_']+)/);
 
         return tokens.map((token, i) => {
             const lower = token.toLowerCase();
-            // Default to transparent so only the underlying textarea is visible
-            let colorClass = 'text-transparent'; 
+            let colorClass = 'text-transparent';
 
             if (rhymeMode) {
                 const group = wordToGroup[lower];
                 if (group && groupToColor[group]) {
                     colorClass = groupToColor[group];
                 } else {
-                     // If rhyme mode is on but no match, keep it transparent to show textarea text
-                     // OR if we want to dim non-matches, we could use a low opacity.
-                     // But for perfect sync, transparent is safest.
-                     colorClass = 'text-transparent';
+                    colorClass = 'text-transparent';
                 }
             }
-
-            return <span key={i} className={`${ colorClass } transition - colors duration - 300`}>{token}</span>;
+            return <span key={i} className={`${colorClass} transition-colors duration-300`}>{token}</span>;
         });
     };
 
-    return (
+    // --- Sub-Components / Renderers ---
+
+    const renderEditorView = () => (
+        <div className="flex-1 flex overflow-hidden relative">
+            <div className="flex-1 flex flex-col relative">
+                {/* Embedded Audio Player */}
+                {activeNote && activeNote.attachedAudio && (
+                    <div className="h-12 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-4 lg:px-6 shrink-0">
+                        {audioPlaying && (
+                            <audio
+                                src={audioFiles.find(f => f.name === activeNote.attachedAudio)?.url}
+                                autoPlay
+                                onEnded={() => setAudioPlaying(false)}
+                                onError={(e) => console.log('Audio error', e)}
+                            />
+                        )}
+
+                        <div className="flex items-center gap-4 min-w-0">
+                            <div className="w-8 h-8 bg-primary/20 rounded flex items-center justify-center text-primary shrink-0">
+                                <Music size={14} />
+                            </div>
+                            <div className="min-w-0">
+                                <div className="text-xs font-bold text-white truncate">{activeNote.attachedAudio}</div>
+                                <div className="text-[9px] text-primary font-mono uppercase">Attached Track</div>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4 shrink-0">
+                            <button
+                                onClick={() => setAudioPlaying(!audioPlaying)}
+                                className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform"
+                            >
+                                {audioPlaying ? <Pause size={14} fill="black" /> : <Play size={14} fill="black" className="ml-0.5" />}
+                            </button>
+                            <div className="w-px h-4 bg-neutral-800"></div>
+                            <button onClick={handleDetachFile} className="text-neutral-500 hover:text-red-500">
+                                <X size={14} />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Text Editor Area */}
+                <div className="flex-1 relative font-mono text-xs lg:text-sm leading-relaxed overflow-y-auto custom-scrollbar">
+                    <div className="grid grid-cols-1 grid-rows-1 min-h-full">
+                        <div className="grid grid-cols-1 grid-rows-1 w-full h-full overflow-y-auto relative no-scrollbar">
+                            {/* Layer 1: Backdrop */}
+                            <div
+                                ref={backdropRef}
+                                className="col-start-1 row-start-1 p-5 lg:p-8 whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono text-base lg:text-sm leading-relaxed text-transparent"
+                            >
+                                {activeNote && renderHighlightedText(activeNote.content + ' ')}
+                            </div>
+
+                            {/* Layer 2: Input */}
+                            <textarea
+                                ref={textareaRef}
+                                className={`
+                                    col-start-1 row-start-1 w-full h-full bg-transparent p-5 lg:p-8 resize-none overflow-hidden focus:outline-none z-10 font-mono text-base lg:text-sm leading-relaxed whitespace-pre-wrap break-words
+                                    ${rhymeMode ? 'text-transparent caret-white' : 'text-neutral-300 caret-white'}
+                                `}
+                                value={activeNote ? activeNote.content : ''}
+                                onChange={(e) => {
+                                    handleUpdateContentWrapper(e.target.value);
+                                    handleSelectionChange(e);
+                                }}
+                                onSelect={handleSelectionChange}
+                                placeholder="Start writing your lyrics or production notes here..."
+                                spellCheck={false}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Rhyme Sidebar */}
+            <div className="hidden lg:flex w-60 bg-[#080808] border-l border-neutral-800 flex-col z-20">
+                <div className="p-4 border-b border-neutral-800 bg-neutral-900/20">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                            <Brain size={12} className="text-primary" /> Rhyme Assist
+                        </h3>
+                        <button
+                            onClick={() => setAccent(accent === 'US' ? 'UK' : 'US')}
+                            className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-neutral-800 bg-neutral-900 text-[9px] font-bold text-neutral-400 hover:text-white"
+                            title="Toggle Accent"
+                        >
+                            <Globe size={10} /> {accent}
+                        </button>
+                    </div>
+                    <div className="text-[10px] text-neutral-500">
+                        Context: <span className="text-primary font-mono">"{currentWord}"</span>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-2">
+                    {currentWord && suggestions.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                            {suggestions.map((word, i) => (
+                                <span
+                                    key={i}
+                                    className="px-2 py-1 bg-neutral-900 border border-neutral-800 rounded text-xs text-neutral-300 hover:text-white hover:border-primary/30 hover:bg-white/5 cursor-pointer transition-colors"
+                                    onClick={() => {
+                                        if (activeNote) {
+                                            const newContent = activeNote.content + " " + word;
+                                            handleUpdateContent(newContent);
+                                        }
+                                    }}
+                                >
+                                    {word}
+                                </span>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-neutral-600 space-y-2">
+                            <div className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center">
+                                {isAiRhymeLoading ? (
+                                    <Sparkles size={16} className="animate-pulse text-primary" />
+                                ) : (
+                                    <Mic size={16} className="opacity-50" />
+                                )}
+                            </div>
+                            <p className="text-[10px] text-center px-4">
+                                {isAiRhymeLoading ? 'Finding rhymes...' : `Type a line and hit Enter to get AI rhymes.`}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderBrowserView = () => (
+        <div className="flex-1 p-4 lg:p-8 overflow-y-auto">
+            <div className="max-w-4xl mx-auto">
+                <h2 className="text-xl font-black text-white mb-6 flex items-center gap-3">
+                    <FolderOpen size={24} className="text-primary" />
+                    Select Audio to Attach
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {audioFiles.map(file => (
+                        <div
+                            key={file.id}
+                            onClick={() => handleAttachFile(file.name)}
+                            className={`
+                                p-4 rounded-xl border bg-neutral-900/50 cursor-pointer transition-all group
+                                ${activeNote && activeNote.attachedAudio === file.name
+                                    ? 'border-primary bg-primary/10 shadow-[0_0_20px_rgba(var(--primary),0.15)]'
+                                    : 'border-white/5 hover:border-white/20 hover:bg-white/5'
+                                }
+                            `}
+                        >
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-3 bg-black/50 rounded-lg text-neutral-400 group-hover:text-white">
+                                    <Music size={20} />
+                                </div>
+                                {activeNote && activeNote.attachedAudio === file.name && (
+                                    <span className="px-2 py-1 bg-primary text-black text-[9px] font-bold rounded uppercase">Attached</span>
+                                )}
+                            </div>
+                            <h3 className="text-sm font-bold text-white mb-1 truncate">{file.name}</h3>
+                            <div className="flex justify-between text-[10px] text-neutral-500 font-mono">
+                                <span>{file.duration}</span>
+                                <span>{file.size}</span>
+                            </div>
+                        </div>
+                    ))}
+
+                    <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center p-4 text-neutral-500 hover:text-white hover:border-neutral-600 hover:bg-white/5 transition-colors cursor-pointer min-h-[140px]"
+                    >
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileUpload}
+                            accept="audio/*"
+                            className="hidden"
+                        />
+                        <Paperclip size={24} className="mb-2" />
+                        <span className="text-xs font-bold">Upload New File</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <div className="w-full h-[100dvh] lg:h-[calc(100vh_-_8rem)] max-w-[1600px] mx-auto pt-16 lg:pt-4 lg:px-8 animate-in fade-in duration-500 flex flex-col overflow-hidden bg-[#0a0a0a] lg:bg-transparent">
-            {/* Mobile Header Removed - Using Global TopBar */}
-
+            {/* Header */}
             <div className={`
                 hidden lg:flex items-end justify-between transition-all duration-500 ease-in-out overflow-hidden
                 ${activeNote ? 'lg:max-h-40 lg:opacity-100 lg:mb-6 lg:pointer-events-auto' : 'max-h-40 opacity-100 mb-6'}
@@ -466,8 +630,7 @@ const NotesPage: React.FC = () => {
 
             <div className="flex-1 flex bg-[#0a0a0a] lg:border-t lg:border-b border-neutral-800 lg:border lg:rounded-xl overflow-hidden shadow-none lg:shadow-2xl relative">
 
-                {/* Sidebar List - The "Blue" List */}
-                {/* Sidebar List - The "Blue" List */}
+                {/* Sidebar */}
                 <div className={`
                 absolute inset-y-0 left-0 z-30 w-64 border-r border-neutral-800 flex flex-col bg-[#080808] transition-transform duration-300
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -507,15 +670,14 @@ const NotesPage: React.FC = () => {
                                 }}
                                 className={`
                                     p-3 rounded-lg border cursor-pointer transition-all group relative
-                                    ${
-                                        activeNoteId === note.id
-                                            ? 'bg-primary/10 border-primary/20'
-                                            : 'border-transparent hover:bg-white/5'
+                                    ${activeNoteId === note.id
+                                        ? 'bg-primary/10 border-primary/20'
+                                        : 'border-transparent hover:bg-white/5'
                                     }
                                 `}
                             >
                                 <div className="flex justify-between items-start mb-1">
-                                    <h4 className={`text - sm font - bold truncate pr - 4 ${ activeNoteId === note.id ? 'text-primary' : 'text-neutral-300' } `}>{note.title}</h4>
+                                    <h4 className={`text-sm font-bold truncate pr-4 ${activeNoteId === note.id ? 'text-primary' : 'text-neutral-300'}`}>{note.title}</h4>
                                     {note.attachedAudio && (
                                         <Headphones size={12} className={activeNoteId === note.id ? 'text-primary' : 'text-neutral-600'} />
                                     )}
@@ -534,7 +696,6 @@ const NotesPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Overlay for mobile sidebar */}
                 {isSidebarOpen && (
                     <div
                         className="absolute inset-0 bg-black/80 z-20 lg:hidden"
@@ -542,14 +703,13 @@ const NotesPage: React.FC = () => {
                     ></div>
                 )}
 
-                {/* Main Area - Switches between Editor and File Browser */}
+                {/* Main Content Area */}
                 <div className="flex-1 flex flex-col bg-[#050505] relative">
                     {activeNote ? (
                         <>
                             {/* Editor Toolbar */}
                             <div className="h-14 border-b border-neutral-800 flex items-center justify-between px-4 lg:px-6 bg-neutral-900/30 z-20 shrink-0">
                                 <div className="flex items-center gap-2 lg:gap-4">
-                                    {/* Mobile Notebook Toggle */}
                                     <button
                                         onClick={() => setIsSidebarOpen(true)}
                                         className="lg:hidden p-2 -ml-2 text-neutral-400 hover:text-white"
@@ -581,15 +741,13 @@ const NotesPage: React.FC = () => {
                                 <div className="flex items-center gap-2 lg:gap-3 hidden lg:flex">
                                     {viewMode === 'editor' && (
                                         <>
-                                            {/* Rhyme Highlighting Toggle */}
                                             <button
                                                 onClick={() => setRhymeMode(!rhymeMode)}
                                                 className={`
                                                     flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wide transition-all
-                                                    ${
-                                                        rhymeMode
-                                                            ? 'bg-primary text-black shadow-[0_0_15px_rgba(var(--primary),0.3)]'
-                                                            : 'text-neutral-500 hover:text-white hover:bg-white/5 border border-white/5'
+                                                    ${rhymeMode
+                                                        ? 'bg-primary text-black shadow-[0_0_15px_rgba(var(--primary),0.3)]'
+                                                        : 'text-neutral-500 hover:text-white hover:bg-white/5 border border-white/5'
                                                     }
                                                 `}
                                             >
@@ -603,15 +761,13 @@ const NotesPage: React.FC = () => {
 
                                     <button
                                         onClick={() => setViewMode(viewMode === 'editor' ? 'browser' : 'editor')}
-                                        onClick={() => setViewMode(viewMode === 'editor' ? 'browser' : 'editor')}
                                         className={`
                                             flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wide transition-all border
-                                            ${
-                                                viewMode === 'browser'
-        ? 'bg-white text-black border-white'
-        : 'bg-transparent border-neutral-700 text-neutral-400 hover:text-white hover:border-white'
-}
-`}
+                                            ${viewMode === 'browser'
+                                                ? 'bg-white text-black border-white'
+                                                : 'bg-transparent border-neutral-700 text-neutral-400 hover:text-white hover:border-white'
+                                            }
+                                        `}
                                     >
                                         {viewMode === 'editor' ? (
                                             <>
@@ -626,194 +782,10 @@ const NotesPage: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Content Switcher */}
-                            {viewMode === 'editor' ? (
-                                <div className="flex-1 flex overflow-hidden relative">
-                                    <div className="flex-1 flex flex-col relative">
-                                        {/* Embedded Audio Player */}
-                                        {activeNote.attachedAudio && (
-                                            <div className="h-12 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-4 lg:px-6 shrink-0">
-                                                {/* Hidden Audio Element for actual playback */}
-                                                {audioPlaying && (
-                                                    <audio
-                                                        src={audioFiles.find(f => f.name === activeNote.attachedAudio)?.url}
-                                                        autoPlay
-                                                        onEnded={() => setAudioPlaying(false)}
-                                                        onError={(e) => console.log('Audio error', e)}
-                                                    />
-                                                )}
+                            {/* Main Content Switcher */}
+                            {viewMode === 'editor' ? renderEditorView() : renderBrowserView()}
 
-                                                <div className="flex items-center gap-4 min-w-0">
-                                                    <div className="w-8 h-8 bg-primary/20 rounded flex items-center justify-center text-primary shrink-0">
-                                                        <Music size={14} />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="text-xs font-bold text-white truncate">{activeNote.attachedAudio}</div>
-                                                        <div className="text-[9px] text-primary font-mono uppercase">Attached Track</div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-4 shrink-0">
-                                                    <button
-                                                        onClick={() => setAudioPlaying(!audioPlaying)}
-                                                        className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform"
-                                                    >
-                                                        {audioPlaying ? <Pause size={14} fill="black" /> : <Play size={14} fill="black" className="ml-0.5" />}
-                                                    </button>
-                                                    <div className="w-px h-4 bg-neutral-800"></div>
-                                                    <button onClick={handleDetachFile} className="text-neutral-500 hover:text-red-500">
-                                                        <X size={14} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Text Editor Area - Grid Layout for Perfect Highlighting Sync */}
-                                        <div className="flex-1 relative font-mono text-xs lg:text-sm leading-relaxed overflow-y-auto custom-scrollbar">
-                                            <div className="grid grid-cols-1 grid-rows-1 min-h-full">
-                                                
-                                            {/* Scrollable Container - The ONE source of truth for scrolling */}
-                                            <div className="grid grid-cols-1 grid-rows-1 w-full h-full overflow-y-auto relative no-scrollbar">
-                                                
-                                                {/* Layer 1: Backdrop (Defines Height, Renders Highlights) */}
-                                                <div
-                                                    ref={backdropRef}
-                                                    className="col-start-1 row-start-1 p-5 lg:p-8 whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono text-base lg:text-sm leading-relaxed"
-                                                    style={{ color: 'transparent' }} // Extra safety
-                                                >
-                                                    {renderHighlightedText(activeNote.content + ' ')}
-                                                </div>
-
-                                                {/* Layer 2: Input (Captured events, transparent text/bg) */}
-                                                <textarea
-                                                    ref={textareaRef}
-                                                    className={`
-col - start - 1 row - start - 1 w - full h - full bg - transparent p - 5 lg: p - 8 resize - none overflow - hidden focus: outline - none z - 10 font - mono text - base lg: text - sm leading - relaxed whitespace - pre - wrap break-words
-                                                        ${ rhymeMode ? 'text-transparent caret-white' : 'text-neutral-300 caret-white' }
-`}
-                                                    value={activeNote.content} onChange={(e) => {
-                                                        handleUpdateContentWrapper(e.target.value);
-                                                        handleSelectionChange(e);
-                                                    }}
-                                                    onSelect={handleSelectionChange}
-                                                    placeholder="Start writing your lyrics or production notes here..."
-                                                    spellCheck={false}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Rhyme Suggestions Sidebar - Hidden on Mobile */}
-                                    <div className="hidden lg:flex w-60 bg-[#080808] border-l border-neutral-800 flex-col z-20">
-                                        <div className="p-4 border-b border-neutral-800 bg-neutral-900/20">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h3 className="text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                                                    <Brain size={12} className="text-primary" /> Rhyme Assist
-                                                </h3>
-                                                <button
-                                                    onClick={() => setAccent(accent === 'US' ? 'UK' : 'US')}
-                                                    className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-neutral-800 bg-neutral-900 text-[9px] font-bold text-neutral-400 hover:text-white"
-                                                    title="Toggle Accent"
-                                                >
-                                                    <Globe size={10} /> {accent}
-                                                </button>
-                                            </div>
-                                            <div className="text-[10px] text-neutral-500">
-                                                Context: <span className="text-primary font-mono">"{currentWord}"</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex-1 overflow-y-auto p-2">
-                                            {currentWord && suggestions.length > 0 ? (
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {suggestions.map((word, i) => (
-                                                        <span
-                                                            key={i}
-                                                            className="px-2 py-1 bg-neutral-900 border border-neutral-800 rounded text-xs text-neutral-300 hover:text-white hover:border-primary/30 hover:bg-white/5 cursor-pointer transition-colors"
-                                                            onClick={() => {
-                                                                const newContent = activeNote.content + " " + word;
-                                                                handleUpdateContent(newContent);
-                                                            }}
-                                                        >
-                                                            {word}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="flex flex-col items-center justify-center h-full text-neutral-600 space-y-2">
-                                                    <div className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center">
-                                                        {isAiRhymeLoading ? (
-                                                            <Sparkles size={16} className="animate-pulse text-primary" />
-                                                        ) : (
-                                                            <Mic size={16} className="opacity-50" />
-                                                        )}
-                                                    </div>
-                                                    <p className="text-[10px] text-center px-4">
-                                                        {isAiRhymeLoading ? 'Finding rhymes...' : `Type a line and hit Enter to get AI rhymes.`}
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                // File Browser View
-                                <div className="flex-1 p-4 lg:p-8 overflow-y-auto">
-                                    <div className="max-w-4xl mx-auto">
-                                        <h2 className="text-xl font-black text-white mb-6 flex items-center gap-3">
-                                            <FolderOpen size={24} className="text-primary" />
-                                            Select Audio to Attach
-                                        </h2>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {audioFiles.map(file => (
-                                                <div
-                                                    key={file.id}
-                                                    onClick={() => handleAttachFile(file.name)}
-                                                    className={`
-p - 4 rounded - xl border bg - neutral - 900 / 50 cursor - pointer transition - all group
-                                                    ${
-    activeNote.attachedAudio === file.name
-        ? 'border-primary bg-primary/10 shadow-[0_0_20px_rgba(var(--primary),0.15)]'
-        : 'border-white/5 hover:border-white/20 hover:bg-white/5'
-}
-`}
-                                                >
-                                                    <div className="flex justify-between items-start mb-4">
-                                                        <div className="p-3 bg-black/50 rounded-lg text-neutral-400 group-hover:text-white">
-                                                            <Music size={20} />
-                                                        </div>
-                                                        {activeNote.attachedAudio === file.name && (
-                                                            <span className="px-2 py-1 bg-primary text-black text-[9px] font-bold rounded uppercase">Attached</span>
-                                                        )}
-                                                    </div>
-                                                    <h3 className="text-sm font-bold text-white mb-1 truncate">{file.name}</h3>
-                                                    <div className="flex justify-between text-[10px] text-neutral-500 font-mono">
-                                                        <span>{file.duration}</span>
-                                                        <span>{file.size}</span>
-                                                    </div>
-                                                </div>
-                                            ))}
-
-                                            <div
-                                                onClick={() => fileInputRef.current?.click()}
-                                                className="border-2 border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center p-4 text-neutral-500 hover:text-white hover:border-neutral-600 hover:bg-white/5 transition-colors cursor-pointer min-h-[140px]"
-                                            >
-                                                <input
-                                                    type="file"
-                                                    ref={fileInputRef}
-                                                    onChange={handleFileUpload}
-                                                    accept="audio/*"
-                                                    className="hidden"
-                                                />
-                                                <Paperclip size={24} className="mb-2" />
-                                                <span className="text-xs font-bold">Upload New File</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Bottom AI Assistant Panel */}
+                            {/* AI Assistant Panel */}
                             <div className="p-4 bg-[#080808] border-t border-neutral-800 z-20">
                                 {aiResponse && (
                                     <div className="mb-4 p-4 bg-neutral-900/80 border border-primary/20 rounded-lg relative animate-in slide-in-from-bottom-2 max-h-60 overflow-y-auto custom-scrollbar">
@@ -836,7 +808,7 @@ p - 4 rounded - xl border bg - neutral - 900 / 50 cursor - pointer transition - 
 
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Sparkles size={14} className={`text - primary ${ aiLoading ? 'animate-pulse' : '' } `} />
+                                        <Sparkles size={14} className={`text-primary ${aiLoading ? 'animate-pulse' : ''}`} />
                                     </div>
                                     <input
                                         value={aiPrompt}
@@ -871,12 +843,12 @@ p - 4 rounded - xl border bg - neutral - 900 / 50 cursor - pointer transition - 
                 </div>
             </div>
 
-            {/* Mobile Bottom Toolbar - Only visible when active note exists and on mobile */}
+            {/* Mobile Bottom Toolbar */}
             {activeNote && (
                 <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#080808] border-t border-neutral-800 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex items-center justify-around z-40">
                     <button
                         onClick={() => setRhymeMode(!rhymeMode)}
-                        className={`flex flex - col items - center gap - 1 ${ rhymeMode ? 'text-primary' : 'text-neutral-500' } `}
+                        className={`flex flex-col items-center gap-1 ${rhymeMode ? 'text-primary' : 'text-neutral-500'}`}
                     >
                         <Highlighter size={20} />
                         <span className="text-[9px] font-bold">Rhymes</span>
@@ -884,7 +856,7 @@ p - 4 rounded - xl border bg - neutral - 900 / 50 cursor - pointer transition - 
 
                     <button
                         onClick={() => setViewMode(viewMode === 'editor' ? 'browser' : 'editor')}
-                        className={`flex flex - col items - center gap - 1 ${ viewMode === 'browser' ? 'text-white' : 'text-neutral-500' } `}
+                        className={`flex flex-col items-center gap-1 ${viewMode === 'browser' ? 'text-white' : 'text-neutral-500'}`}
                     >
                         {viewMode === 'editor' ? <FolderOpen size={20} /> : <FileText size={20} />}
                         <span className="text-[9px] font-bold">{viewMode === 'editor' ? 'Attach' : 'Editor'}</span>
@@ -903,12 +875,9 @@ p - 4 rounded - xl border bg - neutral - 900 / 50 cursor - pointer transition - 
                 </div>
             )}
 
-            {/* Mobile Floating Action Button (FAB) for New Note - Position changed to be above toolbar if toolbar exists */}
-            {/* FAB - Hidden on Mobile since we have header button, kept for desktop if needed or just hidden entirely on mobile as per new design */}
-            {/* FAB - Visible on Mobile */}
-            <button onClick={handleCreateNote} className={`lg:hidden fixed right - 6 w - 14 h - 14 bg - primary text - black rounded - full shadow - lg shadow - primary / 20 flex items - center justify - center transition - all duration - 300 hover: scale - 110 hover: shadow - primary / 40 z - 50
-                ${ activeNote ? 'bottom-[5.5rem]' : 'bottom-6' }
-`}>
+            <button onClick={handleCreateNote} className={`lg:hidden fixed right-6 w-14 h-14 bg-primary text-black rounded-full shadow-lg shadow-primary/20 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-primary/40 z-50
+                ${activeNote ? 'bottom-[5.5rem]' : 'bottom-6'}
+            `}>
                 <Plus size={28} strokeWidth={2.5} />
             </button>
         </div>

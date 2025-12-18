@@ -99,3 +99,35 @@ export const getWritingAssistance = async (userPrompt: string, currentText: stri
     return "System error: AI writing assistant unavailable.";
   }
 };
+
+export const getRhymesForWord = async (word: string): Promise<string[]> => {
+  try {
+    const model = 'gemini-2.5-flash';
+    const prompt = `
+            List 15 creative, slant, and perfect rhymes for the word "${word}" suitable for modern song lyrics (rap/pop/r&b).
+            
+            Constraints:
+            1. Return STRICTLY a JSON array of strings. Example: ["rhyme1", "rhyme2"]
+            2. Do NOT include any markdown formatting (like \`json\` or \`\`).
+            3. Do NOT include explanations.
+            4. Include a mix of:
+               - Perfect rhymes
+               - Slant rhymes (e.g. "time" -> "mind")
+               - Multi-syllabic rhymes if applicable.
+        `;
+
+    const response = await ai.models.generateContent({
+      model: model,
+      contents: prompt,
+    });
+
+    const text = response.text || "[]";
+    // Clean up potential markdown code blocks if the AI misbehaves
+    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+    return JSON.parse(cleanText);
+  } catch (error) {
+    console.error("Error fetching AI rhymes:", error);
+    return [];
+  }
+};

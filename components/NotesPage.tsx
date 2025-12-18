@@ -400,7 +400,7 @@ const NotesPage: React.FC = () => {
     };
 
     return (
-        <div className="w-full h-[calc(100vh_-_8rem)] max-w-[1600px] mx-auto pb-4 pt-4 px-4 lg:px-8 animate-in fade-in duration-500 flex flex-col">
+        <div className="w-full h-[calc(100dvh-4rem)] lg:h-[calc(100vh_-_8rem)] max-w-[1600px] mx-auto lg:pb-4 lg:pt-4 lg:px-8 animate-in fade-in duration-500 flex flex-col">
 
             <div className={`
                 flex items-end justify-between transition-all duration-500 ease-in-out overflow-hidden
@@ -420,7 +420,7 @@ const NotesPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="flex-1 flex bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden shadow-2xl relative">
+            <div className="flex-1 flex bg-[#0a0a0a] border-t border-b border-neutral-800 lg:border lg:rounded-xl overflow-hidden shadow-2xl relative">
 
                 {/* Sidebar List - The "Blue" List */}
                 <div className={`
@@ -810,6 +810,14 @@ const NotesPage: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            {/* Mobile Floating Action Button (FAB) for New Note */}
+            <button
+                onClick={handleCreateNote}
+                className="lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary text-black rounded-full shadow-[0_0_20px_rgba(var(--primary),0.4)] flex items-center justify-center z-50 hover:bg-primary/90 transition-all active:scale-95"
+            >
+                <Plus size={28} strokeWidth={2.5} />
+            </button>
         </div>
     );
 };

@@ -27,7 +27,8 @@ import {
     Menu,
     Type,
     Minus,
-    MessageSquare
+    MessageSquare,
+    ArrowRight
 } from 'lucide-react';
 import { getWritingAssistance, getRhymesForWord } from '../services/geminiService';
 

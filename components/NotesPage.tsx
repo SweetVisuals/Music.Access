@@ -619,7 +619,7 @@ const NotesPage: React.FC = () => {
                                         )}
 
                                         {/* Text Editor Area */}
-                                        <div className="flex-1 relative font-mono text-sm leading-relaxed">
+                                        <div className="flex-1 relative font-mono text-xs lg:text-sm leading-relaxed">
                                             {/* Highlighting Backdrop */}
                                             <div
                                                 ref={backdropRef}

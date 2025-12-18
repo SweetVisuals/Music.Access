@@ -400,7 +400,7 @@ const NotesPage: React.FC = () => {
     };
 
     return (
-        <div className="w-full h-[calc(100vh_-_6rem)] max-w-[1600px] mx-auto pb-4 pt-4 px-4 lg:px-8 animate-in fade-in duration-500 flex flex-col">
+        <div className="w-full h-[calc(100vh_-_8rem)] max-w-[1600px] mx-auto pb-4 pt-4 px-4 lg:px-8 animate-in fade-in duration-500 flex flex-col">
 
             <div className="flex items-end justify-between mb-6">
                 <div>

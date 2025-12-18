@@ -110,7 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
             )}
 
             <aside className={`
-        fixed inset-y-0 left-0 z-50 w-full sm:w-72 lg:w-64 bg-[#050505] border-r border-neutral-800 flex flex-col font-sans transition-transform duration-300 ease-in-out transform
+        fixed inset-y-0 left-0 z-50 w-full sm:w-72 lg:w-64 bg-[#050505] border-r border-neutral-800 flex flex-col font-sans transition-transform duration-300 ease-in-out transform h-[100dvh] lg:h-screen
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
       `}>
                 {/* Logo Area */}
@@ -452,7 +452,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                 </div>
 
                 {/* Footer - Storage & Profile or Guest */}
-                <div className="p-3 border-t border-neutral-800 bg-[#080808] shrink-0">
+                <div className="p-3 border-t border-neutral-800 bg-[#080808] shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
 
                     {isLoggedIn ? (
                         <>

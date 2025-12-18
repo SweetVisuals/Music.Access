@@ -402,7 +402,10 @@ const NotesPage: React.FC = () => {
     return (
         <div className="w-full h-[calc(100vh_-_8rem)] max-w-[1600px] mx-auto pb-4 pt-4 px-4 lg:px-8 animate-in fade-in duration-500 flex flex-col">
 
-            <div className="flex items-end justify-between mb-6">
+            <div className={`
+                flex items-end justify-between transition-all duration-500 ease-in-out overflow-hidden
+                ${activeNote ? 'max-h-0 opacity-0 mb-0 pointer-events-none lg:max-h-40 lg:opacity-100 lg:mb-6 lg:pointer-events-auto' : 'max-h-40 opacity-100 mb-6'}
+            `}>
                 <div>
                     <h1 className="text-3xl font-black text-white mb-1">Notes & Lyrics</h1>
                     <p className="text-neutral-500 text-sm">Write lyrics, capture ideas, and organize your musical thoughts.</p>
@@ -430,9 +433,17 @@ const NotesPage: React.FC = () => {
                             <FileText size={14} className="text-primary" />
                             My Notebook
                         </h3>
-                        <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-neutral-500 hover:text-white">
-                            <X size={16} />
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleCreateNote}
+                                className="lg:hidden text-neutral-400 hover:text-white transition-colors"
+                            >
+                                <Plus size={16} />
+                            </button>
+                            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-neutral-500 hover:text-white">
+                                <X size={16} />
+                            </button>
+                        </div>
                     </div>
                     <div className="px-4 mb-4">
                         <div className="relative mt-4">

@@ -592,8 +592,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             {/* TABS NAVIGATION */}
             <div className="sticky top-14 lg:top-24 z-30 bg-[#050505] lg:border-b lg:border-neutral-800 -mx-6 px-6 lg:-mx-8 lg:px-8 mb-6 lg:mb-8 py-3 lg:pb-0.5 shadow-xl lg:shadow-none">
 
-                {/* Mobile Grid Layout */}
-                <div className="grid grid-cols-2 gap-3 lg:hidden">
+                {/* Mobile Horizontal Scroll Layout */}
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar lg:hidden pb-1 mask-linear-fade">
                     <MobileTabButton active={activeTab === 'beat_tapes'} onClick={() => setActiveTab('beat_tapes')} icon={<Disc size={16} />} label="Projects" count={localProjects.length} />
                     <MobileTabButton active={activeTab === 'sound_packs'} onClick={() => setActiveTab('sound_packs')} icon={<Box size={16} />} label="Sound Packs" count={userProfile.soundPacks.length} />
                     <MobileTabButton active={activeTab === 'services'} onClick={() => setActiveTab('services')} icon={<LayoutList size={16} />} label="Services" count={userProfile.services.length} />
@@ -845,17 +845,17 @@ const MobileTabButton: React.FC<TabButtonProps> = ({ active, onClick, icon, labe
     <button
         onClick={onClick}
         className={`
-            flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-bold border transition-all
+            flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold border transition-all whitespace-nowrap shrink-0
             ${active
-                ? 'bg-primary text-black border-primary shadow-[0_0_15px_rgba(var(--primary),0.3)]'
-                : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white hover:border-neutral-700'
+                ? 'bg-white text-black border-white shadow-lg scale-105'
+                : 'bg-neutral-900/50 text-neutral-400 border-neutral-800 hover:text-white hover:border-neutral-700'
             }
         `}
     >
         {icon}
         <span className="uppercase tracking-wide">{label}</span>
         {count !== undefined && (
-            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ml-auto ${active ? 'bg-black/20 text-black' : 'bg-black/40 text-neutral-500'}`}>
+            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full ml-1 ${active ? 'bg-black/10 text-black' : 'bg-white/10 text-neutral-500'}`}>
                 {count}
             </span>
         )}

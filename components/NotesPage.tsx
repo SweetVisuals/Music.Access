@@ -28,7 +28,8 @@ import {
     Type,
     Minus,
     MessageSquare,
-    ArrowRight
+    ArrowRight,
+    ChevronDown
 } from 'lucide-react';
 import { getWritingAssistance, getRhymesForWord } from '../services/geminiService';
 
@@ -372,16 +373,23 @@ const NotesPage: React.FC = () => {
         setCursorIndex(e.currentTarget.selectionStart);
     };
 
-    const handleAiSubmit = async () => {
+    const handleAiSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         if (!aiPrompt.trim() || !activeNote) return;
+
         setAiLoading(true);
         setAiResponse(null);
 
-        const response = await getWritingAssistance(aiPrompt, activeNote.content);
-
-        setAiResponse(response);
-        setAiLoading(false);
-        setAiPrompt('');
+        try {
+            const response = await getWritingAssistance(aiPrompt, activeNote.content);
+            setAiResponse(response);
+            setAiPrompt('');
+        } catch (error) {
+            console.error('AI Request failed:', error);
+            // Optional: set an error state here to show to user
+        } finally {
+            setAiLoading(false);
+        }
     };
 
     const insertAiResponse = () => {
@@ -714,14 +722,26 @@ const NotesPage: React.FC = () => {
 
                 {/* Mobile Assistant Sheet */}
                 {isMobileAssistantOpen && (
-                    <div className="lg:hidden absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[50] bg-[#0c0c0c] border-t border-primary/20 rounded-t-2xl shadow-2xl flex flex-col h-[45vh] animate-in slide-in-from-bottom-full duration-300">
-                        {/* Drag Handle */}
-                        <div className="w-full h-1.5 flex justify-center py-2" onClick={() => setMobileAssistantOpen(false)}>
-                            <div className="w-12 h-1 bg-neutral-800 rounded-full"></div>
+                    <div className="lg:hidden absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[50] bg-[#0c0c0c] border-t border-white/10 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col h-[45vh] animate-in slide-in-from-bottom-full duration-300">
+                        {/* Header & Drag Handle */}
+                        <div className="w-full flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/5 backdrop-blur-xl rounded-t-3xl relative shrink-0">
+                            {/* Invisible spacer for balance */}
+                            <div className="w-8"></div>
+
+                            {/* Drag Handle */}
+                            <div className="w-12 h-1 bg-white/20 rounded-full" onClick={() => setMobileAssistantOpen(false)}></div>
+
+                            {/* Close Button */}
+                            <button
+                                onClick={() => setMobileAssistantOpen(false)}
+                                className="w-8 h-8 flex items-center justify-center rounded-full bg-black/40 text-neutral-400 hover:text-white hover:bg-black/60 active:scale-95 transition-all"
+                            >
+                                <ChevronDown size={20} />
+                            </button>
                         </div>
 
                         {/* Tabs */}
-                        <div className="flex items-center px-4 mt-2 border-b border-neutral-800">
+                        <div className="flex items-center px-4 pt-2 border-b border-white/5">
                             <button
                                 onClick={() => setMobileAssistantTab('rhymes')}
                                 className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative ${mobileAssistantTab === 'rhymes' ? 'text-primary' : 'text-neutral-500'}`}
@@ -739,12 +759,12 @@ const NotesPage: React.FC = () => {
                         </div>
 
                         {/* Content */}
-                        <div className="flex-1 overflow-hidden relative bg-neutral-900/50">
+                        <div className="flex-1 overflow-hidden relative bg-[#0c0c0c]">
                             {mobileAssistantTab === 'rhymes' && (
                                 <div className="h-full flex flex-col">
-                                    <div className="p-2 border-b border-neutral-800 flex justify-between items-center bg-black/20">
+                                    <div className="p-2 border-b border-white/5 flex justify-between items-center bg-white/5">
                                         <span className="text-[9px] uppercase font-bold text-neutral-500">Target Word: <span className="text-white">{currentWord || "..."}</span></span>
-                                        <button onClick={() => setAccent(accent === 'US' ? 'UK' : 'US')} className="text-[10px] font-bold text-neutral-500 border border-neutral-800 px-1.5 rounded">{accent}</button>
+                                        <button onClick={() => setAccent(accent === 'US' ? 'UK' : 'US')} className="text-[10px] font-bold text-neutral-400 border border-white/10 px-2 py-0.5 rounded-full bg-black/20">{accent}</button>
                                     </div>
                                     <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
                                         {currentWord && suggestions.length > 0 ? (
@@ -795,22 +815,21 @@ const NotesPage: React.FC = () => {
                                         )}
                                     </div>
                                     <div className="p-3 bg-black/40 border-t border-neutral-800">
-                                        <div className="relative">
+                                        <form onSubmit={handleAiSubmit} className="relative">
                                             <input
                                                 value={aiPrompt}
                                                 onChange={(e) => setAiPrompt(e.target.value)}
-                                                onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
                                                 className="w-full bg-neutral-800 border-none rounded-full pl-3 pr-8 py-2 text-xs text-white focus:ring-1 focus:ring-primary placeholder-neutral-500"
                                                 placeholder="Ask AI..."
                                             />
                                             <button
-                                                onClick={handleAiSubmit}
+                                                type="submit"
                                                 disabled={aiLoading || !aiPrompt.trim()}
-                                                className="absolute right-1 top-1/2 -translate-y-1/2 p-2 text-primary"
+                                                className="absolute right-1 top-1/2 -translate-y-1/2 p-2 text-primary disabled:opacity-50"
                                             >
-                                                <ArrowRight size={18} />
+                                                {aiLoading ? <Sparkles size={14} className="animate-spin" /> : <ArrowRight size={18} />}
                                             </button>
-                                        </div>
+                                        </form>
                                     </div>
                                 </div>
                             )}

@@ -164,18 +164,18 @@ const ContractsPage: React.FC = () => {
     const displayData = isEditing ? { ...selectedContract, ...editForm } as Contract : selectedContract;
 
     return (
-        <div className="w-full h-[calc(100vh-10rem)] max-w-[1600px] mx-auto pb-4 pt-4 px-4 lg:px-6 animate-in fade-in duration-500 flex flex-col">
-            <div className="flex justify-between items-center mb-4 shrink-0">
+        <div className="w-full h-[calc(100vh-5rem)] lg:h-[calc(100vh-10rem)] max-w-[1600px] mx-auto pb-4 pt-4 px-4 lg:px-6 animate-in fade-in duration-500 flex flex-col">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 shrink-0 gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-white mb-1">Contracts</h1>
-                    <p className="text-neutral-500 text-xs">Manage your service and audio contracts</p>
+                    <h1 className="text-xl lg:text-3xl font-black text-white mb-1">Contracts</h1>
+                    <p className="text-neutral-500 text-xs lg:text-sm">Manage your service and audio contracts</p>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="flex bg-neutral-900 p-1 rounded-lg border border-neutral-800">
-                        <button className="px-3 py-1.5 text-xs font-bold text-white bg-neutral-800 rounded shadow transition-colors">All Contracts</button>
-                        <button className="px-3 py-1.5 text-xs font-bold text-neutral-500 hover:text-white transition-colors">Service</button>
-                        <button className="px-3 py-1.5 text-xs font-bold text-neutral-500 hover:text-white transition-colors">Audio</button>
+                <div className="w-full md:w-auto overflow-x-auto pb-1 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
+                    <div className="flex bg-neutral-900 p-1 rounded-lg border border-neutral-800 min-w-max">
+                        <button className="px-3 lg:px-4 py-1.5 text-xs font-bold text-white bg-neutral-800 rounded shadow transition-colors">All Contracts</button>
+                        <button className="px-3 lg:px-4 py-1.5 text-xs font-bold text-neutral-500 hover:text-white transition-colors">Service</button>
+                        <button className="px-3 lg:px-4 py-1.5 text-xs font-bold text-neutral-500 hover:text-white transition-colors">Audio</button>
                     </div>
                 </div>
             </div>

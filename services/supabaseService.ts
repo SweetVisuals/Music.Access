@@ -211,7 +211,21 @@ export const getProjects = async (): Promise<Project[]> => {
 };
 
 export const getUserProfile = async (userId?: string): Promise<UserProfile | null> => {
-  const targetUserId = userId || (await getCurrentUser())?.id;
+  // If userId is provided, we are looking for a specific user.
+  // If not, we are looking for the current authenticated user.
+  let targetUserId = userId;
+  let currentUser = null;
+
+  if (!targetUserId) {
+    try {
+      currentUser = await getCurrentUser();
+      targetUserId = currentUser?.id;
+    } catch (e) {
+      console.error('Error getting current user for profile fetch:', e);
+      return null;
+    }
+  }
+
   if (!targetUserId) return null;
 
   const { data, error } = await supabase
@@ -220,56 +234,95 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
     .eq('id', targetUserId)
     .single();
 
-  if (error && error.code !== 'PGRST116' && error.status !== 406) throw error;
+  if (error && error.code !== 'PGRST116' && error.status !== 406) {
+    console.error('Error fetching user from DB:', error);
+    // Continue to fallback if possible, but log error
+  }
 
-  // Get the auth email
-  const user = await getCurrentUser();
-  const authEmail = user?.email || 'user@example.com';
+  // Get auth email for current user only
+  let authEmail = 'user@example.com';
+  if (!currentUser && !userId) {
+    // If we didn't fetch current user yet and we are looking for self (shouldn't happen due to logic above)
+    // or if we are looking for someone else, we might want to know if WE are logged in?
+    // Actually, email is private, so we only show it if it's our own profile or we are admin (not impl).
+    // For now, let's just get current user if we haven't.
+    try {
+      currentUser = await getCurrentUser();
+    } catch (e) { }
+  }
+
+  if (currentUser && (currentUser.id === targetUserId)) {
+    authEmail = currentUser.email || 'user@example.com';
+  }
 
   if (data) {
     // Fetch related data
-    const [projects, services, followersCount] = await Promise.all([
-      getProjectsByUserId(data.id),
-      getServicesByUserId(data.id),
-      getFollowersCount(data.id)
-    ]);
+    try {
+      const [projects, services, followersCount] = await Promise.all([
+        getProjectsByUserId(data.id),
+        getServicesByUserId(data.id),
+        getFollowersCount(data.id)
+      ]);
 
-    return {
-      username: data.username,
-      handle: data.handle,
-      email: authEmail,
-      location: data.location,
-      avatar: data.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
-      banner: data.banner_url || '',
-      subscribers: followersCount,
-      streams: 0, // TODO: calculate from tracks
-      gems: data.gems || 0,
-      balance: data.balance || 0,
-      lastGemClaimDate: data.last_gem_claim_date,
-      bio: data.bio,
-      website: data.website,
-      projects: projects.filter(p => p.type === 'beat_tape'),
-      services: services,
-      soundPacks: projects.filter(p => p.type === 'sound_pack').map(p => ({
-        id: p.id,
-        title: p.title,
-        type: 'Loop Kit', // Defaulting for now
-        price: p.price,
-        fileSize: '0 MB', // Placeholder
-        itemCount: p.tracks.length
-      }))
-    };
+      return {
+        username: data.username,
+        handle: data.handle,
+        email: authEmail,
+        location: data.location,
+        avatar: data.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+        banner: data.banner_url || '',
+        subscribers: followersCount,
+        streams: 0, // TODO: calculate from tracks
+        gems: data.gems || 0,
+        balance: data.balance || 0,
+        lastGemClaimDate: data.last_gem_claim_date,
+        bio: data.bio,
+        website: data.website,
+        projects: projects.filter(p => p.type === 'beat_tape'),
+        services: services,
+        soundPacks: projects.filter(p => p.type === 'sound_pack').map(p => ({
+          id: p.id,
+          title: p.title,
+          type: 'Loop Kit', // Defaulting for now
+          price: p.price,
+          fileSize: '0 MB', // Placeholder
+          itemCount: p.tracks.length
+        }))
+      };
+    } catch (err) {
+      console.error('Error fetching related profile data:', err);
+      // Return basic profile if related data fails
+      return {
+        username: data.username,
+        handle: data.handle,
+        email: authEmail,
+        location: data.location,
+        avatar: data.avatar_url,
+        banner: data.banner_url,
+        subscribers: 0,
+        streams: 0,
+        gems: data.gems || 0,
+        balance: data.balance || 0,
+        lastGemClaimDate: data.last_gem_claim_date,
+        bio: data.bio,
+        website: data.website,
+        projects: [],
+        services: [],
+        soundPacks: []
+      };
+    }
   } else {
-    // Fallback to auth user metadata if no profile in users table
-    if (user) {
-      const username = user.user_metadata?.username || user.email.split('@')[0];
-      const handle = user.user_metadata?.handle || user.email.split('@')[0];
+    // Fallback: ONLY if we are looking for OURSELVES and the DB entry is missing
+    // If we are looking for someone else (userId provided) and they are not in DB, they don't exist.
+    if (!userId && currentUser) {
+      const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'User';
+      const handle = currentUser.user_metadata?.handle || currentUser.email?.split('@')[0] || 'user';
       return {
         username,
         handle,
         email: authEmail,
         location: '',
-        avatar: user.user_metadata?.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+        avatar: currentUser.user_metadata?.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
         banner: '',
         subscribers: 0,
         gems: 0,
@@ -1556,6 +1609,9 @@ export const createNote = async (title: string = 'Untitled Note') => {
 };
 
 export const updateNote = async (id: string, updates: Partial<Note>) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not logged in');
+
   const dbUpdates: any = {
     updated_at: new Date().toISOString()
   };
@@ -1572,7 +1628,8 @@ export const updateNote = async (id: string, updates: Partial<Note>) => {
   const { error } = await supabase
     .from('notes')
     .update(dbUpdates)
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', user.id);
 
   if (error) throw error;
 };
@@ -1736,10 +1793,14 @@ export const getLibraryAssets = async () => {
 
 
 export const deleteNote = async (id: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not logged in');
+
   const { error } = await supabase
     .from('notes')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', user.id);
 
   if (error) throw error;
 };

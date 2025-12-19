@@ -157,6 +157,56 @@ const analyzeRhymeScheme = (text: string, accent: 'US' | 'UK' = 'US') => {
     });
 
     return { wordToGroup, groupToColor };
+    return { wordToGroup, groupToColor };
+};
+
+// --- Isolated Draggable FAB Component ---
+const DraggableFab = ({ onClick, isSizeExpanded }: { onClick: () => void, isSizeExpanded: boolean }) => {
+    const [fabPosition, setFabPosition] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStartPos = useRef({ x: 0, y: 0 });
+    const fabRef = useRef<HTMLButtonElement>(null);
+
+    const handleFabTouchStart = (e: React.TouchEvent) => {
+        const touch = e.touches[0];
+        dragStartPos.current = {
+            x: touch.clientX - fabPosition.x,
+            y: touch.clientY - fabPosition.y
+        };
+        setIsDragging(true);
+    };
+
+    const handleFabTouchMove = (e: React.TouchEvent) => {
+        if (!isDragging) return;
+        const touch = e.touches[0];
+        const nextX = touch.clientX - dragStartPos.current.x;
+        const nextY = touch.clientY - dragStartPos.current.y;
+        setFabPosition({ x: nextX, y: nextY });
+    };
+
+    const handleFabTouchEnd = () => {
+        setIsDragging(false);
+    };
+
+    return (
+        <button
+            ref={fabRef}
+            onClick={(e) => {
+                if (isDragging) return;
+                onClick();
+            }}
+            onTouchStart={handleFabTouchStart}
+            onTouchMove={handleFabTouchMove}
+            onTouchEnd={handleFabTouchEnd}
+            style={{
+                transform: `translate(${fabPosition.x}px, ${fabPosition.y + (isSizeExpanded ? -60 : 0)}px)`,
+                transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+            }}
+            className="lg:hidden fixed right-6 bottom-28 w-14 h-14 bg-gradient-to-br from-primary via-primary to-primary/80 text-black rounded-full shadow-[0_0_25px_rgba(var(--primary-rgb),0.6)] border border-white/20 flex items-center justify-center z-[60] active:scale-90"
+        >
+            <Plus size={28} strokeWidth={2.5} />
+        </button>
+    );
 };
 
 const NotesPage: React.FC = () => {
@@ -227,11 +277,7 @@ const NotesPage: React.FC = () => {
     const [isAiExpanded, setIsAiExpanded] = useState(false);
     const [isSizeExpanded, setIsSizeExpanded] = useState(false);
 
-    // FAB Dragging state
-    const [fabPosition, setFabPosition] = useState({ x: 0, y: 0 });
-    const [isDragging, setIsDragging] = useState(false);
-    const dragStartPos = useRef({ x: 0, y: 0 });
-    const fabRef = useRef<HTMLButtonElement>(null);
+
 
     const checkSelection = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
         const target = e.currentTarget;
@@ -385,32 +431,7 @@ const NotesPage: React.FC = () => {
         }
     };
 
-    // FAB Drag Handlers
-    const handleFabTouchStart = (e: React.TouchEvent) => {
-        const touch = e.touches[0];
-        dragStartPos.current = {
-            x: touch.clientX - fabPosition.x,
-            y: touch.clientY - fabPosition.y
-        };
-        setIsDragging(true);
-    };
 
-    const handleFabTouchMove = (e: React.TouchEvent) => {
-        if (!isDragging) return;
-        const touch = e.touches[0];
-
-        // Calculate new position
-        let nextX = touch.clientX - dragStartPos.current.x;
-        let nextY = touch.clientY - dragStartPos.current.y;
-
-        // Simple boundary constraints (optional but good for UX)
-        // We let it drag freely but usually want to keep it somewhat in view
-        setFabPosition({ x: nextX, y: nextY });
-    };
-
-    const handleFabTouchEnd = () => {
-        setIsDragging(false);
-    };
 
     const handleDeleteNote = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
@@ -716,24 +737,8 @@ const NotesPage: React.FC = () => {
                 </div>
 
                 {/* Restore Mobile FAB */}
-                {!isAiExpanded && (
-                    <button
-                        ref={fabRef}
-                        onClick={(e) => {
-                            if (isDragging) return;
-                            handleCreateNote();
-                        }}
-                        onTouchStart={handleFabTouchStart}
-                        onTouchMove={handleFabTouchMove}
-                        onTouchEnd={handleFabTouchEnd}
-                        style={{
-                            transform: `translate(${fabPosition.x}px, ${fabPosition.y + (isSizeExpanded ? -60 : 0)}px)`,
-                            transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
-                        }}
-                        className="lg:hidden fixed right-6 bottom-28 w-14 h-14 bg-primary text-black rounded-full shadow-[0_4px_20px_rgba(var(--primary-rgb),0.3)] flex items-center justify-center z-[60] active:scale-90"
-                    >
-                        <Plus size={28} strokeWidth={2.5} />
-                    </button>
+                {!isAiExpanded && !isSidebarOpen && (
+                    <DraggableFab onClick={handleCreateNote} isSizeExpanded={isSizeExpanded} />
                 )}
             </div>
 
@@ -882,7 +887,7 @@ const NotesPage: React.FC = () => {
             <div className="flex-1 flex bg-[#0a0a0a] lg:border border-neutral-800 lg:rounded-xl overflow-hidden shadow-none lg:shadow-2xl relative">
                 {/* Sidebar */}
                 <div className={`
-                    absolute inset-y-0 left-0 z-50 w-64 border-r border-neutral-800 flex flex-col bg-[#080808] transition-transform duration-300
+                    absolute inset-y-0 left-0 z-50 w-full lg:w-64 border-r border-neutral-800 flex flex-col bg-[#080808] transition-transform duration-300
                     ${isSidebarOpen ? 'translate-x-0 shadow-[20px_0_50px_rgba(0,0,0,0.8)]' : '-translate-x-full'}
                     lg:relative lg:translate-x-0 lg:shadow-none
                 `}>

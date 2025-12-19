@@ -57,6 +57,7 @@ const RightActions: React.FC<{
     onOpenAuth: () => void;
     onLogout: () => void;
     isSpacer?: boolean;
+    onMobileSearchOpen?: () => void;
 }> = ({
     isLoggedIn, isFocused, mobileSearchOpen, currentView, userProfile,
     gemsClaimedToday, profileLoading, onClaimGems, onNavigate,
@@ -64,7 +65,7 @@ const RightActions: React.FC<{
     themeRef, notifRef, isNotificationsOpen, setIsNotificationsOpen, notifications,
     handleMarkAllRead, handleMarkRead, cartRef, isCartOpen, setIsCartOpen, cartItems,
     cartTotal, removeFromCart, dropdownRef, isProfileOpen, setIsProfileOpen,
-    onOpenAuth, onLogout, isSpacer = false
+    onOpenAuth, onLogout, isSpacer = false, onMobileSearchOpen
 }) => {
         // Spacer helper: makes content invisible and non-interactive
         const spacerClass = isSpacer ? "opacity-0 pointer-events-none select-none" : "opacity-100";
@@ -75,7 +76,7 @@ const RightActions: React.FC<{
                 {/* Mobile Search Icon */}
                 {currentView === 'home' && (
                     <button
-                        onClick={isSpacer ? undefined : () => { /* Handle search open in parent? Pass callback? */ }}
+                        onClick={isSpacer ? undefined : onMobileSearchOpen}
                         className="lg:hidden p-2 text-neutral-400 hover:text-white"
                     >
                         <Search size={18} />
@@ -327,8 +328,8 @@ const RightActions: React.FC<{
                                     <button onClick={(e) => { e.stopPropagation(); window.location.href = `/@${userProfile?.handle || 'user'}`; }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
                                         <User size={12} /> My Profile
                                     </button>
-                                    <button onClick={(e) => { e.stopPropagation(); onNavigate('dashboard-studio'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
-                                        <Terminal size={12} /> Studio Dashboard
+                                    <button onClick={(e) => { e.stopPropagation(); onNavigate('dashboard-overview'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
+                                        <Terminal size={12} /> Overview
                                     </button>
                                     <button onClick={(e) => { e.stopPropagation(); onNavigate('settings'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
                                         <Settings size={12} /> Settings
@@ -558,7 +559,7 @@ const TopBar: React.FC<TopBarProps> = ({
                     cartRef={cartRef} isCartOpen={false} setIsCartOpen={setIsCartOpen} cartItems={cartItems}
                     cartTotal={cartTotal} removeFromCart={removeFromCart} dropdownRef={dropdownRef}
                     isProfileOpen={false} setIsProfileOpen={setIsProfileOpen} onOpenAuth={onOpenAuth}
-                    onLogout={onLogout} isSpacer={true}
+                    onLogout={onLogout} isSpacer={true} onMobileSearchOpen={() => setMobileSearchOpen(true)}
                 />
             </div>
 
@@ -707,7 +708,7 @@ const TopBar: React.FC<TopBarProps> = ({
                 cartRef={cartRef} isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} cartItems={cartItems}
                 cartTotal={cartTotal} removeFromCart={removeFromCart} dropdownRef={dropdownRef}
                 isProfileOpen={isProfileOpen} setIsProfileOpen={setIsProfileOpen} onOpenAuth={onOpenAuth}
-                onLogout={onLogout} isSpacer={false}
+                onLogout={onLogout} isSpacer={false} onMobileSearchOpen={() => setMobileSearchOpen(true)}
             />
         </header>
     );

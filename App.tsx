@@ -527,7 +527,7 @@ const App: React.FC = () => {
 
             {/* Settings & Help Views */}
             {(currentView === 'settings' || currentView === 'dashboard-settings') && (
-              <SettingsPage />
+              <SettingsPage userProfile={userProfile} />
             )}
 
             {(currentView === 'help' || currentView === 'dashboard-help') && (

@@ -340,7 +340,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
 
                             {/* FOLLOWING (Logged In Only) */}
                             {isLoggedIn && (
-                                <div>
+                                <div className={following.length === 0 ? "hidden lg:block" : ""}>
                                     <div className="flex items-center justify-between px-3 mb-2 group cursor-pointer" onClick={() => onNavigate('browse-talent')}>
                                         <div className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest group-hover:text-neutral-300 transition-colors">
                                             Following

@@ -50,9 +50,9 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                     <p className="text-neutral-500 text-xs lg:text-sm">Your collection of beats, songs, and playlists.</p>
                 </div>
 
-                <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 no-scrollbar">
-                    {/* Mobile: Scrollable Chips | Desktop: Segmented Control */}
-                    <div className="flex md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 min-w-max gap-2 md:gap-0">
+                <div className="w-full md:w-auto -mx-4 px-4 md:mx-0 md:px-0">
+                    {/* Mobile: Wrapped Chips | Desktop: Segmented Control */}
+                    <div className="flex flex-wrap md:flex-nowrap md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 gap-2 md:gap-0">
                         <TabButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} label="All" />
                         <TabButton active={activeTab === 'liked'} onClick={() => setActiveTab('liked')} label="Liked" icon={<Heart size={12} />} />
                         <TabButton active={activeTab === 'purchased'} onClick={() => setActiveTab('purchased')} label="Purchased" icon={<Disc size={12} />} />

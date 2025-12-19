@@ -863,7 +863,7 @@ const NotesPage: React.FC = () => {
     return (
         <div className={`
             w-full max-w-[1600px] mx-auto animate-in fade-in duration-500 flex flex-col overflow-hidden
-            fixed inset-0 z-[60] bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-[calc(100vh_-_8rem)] lg:pt-4 lg:px-8 lg:bg-transparent
+            fixed inset-x-0 bottom-0 top-16 z-30 bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-[calc(100vh_-_8rem)] lg:pt-4 lg:px-8 lg:bg-transparent
         `}>
             {/* Header - Desktop Only */}
             <div className={`

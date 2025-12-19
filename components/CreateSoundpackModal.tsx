@@ -169,8 +169,8 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="w-full h-full md:h-[85vh] md:max-w-5xl bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl flex flex-col shadow-2xl overflow-hidden relative">
 
-                <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
-                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <div className="h-14 md:h-16 border-b border-neutral-800 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
+                    <h2 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
                         <Box size={18} className="text-primary" />
                         Create New Sound Pack
                     </h2>
@@ -196,14 +196,14 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
 
                 <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
                     {step === 1 && (
-                        <div className="space-y-8 max-w-3xl mx-auto">
+                        <div className="space-y-5 md:space-y-8 max-w-3xl mx-auto">
                             <div className="space-y-4">
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-neutral-400 uppercase">Pack Title</label>
                                     <input
                                         value={projectData.title}
                                         onChange={(e) => setProjectData({ ...projectData, title: e.target.value })}
-                                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
+                                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
                                         placeholder="e.g., Dark Trap Drum Kit Vol. 1"
                                     />
                                 </div>
@@ -214,7 +214,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                         <select
                                             value={selectedPackType}
                                             onChange={(e) => setSelectedPackType(e.target.value)}
-                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
+                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
                                         >
                                             {SOUND_PACK_TYPES.map(type => (
                                                 <option key={type.value} value={type.value}>
@@ -226,8 +226,8 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-neutral-400 uppercase">Key & BPM</label>
                                         <div className="flex gap-2">
-                                            <input className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-3 text-white text-center" placeholder="Am" />
-                                            <input type="number" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-3 text-white text-center" placeholder="140" />
+                                            <input className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2.5 md:py-3 text-white text-center" placeholder="Am" />
+                                            <input type="number" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2.5 md:py-3 text-white text-center" placeholder="140" />
                                         </div>
                                     </div>
                                 </div>
@@ -237,12 +237,12 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                     <textarea
                                         value={projectData.description}
                                         onChange={(e) => setProjectData({ ...projectData, description: e.target.value })}
-                                        className="w-full h-32 bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none resize-none"
+                                        className="w-full h-24 md:h-32 bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none resize-none"
                                         placeholder="Describe your sound pack, what's included, and any special features..."
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                     <div className="space-y-2">
                                         <div className="flex justify-between items-center">
                                             <label className="text-xs font-bold text-neutral-400 uppercase">Genre (Max 3)</label>

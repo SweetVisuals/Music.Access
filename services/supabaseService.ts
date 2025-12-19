@@ -1354,7 +1354,7 @@ export const deleteFile = async (assetId: string): Promise<void> => {
 
 
 export const createFolder = async (name: string, parentId: string | null = null): Promise<any> => {
-  const currentUser = await getCurrentUser();
+  const currentUser = await ensureUserExists();
   if (!currentUser) throw new Error('User not authenticated');
 
   const { data, error } = await supabase
@@ -1536,7 +1536,7 @@ export const getGoals = async (): Promise<Goal[]> => {
 };
 
 export const createGoal = async (goal: Partial<Goal>): Promise<Goal> => {
-  const currentUser = await getCurrentUser();
+  const currentUser = await ensureUserExists();
   if (!currentUser) throw new Error('User not authenticated');
 
   const { data, error } = await supabase
@@ -1654,7 +1654,7 @@ export const getNotes = async (): Promise<Note[]> => {
 };
 
 export const createNote = async (title: string = 'Untitled Note') => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await ensureUserExists();
   if (!user) throw new Error('User not logged in');
 
   const { data, error } = await supabase
@@ -1882,7 +1882,7 @@ export const deleteNote = async (id: string) => {
 // ... existing code ...
 
 export const createPurchase = async (items: any[], total: number, paymentMethod: string) => {
-  const currentUser = await getCurrentUser();
+  const currentUser = await ensureUserExists();
   if (!currentUser) throw new Error('User not authenticated');
 
   // 1. Create Purchase Record
@@ -2301,7 +2301,7 @@ export const markAllNotificationsAsRead = async () => {
 };
 
 export const createNotification = async (notification: Partial<Notification>) => {
-  const currentUser = await getCurrentUser();
+  const currentUser = await ensureUserExists();
   if (!currentUser) throw new Error('User not authenticated');
 
   // If userId is provided in the arg, use it (for admin sending to others), otherwise default to current (self-notif)
@@ -2349,7 +2349,7 @@ export const getStrategies = async (): Promise<Strategy[]> => {
 };
 
 export const saveStrategy = async (stageId: string, data: any, status: 'in_progress' | 'completed' = 'completed') => {
-  const currentUser = await getCurrentUser();
+  const currentUser = await ensureUserExists();
   if (!currentUser) throw new Error('User not authenticated');
 
   // Upsert strategy

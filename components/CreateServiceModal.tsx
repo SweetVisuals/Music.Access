@@ -68,15 +68,15 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
 
                 {/* LEFT SIDE - FORM */}
                 <div className="flex-1 flex flex-col border-r border-neutral-800 min-w-0 md:min-w-[50%]">
-                    <div className="h-16 md:h-20 border-b border-neutral-800 flex items-center justify-between px-4 md:px-8 bg-neutral-900/30 shrink-0">
+                    <div className="h-14 md:h-20 border-b border-neutral-800 flex items-center justify-between px-4 md:px-8 bg-neutral-900/30 shrink-0">
                         <div>
-                            <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                    <Mic2 size={20} className="text-primary" />
+                            <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-3">
+                                <div className="p-1.5 md:p-2 bg-primary/10 rounded-lg">
+                                    <Mic2 size={18} className="text-primary md:w-5 md:h-5" />
                                 </div>
                                 Create Service
                             </h2>
-                            <p className="text-xs text-neutral-500 mt-1 font-medium ml-1">Define your new service offering</p>
+                            <p className="text-[10px] md:text-xs text-neutral-500 mt-1 font-medium ml-1">Define your new service offering</p>
                         </div>
                     </div>
 
@@ -87,7 +87,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                             <input
                                 value={serviceData.title}
                                 onChange={(e) => setServiceData({ ...serviceData, title: e.target.value })}
-                                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-4 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none focus:bg-neutral-900 transition-all font-medium placeholder:text-neutral-700"
+                                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-2.5 md:py-4 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none focus:bg-neutral-900 transition-all font-medium placeholder:text-neutral-700"
                                 placeholder="e.g. Mixing & Mastering"
                                 autoFocus
                             />
@@ -98,7 +98,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                             <textarea
                                 value={serviceData.description}
                                 onChange={(e) => setServiceData({ ...serviceData, description: e.target.value })}
-                                className="w-full h-32 bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-4 text-base md:text-sm text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 resize-none transition-all placeholder:text-neutral-700 leading-relaxed"
+                                className="w-full h-24 md:h-32 bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-2.5 md:py-4 text-base md:text-sm text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 resize-none transition-all placeholder:text-neutral-700 leading-relaxed"
                                 placeholder="Describe exactly what the client gets..."
                             />
                         </div>
@@ -132,7 +132,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                                         type="number"
                                         value={serviceData.price}
                                         onChange={(e) => setServiceData({ ...serviceData, price: parseFloat(e.target.value) })}
-                                        className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl pl-10 pr-4 py-3.5 text-xl font-mono font-bold text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 transition-all placeholder:text-neutral-800"
+                                        className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 md:py-3.5 text-lg md:text-xl font-mono font-bold text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 transition-all placeholder:text-neutral-800"
                                         placeholder="0.00"
                                     />
                                 </div>
@@ -147,7 +147,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                                     value={newFeature}
                                     onChange={(e) => setNewFeature(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddFeature()}
-                                    className="flex-1 bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-3 text-base md:text-sm text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 transition-all placeholder:text-neutral-700"
+                                    className="flex-1 bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-2.5 md:py-3 text-base md:text-sm text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 transition-all placeholder:text-neutral-700"
                                     placeholder="Add a feature (e.g. '2 Revisions')"
                                 />
                                 <button

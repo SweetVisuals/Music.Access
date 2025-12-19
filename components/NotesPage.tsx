@@ -714,7 +714,7 @@ const NotesPage: React.FC = () => {
 
                 {/* Mobile Assistant Sheet */}
                 {isMobileAssistantOpen && (
-                    <div className="lg:hidden absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[44] bg-[#0c0c0c] border-t border-primary/20 rounded-t-2xl shadow-2xl flex flex-col h-[60vh] animate-in slide-in-from-bottom-full duration-300">
+                    <div className="lg:hidden absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[50] bg-[#0c0c0c] border-t border-primary/20 rounded-t-2xl shadow-2xl flex flex-col h-[45vh] animate-in slide-in-from-bottom-full duration-300">
                         {/* Drag Handle */}
                         <div className="w-full h-1.5 flex justify-center py-2" onClick={() => setMobileAssistantOpen(false)}>
                             <div className="w-12 h-1 bg-neutral-800 rounded-full"></div>
@@ -742,8 +742,8 @@ const NotesPage: React.FC = () => {
                         <div className="flex-1 overflow-hidden relative bg-neutral-900/50">
                             {mobileAssistantTab === 'rhymes' && (
                                 <div className="h-full flex flex-col">
-                                    <div className="p-3 border-b border-neutral-800 flex justify-between items-center bg-black/20">
-                                        <span className="text-[10px] uppercase font-bold text-neutral-500">Target Word: <span className="text-white">{currentWord || "..."}</span></span>
+                                    <div className="p-2 border-b border-neutral-800 flex justify-between items-center bg-black/20">
+                                        <span className="text-[9px] uppercase font-bold text-neutral-500">Target Word: <span className="text-white">{currentWord || "..."}</span></span>
                                         <button onClick={() => setAccent(accent === 'US' ? 'UK' : 'US')} className="text-[10px] font-bold text-neutral-500 border border-neutral-800 px-1.5 rounded">{accent}</button>
                                     </div>
                                     <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
@@ -752,7 +752,7 @@ const NotesPage: React.FC = () => {
                                                 {suggestions.map((word, i) => (
                                                     <button
                                                         key={i}
-                                                        className="px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-neutral-300 active:bg-primary active:text-black transition-colors"
+                                                        className="px-2.5 py-1.5 bg-neutral-800 border border-neutral-700 rounded-lg text-xs text-neutral-300 active:bg-primary active:text-black transition-colors"
                                                         onClick={() => {
                                                             if (activeNote) {
                                                                 const newContent = activeNote.content + " " + word;
@@ -780,11 +780,11 @@ const NotesPage: React.FC = () => {
                                         {aiResponse ? (
                                             <div className="space-y-3">
                                                 <div className="p-3 bg-neutral-800/50 rounded-xl border border-white/5">
-                                                    <p className="text-sm text-neutral-200 leading-relaxed whitespace-pre-wrap">{aiResponse}</p>
+                                                    <p className="text-xs text-neutral-200 leading-relaxed whitespace-pre-wrap">{aiResponse}</p>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <button onClick={insertAiResponse} className="flex-1 py-2.5 bg-primary text-black text-xs font-bold rounded-xl">Insert</button>
-                                                    <button onClick={() => setAiResponse(null)} className="flex-1 py-2.5 bg-white/10 text-white text-xs font-bold rounded-xl">Clear</button>
+                                                    <button onClick={insertAiResponse} className="flex-1 py-2 bg-primary text-black text-[10px] font-bold rounded-xl uppercase tracking-wide">Insert</button>
+                                                    <button onClick={() => setAiResponse(null)} className="flex-1 py-2 bg-white/10 text-white text-[10px] font-bold rounded-xl uppercase tracking-wide">Clear</button>
                                                 </div>
                                             </div>
                                         ) : (
@@ -800,7 +800,7 @@ const NotesPage: React.FC = () => {
                                                 value={aiPrompt}
                                                 onChange={(e) => setAiPrompt(e.target.value)}
                                                 onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
-                                                className="w-full bg-neutral-800 border-none rounded-full pl-4 pr-10 py-3 text-sm text-white focus:ring-1 focus:ring-primary placeholder-neutral-500"
+                                                className="w-full bg-neutral-800 border-none rounded-full pl-3 pr-8 py-2 text-xs text-white focus:ring-1 focus:ring-primary placeholder-neutral-500"
                                                 placeholder="Ask AI..."
                                             />
                                             <button

@@ -210,6 +210,43 @@ const DraggableFab = ({ onClick, isSizeExpanded }: { onClick: () => void, isSize
     );
 };
 
+// Standalone Component to prevent re-renders
+const MobileTitlePortal = ({
+    activeNote,
+    onUpdateTitle,
+    onOpenSidebar
+}: {
+    activeNote: Note | undefined,
+    onUpdateTitle: (val: string) => void,
+    onOpenSidebar: () => void
+}) => {
+    const [target, setTarget] = useState<HTMLElement | null>(null);
+
+    useEffect(() => {
+        setTarget(document.getElementById('mobile-page-title'));
+    }, []);
+
+    if (!target || !activeNote) return null;
+
+    return createPortal(
+        <div className="flex items-center gap-2 w-full animate-in fade-in duration-300 min-w-0">
+            <button
+                onClick={onOpenSidebar}
+                className="p-1 -ml-1 text-neutral-400 hover:text-white shrink-0"
+            >
+                <Book size={18} />
+            </button>
+            <input
+                value={activeNote.title}
+                onChange={(e) => onUpdateTitle(e.target.value)}
+                className="bg-transparent border-none text-sm font-bold text-white focus:outline-none p-0 placeholder-neutral-600 w-full truncate min-w-0"
+                placeholder="Untitled Note"
+            />
+        </div>,
+        target
+    );
+};
+
 const NotesPage: React.FC = () => {
     const [notes, setNotes] = useState<Note[]>([]);
     const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
@@ -580,39 +617,14 @@ const NotesPage: React.FC = () => {
 
     // --- Sub-Components / Renderers ---
 
-    // Title Portal Component
-    const MobileTitlePortal = () => {
-        const [target, setTarget] = useState<HTMLElement | null>(null);
-
-        useEffect(() => {
-            setTarget(document.getElementById('mobile-page-title'));
-        }, []);
-
-        if (!target || !activeNote) return null;
-
-        return createPortal(
-            <div className="flex items-center gap-2 w-full animate-in fade-in duration-300 min-w-0">
-                <button
-                    onClick={() => setIsSidebarOpen(true)}
-                    className="p-1 -ml-1 text-neutral-400 hover:text-white shrink-0"
-                >
-                    <Book size={18} />
-                </button>
-                <input
-                    value={activeNote.title}
-                    onChange={(e) => handleUpdateTitle(e.target.value)}
-                    className="bg-transparent border-none text-sm font-bold text-white focus:outline-none p-0 placeholder-neutral-600 w-full truncate min-w-0"
-                    placeholder="Untitled Note"
-                />
-            </div>,
-            target
-        );
-    };
-
     const renderEditorView = () => (
         <div className="flex-1 flex flex-col relative w-full h-full overflow-hidden">
             {/* Portal for Mobile Title */}
-            <MobileTitlePortal />
+            <MobileTitlePortal
+                activeNote={activeNote}
+                onUpdateTitle={handleUpdateTitle}
+                onOpenSidebar={() => setIsSidebarOpen(true)}
+            />
 
             {/* Embedded Audio Player */}
             {activeNote && activeNote.attachedAudio && (

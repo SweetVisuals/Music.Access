@@ -574,9 +574,7 @@ const TopBar: React.FC<TopBarProps> = ({
             )}
 
             {/* Mobile Page Title Portal Target */}
-            {!mobileSearchOpen && (
-                <div id="mobile-page-title" className="lg:hidden flex-1 flex justify-center items-center px-2 min-w-0"></div>
-            )}
+            <div id="mobile-page-title" className={`lg:hidden flex-1 flex justify-center items-center px-2 min-w-0 ${mobileSearchOpen ? 'hidden' : ''}`}></div>
 
             {/* SEARCH BAR */}
             <div
@@ -638,7 +636,7 @@ const TopBar: React.FC<TopBarProps> = ({
                                 onBlur={() => setIsFocused(false)}
                                 className={`
                             w-full h-full bg-transparent border-none focus:ring-0 focus:outline-none 
-                            text-neutral-200 font-mono text-xs p-0 tracking-wide transition-colors
+                            text-neutral-200 font-mono text-base sm:text-xs p-0 tracking-wide transition-colors
                             selection:bg-primary/30 selection:text-white placeholder-transparent z-10
                             ${searchMode === 'ai' ? 'text-primary' : ''}
                         `}

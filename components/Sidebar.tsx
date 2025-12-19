@@ -101,17 +101,17 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
 
     return (
         <>
-            {/* Mobile Overlay */}
+            {/* Mobile Overlay - Only show if sidebar IS NOT full screen (which it is now, so distinct overlay might be redundant if sidebar is opaque, but good for safety) */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/80 z-50 lg:hidden backdrop-blur-sm transition-opacity"
+                    className="fixed inset-0 bg-black/80 z-40 lg:hidden backdrop-blur-sm transition-opacity"
                     onClick={onClose}
                 ></div>
             )}
 
             <aside className={`
-        fixed inset-y-0 left-0 z-50 w-full lg:w-64 bg-[#050505] lg:border-r border-neutral-800 flex flex-col font-sans transition-transform duration-300 ease-in-out transform h-[100dvh] lg:h-screen
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
+        fixed inset-0 z-50 w-full lg:w-64 bg-black lg:bg-[#050505] lg:border-r border-neutral-800 flex flex-col font-sans transition-transform duration-300 ease-in-out transform
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:h-screen
       `}>
                 {/* Logo Area */}
                 <div className="h-16 lg:h-20 flex items-center justify-between px-4 border-b border-neutral-800 shrink-0">
@@ -427,7 +427,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             )}
 
                             {/* RESOURCES */}
-                            <div>
+                            <div className="hidden lg:block">
                                 <div className="text-[9px] font-bold text-neutral-500 px-3 mb-2 uppercase tracking-widest">
                                     Resources
                                 </div>

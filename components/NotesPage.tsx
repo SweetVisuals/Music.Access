@@ -266,6 +266,7 @@ const NotesPage: React.FC = () => {
     const [rhymeMode, setRhymeMode] = useState(false);
     const [accent, setAccent] = useState<'US' | 'UK'>('US');
     const [audioPlaying, setAudioPlaying] = useState(false);
+    const [assistantTab, setAssistantTab] = useState<'rhymes' | 'chat'>('rhymes');
 
     // AI State
     const [aiPrompt, setAiPrompt] = useState('');
@@ -274,8 +275,11 @@ const NotesPage: React.FC = () => {
     const [cursorIndex, setCursorIndex] = useState(0);
     const [selection, setSelection] = useState<{ start: number, end: number, text: string } | null>(null);
     const [textSize, setTextSize] = useState<'xs' | 'sm' | 'base' | 'lg'>('xs'); // New text size state
-    const [isAiExpanded, setIsAiExpanded] = useState(false);
     const [isSizeExpanded, setIsSizeExpanded] = useState(false);
+
+    // Mobile Assistant State
+    const [isMobileAssistantOpen, setMobileAssistantOpen] = useState(false);
+    const [mobileAssistantTab, setMobileAssistantTab] = useState<'rhymes' | 'chat'>('rhymes');
 
 
 
@@ -677,121 +681,276 @@ const NotesPage: React.FC = () => {
                             </div>
                         )}
 
-                        <div className="h-16 flex items-center px-4 gap-4">
-                            {isAiExpanded ? (
-                                <div className="flex-1 flex gap-3 items-center animate-in fade-in slide-in-from-right-2">
-                                    <button
-                                        onClick={() => setIsAiExpanded(false)}
-                                        className="p-1 text-neutral-500 hover:text-white"
-                                    >
-                                        <X size={20} />
-                                    </button>
-                                    <div className="flex-1 relative">
-                                        <Sparkles size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${aiLoading ? 'text-primary animate-pulse' : 'text-neutral-500'}`} />
-                                        <input
-                                            value={aiPrompt}
-                                            onChange={(e) => setAiPrompt(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
-                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-full pl-9 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-primary/50 placeholder-neutral-600"
-                                            placeholder="Ask AI..."
-                                            disabled={aiLoading}
-                                        />
-                                        <button
-                                            onClick={handleAiSubmit}
-                                            disabled={aiLoading || !aiPrompt.trim()}
-                                            className="absolute right-1 top-1/2 -translate-y-1/2 p-2 bg-primary text-black rounded-full disabled:opacity-50"
-                                        >
-                                            <ArrowRight size={14} />
-                                        </button>
+                        <div className="h-16 flex items-center px-4 gap-4 justify-around">
+                            <button
+                                onClick={() => { setIsSizeExpanded(!isSizeExpanded); setMobileAssistantOpen(false); }}
+                                className={`flex flex-col items-center gap-1 transition-all ${isSizeExpanded ? 'text-primary' : 'text-neutral-500 hover:text-white'}`}
+                            >
+                                <Type size={20} />
+                                <span className="text-[10px] font-bold uppercase tracking-tight">Size</span>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setMobileAssistantOpen(!isMobileAssistantOpen);
+                                    setIsSizeExpanded(false);
+                                }}
+                                className={`flex flex-col items-center gap-1 transition-all ${isMobileAssistantOpen ? 'text-primary' : 'text-neutral-500 hover:text-white'}`}
+                            >
+                                <Sparkles size={20} />
+                                <span className="text-[10px] font-bold uppercase tracking-tight">Assistant</span>
+                            </button>
+
+                            <button
+                                onClick={() => setRhymeMode(!rhymeMode)}
+                                className={`flex flex-col items-center gap-1 transition-all ${rhymeMode ? 'text-primary' : 'text-neutral-500 hover:text-white'}`}
+                            >
+                                <Highlighter size={20} />
+                                <span className="text-[10px] font-bold uppercase tracking-tight">Highlights</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Mobile Assistant Sheet */}
+                {isMobileAssistantOpen && (
+                    <div className="lg:hidden absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[44] bg-[#0c0c0c] border-t border-primary/20 rounded-t-2xl shadow-2xl flex flex-col h-[60vh] animate-in slide-in-from-bottom-full duration-300">
+                        {/* Drag Handle */}
+                        <div className="w-full h-1.5 flex justify-center py-2" onClick={() => setMobileAssistantOpen(false)}>
+                            <div className="w-12 h-1 bg-neutral-800 rounded-full"></div>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="flex items-center px-4 mt-2 border-b border-neutral-800">
+                            <button
+                                onClick={() => setMobileAssistantTab('rhymes')}
+                                className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative ${mobileAssistantTab === 'rhymes' ? 'text-primary' : 'text-neutral-500'}`}
+                            >
+                                <Brain size={14} /> Rhymz
+                                {mobileAssistantTab === 'rhymes' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full"></div>}
+                            </button>
+                            <button
+                                onClick={() => setMobileAssistantTab('chat')}
+                                className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative ${mobileAssistantTab === 'chat' ? 'text-primary' : 'text-neutral-500'}`}
+                            >
+                                <Sparkles size={14} /> AI Chat
+                                {mobileAssistantTab === 'chat' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full"></div>}
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-hidden relative bg-neutral-900/50">
+                            {mobileAssistantTab === 'rhymes' && (
+                                <div className="h-full flex flex-col">
+                                    <div className="p-3 border-b border-neutral-800 flex justify-between items-center bg-black/20">
+                                        <span className="text-[10px] uppercase font-bold text-neutral-500">Target Word: <span className="text-white">{currentWord || "..."}</span></span>
+                                        <button onClick={() => setAccent(accent === 'US' ? 'UK' : 'US')} className="text-[10px] font-bold text-neutral-500 border border-neutral-800 px-1.5 rounded">{accent}</button>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
+                                        {currentWord && suggestions.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {suggestions.map((word, i) => (
+                                                    <button
+                                                        key={i}
+                                                        className="px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-neutral-300 active:bg-primary active:text-black transition-colors"
+                                                        onClick={() => {
+                                                            if (activeNote) {
+                                                                const newContent = activeNote.content + " " + word;
+                                                                handleUpdateContent(newContent);
+                                                            }
+                                                        }}
+                                                    >
+                                                        {word}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center h-40 text-neutral-600 opacity-50 space-y-2">
+                                                <Mic size={24} />
+                                                <p className="text-xs">Tap a word to see rhymes.</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                            ) : (
-                                <div className="flex-1 flex items-center justify-around translate-y-[-2px]">
-                                    <button
-                                        onClick={() => { setIsSizeExpanded(!isSizeExpanded); setIsAiExpanded(false); }}
-                                        className={`flex flex-col items-center gap-1 transition-all ${isSizeExpanded ? 'text-primary' : 'text-neutral-500 hover:text-white'}`}
-                                    >
-                                        <Type size={20} />
-                                        <span className="text-[10px] font-bold uppercase tracking-tight">Size</span>
-                                    </button>
+                            )}
 
-                                    <button
-                                        onClick={() => { setIsAiExpanded(true); setIsSizeExpanded(false); }}
-                                        className="flex flex-col items-center gap-1 text-neutral-500 hover:text-white"
-                                    >
-                                        <Sparkles size={20} />
-                                        <span className="text-[10px] font-bold uppercase tracking-tight">AI Assist</span>
-                                    </button>
-
-                                    <button
-                                        onClick={() => setRhymeMode(!rhymeMode)}
-                                        className={`flex flex-col items-center gap-1 transition-all ${rhymeMode ? 'text-primary' : 'text-neutral-500 hover:text-white'}`}
-                                    >
-                                        <Highlighter size={20} />
-                                        <span className="text-[10px] font-bold uppercase tracking-tight">Rhymes</span>
-                                    </button>
+                            {mobileAssistantTab === 'chat' && (
+                                <div className="h-full flex flex-col">
+                                    <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
+                                        {aiResponse ? (
+                                            <div className="space-y-3">
+                                                <div className="p-3 bg-neutral-800/50 rounded-xl border border-white/5">
+                                                    <p className="text-sm text-neutral-200 leading-relaxed whitespace-pre-wrap">{aiResponse}</p>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button onClick={insertAiResponse} className="flex-1 py-2.5 bg-primary text-black text-xs font-bold rounded-xl">Insert</button>
+                                                    <button onClick={() => setAiResponse(null)} className="flex-1 py-2.5 bg-white/10 text-white text-xs font-bold rounded-xl">Clear</button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center h-full text-neutral-600 opacity-50">
+                                                <Sparkles size={32} className="mb-2" />
+                                                <p className="text-xs">Ask AI for suggestions...</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="p-3 bg-black/40 border-t border-neutral-800">
+                                        <div className="relative">
+                                            <input
+                                                value={aiPrompt}
+                                                onChange={(e) => setAiPrompt(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
+                                                className="w-full bg-neutral-800 border-none rounded-full pl-4 pr-10 py-3 text-sm text-white focus:ring-1 focus:ring-primary placeholder-neutral-500"
+                                                placeholder="Ask AI..."
+                                            />
+                                            <button
+                                                onClick={handleAiSubmit}
+                                                disabled={aiLoading || !aiPrompt.trim()}
+                                                className="absolute right-1 top-1/2 -translate-y-1/2 p-2 text-primary"
+                                            >
+                                                <ArrowRight size={18} />
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
                     </div>
-                </div>
+                )}
 
                 {/* Restore Mobile FAB */}
-                {!isAiExpanded && !isSidebarOpen && (
+                {!isMobileAssistantOpen && !isSidebarOpen && !isSizeExpanded && (
                     <DraggableFab onClick={handleCreateNote} isSizeExpanded={isSizeExpanded} />
                 )}
             </div>
 
-            {/* Rhyme Sidebar (Desktop Only) */}
-            <div className="hidden lg:flex w-64 bg-[#080808] border-l border-neutral-800 flex-col shrink-0">
-                <div className="p-4 border-b border-neutral-800 bg-neutral-900/20">
-                    <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                            <Brain size={12} className="text-primary" /> Rhyme Assist
-                        </h3>
-                        <button
-                            onClick={() => setAccent(accent === 'US' ? 'UK' : 'US')}
-                            className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-neutral-800 bg-neutral-900 text-[9px] font-bold text-neutral-400 hover:text-white"
-                            title="Toggle Accent"
-                        >
-                            <Globe size={10} /> {accent}
-                        </button>
-                    </div>
-                    <div className="text-[10px] text-neutral-500">
-                        Context: <span className="text-primary font-mono">"{currentWord}"</span>
-                    </div>
+            {/* Creative Assistant Sidebar (Desktop Only) */}
+            <div className="hidden lg:flex w-80 bg-[#080808] border-l border-neutral-800 flex-col shrink-0 transition-all duration-300">
+
+                {/* Tabs */}
+                <div className="flex items-center border-b border-neutral-800">
+                    <button
+                        onClick={() => setAssistantTab('rhymes')}
+                        className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${assistantTab === 'rhymes' ? 'text-primary bg-primary/5 border-b-2 border-primary' : 'text-neutral-500 hover:text-white'}`}
+                    >
+                        <Brain size={14} /> Rhymz
+                    </button>
+                    <button
+                        onClick={() => setAssistantTab('chat')}
+                        className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${assistantTab === 'chat' ? 'text-primary bg-primary/5 border-b-2 border-primary' : 'text-neutral-500 hover:text-white'}`}
+                    >
+                        <Sparkles size={14} /> AI Chat
+                    </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-2">
-                    {currentWord && suggestions.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                            {suggestions.map((word, i) => (
-                                <span
-                                    key={i}
-                                    className="px-2 py-1 bg-neutral-900 border border-neutral-800 rounded text-xs text-neutral-300 hover:text-white hover:border-primary/30 hover:bg-white/5 cursor-pointer transition-colors"
-                                    onClick={() => {
-                                        if (activeNote) {
-                                            const newContent = activeNote.content + " " + word;
-                                            handleUpdateContent(newContent);
-                                        }
-                                    }}
-                                >
-                                    {word}
-                                </span>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-neutral-600 space-y-2">
-                            <div className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center">
-                                {isAiRhymeLoading ? (
-                                    <Sparkles size={16} className="animate-pulse text-primary" />
+                {/* Content Area */}
+                <div className="flex-1 overflow-hidden relative flex flex-col">
+
+                    {/* RHYMES TAB */}
+                    {assistantTab === 'rhymes' && (
+                        <>
+                            <div className="p-4 border-b border-neutral-800 bg-neutral-900/20 shrink-0">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[10px] uppercase font-bold text-neutral-500">Target Word</span>
+                                    <button
+                                        onClick={() => setAccent(accent === 'US' ? 'UK' : 'US')}
+                                        className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-neutral-800 bg-neutral-900 text-[9px] font-bold text-neutral-400 hover:text-white"
+                                        title="Toggle Accent"
+                                    >
+                                        <Globe size={10} /> {accent}
+                                    </button>
+                                </div>
+                                <div className="text-xl font-black text-white truncate break-all">
+                                    {currentWord || <span className="text-neutral-600 italic text-sm font-normal">Select a word...</span>}
+                                </div>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                                {currentWord && suggestions.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                        {suggestions.map((word, i) => (
+                                            <button
+                                                key={i}
+                                                className="px-3 py-1.5 bg-neutral-900 border border-neutral-800 rounded-lg text-xs text-neutral-300 hover:text-white hover:border-primary/50 hover:bg-white/5 cursor-pointer transition-all active:scale-95"
+                                                onClick={() => {
+                                                    if (activeNote) {
+                                                        const newContent = activeNote.content + " " + word;
+                                                        handleUpdateContent(newContent);
+                                                    }
+                                                }}
+                                            >
+                                                {word}
+                                            </button>
+                                        ))}
+                                    </div>
                                 ) : (
-                                    <Mic size={16} className="opacity-50" />
+                                    <div className="flex flex-col items-center justify-center h-40 text-neutral-600 space-y-3 mt-10">
+                                        <div className="w-12 h-12 rounded-full bg-neutral-900 flex items-center justify-center">
+                                            {isAiRhymeLoading ? (
+                                                <Sparkles size={20} className="animate-pulse text-primary" />
+                                            ) : (
+                                                <Mic size={20} className="opacity-50" />
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-center px-4 leading-relaxed">
+                                            {isAiRhymeLoading ? 'Analysing rhymes...' : 'Type or select a word to see rhymes.'}
+                                        </p>
+                                    </div>
                                 )}
                             </div>
-                            <p className="text-[10px] text-center px-4">
-                                {isAiRhymeLoading ? 'Finding rhymes...' : `Type a line and hit Enter to get AI rhymes.`}
-                            </p>
+                        </>
+                    )}
+
+                    {/* CHAT TAB */}
+                    {assistantTab === 'chat' && (
+                        <div className="flex flex-col h-full">
+                            <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
+                                {aiResponse ? (
+                                    <div className="animate-in fade-in slide-in-from-bottom-2">
+                                        <div className="p-3 bg-neutral-900/50 border border-primary/20 rounded-xl mb-4">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="p-1 bg-primary/10 rounded text-primary"><Sparkles size={12} /></div>
+                                                <span className="text-[10px] font-bold uppercase text-primary">Suggestion</span>
+                                            </div>
+                                            <p className="text-sm text-neutral-200 leading-relaxed whitespace-pre-wrap">{aiResponse}</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={insertAiResponse} className="flex-1 py-2 bg-primary text-black text-xs font-bold rounded-lg hover:bg-primary/90">Insert</button>
+                                            <button onClick={() => setAiResponse(null)} className="flex-1 py-2 bg-white/5 text-white text-xs font-bold rounded-lg hover:bg-white/10">Discard</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-full text-neutral-600 opacity-50">
+                                        <Brain size={32} className="mb-2" />
+                                        <p className="text-xs text-center">Ask for ideas, synonyms, or help with a block.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-4 border-t border-neutral-800 bg-neutral-900/10">
+                                <div className="relative">
+                                    <textarea
+                                        value={aiPrompt}
+                                        onChange={(e) => setAiPrompt(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleAiSubmit();
+                                            }
+                                        }}
+                                        className="w-full bg-neutral-900 border border-neutral-800 rounded-xl pl-3 pr-10 py-3 text-sm text-white focus:outline-none focus:border-primary/50 min-h-[50px] max-h-[120px] resize-none scrollbar-hide"
+                                        placeholder="Ask AI..."
+                                        disabled={aiLoading}
+                                    />
+                                    <button
+                                        onClick={handleAiSubmit}
+                                        disabled={aiLoading || !aiPrompt.trim()}
+                                        className="absolute right-2 bottom-2 p-1.5 bg-primary text-black rounded-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:scale-100"
+                                    >
+                                        {aiLoading ? <Sparkles size={14} className="animate-spin" /> : <Send size={14} />}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -998,48 +1157,7 @@ const NotesPage: React.FC = () => {
                             {/* Main Content Switcher */}
                             {viewMode === 'editor' ? renderEditorView() : renderBrowserView()}
 
-                            {/* Desktop AI Assistant Panel (Hidden on Mobile) */}
-                            <div className="hidden lg:block p-4 bg-[#080808] border-t border-neutral-800 z-20 shrink-0">
-                                {aiResponse && (
-                                    <div className="mb-4 p-4 bg-neutral-900/80 border border-primary/20 rounded-lg relative animate-in slide-in-from-bottom-2 max-h-60 overflow-y-auto custom-scrollbar">
-                                        <div className="flex items-start gap-3">
-                                            <div className="p-1.5 bg-primary/10 rounded text-primary mt-1">
-                                                <Sparkles size={14} />
-                                            </div>
-                                            <div className="flex-1">
-                                                <h4 className="text-xs font-bold text-white mb-1">AI Suggestion</h4>
-                                                <p className="text-xs text-neutral-300 leading-relaxed whitespace-pre-wrap">{aiResponse}</p>
-                                            </div>
-                                            <button onClick={() => setAiResponse(null)} className="text-neutral-500 hover:text-white"><X size={14} /></button>
-                                        </div>
-                                        <div className="flex justify-end mt-3 gap-2">
-                                            <button onClick={() => setAiResponse(null)} className="text-[10px] font-bold text-neutral-500 hover:text-white px-3 py-1.5">Discard</button>
-                                            <button onClick={insertAiResponse} className="text-[10px] font-bold bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded border border-white/5">Insert to Note</button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Sparkles size={14} className={`text-primary ${aiLoading ? 'animate-pulse' : ''}`} />
-                                    </div>
-                                    <input
-                                        value={aiPrompt}
-                                        onChange={(e) => setAiPrompt(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
-                                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg pl-10 pr-12 py-3 text-xs text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 placeholder-neutral-500 transition-all font-mono"
-                                        placeholder="Ask AI for advice, ideas, structure..."
-                                        disabled={aiLoading}
-                                    />
-                                    <button
-                                        onClick={handleAiSubmit}
-                                        disabled={aiLoading || !aiPrompt.trim()}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <Send size={12} />
-                                    </button>
-                                </div>
-                            </div>
+                            {/* Desktop AI Assistant Panel Removed (Moved to Sidebar) */}
                         </div>
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-neutral-600 p-8 text-center">

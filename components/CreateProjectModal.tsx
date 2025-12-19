@@ -191,7 +191,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                     <input
                                         value={projectData.title}
                                         onChange={(e) => setProjectData({ ...projectData, title: e.target.value })}
-                                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none"
+                                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
                                         placeholder="Project Title"
                                     />
                                 </div>
@@ -201,7 +201,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                         <select
                                             value={projectData.type}
                                             onChange={(e) => setProjectData({ ...projectData, type: e.target.value as any })}
-                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none"
+                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
                                         >
                                             <option value="beat_tape">Beat Tape / Project</option>
                                             <option value="sound_pack">Sound Pack / Kit</option>
@@ -221,7 +221,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                     <textarea
                                         value={projectData.description}
                                         onChange={(e) => setProjectData({ ...projectData, description: e.target.value })}
-                                        className="w-full h-32 bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none resize-none"
+                                        className="w-full h-32 bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none resize-none"
                                         placeholder="Tell us about this project..."
                                     />
                                 </div>
@@ -232,7 +232,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                             <label className="text-xs font-bold text-neutral-400 uppercase">Genre (Max 3)</label>
                                             <span className="text-[10px] text-primary">{selectedGenres.length}/3</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-neutral-800 rounded-lg bg-neutral-900 custom-scrollbar">
+                                        <div className="flex flex-wrap gap-2 p-2 border border-neutral-800 rounded-lg bg-neutral-900">
                                             {GENRE_LIST.map(g => (
                                                 <button
                                                     key={g}
@@ -249,7 +249,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                             <label className="text-xs font-bold text-neutral-400 uppercase">Sub-Genre (Max 3)</label>
                                             <span className="text-[10px] text-primary">{selectedSubGenres.length}/3</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-neutral-800 rounded-lg bg-neutral-900 custom-scrollbar">
+                                        <div className="flex flex-wrap gap-2 p-2 border border-neutral-800 rounded-lg bg-neutral-900">
                                             {SUB_GENRES.map(g => (
                                                 <button
                                                     key={g}
@@ -305,7 +305,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                     <input
                                                         value={track.title}
                                                         onChange={(e) => updateTrack(idx, 'title', e.target.value)}
-                                                        className="flex-1 bg-black border border-neutral-800 rounded px-3 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
+                                                        className="flex-1 bg-black border border-neutral-800 rounded px-3 py-2 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
                                                         placeholder="Track Title"
                                                     />
                                                     <button onClick={() => { const nt = [...tracks]; nt.splice(idx, 1); setTracks(nt); }} className="p-2 text-neutral-500 hover:text-red-500">

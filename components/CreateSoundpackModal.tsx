@@ -203,7 +203,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                     <input
                                         value={projectData.title}
                                         onChange={(e) => setProjectData({ ...projectData, title: e.target.value })}
-                                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none"
+                                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
                                         placeholder="e.g., Dark Trap Drum Kit Vol. 1"
                                     />
                                 </div>
@@ -214,7 +214,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                         <select
                                             value={selectedPackType}
                                             onChange={(e) => setSelectedPackType(e.target.value)}
-                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none"
+                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
                                         >
                                             {SOUND_PACK_TYPES.map(type => (
                                                 <option key={type.value} value={type.value}>
@@ -237,7 +237,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                     <textarea
                                         value={projectData.description}
                                         onChange={(e) => setProjectData({ ...projectData, description: e.target.value })}
-                                        className="w-full h-32 bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none resize-none"
+                                        className="w-full h-32 bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none resize-none"
                                         placeholder="Describe your sound pack, what's included, and any special features..."
                                     />
                                 </div>
@@ -248,7 +248,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                             <label className="text-xs font-bold text-neutral-400 uppercase">Genre (Max 3)</label>
                                             <span className="text-[10px] text-primary">{selectedGenres.length}/3</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-neutral-800 rounded-lg bg-neutral-900 custom-scrollbar">
+                                        <div className="flex flex-wrap gap-2 p-2 border border-neutral-800 rounded-lg bg-neutral-900">
                                             {GENRE_LIST.map(g => (
                                                 <button
                                                     key={g}
@@ -265,7 +265,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                             <label className="text-xs font-bold text-neutral-400 uppercase">Sub-Genre (Max 3)</label>
                                             <span className="text-[10px] text-primary">{selectedSubGenres.length}/3</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-neutral-800 rounded-lg bg-neutral-900 custom-scrollbar">
+                                        <div className="flex flex-wrap gap-2 p-2 border border-neutral-800 rounded-lg bg-neutral-900">
                                             {SUB_GENRES.map(g => (
                                                 <button
                                                     key={g}
@@ -321,7 +321,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                                     <input
                                                         value={track.title}
                                                         onChange={(e) => updateTrack(idx, 'title', e.target.value)}
-                                                        className="flex-1 bg-black border border-neutral-800 rounded px-3 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
+                                                        className="flex-1 bg-black border border-neutral-800 rounded px-3 py-2 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
                                                         placeholder="Sample Name"
                                                     />
                                                     <button onClick={() => { const nt = [...tracks]; nt.splice(idx, 1); setTracks(nt); }} className="p-2 text-neutral-500 hover:text-red-500">

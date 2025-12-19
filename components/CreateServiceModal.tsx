@@ -87,7 +87,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                             <input
                                 value={serviceData.title}
                                 onChange={(e) => setServiceData({ ...serviceData, title: e.target.value })}
-                                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-4 text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 transition-all font-medium placeholder:text-neutral-700"
+                                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-4 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none focus:bg-neutral-900 transition-all font-medium placeholder:text-neutral-700"
                                 placeholder="e.g. Mixing & Mastering"
                                 autoFocus
                             />
@@ -98,7 +98,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                             <textarea
                                 value={serviceData.description}
                                 onChange={(e) => setServiceData({ ...serviceData, description: e.target.value })}
-                                className="w-full h-32 bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-4 text-sm text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 resize-none transition-all placeholder:text-neutral-700 leading-relaxed"
+                                className="w-full h-32 bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-4 text-base md:text-sm text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 resize-none transition-all placeholder:text-neutral-700 leading-relaxed"
                                 placeholder="Describe exactly what the client gets..."
                             />
                         </div>
@@ -147,7 +147,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                                     value={newFeature}
                                     onChange={(e) => setNewFeature(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddFeature()}
-                                    className="flex-1 bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-3 text-sm text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 transition-all placeholder:text-neutral-700"
+                                    className="flex-1 bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-3 text-base md:text-sm text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 transition-all placeholder:text-neutral-700"
                                     placeholder="Add a feature (e.g. '2 Revisions')"
                                 />
                                 <button
@@ -158,7 +158,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                                 </button>
                             </div>
 
-                            <div className="space-y-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="space-y-2 pr-2">
                                 {serviceData.features?.length === 0 && (
                                     <div className="text-center py-6 border-2 border-dashed border-neutral-800 rounded-xl text-neutral-600 text-sm">
                                         No features added yet

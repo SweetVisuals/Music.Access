@@ -429,7 +429,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             <div className="relative rounded-3xl overflow-hidden bg-[#0a0a0a] border border-neutral-800 mb-8 group/header shadow-2xl">
 
                 {/* View As Toggle (Top Right) */}
-                <div className="absolute top-4 right-4 z-40">
+                <div className="absolute top-4 right-4 z-20">
                     <button
                         onClick={() => setIsViewerMode(!isViewerMode)}
                         className={`
@@ -590,8 +590,18 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
 
             {/* TABS NAVIGATION */}
-            <div className="sticky top-24 z-30 bg-[#050505]/95 backdrop-blur-xl border-b border-neutral-800 -mx-6 px-6 lg:-mx-8 lg:px-8 mb-8">
-                <div className="flex items-center gap-8 overflow-x-auto custom-scrollbar">
+            <div className="sticky top-14 lg:top-24 z-30 bg-[#050505] lg:border-b lg:border-neutral-800 -mx-6 px-6 lg:-mx-8 lg:px-8 mb-6 lg:mb-8 py-3 lg:pb-0.5 shadow-xl lg:shadow-none">
+
+                {/* Mobile Grid Layout */}
+                <div className="grid grid-cols-2 gap-3 lg:hidden">
+                    <MobileTabButton active={activeTab === 'beat_tapes'} onClick={() => setActiveTab('beat_tapes')} icon={<Disc size={16} />} label="Projects" count={localProjects.length} />
+                    <MobileTabButton active={activeTab === 'sound_packs'} onClick={() => setActiveTab('sound_packs')} icon={<Box size={16} />} label="Sound Packs" count={userProfile.soundPacks.length} />
+                    <MobileTabButton active={activeTab === 'services'} onClick={() => setActiveTab('services')} icon={<LayoutList size={16} />} label="Services" count={userProfile.services.length} />
+                    <MobileTabButton active={activeTab === 'about'} onClick={() => setActiveTab('about')} icon={<Info size={16} />} label="About" />
+                </div>
+
+                {/* Desktop Horizontal Layout */}
+                <div className="hidden lg:flex items-center gap-8 overflow-x-auto no-scrollbar whitespace-nowrap">
                     <TabButton active={activeTab === 'beat_tapes'} onClick={() => setActiveTab('beat_tapes')} icon={<Disc size={18} />} label="Projects" count={localProjects.length} />
                     <TabButton active={activeTab === 'sound_packs'} onClick={() => setActiveTab('sound_packs')} icon={<Box size={18} />} label="Sound Packs" count={userProfile.soundPacks.length} />
                     <TabButton active={activeTab === 'services'} onClick={() => setActiveTab('services')} icon={<LayoutList size={18} />} label="Services" count={userProfile.services.length} />
@@ -830,6 +840,27 @@ interface TabButtonProps {
     label: string;
     count?: number;
 }
+
+const MobileTabButton: React.FC<TabButtonProps> = ({ active, onClick, icon, label, count }) => (
+    <button
+        onClick={onClick}
+        className={`
+            flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-xs font-bold border transition-all
+            ${active
+                ? 'bg-primary text-black border-primary shadow-[0_0_15px_rgba(var(--primary),0.3)]'
+                : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white hover:border-neutral-700'
+            }
+        `}
+    >
+        {icon}
+        <span className="uppercase tracking-wide">{label}</span>
+        {count !== undefined && (
+            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ml-auto ${active ? 'bg-black/20 text-black' : 'bg-black/40 text-neutral-500'}`}>
+                {count}
+            </span>
+        )}
+    </button>
+);
 
 const TabButton: React.FC<TabButtonProps> = ({ active, onClick, icon, label, count }) => (
     <button

@@ -64,11 +64,11 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="w-full max-w-5xl bg-[#0a0a0a] border border-neutral-800 rounded-3xl flex shadow-2xl overflow-hidden relative max-h-[90vh] mx-4">
+            <div className="w-full h-full md:max-w-5xl md:h-auto md:max-h-[90vh] bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-3xl flex shadow-2xl overflow-hidden relative mx-0 md:mx-4">
 
                 {/* LEFT SIDE - FORM */}
-                <div className="flex-1 flex flex-col border-r border-neutral-800 min-w-[50%]">
-                    <div className="h-20 border-b border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/30">
+                <div className="flex-1 flex flex-col border-r border-neutral-800 min-w-0 md:min-w-[50%]">
+                    <div className="h-16 md:h-20 border-b border-neutral-800 flex items-center justify-between px-4 md:px-8 bg-neutral-900/30 shrink-0">
                         <div>
                             <h2 className="text-xl font-bold text-white flex items-center gap-3">
                                 <div className="p-2 bg-primary/10 rounded-lg">
@@ -80,7 +80,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar space-y-6 md:space-y-8">
 
                         <div className="space-y-2 group">
                             <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider group-focus-within:text-primary transition-colors">Service Title</label>
@@ -103,7 +103,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Pricing Model</label>
                                 <div className="flex bg-neutral-900 p-1.5 rounded-xl border border-neutral-800">
@@ -185,12 +185,12 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
 
                     </div>
 
-                    <div className="p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-between items-center">
+                    <div className="p-4 md:p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-between items-center shrink-0">
                         <button onClick={onClose} className="px-6 py-3 rounded-xl text-xs font-bold text-neutral-500 hover:text-white transition-colors uppercase tracking-wider">Cancel</button>
                         <button
                             onClick={handleSave}
                             disabled={isLoading}
-                            className="group relative px-8 py-3 bg-white text-black rounded-xl text-xs font-bold hover:bg-neutral-200 transition-all flex items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                            className="group relative px-6 md:px-8 py-3 bg-white text-black rounded-xl text-xs font-bold hover:bg-neutral-200 transition-all flex items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
                         >
                             <span className="relative z-10">{isLoading ? 'Creating...' : 'Create Service'}</span>
                             {!isLoading && <ArrowRight size={14} className="relative z-10 group-hover:translate-x-1 transition-transform" />}

@@ -452,7 +452,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 {/* Banner Background */}
                 <div
                     className={`
-                    h-72 w-full relative bg-neutral-900 overflow-hidden
+                    h-32 md:h-72 w-full relative bg-neutral-900 overflow-hidden
                     ${!isViewerMode ? 'cursor-pointer group/banner' : ''}
                 `}
                     onClick={triggerBannerUpload}
@@ -482,14 +482,14 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 </div>
 
                 {/* Profile Content Layer */}
-                <div className="relative px-8 pb-8 -mt-24 flex flex-col md:flex-row items-end gap-8">
+                <div className="relative px-4 md:px-8 pb-4 md:pb-8 -mt-12 md:-mt-24 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-8">
 
                     {/* Avatar */}
                     <div className={`
-                    relative z-30 shrink-0 rounded-3xl p-1.5 bg-[#0a0a0a] shadow-2xl
+                    relative z-30 shrink-0 rounded-2xl md:rounded-3xl p-1 md:p-1.5 bg-[#0a0a0a] shadow-2xl
                     ${!isViewerMode ? 'cursor-pointer group/avatar' : ''}
                 `} onClick={triggerAvatarUpload}>
-                        <div className="h-44 w-44 rounded-2xl bg-neutral-800 overflow-hidden relative border border-neutral-800">
+                        <div className="h-24 w-24 md:h-44 md:w-44 rounded-xl md:rounded-2xl bg-neutral-800 overflow-hidden relative border border-neutral-800">
                             <img src={userProfile.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'} alt="Avatar" className="w-full h-full object-cover" />
 
                             {/* Avatar Hover Overlay */}
@@ -499,8 +499,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 </div>
                             )}
                         </div>
-                        <div className="absolute -bottom-2 -right-2 bg-[#0a0a0a] p-1.5 rounded-full border border-neutral-800 z-40 pointer-events-none">
-                            <Verified className="text-blue-400 fill-blue-400/10" size={24} />
+                        <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 bg-[#0a0a0a] p-1 md:p-1.5 rounded-full border border-neutral-800 z-40 pointer-events-none">
+                            <Verified className="text-blue-400 fill-blue-400/10 w-4 h-4 md:w-6 md:h-6" />
                         </div>
                     </div>
 
@@ -508,16 +508,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     <div className="flex-1 min-w-0 pb-2 flex flex-col md:flex-row justify-between items-end gap-6 w-full">
 
                         {/* Text Info */}
-                        <div className="w-full md:w-auto">
-                            <div className="flex items-center gap-3 mb-2">
-                                <h1 className="text-4xl lg:text-5xl font-black text-white tracking-tight">{userProfile.username}</h1>
-                                <span className="px-2 py-0.5 bg-primary/20 rounded text-[10px] font-mono font-bold text-primary border border-primary/20 uppercase">
+                        <div className="w-full md:w-auto mt-2 md:mt-0">
+                            <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <h1 className="text-2xl md:text-5xl font-black text-white tracking-tight">{userProfile.username}</h1>
+                                <span className="px-1.5 py-0.5 md:px-2 md:py-0.5 bg-primary/20 rounded text-[9px] md:text-[10px] font-mono font-bold text-primary border border-primary/20 uppercase">
                                     Pro
                                 </span>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-neutral-400 mt-3">
-                                <span className="font-mono text-neutral-300 font-bold text-base">{userProfile.handle}</span>
+                            <div className="flex flex-wrap items-center gap-x-4 md:gap-x-6 gap-y-2 text-sm text-neutral-400 mt-2 md:mt-3">
+                                <span className="font-mono text-neutral-300 font-bold text-sm md:text-base">{userProfile.handle}</span>
 
                                 {userProfile.location && (
                                     <div className="flex items-center gap-1.5 text-neutral-400 bg-white/5 px-2 py-1 rounded-lg border border-white/5">
@@ -538,21 +538,21 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                         </div>
 
                         {/* Actions & Stats */}
-                        <div className="flex flex-col items-end gap-5 w-full md:w-auto">
-                            <div className="flex items-center divide-x divide-white/10 bg-neutral-900/50 rounded-xl border border-white/5 backdrop-blur-md">
-                                <div className="px-5 py-3 text-center">
-                                    <div className="text-lg font-black text-white font-mono">{userProfile.streams ? userProfile.streams.toLocaleString() : '0'}</div>
-                                    <div className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Streams</div>
+                        <div className="flex flex-col items-start md:items-end gap-4 md:gap-5 w-full md:w-auto mt-4 md:mt-0">
+                            <div className="flex items-center divide-x divide-white/10 bg-neutral-900/50 rounded-xl border border-white/5 backdrop-blur-md w-full md:w-auto">
+                                <div className="px-4 md:px-5 py-2 md:py-3 text-center flex-1 md:flex-none">
+                                    <div className="text-base md:text-lg font-black text-white font-mono">{userProfile.streams ? userProfile.streams.toLocaleString() : '0'}</div>
+                                    <div className="text-[8px] md:text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Streams</div>
                                 </div>
-                                <div className="px-5 py-3 text-center">
-                                    <div className="text-lg font-black text-white font-mono">{userProfile.subscribers.toLocaleString()}</div>
-                                    <div className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Followers</div>
+                                <div className="px-4 md:px-5 py-2 md:py-3 text-center flex-1 md:flex-none">
+                                    <div className="text-base md:text-lg font-black text-white font-mono">{userProfile.subscribers.toLocaleString()}</div>
+                                    <div className="text-[8px] md:text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Followers</div>
                                 </div>
-                                <div className="px-5 py-3 text-center">
-                                    <div className="text-lg font-black text-primary flex items-center justify-center gap-1 font-mono">
+                                <div className="px-4 md:px-5 py-2 md:py-3 text-center flex-1 md:flex-none">
+                                    <div className="text-base md:text-lg font-black text-primary flex items-center justify-center gap-1 font-mono">
                                         {userProfile.gems !== undefined ? userProfile.gems.toLocaleString() : '0'} <Gem size={14} />
                                     </div>
-                                    <div className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Gems</div>
+                                    <div className="text-[8px] md:text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Gems</div>
                                 </div>
                             </div>
 
@@ -600,7 +600,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
 
             {/* CONTENT AREA */}
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 min-h-[400px]">
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 min-h-[400px] px-0 md:px-0">
 
                 {activeTab === 'beat_tapes' && (
                     <div>

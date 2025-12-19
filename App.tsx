@@ -367,7 +367,7 @@ const App: React.FC = () => {
         />
 
         {/* Main Layout Container - Adjusted padding for mobile and smaller sidebar */}
-        <div className="flex-1 flex flex-col lg:pl-64 relative w-full">
+        <div className="flex-1 flex flex-col relative w-full">
           <TopBar
             projects={projects}
             currentView={currentView}

@@ -17,7 +17,7 @@ const SOUND_PACK_TYPES = [
 ];
 
 const GENRE_LIST = [
-    "Trap", "Boom Bap", "R&B", "Drill", "Lofi", "Afrobeat", "Synthwave", 
+    "Trap", "Boom Bap", "R&B", "Drill", "Lofi", "Afrobeat", "Synthwave",
     "Pop", "Electronic", "Rock", "Jazz", "Soul", "Reggaeton", "Dancehall", "House"
 ];
 
@@ -38,7 +38,7 @@ const MOCK_USER_FILES = [
 
 const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onClose, onSave }) => {
     const [step, setStep] = useState(1);
-    
+
     const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
     const [selectedSubGenres, setSelectedSubGenres] = useState<string[]>([]);
     const [selectedPackType, setSelectedPackType] = useState<string>('Loop Kit');
@@ -118,12 +118,12 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
             const track = newTracks[currentTrackIndex];
             if (!track.files) track.files = {};
             track.files[fileSelectorOpen] = fileId;
-            
+
             if (Object.keys(track.files).length === 1) {
                 track.title = MOCK_USER_FILES.find(f => f.id === fileId)?.name.split('.')[0] || track.title;
                 track.duration = 180;
             }
-            
+
             setTracks(newTracks);
             setFileSelectorOpen(null);
             setCurrentTrackIndex(null);
@@ -152,7 +152,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
             tags: finalTags,
             type: 'sound_pack' as const
         };
-        
+
         try {
             await createProject(finalProject);
             onSave(finalProject);
@@ -167,9 +167,9 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-5xl h-[85vh] bg-[#0a0a0a] border border-neutral-800 rounded-2xl flex flex-col shadow-2xl overflow-hidden relative">
-                
-                <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
+            <div className="w-full h-full md:h-[85vh] md:max-w-5xl bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl flex flex-col shadow-2xl overflow-hidden relative">
+
+                <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
                         <Box size={18} className="text-primary" />
                         Create New Sound Pack
@@ -179,39 +179,39 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                     </button>
                 </div>
 
-                <div className="px-8 pt-6 pb-2">
+                <div className="px-4 md:px-8 pt-6 pb-2 shrink-0">
                     <div className="flex items-center justify-between relative">
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-neutral-800 -z-10"></div>
                         {[1, 2, 3].map((s) => (
-                            <div 
-                                key={s} 
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${step === s ? 'bg-primary text-black border-primary font-bold' : step > s ? 'bg-green-500 text-black border-green-500' : 'bg-neutral-900 text-neutral-500 border-neutral-800'}`}
+                            <div
+                                key={s}
+                                className={`flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full border transition-all ${step === s ? 'bg-primary text-black border-primary font-bold' : step > s ? 'bg-green-500 text-black border-green-500' : 'bg-neutral-900 text-neutral-500 border-neutral-800'}`}
                             >
-                                <span className="w-6 h-6 flex items-center justify-center rounded-full bg-black/20 text-xs">{step > s ? <Check size={14} /> : s}</span>
-                                <span className="text-xs uppercase tracking-wider">{s === 1 ? 'Details' : s === 2 ? 'Content' : 'Pricing'}</span>
+                                <span className="w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full bg-black/20 text-[10px] md:text-xs">{step > s ? <Check size={12} md:size={14} /> : s}</span>
+                                <span className="text-[10px] md:text-xs uppercase tracking-wider hidden md:inline">{s === 1 ? 'Details' : s === 2 ? 'Content' : 'Pricing'}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
                     {step === 1 && (
                         <div className="space-y-8 max-w-3xl mx-auto">
                             <div className="space-y-4">
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-neutral-400 uppercase">Pack Title</label>
-                                    <input 
+                                    <input
                                         value={projectData.title}
-                                        onChange={(e) => setProjectData({...projectData, title: e.target.value})}
+                                        onChange={(e) => setProjectData({ ...projectData, title: e.target.value })}
                                         className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none"
-                                        placeholder="e.g., Dark Trap Drum Kit Vol. 1" 
+                                        placeholder="e.g., Dark Trap Drum Kit Vol. 1"
                                     />
                                 </div>
-                                
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-neutral-400 uppercase">Pack Type</label>
-                                        <select 
+                                        <select
                                             value={selectedPackType}
                                             onChange={(e) => setSelectedPackType(e.target.value)}
                                             className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none"
@@ -234,9 +234,9 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
 
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-neutral-400 uppercase">Description</label>
-                                    <textarea 
+                                    <textarea
                                         value={projectData.description}
-                                        onChange={(e) => setProjectData({...projectData, description: e.target.value})}
+                                        onChange={(e) => setProjectData({ ...projectData, description: e.target.value })}
                                         className="w-full h-32 bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none resize-none"
                                         placeholder="Describe your sound pack, what's included, and any special features..."
                                     />
@@ -250,7 +250,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                         </div>
                                         <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-neutral-800 rounded-lg bg-neutral-900 custom-scrollbar">
                                             {GENRE_LIST.map(g => (
-                                                <button 
+                                                <button
                                                     key={g}
                                                     onClick={() => toggleGenre(g)}
                                                     className={`px-3 py-1 rounded text-xs border transition-all ${selectedGenres.includes(g) ? 'bg-primary text-black border-primary font-bold shadow-[0_0_10px_rgba(var(--primary),0.3)]' : 'border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500'}`}
@@ -267,7 +267,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                         </div>
                                         <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-neutral-800 rounded-lg bg-neutral-900 custom-scrollbar">
                                             {SUB_GENRES.map(g => (
-                                                <button 
+                                                <button
                                                     key={g}
                                                     onClick={() => toggleSubGenre(g)}
                                                     className={`px-3 py-1 rounded text-xs border transition-all ${selectedSubGenres.includes(g) ? 'bg-white text-black border-white font-bold shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500'}`}
@@ -284,11 +284,11 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                     <div className="flex flex-wrap items-center gap-2 p-2 bg-neutral-900 border border-neutral-800 rounded-lg min-h-[50px]">
                                         {projectData.tags?.map(tag => (
                                             <span key={tag} className="px-2 py-1 bg-neutral-800 rounded flex items-center gap-1 text-xs text-white border border-neutral-700">
-                                                #{tag} <button onClick={() => removeTag(tag)} className="hover:text-red-500"><X size={10}/></button>
+                                                #{tag} <button onClick={() => removeTag(tag)} className="hover:text-red-500"><X size={10} /></button>
                                             </span>
                                         ))}
                                         {(!projectData.tags || projectData.tags.length < 5) && (
-                                            <input 
+                                            <input
                                                 onKeyDown={handleTagInput}
                                                 className="bg-transparent text-xs text-white focus:outline-none min-w-[100px] p-1"
                                                 placeholder="Type and press enter..."
@@ -302,14 +302,14 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
 
                     {step === 2 && (
                         <div className="space-y-6">
-                             <div className="flex justify-between items-center">
+                            <div className="flex justify-between items-center">
                                 <h3 className="text-lg font-bold text-white">Pack Contents</h3>
                                 <button onClick={addTrack} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold text-white">
                                     <Plus size={14} /> Add Sample
                                 </button>
-                             </div>
+                            </div>
 
-                             <div className="space-y-3">
+                            <div className="space-y-3">
                                 {tracks.map((track, idx) => (
                                     <div key={idx} className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 animate-in slide-in-from-bottom-2">
                                         <div className="flex items-start gap-4">
@@ -318,7 +318,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                             </div>
                                             <div className="flex-1 space-y-4">
                                                 <div className="flex gap-4">
-                                                    <input 
+                                                    <input
                                                         value={track.title}
                                                         onChange={(e) => updateTrack(idx, 'title', e.target.value)}
                                                         className="flex-1 bg-black border border-neutral-800 rounded px-3 py-2 text-white text-sm focus:border-primary/50 focus:outline-none"
@@ -328,27 +328,27 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                                         <Trash2 size={16} />
                                                     </button>
                                                 </div>
-                                                
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
                                                     {['wav', 'zip'].map((type: any) => (
-                                                        <div 
+                                                        <div
                                                             key={type}
                                                             onClick={() => openFileSelector(idx, type)}
                                                             className={`
                                                                 border border-dashed rounded-lg p-3 flex items-center justify-between cursor-pointer transition-colors
-                                                                ${track.files?.[type as 'wav'|'zip'] 
-                                                                    ? 'border-green-500/30 bg-green-500/5' 
+                                                                ${track.files?.[type as 'wav' | 'zip']
+                                                                    ? 'border-green-500/30 bg-green-500/5'
                                                                     : 'border-neutral-700 hover:border-neutral-500 hover:bg-white/5'
                                                                 }
                                                             `}
                                                         >
                                                             <div className="flex items-center gap-2">
-                                                                {track.files?.[type as 'wav'|'zip'] ? <Check size={14} className="text-green-500" /> : <Upload size={14} className="text-neutral-500" />}
+                                                                {track.files?.[type as 'wav' | 'zip'] ? <Check size={14} className="text-green-500" /> : <Upload size={14} className="text-neutral-500" />}
                                                                 <span className="text-xs font-bold uppercase text-neutral-400">{type === 'zip' ? 'Archive' : type}</span>
                                                             </div>
-                                                            {track.files?.[type as 'wav'|'zip'] && (
+                                                            {track.files?.[type as 'wav' | 'zip'] && (
                                                                 <span className="text-[9px] font-mono text-neutral-500 truncate max-w-[80px]">
-                                                                    {MOCK_USER_FILES.find(f => f.id === track.files?.[type as 'wav'|'zip'])?.name}
+                                                                    {MOCK_USER_FILES.find(f => f.id === track.files?.[type as 'wav' | 'zip'])?.name}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -364,101 +364,101 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                         <p className="text-sm">No samples added. Click "Add Sample" to begin building your pack.</p>
                                     </div>
                                 )}
-                             </div>
+                            </div>
                         </div>
                     )}
 
                     {step === 3 && (
                         <div className="space-y-8">
-                             <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-start gap-3">
+                            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-start gap-3">
                                 <FileText size={16} className="text-blue-400 mt-0.5" />
                                 <div>
                                     <h4 className="text-sm font-bold text-blue-400">License Options</h4>
                                     <p className="text-xs text-blue-200/70 mt-1">Set pricing and usage rights for your sound pack. Customers can choose which license tier fits their needs.</p>
                                 </div>
-                             </div>
+                            </div>
 
-                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                 {projectData.licenses?.map((license, idx) => (
-                                     <div key={license.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden flex flex-col">
-                                         <div className="p-4 border-b border-neutral-800 bg-neutral-900/50 flex justify-between items-center">
-                                             <span className="text-xs font-bold uppercase text-neutral-400">{license.type} License</span>
-                                             <div className="w-2 h-2 rounded-full bg-primary"></div>
-                                         </div>
-                                         <div className="p-6 space-y-4 flex-1">
-                                             <div className="space-y-1">
-                                                 <label className="text-[10px] font-bold text-neutral-500 uppercase">License Name</label>
-                                                 <input 
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {projectData.licenses?.map((license, idx) => (
+                                    <div key={license.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden flex flex-col">
+                                        <div className="p-4 border-b border-neutral-800 bg-neutral-900/50 flex justify-between items-center">
+                                            <span className="text-xs font-bold uppercase text-neutral-400">{license.type} License</span>
+                                            <div className="w-2 h-2 rounded-full bg-primary"></div>
+                                        </div>
+                                        <div className="p-6 space-y-4 flex-1">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-neutral-500 uppercase">License Name</label>
+                                                <input
                                                     value={license.name}
                                                     onChange={(e) => updateLicense(idx, 'name', e.target.value)}
                                                     className="w-full bg-black border border-neutral-800 rounded px-2 py-2 text-sm text-white focus:border-primary/50 focus:outline-none"
-                                                 />
-                                             </div>
-                                             <div className="space-y-1">
-                                                 <label className="text-[10px] font-bold text-neutral-500 uppercase">Price</label>
-                                                 <div className="relative">
-                                                     <DollarSign size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                                     <input 
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-neutral-500 uppercase">Price</label>
+                                                <div className="relative">
+                                                    <DollarSign size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-500" />
+                                                    <input
                                                         type="number"
                                                         value={license.price}
                                                         onChange={(e) => updateLicense(idx, 'price', parseFloat(e.target.value))}
                                                         className="w-full bg-black border border-neutral-800 rounded px-2 py-2 pl-8 text-lg font-mono font-bold text-white focus:border-primary/50 focus:outline-none"
-                                                     />
-                                                 </div>
-                                             </div>
-                                             <div className="space-y-1">
-                                                 <label className="text-[10px] font-bold text-neutral-500 uppercase">Contract Template</label>
-                                                 <select 
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-neutral-500 uppercase">Contract Template</label>
+                                                <select
                                                     className="w-full bg-black border border-neutral-800 rounded px-2 py-2 text-xs text-white focus:border-primary/50 focus:outline-none"
                                                     onChange={(e) => updateLicense(idx, 'contractId', e.target.value)}
                                                     value={license.contractId}
-                                                 >
-                                                     <option value="">Select Contract...</option>
-                                                     {MOCK_CONTRACTS.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                                                 </select>
-                                             </div>
-                                             <div className="pt-2 border-t border-neutral-800">
-                                                 <div className="text-[10px] font-bold text-neutral-500 uppercase mb-2">Included Files</div>
-                                                 <div className="flex flex-wrap gap-1">
-                                                     {license.fileTypesIncluded.map(ft => (
-                                                         <span key={ft} className="px-1.5 py-0.5 bg-neutral-800 rounded text-[9px] text-neutral-300 border border-neutral-700">{ft}</span>
-                                                     ))}
-                                                 </div>
-                                             </div>
-                                         </div>
-                                     </div>
-                                 ))}
-                             </div>
+                                                >
+                                                    <option value="">Select Contract...</option>
+                                                    {MOCK_CONTRACTS.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="pt-2 border-t border-neutral-800">
+                                                <div className="text-[10px] font-bold text-neutral-500 uppercase mb-2">Included Files</div>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {license.fileTypesIncluded.map(ft => (
+                                                        <span key={ft} className="px-1.5 py-0.5 bg-neutral-800 rounded text-[9px] text-neutral-300 border border-neutral-700">{ft}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
 
-                <div className="h-20 border-t border-neutral-800 flex items-center justify-between px-8 bg-neutral-900/50">
-                     <div className="text-xs text-neutral-500">
-                         {step === 3 && "Review details before publishing your sound pack."}
-                     </div>
-                     <div className="flex gap-4">
-                         {step > 1 && (
-                             <button onClick={() => setStep(s => s - 1)} className="px-6 py-2 rounded-lg font-bold text-xs text-neutral-400 hover:text-white">
-                                 Back
-                             </button>
-                         )}
-                         {step < 3 ? (
-                             <button 
-                                onClick={() => setStep(s => s + 1)} 
-                                className="px-8 py-3 bg-white text-black rounded-lg font-bold text-xs hover:bg-neutral-200 transition-colors"
-                             >
-                                 Next Step
-                             </button>
-                         ) : (
-                             <button 
+                <div className="h-auto md:h-20 py-4 md:py-0 border-t border-neutral-800 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 bg-neutral-900/50 gap-4 shrink-0">
+                    <div className="text-xs text-neutral-500 hidden md:block">
+                        {step === 3 && "Review details before publishing your sound pack."}
+                    </div>
+                    <div className="flex w-full md:w-auto gap-4">
+                        {step > 1 && (
+                            <button onClick={() => setStep(s => s - 1)} className="flex-1 md:flex-none px-6 py-3 md:py-2 rounded-lg font-bold text-xs text-neutral-400 hover:text-white bg-white/5 md:bg-transparent justify-center md:justify-start">
+                                Back
+                            </button>
+                        )}
+                        {step < 3 ? (
+                            <button
+                                onClick={() => setStep(s => s + 1)}
+                                className="flex-1 md:flex-none px-8 py-3 bg-white text-black rounded-lg font-bold text-xs hover:bg-neutral-200 transition-colors justify-center"
+                            >
+                                Next Step
+                            </button>
+                        ) : (
+                            <button
                                 onClick={handleFinalSave}
-                                className="px-8 py-3 bg-primary text-black rounded-lg font-bold text-xs hover:bg-primary/90 transition-colors shadow-[0_0_20px_rgba(var(--primary),0.3)]"
-                             >
-                                 Publish Sound Pack
-                             </button>
-                         )}
-                     </div>
+                                className="flex-1 md:flex-none px-8 py-3 bg-primary text-black rounded-lg font-bold text-xs hover:bg-primary/90 transition-colors shadow-[0_0_20px_rgba(var(--primary),0.3)] justify-center"
+                            >
+                                Publish Sound Pack
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {fileSelectorOpen && (
@@ -470,8 +470,8 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                             </div>
                             <div className="flex-1 overflow-y-auto p-2">
                                 {MOCK_USER_FILES.map(file => (
-                                    <div 
-                                        key={file.id} 
+                                    <div
+                                        key={file.id}
                                         onClick={() => selectFile(file.id)}
                                         className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-lg cursor-pointer border border-transparent hover:border-white/10 group"
                                     >

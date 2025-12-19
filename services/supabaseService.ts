@@ -210,6 +210,45 @@ export const getProjects = async (): Promise<Project[]> => {
   }));
 };
 
+// Helper: Ensure user exists in 'users' table (JIT Provisioning)
+// This should be called before any write operation that relies on a foreign key to the users table.
+export const ensureUserExists = async () => {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return null;
+
+  // Check if user exists in public.users
+  const { data: existingUser, error: fetchError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('id', user.id)
+    .single();
+
+  if (!existingUser && (!fetchError || fetchError.code === 'PGRST116')) {
+    console.log('JIT Provisioning (Global): Creating missing user record for', user.id);
+    const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
+    const handle = user.user_metadata?.handle || user.email?.split('@')[0] || 'user';
+
+    const { error: insertError } = await supabase
+      .from('users')
+      .insert({
+        id: user.id,
+        username,
+        handle,
+        email: user.email,
+        gems: 0,
+        balance: 0.00,
+        avatar_url: user.user_metadata?.avatar_url,
+        banner_url: user.user_metadata?.banner_url
+      });
+
+    if (insertError) {
+      console.error('Failed to JIT provision user:', insertError);
+      return null;
+    }
+  }
+  return user;
+};
+
 export const getUserProfile = async (userId?: string): Promise<UserProfile | null> => {
   // If userId is provided, we are looking for a specific user.
   // If not, we are looking for the current authenticated user.
@@ -412,6 +451,13 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
 };
 
 export const updateUserProfile = async (userId: string, updates: Partial<UserProfile>) => {
+  // Ensure user exists before trying to update them
+  if (userId) {
+    const currentUser = await ensureUserExists();
+    // If we are updating ourselves, ensure existence. 
+    // If updating another user (admin?), the ensureUserExists checks current auth session, which is fine.
+  }
+
   const updateObj: any = {};
   if (updates.username !== undefined) updateObj.username = updates.username;
   if (updates.location !== undefined) updateObj.location = updates.location;
@@ -433,7 +479,7 @@ export const updateUserProfile = async (userId: string, updates: Partial<UserPro
 };
 
 export const createProject = async (project: Partial<Project>) => {
-  const currentUser = await getCurrentUser();
+  const currentUser = await ensureUserExists();
   if (!currentUser) throw new Error('User not authenticated');
 
   // 1. Create Project
@@ -557,7 +603,7 @@ export const createProject = async (project: Partial<Project>) => {
 };
 
 export const createService = async (service: Partial<Service>) => {
-  const currentUser = await getCurrentUser();
+  const currentUser = await ensureUserExists();
   if (!currentUser) throw new Error('User not authenticated');
 
   const { data, error } = await supabase
@@ -824,7 +870,7 @@ export const getContracts = async (): Promise<Contract[]> => {
 };
 
 export const createContract = async (contract: Partial<Contract>): Promise<Contract> => {
-  const currentUser = await getCurrentUser();
+  const currentUser = await ensureUserExists();
   if (!currentUser) throw new Error('User not authenticated');
 
   const { data, error } = await supabase
@@ -938,7 +984,8 @@ export const getTalentProfiles = async (): Promise<TalentProfile[]> => {
   const { data, error } = await supabase
     .from('users')
     .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance')
-    .limit(20);
+    .order('created_at', { ascending: false }) // Show new users first
+    .limit(50); // Increased limit
 
   if (error) throw error;
 
@@ -1177,7 +1224,7 @@ export const initializeStorage = async () => {
 }
 
 export const uploadFile = async (file: File): Promise<{ assetId: string; storagePath: string; publicUrl: string }> => {
-  const currentUser = await getCurrentUser();
+  const currentUser = await ensureUserExists(); // Use global JIT check
   if (!currentUser) throw new Error('User not authenticated');
 
   try {
@@ -1664,7 +1711,7 @@ export const updateNote = async (id: string, updates: Partial<Note>) => {
 // --- STUDIO MANAGEMENT FUNCTIONS ---
 
 export const updateProject = async (projectId: string, updates: Partial<Project>) => {
-  const currentUser = await getCurrentUser();
+  const currentUser = await ensureUserExists();
   if (!currentUser) throw new Error('User not authenticated');
 
   const updateObj: any = {};

@@ -51,12 +51,12 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 </div>
 
                 <div className="w-full md:w-auto -mx-4 px-4 md:mx-0 md:px-0">
-                    {/* Mobile: Wrapped Chips | Desktop: Segmented Control */}
-                    <div className="flex flex-wrap md:flex-nowrap md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 gap-2 md:gap-0">
-                        <TabButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} label="All" />
-                        <TabButton active={activeTab === 'liked'} onClick={() => setActiveTab('liked')} label="Liked" icon={<Heart size={12} />} />
-                        <TabButton active={activeTab === 'purchased'} onClick={() => setActiveTab('purchased')} label="Purchased" icon={<Disc size={12} />} />
-                        <TabButton active={activeTab === 'playlists'} onClick={() => setActiveTab('playlists')} label="Playlists" icon={<List size={12} />} />
+                    {/* Mobile: fit-row | Desktop: Segmented Control */}
+                    <div className="grid grid-cols-4 md:flex md:flex-nowrap md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 gap-1 md:gap-0">
+                        <TabButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} label="All" mobileCompact />
+                        <TabButton active={activeTab === 'liked'} onClick={() => setActiveTab('liked')} label="Liked" icon={<Heart size={10} />} mobileCompact />
+                        <TabButton active={activeTab === 'purchased'} onClick={() => setActiveTab('purchased')} label="Bought" icon={<Disc size={10} />} mobileCompact />
+                        <TabButton active={activeTab === 'playlists'} onClick={() => setActiveTab('playlists')} label="Lists" icon={<List size={10} />} mobileCompact />
                     </div>
                 </div>
             </div>
@@ -131,11 +131,12 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     );
 };
 
-const TabButton = ({ active, onClick, label, icon }: any) => (
+const TabButton = ({ active, onClick, label, icon, mobileCompact }: any) => (
     <button
         onClick={onClick}
         className={`
-            px-4 py-2 md:py-1.5 rounded-full md:rounded-md text-xs font-bold flex items-center gap-2 transition-all border
+            rounded-lg md:rounded-md font-bold flex items-center justify-center gap-1.5 transition-all border
+            ${mobileCompact ? 'py-2 px-0 text-[10px] w-full' : 'px-4 py-2 md:py-1.5 text-xs'}
             ${active
                 ? 'bg-white text-black border-white md:bg-neutral-800 md:text-white md:border-transparent md:shadow'
                 : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:bg-neutral-800 hover:text-white md:bg-transparent md:border-transparent md:hover:bg-white/5'
@@ -143,7 +144,7 @@ const TabButton = ({ active, onClick, label, icon }: any) => (
         `}
     >
         {icon}
-        {label}
+        <span className={mobileCompact ? 'truncate' : ''}>{label}</span>
     </button>
 );
 

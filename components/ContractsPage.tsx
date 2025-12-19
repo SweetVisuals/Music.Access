@@ -173,24 +173,25 @@ const ContractsPage: React.FC = () => {
                 </div>
 
                 <div className="w-full md:w-auto -mx-4 px-4 md:mx-0 md:px-0">
-                    {/* Mobile: Wrapped Chips | Desktop: Segmented Control */}
-                    <div className="flex flex-wrap md:flex-nowrap md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 gap-2 md:gap-0">
+                    {/* Mobile: fit-row | Desktop: Segmented Control */}
+                    <div className="grid grid-cols-3 md:flex md:flex-nowrap md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 gap-1 md:gap-0">
                         <button
                             onClick={() => setFilter('all')}
                             className={`
-                            px-4 py-2 md:py-1.5 text-xs font-bold rounded-full md:rounded-md transition-all border
+                            py-2 px-0 md:px-4 md:py-1.5 text-[10px] md:text-xs font-bold rounded-lg md:rounded-md transition-all border flex items-center justify-center
                             ${filter === 'all'
                                     ? 'bg-white text-black border-white md:bg-neutral-800 md:text-white md:border-transparent md:shadow'
                                     : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:bg-neutral-800 hover:text-white md:bg-transparent md:border-transparent md:hover:bg-white/5'
                                 }
                         `}
                         >
-                            All Contracts
+                            <span className="md:hidden">All</span>
+                            <span className="hidden md:inline">All Contracts</span>
                         </button>
                         <button
                             onClick={() => setFilter('service')}
                             className={`
-                            px-4 py-2 md:py-1.5 text-xs font-bold rounded-full md:rounded-md transition-all border
+                            py-2 px-0 md:px-4 md:py-1.5 text-[10px] md:text-xs font-bold rounded-lg md:rounded-md transition-all border flex items-center justify-center
                             ${filter === 'service'
                                     ? 'bg-white text-black border-white md:bg-neutral-800 md:text-white md:border-transparent md:shadow'
                                     : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:bg-neutral-800 hover:text-white md:bg-transparent md:border-transparent md:hover:bg-white/5'
@@ -202,7 +203,7 @@ const ContractsPage: React.FC = () => {
                         <button
                             onClick={() => setFilter('audio')}
                             className={`
-                            px-4 py-2 md:py-1.5 text-xs font-bold rounded-full md:rounded-md transition-all border
+                            py-2 px-0 md:px-4 md:py-1.5 text-[10px] md:text-xs font-bold rounded-lg md:rounded-md transition-all border flex items-center justify-center
                             ${filter === 'audio'
                                     ? 'bg-white text-black border-white md:bg-neutral-800 md:text-white md:border-transparent md:shadow'
                                     : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:bg-neutral-800 hover:text-white md:bg-transparent md:border-transparent md:hover:bg-white/5'

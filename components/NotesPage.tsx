@@ -232,13 +232,23 @@ const NotesPage: React.FC = () => {
     useEffect(() => {
         const fetchNotes = async () => {
             try {
+                const { data: { user } } = await import('../services/supabaseService').then(m => m.supabase.auth.getUser());
+                console.log('Fetching notes...');
                 const data = await getNotes();
+                console.log('Notes fetched:', data);
+
+                // Temporary Debug
+                if (data.length === 0) {
+                    alert(`Debug: Found 0 notes. User: ${user ? user.id.slice(0, 5) : 'None'}. Auth: ${!!user}`);
+                }
+
                 setNotes(data);
                 if (data.length > 0 && !activeNoteId) {
                     setActiveNoteId(data[0].id);
                 }
             } catch (error) {
                 console.error('Failed to load notes', error);
+                alert('Debug: Error loading notes: ' + error);
             } finally {
                 setLoading(false);
             }
@@ -765,46 +775,52 @@ const NotesPage: React.FC = () => {
                 {isMobileAssistantOpen && (
                     <div
                         style={{ height: `${mobileSheetHeight}vh` }}
-                        className="lg:hidden absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[50] bg-[#0c0c0c] border-t border-white/10 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col animate-in slide-in-from-bottom-full duration-300 transition-[height] ease-out will-change-[height]"
+                        className="lg:hidden absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[50] bg-black border-t-2 border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] flex flex-col animate-in slide-in-from-bottom-full duration-300 transition-[height] ease-out will-change-[height]"
                     >
-                        {/* Header & Drag Handle */}
-                        <div className="w-full flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/5 backdrop-blur-xl rounded-t-3xl relative shrink-0">
-                            {/* Invisible spacer for balance */}
-                            <div className="w-8"></div>
+                        {/* Header & Drag Handle (Terminal Style) */}
+                        <div className="w-full flex items-center justify-between px-4 py-2 bg-neutral-900/80 backdrop-blur-xl border-b border-white/10 relative shrink-0">
+                            {/* Terminal Dots (Decoration) */}
+                            <div className="flex gap-1.5">
+                                <div className="w-2 h-2 rounded-full bg-red-500/50"></div>
+                                <div className="w-2 h-2 rounded-full bg-yellow-500/50"></div>
+                                <div className="w-2 h-2 rounded-full bg-green-500/50"></div>
+                            </div>
 
-                            {/* Drag Handle */}
+                            {/* Drag Handle (Technical) */}
                             <div
-                                className="w-20 h-6 -my-3 flex items-center justify-center cursor-grab active:cursor-grabbing"
+                                className="absolute left-1/2 -translate-x-1/2 w-32 h-6 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100"
                                 onTouchStart={handleSheetDragStart}
                                 onTouchMove={handleSheetDragMove}
                             >
-                                <div className="w-12 h-1 bg-white/20 rounded-full"></div>
+                                <div className="flex gap-0.5">
+                                    <div className="w-8 h-[2px] bg-white/40"></div>
+                                    <div className="w-8 h-[2px] bg-white/40"></div>
+                                    <div className="w-8 h-[2px] bg-white/40"></div>
+                                </div>
                             </div>
 
                             {/* Close Button */}
                             <button
                                 onClick={() => setMobileAssistantOpen(false)}
-                                className="w-8 h-8 flex items-center justify-center rounded-full bg-black/40 text-neutral-400 hover:text-white hover:bg-black/60 active:scale-95 transition-all"
+                                className="w-6 h-6 flex items-center justify-center rounded bg-white/10 text-neutral-400 hover:text-white hover:bg-white/20 active:scale-95 transition-all"
                             >
-                                <ChevronDown size={20} />
+                                <ChevronDown size={14} />
                             </button>
                         </div>
 
-                        {/* Tabs */}
-                        <div className="flex items-center px-4 pt-2 border-b border-white/5">
+                        {/* Tabs (Terminal Style) */}
+                        <div className="flex items-center border-b border-white/10 bg-black">
                             <button
                                 onClick={() => setMobileAssistantTab('rhymes')}
-                                className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative ${mobileAssistantTab === 'rhymes' ? 'text-primary' : 'text-neutral-500'}`}
+                                className={`flex-1 py-3 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative border-r border-white/5 ${mobileAssistantTab === 'rhymes' ? 'text-black bg-primary' : 'text-neutral-500 hover:text-white'}`}
                             >
-                                <Brain size={14} /> Rhymes
-                                {mobileAssistantTab === 'rhymes' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full"></div>}
+                                <Brain size={12} /> Rhyme_Engine
                             </button>
                             <button
                                 onClick={() => setMobileAssistantTab('chat')}
-                                className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative ${mobileAssistantTab === 'chat' ? 'text-primary' : 'text-neutral-500'}`}
+                                className={`flex-1 py-3 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative ${mobileAssistantTab === 'chat' ? 'text-black bg-primary' : 'text-neutral-500 hover:text-white'}`}
                             >
-                                <Sparkles size={14} /> AI Chat
-                                {mobileAssistantTab === 'chat' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full"></div>}
+                                <Sparkles size={12} /> AI_Terminal
                             </button>
                         </div>
 

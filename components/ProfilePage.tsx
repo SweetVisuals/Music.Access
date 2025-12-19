@@ -651,22 +651,52 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             {/* TABS NAVIGATION */}
             <div className="sticky top-14 lg:top-24 z-30 bg-[#050505] lg:border-b lg:border-neutral-800 -mx-6 px-6 lg:-mx-8 lg:px-8 mb-6 lg:mb-8 py-3 lg:pb-0.5 shadow-xl lg:shadow-none">
 
-                {/* Mobile Dropdown Layout */}
-                <div className="lg:hidden relative pb-4">
-                    <div className="relative">
-                        <select
-                            value={activeTab}
-                            onChange={(e) => setActiveTab(e.target.value as Tab)}
-                            className="w-full appearance-none bg-neutral-900 border border-neutral-800 text-white text-sm font-bold rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors"
+                {/* Mobile Tabs Layout (Single Row Grid) */}
+                <div className="lg:hidden relative pb-2">
+                    <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5">
+                        <button
+                            onClick={() => setActiveTab('beat_tapes')}
+                            className={`
+                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                ${activeTab === 'beat_tapes' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                            `}
                         >
-                            <option value="beat_tapes">Projects ({localProjects.length})</option>
-                            <option value="sound_packs">Sound Packs ({userProfile.soundPacks.length})</option>
-                            <option value="services">Services ({userProfile.services.length})</option>
-                            <option value="about">About</option>
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-500">
-                            <ChevronDown size={16} />
-                        </div>
+                            <Disc size={14} className={activeTab === 'beat_tapes' ? 'text-primary' : ''} />
+                            <span className="text-[9px] font-bold uppercase tracking-tight">Projects</span>
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('sound_packs')}
+                            className={`
+                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                ${activeTab === 'sound_packs' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                            `}
+                        >
+                            <Box size={14} className={activeTab === 'sound_packs' ? 'text-primary' : ''} />
+                            <span className="text-[9px] font-bold uppercase tracking-tight">Sounds</span>
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('services')}
+                            className={`
+                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                ${activeTab === 'services' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                            `}
+                        >
+                            <LayoutList size={14} className={activeTab === 'services' ? 'text-primary' : ''} />
+                            <span className="text-[9px] font-bold uppercase tracking-tight">Services</span>
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('about')}
+                            className={`
+                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                ${activeTab === 'about' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                            `}
+                        >
+                            <Info size={14} className={activeTab === 'about' ? 'text-primary' : ''} />
+                            <span className="text-[9px] font-bold uppercase tracking-tight">About</span>
+                        </button>
                     </div>
                 </div>
 

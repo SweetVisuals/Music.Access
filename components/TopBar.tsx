@@ -325,7 +325,7 @@ const RightActions: React.FC<{
                                     <div className="text-[9px] text-neutral-500 truncate">{userProfile?.handle || '@user'}</div>
                                 </div>
                                 <div className="p-1.5">
-                                    <button onClick={(e) => { e.stopPropagation(); window.location.href = `/@${userProfile?.handle || 'user'}`; }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
+                                    <button onClick={(e) => { e.stopPropagation(); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
                                         <User size={12} /> My Profile
                                     </button>
                                     <button onClick={(e) => { e.stopPropagation(); onNavigate('dashboard-overview'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">

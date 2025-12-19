@@ -455,7 +455,7 @@ const App: React.FC = () => {
 
             {currentView === 'profile' && (
               <ProfilePage
-                profile={profileUsername ? null : userProfile} // Use null for other users' profiles
+                profile={(!profileUsername || (userProfile && userProfile.handle === profileUsername)) ? userProfile : null} // Use local profile if it matches URL, else fetch
                 profileUsername={profileUsername}
                 currentProject={currentProject}
                 currentTrackId={currentTrackId}

@@ -205,7 +205,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                     Account
                                 </div>
                                 <nav className="space-y-0">
-                                    <SidebarItem icon={<Users size={14} />} label="Profile" onClick={() => window.location.href = `/@${userProfile?.handle || 'user'}`} />
+                                    <SidebarItem icon={<Users size={14} />} label="Profile" onClick={() => onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile')} />
                                     <SidebarItem
                                         icon={<Wallet size={14} />}
                                         label="Wallet"
@@ -286,14 +286,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                         <>
                             {/* QUICK ACTIONS (Logged In Only) */}
                             {isLoggedIn && (
-                                <div>
-                                    <div className="text-[9px] font-bold text-neutral-500 px-3 mb-2 uppercase tracking-widest">
-                                        Quick Actions
-                                    </div>
-                                    <nav className="space-y-0">
-                                        <SidebarAction icon={<Upload size={14} />} label="Upload Track" onClick={() => onNavigate('upload')} />
-                                        <SidebarAction icon={<PlusCircle size={14} />} label="New Project" onClick={() => onNavigate('dashboard-studio')} />
-                                    </nav>
+                                <div className="space-y-1 mb-6 mt-2">
+                                    <button onClick={() => onNavigate('upload')} className="w-full flex items-center justify-center space-x-2 px-2 py-2 bg-primary text-black rounded-lg font-bold text-[10px] hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(var(--primary),0.2)]">
+                                        <Upload size={14} />
+                                        <span>Upload Track</span>
+                                    </button>
+                                    <button onClick={() => onNavigate('dashboard-studio')} className="w-full flex items-center justify-center space-x-2 px-2 py-2 bg-white/5 text-white border border-white/10 rounded-lg font-bold text-[10px] hover:bg-white/10 transition-colors">
+                                        <PlusCircle size={14} />
+                                        <span>New Project</span>
+                                    </button>
                                 </div>
                             )}
 
@@ -486,7 +487,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-3 group cursor-pointer hover:bg-white/5 p-1.5 -mx-1.5 rounded-xl transition-all" onClick={() => window.location.href = `/@${userProfile?.handle || 'user'}`}>
+                                <div className="flex items-center gap-3 group cursor-pointer hover:bg-white/5 p-1.5 -mx-1.5 rounded-xl transition-all" onClick={() => onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile')}>
                                     {/* Avatar - Square */}
                                     <div className="h-9 w-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden relative shrink-0 group-hover:border-primary/40 transition-colors">
                                         <img src={userProfile?.avatar || 'https://i.pravatar.cc/150?u=user'} alt={userProfile?.username || 'User'} className="h-full w-full object-cover" />

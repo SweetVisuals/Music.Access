@@ -85,7 +85,29 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             try {
                 if (profileUsername && !profile) {
                     // Fetch other user's profile
-                    const fetchedProfile = await getUserProfileByHandle(profileUsername);
+                    let fetchedProfile = await getUserProfileByHandle(profileUsername);
+
+                    // REPAIR FALLBACK: If profile via handle fails, but we are logged in,
+                    // check if this handle belongs to the current user (based on auth metadata).
+                    // If so, call getUserProfile() (no args) to trigger JIT provisioning.
+                    if (!fetchedProfile) {
+                        try {
+                            const currentUser = await getCurrentUser();
+                            const metadataHandle = currentUser?.user_metadata?.handle || currentUser?.email?.split('@')[0];
+
+                            // Loose check: handles match (case-insensitive) OR user has no handle set yet (fallback)
+                            if (currentUser && (!metadataHandle || metadataHandle.toLowerCase() === profileUsername.toLowerCase())) {
+                                console.log('Profile lookup failed, but handle matches current auth user. Attempting JIT provisioning...');
+                                const jitProfile = await getUserProfile(); // This triggers the INSERT if missing
+                                if (jitProfile && jitProfile.handle === profileUsername) {
+                                    fetchedProfile = jitProfile;
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('JIT fallback check failed:', err);
+                        }
+                    }
+
                     if (fetchedProfile) {
                         setUserProfile(fetchedProfile);
                     } else {
@@ -93,11 +115,17 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                         setUserProfile(null);
                     }
                 } else if (profile) {
-                    // Use current user's profile
+                    // Use prop profile
                     setUserProfile(profile);
                 } else {
-                    // No profile to display
-                    setUserProfile(null);
+                    // No profile prop and no username param - try fetching current user directly
+                    try {
+                        const currentUserProfile = await getUserProfile();
+                        setUserProfile(currentUserProfile);
+                    } catch (e) {
+                        console.error('Fallback profile fetch failed:', e);
+                        setUserProfile(null);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to fetch profile:', error);
@@ -153,12 +181,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     </div>
                     <h2 className="text-xl font-bold text-white mb-2">Profile Not Found</h2>
                     <p className="text-neutral-400 mb-6 max-w-md">
-                        {profileUsername 
+                        {profileUsername
                             ? `The profile "@${profileUsername}" could not be found.`
                             : 'Unable to load profile information.'
                         }
                     </p>
-                    <button 
+                    <button
                         onClick={() => window.history.back()}
                         className="px-6 py-2 bg-primary text-black font-bold rounded-lg hover:bg-primary/90 transition-colors"
                     >
@@ -264,13 +292,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 const currentUser = await getCurrentUser();
                 if (currentUser) {
                     await updateUserProfile(currentUser.id, { [field]: publicUrl });
-                    
+
                     // Refetch profile to get the updated data from database
                     const refreshedProfile = await getUserProfile();
                     if (refreshedProfile) {
                         setUserProfile(refreshedProfile);
                     }
-                    
+
                     // Dispatch custom event to notify sidebar to refresh storage
                     window.dispatchEvent(new CustomEvent('storage-updated'));
                 }

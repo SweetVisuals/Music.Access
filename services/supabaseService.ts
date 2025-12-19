@@ -315,8 +315,34 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
     // Fallback: ONLY if we are looking for OURSELVES and the DB entry is missing
     // If we are looking for someone else (userId provided) and they are not in DB, they don't exist.
     if (!userId && currentUser) {
+      // JIT Provisioning: User exists in Auth but not in public.users
+      // Create the missing user record immediately
       const username = currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'User';
       const handle = currentUser.user_metadata?.handle || currentUser.email?.split('@')[0] || 'user';
+      const email = currentUser.email || 'user@example.com';
+
+      console.log('JIT Provisioning: Creating missing user record for', currentUser.id);
+
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: currentUser.id,
+          username,
+          handle,
+          email,
+          hashed_password: '', // Not needed
+          gems: 0,
+          balance: 0.00,
+          avatar_url: currentUser.user_metadata?.avatar_url,
+          banner_url: currentUser.user_metadata?.banner_url
+        });
+
+      if (insertError) {
+        console.error('Failed to JIT provision user:', insertError);
+      } else {
+        console.log('JIT Provisioning successful');
+      }
+
       return {
         username,
         handle,

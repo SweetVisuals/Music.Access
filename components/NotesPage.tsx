@@ -282,6 +282,31 @@ const NotesPage: React.FC = () => {
     const [isMobileAssistantOpen, setMobileAssistantOpen] = useState(false);
     const [mobileAssistantTab, setMobileAssistantTab] = useState<'rhymes' | 'chat'>('rhymes');
 
+    // Mobile Sheet Logic
+    const [mobileSheetHeight, setMobileSheetHeight] = useState(40); // Initial height in vh
+    const sheetDragStart = useRef<number>(0);
+    const sheetStartHeight = useRef<number>(0);
+
+    const handleSheetDragStart = (e: React.TouchEvent) => {
+        sheetDragStart.current = e.touches[0].clientY;
+        sheetStartHeight.current = mobileSheetHeight;
+    };
+
+    const handleSheetDragMove = (e: React.TouchEvent) => {
+        const deltaY = e.touches[0].clientY - sheetDragStart.current;
+        // Convert delta pixels to vh (approximate based on window height)
+        const vhDelta = (deltaY / window.innerHeight) * 100;
+        // Dragging down reduces height (since it's bottom-up), dragging up increases? 
+        // Actually: Dragging DOWN (positive delta) moves top edge DOWN -> DECREASES height.
+        // Dragging UP (negative delta) moves top edge UP -> INCREASES height.
+        const newHeight = sheetStartHeight.current - vhDelta;
+
+        // Clamp between 25vh and 90vh
+        if (newHeight >= 25 && newHeight <= 90) {
+            setMobileSheetHeight(newHeight);
+        }
+    };
+
 
 
     const checkSelection = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
@@ -484,14 +509,25 @@ const NotesPage: React.FC = () => {
     };
 
     // --- Manual Sidebar Suggestion Logic (Legacy/Fallback) ---
-    const getLastWord = (text: string, index: number) => {
+    const getWordUnderCursor = (text: string, index: number) => {
         if (!text) return '';
-        const textBefore = text.slice(0, index);
-        const match = textBefore.match(/([a-zA-Z']+)$/);
-        return match ? match[1] : '';
+
+        let start = index;
+        // Look back
+        while (start > 0 && /[a-zA-Z']/.test(text[start - 1])) {
+            start--;
+        }
+
+        let end = index;
+        // Look forward
+        while (end < text.length && /[a-zA-Z']/.test(text[end])) {
+            end++;
+        }
+
+        return text.slice(start, end);
     };
 
-    const currentWord = activeNote ? getLastWord(activeNote.content, cursorIndex) : '';
+    const currentWord = activeNote ? getWordUnderCursor(activeNote.content, cursorIndex) : '';
 
     const getRhymeSuggestions = (word: string) => {
         if (aiRhymes.length > 0 && word === currentWord) return aiRhymes;
@@ -658,13 +694,12 @@ const NotesPage: React.FC = () => {
                 </div>
 
                 {/* Mobile Bottom Control Bar */}
-                <div className="lg:hidden absolute bottom-0 left-0 right-0 z-[45] bg-[#080808]/95 backdrop-blur border-t border-neutral-800 pb-[env(safe-area-inset-bottom)]">
+                <div className="lg:hidden absolute bottom-0 left-0 right-0 z-[48] bg-black/80 backdrop-blur-2xl border-t border-white/10 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
                     <div className="flex flex-col">
                         {/* Font Size Row (Expanded) */}
                         {isSizeExpanded && (
-                            <div className="flex items-center justify-between p-3 bg-neutral-900/50 border-b border-neutral-800 animate-in slide-in-from-bottom-2">
-                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest px-1">Text Size</span>
-                                <div className="flex items-center gap-1.5 bg-neutral-800 rounded-lg p-1 mr-1">
+                            <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] p-2 z-[60] animate-in slide-in-from-bottom-5 fade-in duration-200">
+                                <div className="flex items-center gap-3">
                                     <button
                                         onClick={() => setTextSize(prev => prev === 'xs' ? 'xs' : prev === 'sm' ? 'xs' : prev === 'base' ? 'sm' : 'base')}
                                         className={`p-2 rounded ${textSize === 'xs' ? 'text-neutral-600' : 'text-white hover:bg-white/10'}`}
@@ -689,13 +724,15 @@ const NotesPage: React.FC = () => {
                             </div>
                         )}
 
-                        <div className="h-16 flex items-center px-4 gap-4 justify-around">
+                        <div className="h-20 flex items-center px-6 gap-8 justify-around">
                             <button
                                 onClick={() => { setIsSizeExpanded(!isSizeExpanded); setMobileAssistantOpen(false); }}
-                                className={`flex flex-col items-center gap-1 transition-all ${isSizeExpanded ? 'text-primary' : 'text-neutral-500 hover:text-white'}`}
+                                className={`group flex flex-col items-center gap-1.5 transition-all p-2 active:scale-90 ${isSizeExpanded ? 'text-primary' : 'text-neutral-400 hover:text-white'}`}
                             >
-                                <Type size={20} />
-                                <span className="text-[10px] font-bold uppercase tracking-tight">Size</span>
+                                <div className={`p-1.5 rounded-xl transition-all ${isSizeExpanded ? 'bg-primary/20 ring-1 ring-primary/50' : 'bg-transparent'}`}>
+                                    <Type size={22} className={isSizeExpanded ? "stroke-[2.5px]" : "stroke-2"} />
+                                </div>
+                                <span className={`text-[10px] uppercase tracking-wide font-bold ${isSizeExpanded ? 'text-white' : ''}`}>Size</span>
                             </button>
 
                             <button
@@ -703,18 +740,22 @@ const NotesPage: React.FC = () => {
                                     setMobileAssistantOpen(!isMobileAssistantOpen);
                                     setIsSizeExpanded(false);
                                 }}
-                                className={`flex flex-col items-center gap-1 transition-all ${isMobileAssistantOpen ? 'text-primary' : 'text-neutral-500 hover:text-white'}`}
+                                className={`group flex flex-col items-center gap-1.5 transition-all p-2 active:scale-90 ${isMobileAssistantOpen ? 'text-primary' : 'text-neutral-400 hover:text-white'}`}
                             >
-                                <Sparkles size={20} />
-                                <span className="text-[10px] font-bold uppercase tracking-tight">Assistant</span>
+                                <div className={`p-1.5 rounded-xl transition-all ${isMobileAssistantOpen ? 'bg-primary/20 ring-1 ring-primary/50' : 'bg-transparent'}`}>
+                                    <Sparkles size={22} className={isMobileAssistantOpen ? "stroke-[2.5px]" : "stroke-2"} />
+                                </div>
+                                <span className={`text-[10px] uppercase tracking-wide font-bold ${isMobileAssistantOpen ? 'text-white' : ''}`}>Assistant</span>
                             </button>
 
                             <button
                                 onClick={() => setRhymeMode(!rhymeMode)}
-                                className={`flex flex-col items-center gap-1 transition-all ${rhymeMode ? 'text-primary' : 'text-neutral-500 hover:text-white'}`}
+                                className={`group flex flex-col items-center gap-1.5 transition-all p-2 active:scale-90 ${rhymeMode ? 'text-primary' : 'text-neutral-400 hover:text-white'}`}
                             >
-                                <Highlighter size={20} />
-                                <span className="text-[10px] font-bold uppercase tracking-tight">Highlights</span>
+                                <div className={`p-1.5 rounded-xl transition-all ${rhymeMode ? 'bg-primary/20 ring-1 ring-primary/50' : 'bg-transparent'}`}>
+                                    <Highlighter size={22} className={rhymeMode ? "stroke-[2.5px]" : "stroke-2"} />
+                                </div>
+                                <span className={`text-[10px] uppercase tracking-wide font-bold ${rhymeMode ? 'text-white' : ''}`}>Highlights</span>
                             </button>
                         </div>
                     </div>
@@ -722,14 +763,23 @@ const NotesPage: React.FC = () => {
 
                 {/* Mobile Assistant Sheet */}
                 {isMobileAssistantOpen && (
-                    <div className="lg:hidden absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[50] bg-[#0c0c0c] border-t border-white/10 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col h-[45vh] animate-in slide-in-from-bottom-full duration-300">
+                    <div
+                        style={{ height: `${mobileSheetHeight}vh` }}
+                        className="lg:hidden absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[50] bg-[#0c0c0c] border-t border-white/10 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col animate-in slide-in-from-bottom-full duration-300 transition-[height] ease-out will-change-[height]"
+                    >
                         {/* Header & Drag Handle */}
                         <div className="w-full flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/5 backdrop-blur-xl rounded-t-3xl relative shrink-0">
                             {/* Invisible spacer for balance */}
                             <div className="w-8"></div>
 
                             {/* Drag Handle */}
-                            <div className="w-12 h-1 bg-white/20 rounded-full" onClick={() => setMobileAssistantOpen(false)}></div>
+                            <div
+                                className="w-20 h-6 -my-3 flex items-center justify-center cursor-grab active:cursor-grabbing"
+                                onTouchStart={handleSheetDragStart}
+                                onTouchMove={handleSheetDragMove}
+                            >
+                                <div className="w-12 h-1 bg-white/20 rounded-full"></div>
+                            </div>
 
                             {/* Close Button */}
                             <button
@@ -746,7 +796,7 @@ const NotesPage: React.FC = () => {
                                 onClick={() => setMobileAssistantTab('rhymes')}
                                 className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative ${mobileAssistantTab === 'rhymes' ? 'text-primary' : 'text-neutral-500'}`}
                             >
-                                <Brain size={14} /> Rhymz
+                                <Brain size={14} /> Rhymes
                                 {mobileAssistantTab === 'rhymes' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full"></div>}
                             </button>
                             <button
@@ -852,7 +902,7 @@ const NotesPage: React.FC = () => {
                         onClick={() => setAssistantTab('rhymes')}
                         className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${assistantTab === 'rhymes' ? 'text-primary bg-primary/5 border-b-2 border-primary' : 'text-neutral-500 hover:text-white'}`}
                     >
-                        <Brain size={14} /> Rhymz
+                        <Brain size={14} /> Rhymes
                     </button>
                     <button
                         onClick={() => setAssistantTab('chat')}

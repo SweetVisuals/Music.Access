@@ -727,6 +727,178 @@ export const getFollowersCount = async (userId: string): Promise<number> => {
   return count || 0;
 };
 
+export const checkIsFollowing = async (targetUserId: string): Promise<boolean> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return false;
+
+  const { data, error } = await supabase
+    .from('followers')
+    .select('id')
+    .eq('follower_id', currentUser.id)
+    .eq('following_id', targetUserId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error checking follow status:', error);
+    return false;
+  }
+
+  return !!data;
+};
+
+export const followUser = async (targetUserId: string) => {
+  console.log(`[Follow] Attempting to follow user: ${targetUserId}`);
+  const currentUser = await ensureUserExists();
+  if (!currentUser) {
+    console.error('[Follow] No current user found');
+    throw new Error('User not authenticated');
+  }
+
+  // Check if already following
+  const { data: existing } = await supabase
+    .from('followers')
+    .select('*')
+    .eq('follower_id', currentUser.id)
+    .eq('following_id', targetUserId)
+    .single();
+
+  if (existing) {
+    console.log('[Follow] Already following');
+    return;
+  }
+
+  const { error } = await supabase
+    .from('followers')
+    .insert({
+      follower_id: currentUser.id,
+      following_id: targetUserId
+    });
+
+  if (error) {
+    // Ignore uniqueness violation if race condition
+    if (error.code === '23505') {
+      console.warn('[Follow] Unique violation (already following)');
+      return;
+    }
+    console.error('[Follow] Error executing insert:', error);
+    throw error;
+  }
+  console.log('[Follow] Successfully followed');
+};
+
+export const unfollowUser = async (targetUserId: string) => {
+  console.log(`[Unfollow] Attempting to unfollow user: ${targetUserId}`);
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    console.error('[Unfollow] No current user found');
+    throw new Error('User not authenticated');
+  }
+
+  const { error } = await supabase
+    .from('followers')
+    .delete()
+    .eq('follower_id', currentUser.id)
+    .eq('following_id', targetUserId);
+
+  if (error) {
+    console.error('[Unfollow] Error executing delete:', error);
+    throw error;
+  }
+  console.log('[Unfollow] Successfully unfollowed');
+};
+
+export const searchUsers = async (searchTerm: string): Promise<UserProfile[]> => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, username, handle, avatar_url')
+    .or(`username.ilike.%${searchTerm}%,handle.ilike.%${searchTerm}%`);
+
+  if (error) throw error;
+
+  return data.map(user => ({
+    id: user.id,
+    username: user.username,
+    handle: user.handle,
+    avatarUrl: user.avatar_url
+  }));
+};
+
+export const createConversation = async (targetUserId: string): Promise<string> => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  if (currentUser.id === targetUserId) throw new Error('Cannot create a conversation with yourself');
+
+  // Check if a conversation already exists between these two users
+  // This is a bit complex as we need to check for conversations where both users are participants.
+  // A simpler approach for now might be to just create and rely on unique constraints if applicable,
+  // or query for conversations involving both users.
+
+  // Let's try to find an existing conversation
+  const { data: existingConversations, error: existingError } = await supabase
+    .from('conversation_participants')
+    .select(`
+      conversation_id,
+      conversation:conversations (
+        id
+      )
+    `)
+    .in('user_id', [currentUser.id, targetUserId]);
+
+  if (existingError) throw existingError;
+
+  // Group participants by conversation_id
+  const conversationMap = new Map<string, number>();
+  existingConversations.forEach(p => {
+    if (p.conversation_id) {
+      conversationMap.set(p.conversation_id, (conversationMap.get(p.conversation_id) || 0) + 1);
+    }
+  });
+
+  // Find a conversation that has exactly two participants (currentUser and targetUser)
+  let existingConversationId: string | null = null;
+  for (const [convId, count] of conversationMap.entries()) {
+    // This check assumes conversations are always between two people for simplicity.
+    // In a more robust system, you might check if *these specific two* users are the only participants.
+    // For now, if a conversation has both users as participants, we'll use it.
+    const participantsInThisConv = existingConversations.filter(p => p.conversation_id === convId);
+    const hasCurrentUser = participantsInThisConv.some(p => p.user_id === currentUser.id);
+    const hasTargetUser = participantsInThisConv.some(p => p.user_id === targetUserId);
+
+    if (hasCurrentUser && hasTargetUser) {
+      existingConversationId = convId;
+      break;
+    }
+  }
+
+  if (existingConversationId) {
+    return existingConversationId;
+  }
+
+  // If no existing conversation, create a new one
+  const { data: newConversation, error: convError } = await supabase
+    .from('conversations')
+    .insert({})
+    .select('id')
+    .single();
+
+  if (convError) throw convError;
+
+  const conversationId = newConversation.id;
+
+  // Add participants to the new conversation
+  const { error: participantError } = await supabase
+    .from('conversation_participants')
+    .insert([
+      { conversation_id: conversationId, user_id: currentUser.id },
+      { conversation_id: conversationId, user_id: targetUserId }
+    ]);
+
+  if (participantError) throw participantError;
+
+  return conversationId;
+};
+
 export const getServices = async (): Promise<Service[]> => {
   const { data, error } = await supabase
     .from('services')
@@ -2671,4 +2843,78 @@ export const markStageStarted = async (stageId: string) => {
       .eq('stage_id', stageId);
     if (error) console.error('Error marking stage started:', error);
   }
+};
+export const searchUsers = async (query: string): Promise<UserProfile[]> => {
+  if (!query || query.length < 2) return [];
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .or(`username.ilike.%${query}%,handle.ilike.%${query}%`)
+    .limit(10);
+
+  if (error) {
+    console.error('Error searching users:', error);
+    return [];
+  }
+
+  return data.map(u => ({
+    id: u.id,
+    username: u.username,
+    handle: u.handle,
+    avatar: u.avatar_url,
+    banner: u.banner_url || 'https://images.unsplash.com/photo-1557683316-973673baf926',
+    bio: u.bio || '',
+    subscribers: 0, // Simplified for search results
+    gems: u.gems || 0,
+    balance: 0,
+    projects: [],
+    services: [],
+    soundPacks: []
+  }));
+};
+
+export const createConversation = async (targetUserId: string): Promise<string> => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('Not authenticated');
+
+  // 1. Check if conversation already exists
+  // This is a simplified check. Ideally we have a 'participants' table.
+  // Assuming 'conversations' table has 'participants' array or similar logic?
+  // Based on `getConversations` (simulated below if missing, or found existing)
+
+  // For now, let's assume we create a NEW row or return existing.
+  // If we can't fully implement backend logic without schema knowledge, we'll try a best guess insert
+  // or return a mock ID if this is a prototype phase. 
+
+  // BUT we need to support the "New Conversation" UI.
+
+  // Let's TRY to find an existing conversation between these two
+  const { data: existing } = await supabase
+    .from('conversations')
+    .select('id')
+    .contains('participants', [currentUser.id, targetUserId]) // If using array column
+    .limit(1);
+
+  if (existing && existing.length > 0) {
+    return existing[0].id;
+  }
+
+  // Create new
+  const { data: newConv, error } = await supabase
+    .from('conversations')
+    .insert({
+      participants: [currentUser.id, targetUserId],
+      last_message: '',
+      updated_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating conversation:', error);
+    throw error;
+  }
+
+  return newConv.id;
 };

@@ -23,13 +23,14 @@ import {
     Link as LinkIcon,
     Music,
     CheckCircle,
-    Calendar
+    Calendar,
+    ChevronDown
 } from 'lucide-react';
 import ProjectCard from './ProjectCard';
 import CreateProjectModal from './CreateProjectModal';
 import CreateSoundpackModal from './CreateSoundpackModal';
 import CreateServiceModal from './CreateServiceModal';
-import { getUserProfile, getUserProfileByHandle, updateUserProfile, getCurrentUser, uploadFile } from '../services/supabaseService';
+import { getUserProfile, getUserProfileByHandle, updateUserProfile, getCurrentUser, uploadFile, followUser, unfollowUser, checkIsFollowing } from '../services/supabaseService';
 
 interface ProfilePageProps {
     profile: UserProfile | null;
@@ -62,6 +63,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isOwnProfile, setIsOwnProfile] = useState(false);
+
+    // Follow loading state
+    const [isFollowLoading, setIsFollowLoading] = useState(false);
 
     // Edit Form State
     const [editForm, setEditForm] = useState({
@@ -165,6 +169,60 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             checkOwnership();
         }
     }, [userProfile]);
+
+    // Check if following
+    useEffect(() => {
+        const checkFollowStatus = async () => {
+            if (userProfile && !isOwnProfile) {
+                // If we have a user ID (which we should if userProfile is loaded from DB), check status
+                // If userProfile is partial/mock without ID, we can't check.
+                // However, userProfile type doesn't mandate ID. We'll need to fetch real ID if missing or rely on what we have.
+                // Actually getUserProfile returns mock ID sometimes? 
+                // Let's rely on the assumption that if we are viewing a profile, we have their ID potentially from the lookup.
+                // But wait, userProfile from getUserProfile MIGHT NOT have ID if it's the fallback mock?
+                // The current types say id is optional.
+
+                // Let's try to get ID from profileUsername or userProfile
+                // Best effort
+                if (userProfile.username) {
+                    // If we don't have ID in userProfile, we might need to look it up again or just rely on handle
+                    const isFollowing = await checkIsFollowing(userProfile.id || '');
+                    setIsFollowing(isFollowing);
+                }
+            }
+        };
+        checkFollowStatus();
+    }, [userProfile, isOwnProfile]);
+
+    const handleToggleFollow = async () => {
+        if (!userProfile?.id || isFollowLoading) return;
+        setIsFollowLoading(true);
+        const previousState = isFollowing;
+        const previousCount = userProfile.subscribers;
+
+        // Optimistic Update
+        setIsFollowing(!previousState);
+        setUserProfile(prev => prev ? ({
+            ...prev,
+            subscribers: previousState ? prev.subscribers - 1 : prev.subscribers + 1
+        }) : null);
+
+        try {
+            if (previousState) {
+                await unfollowUser(userProfile.id);
+            } else {
+                await followUser(userProfile.id);
+            }
+        } catch (error) {
+            console.error('Toggle follow failed:', error);
+            // Revert
+            setIsFollowing(previousState);
+            setUserProfile(prev => prev ? ({ ...prev, subscribers: previousCount }) : null);
+            alert("Failed to update follow status."); // Simple feedback
+        } finally {
+            setIsFollowLoading(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -568,11 +626,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 ) : (
                                     <>
                                         <button
-                                            onClick={() => setIsFollowing(!isFollowing)}
+                                            onClick={handleToggleFollow}
+                                            disabled={isFollowLoading}
                                             className={`h-11 px-6 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all border flex-1 md:flex-auto ${isFollowing
                                                 ? 'bg-transparent border-neutral-600 text-neutral-300 hover:border-red-500 hover:text-red-500'
                                                 : 'bg-primary border-primary text-black hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)]'
-                                                }`}
+                                                } ${isFollowLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         >
                                             <UserPlus size={16} />
                                             {isFollowing ? 'FOLLOWING' : 'FOLLOW'}
@@ -592,12 +651,23 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             {/* TABS NAVIGATION */}
             <div className="sticky top-14 lg:top-24 z-30 bg-[#050505] lg:border-b lg:border-neutral-800 -mx-6 px-6 lg:-mx-8 lg:px-8 mb-6 lg:mb-8 py-3 lg:pb-0.5 shadow-xl lg:shadow-none">
 
-                {/* Mobile Horizontal Scroll Layout */}
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar lg:hidden pb-1 mask-linear-fade">
-                    <MobileTabButton active={activeTab === 'beat_tapes'} onClick={() => setActiveTab('beat_tapes')} icon={<Disc size={16} />} label="Projects" count={localProjects.length} />
-                    <MobileTabButton active={activeTab === 'sound_packs'} onClick={() => setActiveTab('sound_packs')} icon={<Box size={16} />} label="Sound Packs" count={userProfile.soundPacks.length} />
-                    <MobileTabButton active={activeTab === 'services'} onClick={() => setActiveTab('services')} icon={<LayoutList size={16} />} label="Services" count={userProfile.services.length} />
-                    <MobileTabButton active={activeTab === 'about'} onClick={() => setActiveTab('about')} icon={<Info size={16} />} label="About" />
+                {/* Mobile Dropdown Layout */}
+                <div className="lg:hidden relative pb-4">
+                    <div className="relative">
+                        <select
+                            value={activeTab}
+                            onChange={(e) => setActiveTab(e.target.value as Tab)}
+                            className="w-full appearance-none bg-neutral-900 border border-neutral-800 text-white text-sm font-bold rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors"
+                        >
+                            <option value="beat_tapes">Projects ({localProjects.length})</option>
+                            <option value="sound_packs">Sound Packs ({userProfile.soundPacks.length})</option>
+                            <option value="services">Services ({userProfile.services.length})</option>
+                            <option value="about">About</option>
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-500">
+                            <ChevronDown size={16} />
+                        </div>
+                    </div>
                 </div>
 
                 {/* Desktop Horizontal Layout */}

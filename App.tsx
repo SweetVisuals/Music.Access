@@ -24,6 +24,7 @@ import { TermsPage, PrivacyPage } from './components/LegalPages';
 import InvoicesPage from './components/InvoicesPage';
 import RoadmapPage from './components/RoadmapPage';
 import NotLoggedInState from './components/NotLoggedInState';
+import { FloatingMessenger } from './components/FloatingMessenger';
 import { getProjects, getUserProfile, supabase, signOut, updateUserProfile, getCurrentUser } from './services/supabaseService';
 import { Project, FilterState, View, UserProfile } from './types';
 

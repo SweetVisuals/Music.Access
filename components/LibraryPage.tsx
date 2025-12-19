@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Project } from '../types';
-import { LayoutGrid, List, Heart, Disc, Clock, Play, Search, Plus } from 'lucide-react';
+import { LayoutGrid, List, Heart, Disc, Clock, Play, Search, Plus, ChevronDown } from 'lucide-react';
 import ProjectCard from './ProjectCard';
 import { getUserProfile } from '../services/supabaseService';
 
@@ -52,7 +52,24 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
 
                 <div className="w-full md:w-auto -mx-4 px-4 md:mx-0 md:px-0">
                     {/* Mobile: fit-row | Desktop: Segmented Control */}
-                    <div className="grid grid-cols-4 md:flex md:flex-nowrap md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 gap-1 md:gap-0">
+                    {/* Mobile: fit-row | Desktop: Segmented Control */}
+                    <div className="md:hidden relative w-full mb-1">
+                        <select
+                            value={activeTab}
+                            onChange={(e) => setActiveTab(e.target.value as any)}
+                            className="w-full appearance-none bg-neutral-900 border border-neutral-800 text-white text-xs font-bold rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors"
+                        >
+                            <option value="all">All Items</option>
+                            <option value="liked">Liked</option>
+                            <option value="purchased">Bought</option>
+                            <option value="playlists">Lists</option>
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-500">
+                            <ChevronDown size={14} />
+                        </div>
+                    </div>
+
+                    <div className="hidden md:flex md:flex-nowrap md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 gap-1 md:gap-0">
                         <TabButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} label="All" mobileCompact />
                         <TabButton active={activeTab === 'liked'} onClick={() => setActiveTab('liked')} label="Liked" icon={<Heart size={10} />} mobileCompact />
                         <TabButton active={activeTab === 'purchased'} onClick={() => setActiveTab('purchased')} label="Bought" icon={<Disc size={10} />} mobileCompact />

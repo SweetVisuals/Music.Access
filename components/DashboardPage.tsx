@@ -321,11 +321,27 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                         <h1 className="text-3xl font-black text-white mb-2">My Purchases</h1>
                         <p className="text-neutral-500 text-sm">Manage your orders, download files, and communicate with sellers.</p>
                     </div>
-                    <div className="flex bg-neutral-900 p-1 rounded-lg border border-neutral-800">
+                    <div className="flex bg-neutral-900 p-1 rounded-lg border border-neutral-800 hidden md:flex">
                         <TabButton active={activePurchaseTab === 'all'} onClick={() => setActivePurchaseTab('all')} label="All Items" />
                         <TabButton active={activePurchaseTab === 'beats'} onClick={() => setActivePurchaseTab('beats')} label="Beats & Projects" />
                         <TabButton active={activePurchaseTab === 'kits'} onClick={() => setActivePurchaseTab('kits')} label="Sound Packs" />
                         <TabButton active={activePurchaseTab === 'services'} onClick={() => setActivePurchaseTab('services')} label="Services & Orders" />
+                    </div>
+                    {/* Mobile Dropdown */}
+                    <div className="relative w-full md:hidden">
+                        <select
+                            value={activePurchaseTab}
+                            onChange={(e) => setActivePurchaseTab(e.target.value as any)}
+                            className="w-full appearance-none bg-neutral-900 border border-neutral-800 text-white text-sm font-bold rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors"
+                        >
+                            <option value="all">All Items</option>
+                            <option value="beats">Beats & Projects</option>
+                            <option value="kits">Sound Packs</option>
+                            <option value="services">Services & Orders</option>
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-500">
+                            <ChevronDown size={16} />
+                        </div>
                     </div>
                 </div>
 

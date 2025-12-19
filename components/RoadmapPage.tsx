@@ -131,30 +131,30 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
                         <p className="text-neutral-500 text-sm">Plan your career trajectory, manage campaigns, and track goals.</p>
                     </div>
 
-                    <div className="flex bg-neutral-900/50 p-1 rounded-lg border border-neutral-800">
+                    <div className="flex w-full md:w-auto bg-neutral-900/50 p-1 rounded-lg border border-neutral-800">
                         <button
                             onClick={() => setActiveTab('planner')}
-                            className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'planner' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                            className={`flex-1 md:flex-none justify-center px-3 md:px-4 py-2 rounded-md text-[10px] md:text-xs font-bold transition-all flex items-center gap-1.5 md:gap-2 ${activeTab === 'planner' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'
                                 }`}
                         >
                             <CalendarIcon size={14} />
-                            Calendar & Planner
+                            <span className="truncate">Planner</span>
                         </button>
                         <button
                             onClick={() => setActiveTab('strategy')}
-                            className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'strategy' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                            className={`flex-1 md:flex-none justify-center px-3 md:px-4 py-2 rounded-md text-[10px] md:text-xs font-bold transition-all flex items-center gap-1.5 md:gap-2 ${activeTab === 'strategy' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'
                                 }`}
                         >
                             <Layout size={14} />
-                            Strategy Roadmap
+                            <span className="truncate">Roadmap</span>
                         </button>
                         <button
                             onClick={() => setActiveTab('wizard')}
-                            className={`px-4 py-2 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'wizard' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                            className={`flex-1 md:flex-none justify-center px-3 md:px-4 py-2 rounded-md text-[10px] md:text-xs font-bold transition-all flex items-center gap-1.5 md:gap-2 ${activeTab === 'wizard' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'
                                 }`}
                         >
                             <PenTool size={14} />
-                            Roadmap Creator
+                            <span className="truncate">Creator</span>
                         </button>
                     </div>
                 </div>

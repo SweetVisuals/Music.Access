@@ -863,7 +863,7 @@ const NotesPage: React.FC = () => {
     return (
         <div className={`
             w-full max-w-[1600px] mx-auto animate-in fade-in duration-500 flex flex-col overflow-hidden
-            fixed inset-x-0 bottom-0 top-16 z-30 bg-[#050505] lg:relative lg:top-0 lg:h-[calc(100vh_-_8rem)] lg:pt-4 lg:px-8 lg:bg-transparent
+            fixed inset-0 z-[60] bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-[calc(100vh_-_8rem)] lg:pt-4 lg:px-8 lg:bg-transparent
         `}>
             {/* Header - Desktop Only */}
             <div className={`
@@ -887,9 +887,9 @@ const NotesPage: React.FC = () => {
             <div className="flex-1 flex bg-[#0a0a0a] lg:border border-neutral-800 lg:rounded-xl overflow-hidden shadow-none lg:shadow-2xl relative">
                 {/* Sidebar */}
                 <div className={`
-                    absolute inset-y-0 left-0 z-50 w-full lg:w-64 border-r border-neutral-800 flex flex-col bg-[#080808] transition-transform duration-300
-                    ${isSidebarOpen ? 'translate-x-0 shadow-[20px_0_50px_rgba(0,0,0,0.8)]' : '-translate-x-full'}
-                    lg:relative lg:translate-x-0 lg:shadow-none
+                    absolute inset-0 z-[60] w-full lg:w-64 lg:static lg:border-r border-neutral-800 flex flex-col bg-black lg:bg-[#080808] transition-transform duration-300
+                    ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                    lg:translate-x-0
                 `}>
                     <div className="p-4 border-b border-neutral-800 flex items-center justify-between shrink-0">
                         <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">

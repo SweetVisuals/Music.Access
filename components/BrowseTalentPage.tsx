@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MOCK_TALENT } from '../constants';
 import { Verified, UserPlus, ChevronRight, Star, Music, Zap, MessageCircle } from 'lucide-react';
 import ProjectCard, { ProjectSkeleton } from './ProjectCard';
@@ -21,6 +22,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
     onPlayTrack,
     onTogglePlay
 }) => {
+    const navigate = useNavigate();
     const [talents, setTalents] = useState<TalentProfile[]>([]);
     const [services, setServices] = useState<Service[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
@@ -70,7 +72,11 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                         [...Array(4)].map((_, i) => <TalentSkeleton key={i} />)
                     ) : (
                         talents.map(talent => (
-                            <div key={talent.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-5 hover:border-neutral-600 transition-all group hover:-translate-y-1 flex flex-col h-full">
+                            <div
+                                key={talent.id}
+                                onClick={() => navigate(`/@${talent.handle}`)}
+                                className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-5 hover:border-neutral-600 transition-all group hover:-translate-y-1 flex flex-col h-full cursor-pointer"
+                            >
                                 <div className="flex-1">
                                     {/* Header: User Info & Top Right Role */}
                                     <div className="flex justify-between items-start mb-3">

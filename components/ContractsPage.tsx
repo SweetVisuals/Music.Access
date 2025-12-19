@@ -19,6 +19,7 @@ const ContractsPage: React.FC = () => {
     // Mobile Navigation State
     const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
     const [showMobileInfo, setShowMobileInfo] = useState(false);
+    const [filter, setFilter] = useState<'all' | 'service' | 'audio'>('all');
 
     // Load contracts on component mount
     useEffect(() => {
@@ -171,11 +172,45 @@ const ContractsPage: React.FC = () => {
                     <p className="text-neutral-500 text-xs lg:text-sm">Manage your service and audio contracts</p>
                 </div>
 
-                <div className="w-full md:w-auto overflow-x-auto pb-1 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
-                    <div className="flex bg-neutral-900 p-1 rounded-lg border border-neutral-800 min-w-max">
-                        <button className="px-3 lg:px-4 py-1.5 text-xs font-bold text-white bg-neutral-800 rounded shadow transition-colors">All Contracts</button>
-                        <button className="px-3 lg:px-4 py-1.5 text-xs font-bold text-neutral-500 hover:text-white transition-colors">Service</button>
-                        <button className="px-3 lg:px-4 py-1.5 text-xs font-bold text-neutral-500 hover:text-white transition-colors">Audio</button>
+                <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 no-scrollbar">
+                    {/* Mobile: Scrollable Chips | Desktop: Segmented Control */}
+                    <div className="flex md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 min-w-max gap-2 md:gap-0">
+                        <button
+                            onClick={() => setFilter('all')}
+                            className={`
+                            px-4 py-2 md:py-1.5 text-xs font-bold rounded-full md:rounded-md transition-all border
+                            ${filter === 'all'
+                                    ? 'bg-white text-black border-white md:bg-neutral-800 md:text-white md:border-transparent md:shadow'
+                                    : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:bg-neutral-800 hover:text-white md:bg-transparent md:border-transparent md:hover:bg-white/5'
+                                }
+                        `}
+                        >
+                            All Contracts
+                        </button>
+                        <button
+                            onClick={() => setFilter('service')}
+                            className={`
+                            px-4 py-2 md:py-1.5 text-xs font-bold rounded-full md:rounded-md transition-all border
+                            ${filter === 'service'
+                                    ? 'bg-white text-black border-white md:bg-neutral-800 md:text-white md:border-transparent md:shadow'
+                                    : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:bg-neutral-800 hover:text-white md:bg-transparent md:border-transparent md:hover:bg-white/5'
+                                }
+                        `}
+                        >
+                            Service
+                        </button>
+                        <button
+                            onClick={() => setFilter('audio')}
+                            className={`
+                            px-4 py-2 md:py-1.5 text-xs font-bold rounded-full md:rounded-md transition-all border
+                            ${filter === 'audio'
+                                    ? 'bg-white text-black border-white md:bg-neutral-800 md:text-white md:border-transparent md:shadow'
+                                    : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:bg-neutral-800 hover:text-white md:bg-transparent md:border-transparent md:hover:bg-white/5'
+                                }
+                        `}
+                        >
+                            Audio
+                        </button>
                     </div>
                 </div>
             </div>

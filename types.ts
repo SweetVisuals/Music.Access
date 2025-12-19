@@ -78,9 +78,11 @@ export interface SoundPack {
 }
 
 export interface UserProfile {
+  id?: string;
   username: string;
   handle: string;
   email?: string;
+  is_public?: boolean;
   location?: string;
   avatar: string;
   banner: string;

@@ -39,7 +39,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                     handle: profile.handle,
                     bio: profile.bio,
                     location: profile.location,
-                    website: profile.website
+                    website: profile.website,
+                    is_public: profile.is_public
                 });
                 setMessage({ type: 'success', text: 'Profile updated successfully!' });
 
@@ -142,6 +143,31 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                         >
                             {loading ? 'Saving...' : <><Save size={14} /> Save Changes</>}
                         </button>
+                    </div>
+                </section>
+
+                {/* Privacy Settings */}
+                <section className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden">
+                    <div className="p-6 border-b border-neutral-800 bg-neutral-900/30 flex items-center gap-3">
+                        <Lock size={18} className="text-purple-400" />
+                        <h2 className="text-sm font-bold text-white uppercase tracking-wider">Privacy & Visibility</h2>
+                    </div>
+                    <div className="p-8 space-y-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-sm font-bold text-white mb-1">Public Profile</h3>
+                                <p className="text-xs text-neutral-500">Allow your profile to be discovered in search and Browse Talent.</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={displayProfile?.is_public ?? true} // Default to true if undefined
+                                    onChange={(e) => setProfile({ ...displayProfile!, is_public: e.target.checked })}
+                                />
+                                <div className="w-11 h-6 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                        </div>
                     </div>
                 </section>
 

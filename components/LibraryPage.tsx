@@ -50,8 +50,9 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                     <p className="text-neutral-500 text-xs lg:text-sm">Your collection of beats, songs, and playlists.</p>
                 </div>
 
-                <div className="w-full md:w-auto overflow-x-auto pb-1 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
-                    <div className="flex bg-neutral-900 p-1 rounded-lg border border-neutral-800 min-w-max">
+                <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 no-scrollbar">
+                    {/* Mobile: Scrollable Chips | Desktop: Segmented Control */}
+                    <div className="flex md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 min-w-max gap-2 md:gap-0">
                         <TabButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} label="All" />
                         <TabButton active={activeTab === 'liked'} onClick={() => setActiveTab('liked')} label="Liked" icon={<Heart size={12} />} />
                         <TabButton active={activeTab === 'purchased'} onClick={() => setActiveTab('purchased')} label="Purchased" icon={<Disc size={12} />} />
@@ -134,10 +135,10 @@ const TabButton = ({ active, onClick, label, icon }: any) => (
     <button
         onClick={onClick}
         className={`
-            px-4 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 transition-all
+            px-4 py-2 md:py-1.5 rounded-full md:rounded-md text-xs font-bold flex items-center gap-2 transition-all border
             ${active
-                ? 'bg-neutral-800 text-white shadow'
-                : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/5'
+                ? 'bg-white text-black border-white md:bg-neutral-800 md:text-white md:border-transparent md:shadow'
+                : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:bg-neutral-800 hover:text-white md:bg-transparent md:border-transparent md:hover:bg-white/5'
             }
         `}
     >

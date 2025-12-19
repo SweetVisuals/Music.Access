@@ -396,6 +396,7 @@ export const updateUserProfile = async (userId: string, updates: Partial<UserPro
   if (updates.gems !== undefined) updateObj.gems = updates.gems;
   if (updates.balance !== undefined) updateObj.balance = updates.balance;
   if (updates.lastGemClaimDate !== undefined) updateObj.last_gem_claim_date = updates.lastGemClaimDate;
+  if (updates.is_public !== undefined) updateObj.is_public = updates.is_public;
 
   const { error } = await supabase
     .from('users')

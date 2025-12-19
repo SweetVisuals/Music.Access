@@ -657,7 +657,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 </div>
 
                 <div className="flex items-center gap-3 px-2">
-                    <div className="flex items-center bg-neutral-900 rounded-lg border border-white/5 p-0.5">
+                    <div className="hidden md:flex items-center bg-neutral-900 rounded-lg border border-white/5 p-0.5">
                         <button
                             onClick={() => setViewMode('grid')}
                             className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}

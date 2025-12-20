@@ -11,8 +11,8 @@ const MessagesPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // New Conversation Modal State
-    const [isNewMsgModalOpen, setIsNewMsgModalOpen] = useState(false);
+    // New Conversation State
+    const [isCreatingNew, setIsCreatingNew] = useState(false);
     const [userSearchQuery, setUserSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearchingUsers, setIsSearchingUsers] = useState(false);
@@ -107,7 +107,7 @@ const MessagesPage: React.FC = () => {
             const { createConversation } = await import('../services/supabaseService');
             const newConvId = await createConversation(targetUserId);
 
-            setIsNewMsgModalOpen(false);
+            setIsCreatingNew(false);
             setUserSearchQuery('');
             setSearchResults([]);
 
@@ -131,13 +131,16 @@ const MessagesPage: React.FC = () => {
             {/* List */}
             <div className={`
             w-full lg:w-80 flex-col bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden
-            ${activeId ? 'hidden lg:flex' : 'flex'}
+            ${(activeId || isCreatingNew) ? 'hidden lg:flex' : 'flex'}
         `}>
                 <div className="p-4 border-b border-neutral-800">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-bold text-white">Messages</h2>
                         <button
-                            onClick={() => setIsNewMsgModalOpen(true)}
+                            onClick={() => {
+                                setIsCreatingNew(true);
+                                setActiveId(null);
+                            }}
                             className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-neutral-300 hover:text-white transition-colors"
                             title="New Message"
                         >
@@ -165,7 +168,10 @@ const MessagesPage: React.FC = () => {
                     ) : filteredConversations.length > 0 ? filteredConversations.map(conv => (
                         <div
                             key={conv.id}
-                            onClick={() => setActiveId(conv.id)}
+                            onClick={() => {
+                                setActiveId(conv.id);
+                                setIsCreatingNew(false);
+                            }}
                             className={`p-4 flex items-center gap-3 border-b border-white/5 cursor-pointer hover:bg-white/5 transition-colors ${activeId === conv.id ? 'bg-white/5 border-l-2 border-l-primary' : ''}`}
                         >
                             <div className="relative">
@@ -184,7 +190,7 @@ const MessagesPage: React.FC = () => {
                         <div className="flex items-center justify-center py-8">
                             <div className="text-center">
                                 <p className="text-neutral-500 font-mono text-xs">No conversations found.</p>
-                                <button onClick={() => setIsNewMsgModalOpen(true)} className="text-xs text-primary mt-2 hover:underline">Start a new one</button>
+                                <button onClick={() => { setIsCreatingNew(true); setActiveId(null); }} className="text-xs text-primary mt-2 hover:underline">Start a new one</button>
                             </div>
                         </div>
                     )}
@@ -194,9 +200,66 @@ const MessagesPage: React.FC = () => {
             {/* Chat Area */}
             <div className={`
             flex-1 flex-col bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden
-            ${activeId ? 'flex' : 'hidden lg:flex'}
+            ${(activeId || isCreatingNew) ? 'flex' : 'hidden lg:flex'}
         `}>
-                {activeConv ? (
+                {isCreatingNew ? (
+                    // --- NEW CONVERSATION VIEW ---
+                    <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300">
+                        {/* Header: To Input */}
+                        <div className="h-16 border-b border-neutral-800 flex items-center px-4 bg-neutral-900/30 gap-3">
+                            <button
+                                onClick={() => setIsCreatingNew(false)}
+                                className="lg:hidden p-2 -ml-2 text-neutral-400 hover:text-white"
+                            >
+                                <ArrowLeft size={18} />
+                            </button>
+                            <span className="text-neutral-400 text-sm font-bold">To:</span>
+                            <div className="flex-1 relative">
+                                <input
+                                    autoFocus
+                                    value={userSearchQuery}
+                                    onChange={(e) => handleUserSearch(e.target.value)}
+                                    className="w-full bg-transparent border-none text-white text-sm focus:outline-none placeholder-neutral-600"
+                                    placeholder="Type a name or handle..."
+                                />
+                                {isSearchingUsers && (
+                                    <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Search Results */}
+                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                            {userSearchQuery.length > 1 && searchResults.length === 0 && !isSearchingUsers ? (
+                                <div className="text-center py-8 text-neutral-500 text-sm">No users found.</div>
+                            ) : searchResults.length > 0 ? (
+                                <div className="space-y-1">
+                                    {searchResults.map(user => (
+                                        <div
+                                            key={user.id}
+                                            onClick={() => handleStartConversation(user.id)}
+                                            className={`flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl cursor-pointer transition-colors group ${isStartingConversation ? 'opacity-50 pointer-events-none' : ''}`}
+                                        >
+                                            <img src={user.avatar} className="w-10 h-10 rounded-full object-cover group-hover:scale-105 transition-transform" />
+                                            <div className="flex-1">
+                                                <h4 className="text-sm font-bold text-white">{user.username}</h4>
+                                                <p className="text-xs text-neutral-500">@{user.handle}</p>
+                                            </div>
+                                            <ArrowLeft size={16} className="text-neutral-600 group-hover:text-primary rotate-180 transition-colors opacity-0 group-hover:opacity-100" />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full text-neutral-600 space-y-4">
+                                    <Search size={48} className="opacity-20" />
+                                    <p className="text-xs">Search for creators to start a conversation.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : activeConv ? (
                     <>
                         <div className="h-16 border-b border-neutral-800 flex items-center justify-between px-4 lg:px-6 bg-neutral-900/30 shrink-0">
                             <div className="flex items-center gap-3">
@@ -247,72 +310,12 @@ const MessagesPage: React.FC = () => {
                     <div className="flex-1 flex items-center justify-center text-neutral-500 flex-col">
                         <p>Select a conversation to start messaging</p>
                         <button
-                            onClick={() => setIsNewMsgModalOpen(true)}
-                            className="mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-sm text-white transition-colors"
-                        >
                             Start New Conversation
                         </button>
                     </div>
                 )}
-            </div>
-
-            {/* New Conversation Modal */}
-            {isNewMsgModalOpen && (
-                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        <div className="p-4 border-b border-neutral-800 flex items-center justify-between">
-                            <h3 className="text-lg font-bold text-white">New Message</h3>
-                            <button onClick={() => setIsNewMsgModalOpen(false)} className="text-neutral-500 hover:text-white"><ArrowLeft size={20} /></button>
-                        </div>
-                        <div className="p-4">
-                            <div className="relative mb-4">
-                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                <input
-                                    autoFocus
-                                    value={userSearchQuery}
-                                    onChange={(e) => handleUserSearch(e.target.value)}
-                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-primary/50"
-                                    placeholder="Search people..."
-                                />
-                            </div>
-
-                            <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
-                                {isSearchingUsers ? (
-                                    <div className="text-center py-4 text-neutral-500 text-sm">Searching...</div>
-                                ) : userSearchQuery.length > 1 && searchResults.length === 0 ? (
-                                    <div className="text-center py-4 text-neutral-500 text-sm">No users found.</div>
-                                ) : (
-                                    <div className="space-y-1">
-                                        {searchResults.map(user => (
-                                            <div
-                                                key={user.id}
-                                                onClick={() => handleStartConversation(user.id)}
-                                                className={`flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl cursor-pointer transition-colors ${isStartingConversation ? 'opacity-50 pointer-events-none' : ''}`}
-                                            >
-                                                <img src={user.avatar} className="w-10 h-10 rounded-full object-cover" />
-                                                <div className="flex-1">
-                                                    <h4 className="text-sm font-bold text-white">{user.username}</h4>
-                                                    <p className="text-xs text-neutral-500">@{user.handle}</p>
-                                                </div>
-                                                {isStartingConversation && (
-                                                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {!userSearchQuery && (
-                                    <div className="text-center py-8 text-neutral-600 text-xs">
-                                        Type a name or handle to find users.
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
+        </div >
     );
 };
 

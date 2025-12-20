@@ -9,9 +9,10 @@ interface MusicPlayerProps {
     isPlaying: boolean;
     togglePlay: () => void;
     currentView?: View;
+    onClose: () => void;
 }
 
-const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackId, isPlaying, togglePlay, currentView }) => {
+const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackId, isPlaying, togglePlay, currentView, onClose }) => {
     const [isMinimized, setIsMinimized] = useState(true);
 
     // --- Audio Logic ---
@@ -70,7 +71,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                 Background: Glassmorphism / Solid Black to blend with footer.
             */}
             <div
-                className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#050505] border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-transform duration-300 ${isMinimized ? 'translate-y-0' : 'translate-y-full'}`}
+                className={`lg:hidden fixed left-0 right-0 z-40 bg-[#050505] border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ${isMinimized ? (currentView === 'notes' ? 'bottom-24 translate-y-0' : 'bottom-0 translate-y-0') : 'bottom-0 translate-y-full'}`}
                 onClick={() => setIsMinimized(false)}
             >
                 {/* Progress Bar (Thin, Top) */}
@@ -81,7 +82,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                     ></div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] h-[4.5rem] box-content">
+                <div className="flex items-center justify-between p-3 pb-[env(safe-area-inset-bottom)] h-[4.5rem] box-content">
                     <div className="flex items-center gap-3 overflow-hidden flex-1">
                         {/* Producer Avatar (Circular) */}
                         <img
@@ -98,10 +99,10 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
 
                     <div className="flex items-center gap-3 shrink-0 pl-3">
                         <button
-                            onClick={(e) => { e.stopPropagation(); /* Favorite logic */ }}
+                            onClick={(e) => { e.stopPropagation(); onClose(); }}
                             className="text-neutral-500 hover:text-white p-2"
                         >
-                            <Heart size={20} />
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); togglePlay(); }}
@@ -128,8 +129,8 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                         <ChevronDown size={28} />
                     </button>
                     <span className="text-xs font-bold tracking-[0.2em] text-white/50 uppercase">Now Playing</span>
-                    <button className="text-white/80 p-2 hover:bg-white/10 rounded-full transition-colors">
-                        <MoreHorizontal size={24} />
+                    <button onClick={onClose} className="text-white/80 p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
                 </div>
 
@@ -268,7 +269,9 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                                 <div className="absolute top-0 left-0 h-full w-2/3 bg-neutral-500 group-hover:bg-primary transition-colors"></div>
                             </div>
                         </div>
-                        <button className="text-neutral-500 hover:text-white transition-colors p-2"><Maximize2 size={16} /></button>
+                        <button onClick={onClose} className="text-neutral-500 hover:text-white transition-colors p-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
                     </div>
 
                 </div>

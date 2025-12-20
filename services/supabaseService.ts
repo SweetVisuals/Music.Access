@@ -139,7 +139,10 @@ export const getProjects = async (): Promise<Project[]> => {
         track_number,
         note_id,
         status_tags,
-        assigned_file_id
+      assigned_file_id,
+        assigned_file:assets (
+          storage_path
+        )
       ),
       project_licenses (
         license:licenses (
@@ -183,15 +186,27 @@ export const getProjects = async (): Promise<Project[]> => {
     subGenre: project.sub_genre,
     type: project.type,
     tags: project.project_tags?.map((pt: any) => pt.tag?.name).filter(Boolean) || [],
-    tracks: project.tracks?.map((track: any) => ({
-      id: track.id,
-      title: track.title,
-      duration: track.duration_seconds,
-      trackNumber: track.track_number,
-      noteId: track.note_id,
-      statusTags: track.status_tags,
-      assignedFileId: track.assigned_file_id
-    })) || [],
+    tracks: project.tracks?.map((track: any) => {
+      // Generate Public URL if asset exists
+      let mp3Url = '';
+      if (track.assigned_file?.storage_path) {
+        const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(track.assigned_file.storage_path);
+        mp3Url = publicUrl;
+      }
+
+      return {
+        id: track.id,
+        title: track.title,
+        duration: track.duration_seconds,
+        trackNumber: track.track_number,
+        noteId: track.note_id,
+        statusTags: track.status_tags,
+        assignedFileId: track.assigned_file_id,
+        files: {
+          mp3: mp3Url
+        }
+      };
+    }) || [],
     description: project.description,
     licenses: project.project_licenses?.map((pl: any) => ({
       id: pl.license?.id,
@@ -831,50 +846,29 @@ export const createConversation = async (targetUserId: string): Promise<string> 
   if (currentUser.id === targetUserId) throw new Error('Cannot create a conversation with yourself');
 
   // Check if a conversation already exists between these two users
-  // This is a bit complex as we need to check for conversations where both users are participants.
-  // A simpler approach for now might be to just create and rely on unique constraints if applicable,
-  // or query for conversations involving both users.
-
-  // Let's try to find an existing conversation
   const { data: existingConversations, error: existingError } = await supabase
     .from('conversation_participants')
-    .select(`
-      conversation_id,
-      user_id,
-      conversation:conversations (
-        id
-      )
-    `)
-    .in('user_id', [currentUser.id, targetUserId]);
+    .select('conversation_id')
+    .eq('user_id', currentUser.id);
 
   if (existingError) throw existingError;
 
-  // Group participants by conversation_id
-  const conversationMap = new Map<string, number>();
-  existingConversations.forEach(p => {
-    if (p.conversation_id) {
-      conversationMap.set(p.conversation_id, (conversationMap.get(p.conversation_id) || 0) + 1);
+  if (existingConversations && existingConversations.length > 0) {
+    const conversationIds = existingConversations.map(c => c.conversation_id);
+
+    // Find if targetUser is also in any of these conversations
+    // We only want 1-on-1 conversations, but for simplicity we'll check for intersection
+    const { data: commonConversations, error: commonError } = await supabase
+      .from('conversation_participants')
+      .select('conversation_id')
+      .in('conversation_id', conversationIds)
+      .eq('user_id', targetUserId);
+
+    if (commonError) throw commonError;
+
+    if (commonConversations && commonConversations.length > 0) {
+      return commonConversations[0].conversation_id;
     }
-  });
-
-  // Find a conversation that has exactly two participants (currentUser and targetUser)
-  let existingConversationId: string | null = null;
-  for (const [convId, count] of conversationMap.entries()) {
-    // This check assumes conversations are always between two people for simplicity.
-    // In a more robust system, you might check if *these specific two* users are the only participants.
-    // For now, if a conversation has both users as participants, we'll use it.
-    const participantsInThisConv = existingConversations.filter(p => p.conversation_id === convId);
-    const hasCurrentUser = participantsInThisConv.some(p => p.user_id === currentUser.id);
-    const hasTargetUser = participantsInThisConv.some(p => p.user_id === targetUserId);
-
-    if (hasCurrentUser && hasTargetUser) {
-      existingConversationId = convId;
-      break;
-    }
-  }
-
-  if (existingConversationId) {
-    return existingConversationId;
   }
 
   // If no existing conversation, create a new one

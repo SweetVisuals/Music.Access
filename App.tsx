@@ -586,6 +586,11 @@ const App: React.FC = () => {
           isPlaying={isPlaying}
           togglePlay={handleTogglePlay}
           currentView={currentView}
+          onClose={() => {
+            setIsPlaying(false);
+            setCurrentProject(null);
+            setCurrentTrackId(null);
+          }}
         />
       </div>
     </CartProvider>

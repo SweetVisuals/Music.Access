@@ -345,8 +345,6 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         }
 
         if (onPlayTrack) {
-            // Create a temporary project context for the player
-            // Include all audio files in the same folder so next/prev might conceptually work
             const folderFiles = items.filter(i => i.parentId === item.parentId && i.type === 'audio');
 
             const tempProject: Project = {
@@ -363,9 +361,8 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                     id: f.id,
                     title: f.name,
                     duration: f.duration || 180,
-                    files: { mp3: f.src || '' } // Use the actual src (publicUrl)
+                    files: { mp3: f.src || '' } // Ensure src is populated
                 })),
-                // Mock other required fields
                 created: new Date().toISOString()
             };
 

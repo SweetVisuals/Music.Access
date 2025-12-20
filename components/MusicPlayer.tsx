@@ -119,7 +119,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                 </div>
 
                 {/* Header */}
-                <div className="relative z-10 flex justify-between items-center px-6 pt-12 pb-6">
+                <div className="relative z-10 flex justify-between items-center px-6 pt-6 pb-2">
                     <button onClick={() => setIsMinimized(true)} className="text-white/80 p-2 -ml-2 hover:bg-white/10 rounded-full transition-colors active:scale-95">
                         <ChevronDown size={28} />
                     </button>

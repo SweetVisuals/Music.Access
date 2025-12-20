@@ -65,50 +65,45 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
             />
 
             {/* --- MOBILE EMBEDDED BOTTOM BAR --- */}
-            {/* 
-                "Integrated seamlessly": Fixed at bottom.
-                Z-index: 40 (Below Sidebar & AuthModal z-50, but above content).
-                Background: Glassmorphism / Solid Black to blend with footer.
-            */}
             <div
-                className={`lg:hidden fixed left-0 right-0 z-40 bg-[#050505] border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-all duration-300 ${isMinimized ? (currentView === 'notes' ? 'bottom-24 translate-y-0' : 'bottom-0 translate-y-0') : 'bottom-0 translate-y-full'}`}
+                className={`lg:hidden fixed left-0 right-0 z-40 bg-[#050505]/90 backdrop-blur-md border-t border-white/5 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] transition-all duration-300 ${isMinimized ? (currentView === 'notes' ? 'bottom-20 translate-y-0' : 'bottom-0 translate-y-0') : 'bottom-0 translate-y-full opacity-0 pointer-events-none'}`}
                 onClick={() => setIsMinimized(false)}
             >
                 {/* Progress Bar (Thin, Top) */}
-                <div className="absolute top-0 left-0 w-full h-[2px] bg-white/5">
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-white/5">
                     <div
-                        className="h-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]"
+                        className="h-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.6)]"
                         style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
                     ></div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 pb-[env(safe-area-inset-bottom)] h-[4.5rem] box-content">
+                <div className="flex items-center justify-between px-4 pb-[env(safe-area-inset-bottom)] h-14 box-content">
                     <div className="flex items-center gap-3 overflow-hidden flex-1">
                         {/* Producer Avatar (Circular) */}
                         <img
                             src={displayImage}
                             alt="Producer"
-                            className="w-10 h-10 rounded-full border border-white/10 object-cover shrink-0"
+                            className="w-9 h-9 rounded-full border border-white/10 object-cover shrink-0"
                         />
 
                         <div className="flex flex-col min-w-0 justify-center">
                             <h4 className="text-sm font-bold text-white truncate leading-tight">{currentTrack.title}</h4>
-                            <p className="text-[10px] text-neutral-400 truncate leading-tight mt-0.5">{currentProject.producer}</p>
+                            <p className="text-[10px] text-neutral-400 truncate leading-tight opacity-70">{currentProject.producer}</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 shrink-0 pl-3">
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onClose(); }}
-                            className="text-neutral-500 hover:text-white p-2"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        </button>
+                    <div className="flex items-center gap-4 shrink-0 pl-3">
                         <button
                             onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                            className="w-10 h-10 flex items-center justify-center bg-white text-black rounded-full shadow-lg"
+                            className="w-8 h-8 flex items-center justify-center bg-white text-black rounded-full shadow-lg active:scale-95 transition-transform"
                         >
-                            {isPlaying ? <Pause fill="black" size={18} /> : <Play fill="black" size={18} className="ml-0.5" />}
+                            {isPlaying ? <Pause fill="black" size={14} /> : <Play fill="black" size={14} className="ml-0.5" />}
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onClose(); }}
+                            className="text-neutral-500 hover:text-white p-1"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
                     </div>
                 </div>
@@ -119,94 +114,79 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
 
                 {/* Background & Blur */}
                 <div className="absolute inset-0 z-0">
-                    <img src={displayImage} className="w-full h-full object-cover opacity-30 blur-3xl scale-125" />
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/90 to-black"></div>
+                    <img src={displayImage} className="w-full h-full object-cover opacity-40 blur-3xl scale-125 saturate-50" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/95 to-black"></div>
                 </div>
 
                 {/* Header */}
-                <div className="relative z-10 flex justify-between items-center p-6 mt-safe">
-                    <button onClick={() => setIsMinimized(true)} className="text-white/80 p-2 hover:bg-white/10 rounded-full transition-colors">
+                <div className="relative z-10 flex justify-between items-center px-6 pt-12 pb-6">
+                    <button onClick={() => setIsMinimized(true)} className="text-white/80 p-2 -ml-2 hover:bg-white/10 rounded-full transition-colors active:scale-95">
                         <ChevronDown size={28} />
                     </button>
-                    <span className="text-xs font-bold tracking-[0.2em] text-white/50 uppercase">Now Playing</span>
-                    <button onClick={onClose} className="text-white/80 p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <span className="text-[10px] font-bold tracking-[0.2em] text-white/40 uppercase">Now Playing</span>
+                    <button onClick={onClose} className="text-white/80 p-2 -mr-2 hover:bg-white/10 rounded-full transition-colors active:scale-95">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
                 </div>
 
                 {/* Main Content */}
-                <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 space-y-10">
-                    {/* Avatar (Large, Circular/Rounded for "User" focus) */}
-                    {/* User requested "profile picture". Large circle is standard for profile focus. */}
-                    <div className="w-64 h-64 rounded-full border-4 border-white/5 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)] overflow-hidden relative group">
+                <div className="relative z-10 flex-1 flex flex-col px-8 justify-evenly pb-10">
+
+                    {/* Artwork / Producer Avatar */}
+                    <div className="w-full aspect-square max-h-[350px] mx-auto rounded-full border-4 border-white/5 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.7)] overflow-hidden relative group">
                         <img
                             src={displayImage}
-                            className={`w-full h-full object-cover transition-transform duration-[20s] ease-linear ${isPlaying ? 'rotate-[360deg]' : ''}`} // Subtle rotation? Or keep static? Let's keep existing vinyl spin if playing? Or just static since it's a person? User said "integrated... fits perfectly". Spinning people is weird. Static image.
-                            style={{ animation: isPlaying ? 'spin 12s linear infinite' : 'none' }}
-                        />
-                        {/* Removing spin for avatar usually, but if "vinyl" style requested before... Let's keeping it static for "Avant-Garde" clean look if it's a person. */}
-                        {/* Actually, user said "Rather than... circular popup... embed it". 
-                            The Expanded view was already redesigned. I'll make it static to be safe, spinning profile pics is odd.
-                         */}
-                        <img
-                            src={displayImage}
-                            className="absolute inset-0 w-full h-full object-cover"
+                            className="w-full h-full object-cover"
                         />
                     </div>
 
-                    {/* Meta */}
-                    <div className="w-full text-center space-y-2">
-                        <h2 className="text-2xl font-black text-white leading-tight line-clamp-2">{currentTrack.title}</h2>
-                        <p className="text-lg text-primary/80 font-medium">{currentProject.producer}</p>
-                    </div>
-
-                    {/* Progress */}
-                    <div className="w-full space-y-3">
-                        <div
-                            className="h-2 bg-white/10 rounded-full relative overflow-hidden group cursor-pointer"
-                            onClick={(e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                const pct = (e.clientX - rect.left) / rect.width;
-                                if (audioRef.current) audioRef.current.currentTime = pct * (audioRef.current.duration || 1);
-                            }}
-                        >
-                            <div className="absolute top-0 left-0 h-full bg-primary rounded-full" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}></div>
+                    {/* Meta & Controls Wrapper */}
+                    <div className="space-y-8 mt-4">
+                        {/* Meta */}
+                        <div className="w-full text-center space-y-1.5">
+                            <h2 className="text-2xl font-black text-white leading-tight line-clamp-2">{currentTrack.title}</h2>
+                            <p className="text-sm text-primary font-bold tracking-wide">{currentProject.producer}</p>
                         </div>
-                        <div className="flex justify-between text-xs font-mono text-neutral-500 font-bold">
-                            <span>{formatTime(currentTime)}</span>
-                            <span>{formatTime(duration || currentTrack.duration || 0)}</span>
-                        </div>
-                    </div>
 
-                    {/* Controls */}
-                    <div className="flex items-center justify-between w-full max-w-[80%]">
-                        <button className="text-neutral-400 hover:text-white transition-colors"><Shuffle size={20} /></button>
-                        <button className="text-white hover:scale-110 transition-transform"><SkipBack fill="white" size={32} /></button>
-                        <button
-                            onClick={togglePlay}
-                            className="w-20 h-20 bg-primary text-black rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(var(--primary),0.4)] hover:scale-105 transition-all"
-                        >
-                            {isPlaying ? <Pause fill="black" size={32} /> : <Play fill="black" size={32} className="ml-1" />}
-                        </button>
-                        <button className="text-white hover:scale-110 transition-transform"><SkipForward fill="white" size={32} /></button>
-                        <button className="text-neutral-400 hover:text-white transition-colors"><Repeat size={20} /></button>
+                        {/* Scrubber */}
+                        <div className="w-full space-y-2">
+                            <div
+                                className="h-1.5 bg-white/10 rounded-full relative overflow-hidden group cursor-pointer touch-none"
+                                onClick={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const pct = (e.clientX - rect.left) / rect.width;
+                                    if (audioRef.current) audioRef.current.currentTime = pct * (audioRef.current.duration || 1);
+                                }}
+                            >
+                                <div className="absolute top-0 left-0 h-full bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}></div>
+                            </div>
+                            <div className="flex justify-between text-[10px] font-mono text-neutral-500 font-bold">
+                                <span>{formatTime(currentTime)}</span>
+                                <span>{formatTime(duration || currentTrack.duration || 0)}</span>
+                            </div>
+                        </div>
+
+                        {/* Playback Controls */}
+                        <div className="flex items-center justify-between w-full max-w-[90%] mx-auto">
+                            <button className="text-neutral-500 hover:text-white transition-colors active:scale-95"><Shuffle size={20} /></button>
+                            <button className="text-white hover:text-primary transition-colors active:scale-95"><SkipBack fill="white" size={28} /></button>
+                            <button
+                                onClick={togglePlay}
+                                className="w-16 h-16 bg-white text-black rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-105 active:scale-95 transition-all"
+                            >
+                                {isPlaying ? <Pause fill="black" size={28} /> : <Play fill="black" size={28} className="ml-1" />}
+                            </button>
+                            <button className="text-white hover:text-primary transition-colors active:scale-95"><SkipForward fill="white" size={28} /></button>
+                            <button className="text-neutral-500 hover:text-white transition-colors active:scale-95"><Repeat size={20} /></button>
+                        </div>
                     </div>
                 </div>
 
-                {/* Footer Tools */}
-                <div className="relative z-10 flex justify-between px-10 py-10 mb-safe">
-                    <button className="flex flex-col items-center gap-1 text-neutral-500 hover:text-white transition-colors">
-                        <ListMusic size={20} />
-                        <span className="text-[9px] font-bold uppercase tracking-wider">Queue</span>
-                    </button>
-                    <button className="flex flex-col items-center gap-1 text-neutral-500 hover:text-white transition-colors">
-                        <Heart size={20} />
-                        <span className="text-[9px] font-bold uppercase tracking-wider">Like</span>
-                    </button>
-                    <button className="flex flex-col items-center gap-1 text-neutral-500 hover:text-white transition-colors">
-                        <Share2 size={20} />
-                        <span className="text-[9px] font-bold uppercase tracking-wider">Share</span>
-                    </button>
+                {/* Footer Actions */}
+                <div className="relative z-10 flex justify-center gap-12 pb-12">
+                    <button className="text-neutral-500 hover:text-white transition-colors active:scale-95 p-2"><ListMusic size={22} /></button>
+                    <button className="text-neutral-500 hover:text-white transition-colors active:scale-95 p-2"><Heart size={22} /></button>
+                    <button className="text-neutral-500 hover:text-white transition-colors active:scale-95 p-2"><Share2 size={22} /></button>
                 </div>
             </div>
 

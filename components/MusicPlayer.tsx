@@ -134,8 +134,9 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
 
                     {/* Artwork / Producer Avatar */}
                     {/* AVANT-GARDE: Large Static Circle with "Halo" effect */}
-                    <div className="w-full max-w-[280px] aspect-square mx-auto rounded-full border border-white/10 shadow-[0_0_50px_rgba(255,255,255,0.05)] p-1.5 relative group">
+                    <div className="w-full max-w-[280px] aspect-square mx-auto rounded-full border border-white/10 shadow-[0_0_50px_rgba(255,255,255,0.05)] p-2 relative group mt-4">
                         <div className="absolute inset-0 rounded-full border border-white/5 animate-[spin_10s_linear_infinite] opacity-50"></div>
+                        <div className="absolute inset-0 rounded-full border-2 border-white/10 scale-105 opacity-20"></div>
                         <img
                             src={displayImage}
                             alt="Producer"

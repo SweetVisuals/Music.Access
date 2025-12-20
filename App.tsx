@@ -499,6 +499,7 @@ const App: React.FC = () => {
                 isPlaying={isPlaying}
                 onPlayTrack={handlePlayTrack}
                 onTogglePlay={handleTogglePlay}
+                userProfile={userProfile}
               />
             )}
 

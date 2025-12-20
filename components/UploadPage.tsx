@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { Project, Track } from '../types';
 import { uploadFile, deleteFile, getUserFiles, createFolder, updateAsset } from '../services/supabaseService';
-import { MOCK_PROJECTS } from '../constants';
+import { MOCK_PROJECTS, MOCK_USER_PROFILE } from '../constants';
 
 // --- Types ---
 type FileType = 'folder' | 'audio' | 'text' | 'image';
@@ -61,13 +61,14 @@ interface UploadPageProps {
     isPlaying?: boolean;
     currentTrackId?: string | null;
     currentProject?: Project | null;
+    userProfile?: any | null; // Typed as any to avoid import cycle if needed, or better UserProfile
 }
 
 // --- Initial Data ---
 // Start with empty array for production
 const INITIAL_ITEMS: FileSystemItem[] = [];
 
-const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPlaying, currentTrackId, currentProject }) => {
+const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPlaying, currentTrackId, currentProject, userProfile }) => {
     // File System State
     const [items, setItems] = useState<FileSystemItem[]>(INITIAL_ITEMS);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -347,10 +348,16 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         if (onPlayTrack) {
             const folderFiles = items.filter(i => i.parentId === item.parentId && i.type === 'audio');
 
+            // Use real user profile if available, otherwise mock
+            const producerName = userProfile?.username || userProfile?.handle || 'Me';
+            const producerAvatar = userProfile?.avatar || MOCK_USER_PROFILE.avatar;
+
             const tempProject: Project = {
                 id: 'upload_browser_proj',
                 title: 'Upload Browser',
-                producer: 'Local Files',
+                producer: producerName,
+                producerAvatar: producerAvatar,
+                coverImage: producerAvatar, // User avatar as cover for uploads
                 price: 0,
                 bpm: 0,
                 key: '-',

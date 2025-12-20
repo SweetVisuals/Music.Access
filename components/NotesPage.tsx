@@ -161,54 +161,7 @@ const analyzeRhymeScheme = (text: string, accent: 'US' | 'UK' = 'US') => {
     return { wordToGroup, groupToColor };
 };
 
-// --- Isolated Draggable FAB Component ---
-const DraggableFab = ({ onClick, isSizeExpanded }: { onClick: () => void, isSizeExpanded: boolean }) => {
-    const [fabPosition, setFabPosition] = useState({ x: 0, y: 0 });
-    const [isDragging, setIsDragging] = useState(false);
-    const dragStartPos = useRef({ x: 0, y: 0 });
-    const fabRef = useRef<HTMLButtonElement>(null);
-
-    const handleFabTouchStart = (e: React.TouchEvent) => {
-        const touch = e.touches[0];
-        dragStartPos.current = {
-            x: touch.clientX - fabPosition.x,
-            y: touch.clientY - fabPosition.y
-        };
-        setIsDragging(true);
-    };
-
-    const handleFabTouchMove = (e: React.TouchEvent) => {
-        if (!isDragging) return;
-        const touch = e.touches[0];
-        const nextX = touch.clientX - dragStartPos.current.x;
-        const nextY = touch.clientY - dragStartPos.current.y;
-        setFabPosition({ x: nextX, y: nextY });
-    };
-
-    const handleFabTouchEnd = () => {
-        setIsDragging(false);
-    };
-
-    return (
-        <button
-            ref={fabRef}
-            onClick={(e) => {
-                if (isDragging) return;
-                onClick();
-            }}
-            onTouchStart={handleFabTouchStart}
-            onTouchMove={handleFabTouchMove}
-            onTouchEnd={handleFabTouchEnd}
-            style={{
-                transform: `translate(${fabPosition.x}px, ${fabPosition.y + (isSizeExpanded ? -60 : 0)}px)`,
-                transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
-            }}
-            className="lg:hidden fixed right-6 bottom-28 w-14 h-14 bg-gradient-to-br from-primary via-primary to-primary/80 text-black rounded-full shadow-[0_0_25px_rgba(var(--primary-rgb),0.6)] border border-white/20 flex items-center justify-center z-[60] active:scale-90"
-        >
-            <Plus size={28} strokeWidth={2.5} />
-        </button>
-    );
-};
+// DraggableFab removed for cleaner UI integration
 
 // Standalone Component to prevent re-renders
 const MobileTitlePortal = ({
@@ -746,7 +699,19 @@ const NotesPage: React.FC = () => {
                             </div>
                         )}
 
+
                         <div className="h-20 flex items-center px-6 gap-8 justify-around">
+                            {/* NEW: Integrated Create Note Button */}
+                            <button
+                                onClick={handleCreateNote}
+                                className="group flex flex-col items-center gap-1.5 transition-all p-2 active:scale-90 text-neutral-400 hover:text-white"
+                            >
+                                <div className="p-1.5 rounded-xl transition-all bg-transparent group-active:bg-primary/20 group-active:ring-1 group-active:ring-primary/50">
+                                    <Plus size={22} className="stroke-2" />
+                                </div>
+                                <span className="text-[10px] uppercase tracking-wide font-bold">New</span>
+                            </button>
+
                             <button
                                 onClick={() => { setIsSizeExpanded(!isSizeExpanded); setMobileAssistantOpen(false); }}
                                 className={`group flex flex-col items-center gap-1.5 transition-all p-2 active:scale-90 ${isSizeExpanded ? 'text-primary' : 'text-neutral-400 hover:text-white'}`}
@@ -915,9 +880,9 @@ const NotesPage: React.FC = () => {
                     </div>
                 )}
 
-                {/* Restore Mobile FAB */}
+                {/* Restore Mobile FAB - Removed for Seamless Integration */}
                 {!isMobileAssistantOpen && !isSidebarOpen && !isSizeExpanded && (
-                    <DraggableFab onClick={handleCreateNote} isSizeExpanded={isSizeExpanded} />
+                    <div /> // Placeholder to cleaner diff, effectively removing FAB
                 )}
             </div>
 

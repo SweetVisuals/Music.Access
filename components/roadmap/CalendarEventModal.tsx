@@ -101,7 +101,7 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="w-full max-w-lg bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-200">
+            <div className="w-full max-w-lg bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-200 max-h-[85vh] flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between p-3 border-b border-neutral-800 bg-neutral-900/50">
                     <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -113,7 +113,7 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                 </div>
 
                 {/* Body */}
-                <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <div className="p-4 space-y-3 overflow-y-auto custom-scrollbar flex-1">
 
                     {/* Title */}
                     <div>

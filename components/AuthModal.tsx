@@ -92,9 +92,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-[480px] bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col relative">
-                
-                <button 
+            <div className="w-full max-w-[480px] bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl flex flex-col relative max-h-[90vh] overflow-hidden">
+
+                <button
                     onClick={onClose}
                     className="absolute top-4 right-4 p-2 text-neutral-500 hover:text-white transition-colors z-10"
                 >
@@ -106,17 +106,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
                     <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 text-primary mb-4 shadow-[0_0_15px_rgba(var(--primary),0.2)]">
                         <Terminal size={24} />
                     </div>
-                    
+
                     {/* Tabs */}
                     <div className="flex items-center gap-8 border-b border-neutral-800 w-full justify-center">
-                        <button 
+                        <button
                             onClick={() => switchMode('login')}
                             className={`pb-3 text-sm font-bold transition-all relative ${mode === 'login' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
                         >
                             Login
                             {mode === 'login' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_0_10px_rgb(var(--primary))]"></div>}
                         </button>
-                        <button 
+                        <button
                             onClick={() => switchMode('signup')}
                             className={`pb-3 text-sm font-bold transition-all relative ${mode === 'signup' ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
                         >
@@ -135,7 +135,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
                 )}
 
                 {/* Content Area */}
-                <div className="px-8 pb-8">
+                <div className="px-8 pb-8 flex-1 overflow-y-auto custom-scrollbar">
                     {mode === 'login' ? (
                         <div className="space-y-5 animate-in slide-in-from-bottom-4 duration-300">
                             <div className="space-y-4">
@@ -166,7 +166,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <button
                                 onClick={handleLogin}
                                 disabled={isLoading || !email || !password}
@@ -182,47 +182,47 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
                                     <div className="text-center mb-4">
                                         <h3 className="text-sm font-bold text-white">I am a...</h3>
                                     </div>
-                                    
+
                                     {/* Compact Role Grid */}
                                     <div className="space-y-2 mb-6">
-                                        <RoleCard 
-                                            icon={<Mic2 size={18} />} 
-                                            label="Artist" 
+                                        <RoleCard
+                                            icon={<Mic2 size={18} />}
+                                            label="Artist"
                                             desc="I need beats & services"
                                             active={selectedRole === 'artist'}
                                             onClick={() => setSelectedRole('artist')}
                                         />
-                                        <RoleCard 
-                                            icon={<Music size={18} />} 
-                                            label="Producer" 
+                                        <RoleCard
+                                            icon={<Music size={18} />}
+                                            label="Producer"
                                             desc="I sell beats & kits"
                                             active={selectedRole === 'producer'}
                                             onClick={() => setSelectedRole('producer')}
                                         />
-                                        <RoleCard 
-                                            icon={<Settings size={18} />} 
-                                            label="Engineer" 
+                                        <RoleCard
+                                            icon={<Settings size={18} />}
+                                            label="Engineer"
                                             desc="I provide mixing services"
                                             active={selectedRole === 'engineer'}
                                             onClick={() => setSelectedRole('engineer')}
                                         />
-                                        <RoleCard 
-                                            icon={<Briefcase size={18} />} 
-                                            label="Professional / Other" 
+                                        <RoleCard
+                                            icon={<Briefcase size={18} />}
+                                            label="Professional / Other"
                                             desc="Manager, Label, A&R"
                                             active={selectedRole === 'professional'}
                                             onClick={() => setSelectedRole('professional')}
                                         />
-                                        <RoleCard 
-                                            icon={<Headphones size={18} />} 
-                                            label="Listener" 
+                                        <RoleCard
+                                            icon={<Headphones size={18} />}
+                                            label="Listener"
                                             desc="I'm here to discover music"
                                             active={selectedRole === 'listener'}
                                             onClick={() => setSelectedRole('listener')}
                                         />
                                     </div>
-                                    
-                                    <button 
+
+                                    <button
                                         onClick={handleSignupNext}
                                         disabled={!selectedRole}
                                         className="w-full py-3 bg-white text-black font-bold rounded-lg text-xs hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide"
@@ -239,7 +239,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
                                             Setup Profile
                                         </span>
                                     </div>
-                                    
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <input className="bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none placeholder-neutral-600" placeholder="First Name" />
                                         <input className="bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none placeholder-neutral-600" placeholder="Last Name" />
@@ -269,7 +269,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
                                         type="password"
                                         placeholder="Password"
                                     />
-                                    
+
                                     <div className="pt-2">
                                         <button
                                             onClick={handleSignup}
@@ -293,12 +293,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
 };
 
 const RoleCard = ({ icon, label, desc, active, onClick }: any) => (
-    <div 
+    <div
         onClick={onClick}
         className={`
             flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-all group
-            ${active 
-                ? 'bg-primary/10 border-primary shadow-[inset_0_0_20px_rgba(var(--primary),0.1)]' 
+            ${active
+                ? 'bg-primary/10 border-primary shadow-[inset_0_0_20px_rgba(var(--primary),0.1)]'
                 : 'bg-neutral-900/50 border-neutral-800 hover:bg-neutral-800 hover:border-neutral-700'
             }
         `}

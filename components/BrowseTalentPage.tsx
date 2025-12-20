@@ -49,6 +49,29 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
         fetchData();
     }, []);
 
+    const handleFollow = async (e: React.MouseEvent, talent: TalentProfile) => {
+        e.stopPropagation(); // Prevent card click
+        if (talent.isFollowing) {
+            // Unfollow
+            // Optimistic Update
+            setTalents(prev => prev.map(t =>
+                t.id === talent.id
+                    ? { ...t, isFollowing: false, followers: (parseInt(t.followers) - 1).toString() }
+                    : t
+            ));
+            await import('../services/supabaseService').then(({ unfollowUser }) => unfollowUser(talent.id));
+        } else {
+            // Follow
+            // Optimistic Update
+            setTalents(prev => prev.map(t =>
+                t.id === talent.id
+                    ? { ...t, isFollowing: true, followers: (parseInt(t.followers) + 1).toString() }
+                    : t
+            ));
+            await import('../services/supabaseService').then(({ followUser }) => followUser(talent.id));
+        }
+    };
+
     return (
         <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
 
@@ -128,8 +151,14 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
 
                                 {/* Footer with symmetrical spacing (mt-4 / pt-4) */}
                                 <div className="flex items-center gap-2 pt-4 border-t border-neutral-800 mt-4">
-                                    <button className="flex-1 text-xs font-bold text-white flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary hover:text-black px-3 py-2 rounded-lg transition-colors border border-primary/20">
-                                        <UserPlus size={14} /> Follow
+                                    <button
+                                        onClick={(e) => handleFollow(e, talent)}
+                                        className={`flex-1 text-xs font-bold flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors border ${talent.isFollowing
+                                                ? 'bg-transparent border-neutral-700 text-neutral-400 hover:text-red-500 hover:border-red-900'
+                                                : 'text-white bg-primary/10 hover:bg-primary hover:text-black border-primary/20'
+                                            }`}
+                                    >
+                                        <UserPlus size={14} /> {talent.isFollowing ? 'Following' : 'Follow'}
                                     </button>
                                     <button className="text-neutral-400 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 px-3 py-2 rounded-lg transition-colors" title="Message">
                                         <MessageCircle size={14} />

@@ -16,6 +16,7 @@ const MessagesPage: React.FC = () => {
     const [userSearchQuery, setUserSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+    const [isStartingConversation, setIsStartingConversation] = useState(false);
 
     useEffect(() => {
         const fetchConversations = async () => {
@@ -100,6 +101,8 @@ const MessagesPage: React.FC = () => {
     };
 
     const handleStartConversation = async (targetUserId: string) => {
+        if (isStartingConversation) return;
+        setIsStartingConversation(true);
         try {
             const { createConversation } = await import('../services/supabaseService');
             const newConvId = await createConversation(targetUserId);
@@ -116,9 +119,10 @@ const MessagesPage: React.FC = () => {
             setActiveId(newConvId); // Select the new conversation
         } catch (e) {
             console.error("Failed to start conversation", e);
-            // Fallback: Just open it if it exists in list, or show error
+            alert("Failed to start conversation. Please try again.");
         } finally {
             setLoading(false);
+            setIsStartingConversation(false);
         }
     };
 
@@ -283,13 +287,16 @@ const MessagesPage: React.FC = () => {
                                             <div
                                                 key={user.id}
                                                 onClick={() => handleStartConversation(user.id)}
-                                                className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl cursor-pointer transition-colors"
+                                                className={`flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl cursor-pointer transition-colors ${isStartingConversation ? 'opacity-50 pointer-events-none' : ''}`}
                                             >
                                                 <img src={user.avatar} className="w-10 h-10 rounded-full object-cover" />
-                                                <div>
+                                                <div className="flex-1">
                                                     <h4 className="text-sm font-bold text-white">{user.username}</h4>
                                                     <p className="text-xs text-neutral-500">@{user.handle}</p>
                                                 </div>
+                                                {isStartingConversation && (
+                                                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>

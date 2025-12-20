@@ -997,7 +997,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 )}
                 {/* Upload Progress and Messages - Redesigned */}
                 {isUploading && (
-                    <div className="fixed bottom-6 right-6 z-50 w-96 bg-[#111] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300">
+                    <div className="fixed bottom-6 right-0 left-0 mx-4 md:left-auto md:mx-0 md:right-6 z-50 md:w-96 bg-[#111] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300">
                         <div className="p-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="relative">
@@ -1038,7 +1038,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 )}
 
                 {(uploadError || uploadSuccess) && !isUploading && (
-                    <div className="fixed bottom-6 right-6 z-50 w-96 animate-in slide-in-from-bottom-5 fade-in duration-300">
+                    <div className="fixed bottom-6 right-0 left-0 mx-4 md:left-auto md:mx-0 md:right-6 z-50 md:w-96 animate-in slide-in-from-bottom-5 fade-in duration-300">
                         {uploadError && (
                             <div className="bg-[#1a0505] border border-red-500/20 rounded-2xl shadow-2xl overflow-hidden">
                                 <div className="p-4 flex items-start gap-4">
@@ -1109,8 +1109,8 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
             {/* TEXT EDITOR MODAL */}
             {textEditorItem && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="w-full max-w-2xl bg-[#0a0a0a] border border-neutral-700 rounded-xl shadow-2xl flex flex-col max-h-[80vh]">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4 animate-in fade-in duration-200">
+                    <div className="w-full h-full md:h-auto md:max-w-2xl bg-[#0a0a0a] border-0 md:border border-neutral-700 rounded-none md:rounded-xl shadow-2xl flex flex-col max-h-none md:max-h-[80vh]">
                         <div className="flex items-center justify-between p-4 border-b border-white/10 bg-neutral-900/50">
                             <div className="flex items-center gap-2">
                                 <FileText size={16} className="text-primary" />

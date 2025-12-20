@@ -38,6 +38,7 @@ export interface Project {
   id: string;
   title: string;
   producer: string;
+  producerAvatar?: string;
   coverImage?: string; // Optional now
   price: number; // Display price (usually lowest license)
   bpm: number;

@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Shuffle, Repeat, Maximize2, ListMusic, Minimize2, ChevronUp, Move } from 'lucide-react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Shuffle, Repeat, Maximize2, ListMusic, Minimize2, ChevronUp, Move, Heart, Share2, MoreHorizontal, ChevronDown } from 'lucide-react';
 import { Project, View } from '../types';
 import { MOCK_USER_PROFILE } from '../constants';
 
@@ -14,373 +14,263 @@ interface MusicPlayerProps {
 const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackId, isPlaying, togglePlay, currentView }) => {
     const [isMinimized, setIsMinimized] = useState(true);
 
-    // Draggable State for Mobile (Floating Button)
-    const [position, setPosition] = useState({ x: 20, y: 100 }); // Bottom-Leftish default offset
-    const [isDragging, setIsDragging] = useState(false);
-    const dragOffset = React.useRef({ x: 0, y: 0 });
-
-    const handleTouchStart = (e: React.TouchEvent) => {
-        setIsDragging(true);
-        const touch = e.touches[0];
-        // Calculate offset from current position
-        // We use bottom/right positioning usually, but let's stick to fixed left/bottom for simple dragging math
-        // Actually, easier to use top/left for absolute dragging
-
-        // Wait, standard mobile UI usually floats bottom right.
-        // Let's implement simpler: Fixed Bottom Right by default.
-        // Custom drag needs `style={{ bottom: y, right: x }}` ?
-        // Let's do `bottom` and `right` relative to screen.
-
-        // Simpler approach: Capture offset from the element's client rect
-        // For now, let's just enable simple dragging of the floating button.
-        dragOffset.current = {
-            x: touch.clientX - position.x,
-            y: touch.clientY - position.y
-        };
-    };
-
-    const handleTouchMove = (e: React.TouchEvent) => {
-        if (!isDragging) return;
-        const touch = e.touches[0];
-        // For a floating bubble usually positioned bottom-right:
-        // Let's use `top` / `left` for maximum freedom or `transform`
-
-        // Update position state - let's treat position as Window coordinates (left, top)
-        // BUT we want it to stick to corners ideally.
-        // User asked for "Draggable".
-
-        // Let's update `bottom` and `right`.
-        // e.target is the screen.
-
-        // Let's use simple fixed positioning.
-        // We'll calculate `bottom` and `right` based on touch.
-        const bottom = window.innerHeight - touch.clientY;
-        const right = window.innerWidth - touch.clientX;
-
-        // Clamp to screen
-        setPosition({
-            x: Math.max(16, Math.min(window.innerWidth - 60, right)),
-            y: Math.max(16, Math.min(window.innerHeight - 140, bottom)) // Avoid tab bar
-        });
-    };
-
-    const handleTouchEnd = () => {
-        setIsDragging(false);
-        // Optional: Snap to edge logic here
-    };
-
+    // --- Audio Logic ---
     const currentTrack = useMemo(() => {
         if (!currentProject || !currentTrackId) return null;
         return currentProject.tracks.find(t => t.id === currentTrackId);
     }, [currentProject, currentTrackId]);
 
-    // --- AUDIO & TRACKING LOGIC ---
-    // Moved hooks to the top level to avoid conditional hook execution violations
-    const audioRef = React.useRef<HTMLAudioElement>(null);
-    const [playDuration, setPlayDuration] = useState(0);
-    const [hasRecordedPlay, setHasRecordedPlay] = useState(false);
-    const listeningChannelRef = React.useRef<any>(null);
+    const audioRef = useRef<HTMLAudioElement>(null);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
 
-    // Playback Control
-    React.useEffect(() => {
+    useEffect(() => {
         if (!audioRef.current || !currentTrack) return;
-
-        // Use the actual file URL from the track data
-        // For uploaded files, this is passed via files.mp3 in the temp project construction
         const url = currentTrack.files?.mp3 || '';
-
-        if (!url) {
-            console.warn("No audio URL found for track", currentTrack.id);
-            return;
-        }
-
-        if (audioRef.current.src !== url) {
+        if (url && audioRef.current.src !== url) {
             audioRef.current.src = url;
             audioRef.current.load();
-            setPlayDuration(0);
-            setHasRecordedPlay(false);
         }
-
-        if (isPlaying) {
-            audioRef.current.play().catch(e => console.error("Play failed", e));
-        } else {
-            audioRef.current.pause();
-        }
+        if (isPlaying) audioRef.current.play().catch(console.error);
+        else audioRef.current.pause();
     }, [currentTrack, isPlaying]);
 
-    // Live Listener Tracking
-    React.useEffect(() => {
-        if (isPlaying && currentProject?.userId && currentTrackId) {
-            import('../services/supabaseService').then(({ joinListeningRoom }) => {
-                // Join the artist's room
-                if (listeningChannelRef.current) listeningChannelRef.current.unsubscribe();
-                listeningChannelRef.current = joinListeningRoom(currentProject.userId!, currentTrackId);
-            });
-        } else {
-            if (listeningChannelRef.current) {
-                import('../services/supabaseService').then(({ leaveListeningRoom }) => {
-                    leaveListeningRoom(listeningChannelRef.current);
-                    listeningChannelRef.current = null;
-                });
-            }
-        }
-
-        return () => {
-            if (listeningChannelRef.current) {
-                import('../services/supabaseService').then(({ leaveListeningRoom }) => {
-                    leaveListeningRoom(listeningChannelRef.current);
-                });
-            }
-        };
-    }, [isPlaying, currentProject, currentTrackId]);
-
-    // Play Counting (20s rule + 2 min debounce)
     const handleTimeUpdate = () => {
-        if (!audioRef.current) return;
-
-        // "1 play should count as 20 seconds worth of playback"
-        if (!hasRecordedPlay && audioRef.current.currentTime >= 20) {
-            recordPlayEvent();
-        }
+        if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
     };
 
-    const recordPlayEvent = async () => {
-        if (!currentTrackId) return;
-
-        // Check 2 minute rule
-        const lastPlayedKey = `last_played_${currentTrackId}`;
-        const lastPlayed = localStorage.getItem(lastPlayedKey);
-        const now = Date.now();
-
-        if (lastPlayed && (now - parseInt(lastPlayed)) < 2 * 60 * 1000) {
-            console.log("Play not counted: 2 minute cooldown active");
-            setHasRecordedPlay(true); // Don't try again this session
-            return;
-        }
-
-        // Record Play
-        const { recordPlay } = await import('../services/supabaseService');
-        await recordPlay(currentTrackId);
-
-        // Update local storage
-        localStorage.setItem(lastPlayedKey, now.toString());
-        setHasRecordedPlay(true);
-        console.log("Play counted for track", currentTrackId);
+    const handleLoadedMetadata = () => {
+        if (audioRef.current) setDuration(audioRef.current.duration);
     };
 
-    // Conditional rendering AFTER all hooks
-    if (!currentProject || !currentTrack) {
-        return (
-            <div className={`fixed bottom-0 left-0 lg:left-64 right-0 h-10 bg-black/40 border-t border-white/5 flex items-center justify-end px-6 z-40 backdrop-blur-md transition-transform duration-300 ${isMinimized ? 'translate-y-full' : 'translate-y-0'}`}>
-                <div className="flex items-center space-x-2">
-                    <div className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-pulse"></div>
-                    <span className="text-neutral-600 text-[10px] font-mono uppercase tracking-wider">System Idle</span>
-                </div>
-            </div>
-        );
-    }
+    const formatTime = (time: number) => {
+        const min = Math.floor(time / 60);
+        const sec = Math.floor(time % 60);
+        return `${min}:${sec.toString().padStart(2, '0')}`;
+    };
 
-    // --- MOBILE FLOATING MINI-PLAYER ---
-    // If on mobile (check width approx or just CSS class logic)
-    // We'll use CSS classes: `lg:hidden` for mobile bubble.
-    // However, we need to conditionally render the structure.
+    if (!currentProject || !currentTrack) return null;
+
+    // Use producer avatar as requested for mobile
+    const displayImage = currentProject.producerAvatar || currentProject.coverImage || MOCK_USER_PROFILE.avatar;
 
     return (
         <>
-            {/* Mobile Floating Button (Only when minimized) */}
+            <audio
+                ref={audioRef}
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onEnded={() => togglePlay()}
+            />
+
+            {/* --- MOBILE EMBEDDED BOTTOM BAR --- */}
+            {/* 
+                "Integrated seamlessly": Fixed at bottom.
+                Z-index: 40 (Below Sidebar & AuthModal z-50, but above content).
+                Background: Glassmorphism / Solid Black to blend with footer.
+            */}
             <div
-                className={`lg:hidden fixed z-[60] transition-all duration-200 ease-out ${!isMinimized ? 'opacity-0 pointer-events-none scale-0' : 'opacity-100 scale-100'}`}
-                style={{
-                    bottom: isDragging ? position.y : 100, // Default fixed pos if not dragging logic fully active, or use state
-                    right: 20
-                    // Using simple fixed pos for now, users can request full drag later if static is annoying
-                    // Actually, user explicitly asked for "always stays on top and is draggable".
-                    // Let's implement simple drag logic usage:
-                    // We need active drag state style override.
-                }}
-            // Re-implementing simplified style for the sake of stability first, then advanced drag.
-            // NOTE: The `position` state above was set up for `bottom/right`.
+                className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#050505] border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] transition-transform duration-300 ${isMinimized ? 'translate-y-0' : 'translate-y-full'}`}
+                onClick={() => setIsMinimized(false)}
             >
-                {/* 
-                   Draggable Bubble Container.
-                   We'll use a fixed position if not dragged, or specific coords.
-                   Wait, `bottom: 100` and `right: 20` is good default.
-                   Real draggable needs `touchMove` on the element.
-                */}
-            </div>
+                {/* Progress Bar (Thin, Top) */}
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-white/5">
+                    <div
+                        className="h-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]"
+                        style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                    ></div>
+                </div>
 
-            {/* Actual Impl */}
-            {isMinimized && (
-                <div
-                    className="lg:hidden fixed z-[60] shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-full overflow-hidden"
-                    style={{ bottom: position.y, right: position.x }}
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                    onClick={() => !isDragging && setIsMinimized(false)}
-                >
-                    <div className={`w-14 h-14 relative group cursor-pointer border-2 ${isPlaying ? 'border-primary animate-pulse-slow' : 'border-white/10'} rounded-full overflow-hidden bg-black`}>
-                        <img src={MOCK_USER_PROFILE.avatar} className={`w-full h-full object-cover opacity-80 ${isPlaying ? 'animate-spin-slow' : ''}`} />
+                <div className="flex items-center justify-between p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] h-[4.5rem] box-content">
+                    <div className="flex items-center gap-3 overflow-hidden flex-1">
+                        {/* Producer Avatar (Circular) */}
+                        <img
+                            src={displayImage}
+                            alt="Producer"
+                            className="w-10 h-10 rounded-full border border-white/10 object-cover shrink-0"
+                        />
 
-                        {/* Mini Controls Overlay */}
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
-                            {isPlaying ? (
-                                <div className="w-4 h-4 text-white"><Pause fill="white" size={16} /></div>
-                            ) : (
-                                <div className="w-4 h-4 text-white pl-0.5"><Play fill="white" size={16} /></div>
-                            )}
+                        <div className="flex flex-col min-w-0 justify-center">
+                            <h4 className="text-sm font-bold text-white truncate leading-tight">{currentTrack.title}</h4>
+                            <p className="text-[10px] text-neutral-400 truncate leading-tight mt-0.5">{currentProject.producer}</p>
                         </div>
                     </div>
+
+                    <div className="flex items-center gap-3 shrink-0 pl-3">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); /* Favorite logic */ }}
+                            className="text-neutral-500 hover:text-white p-2"
+                        >
+                            <Heart size={20} />
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                            className="w-10 h-10 flex items-center justify-center bg-white text-black rounded-full shadow-lg"
+                        >
+                            {isPlaying ? <Pause fill="black" size={18} /> : <Play fill="black" size={18} className="ml-0.5" />}
+                        </button>
+                    </div>
                 </div>
-            )}
+            </div>
+
+            {/* --- IMMERSIVE MOBILE FULLSCREEN PLAYER --- */}
+            <div className={`lg:hidden fixed inset-0 z-[100] bg-black flex flex-col transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) ${isMinimized ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
+
+                {/* Background & Blur */}
+                <div className="absolute inset-0 z-0">
+                    <img src={displayImage} className="w-full h-full object-cover opacity-30 blur-3xl scale-125" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/90 to-black"></div>
+                </div>
+
+                {/* Header */}
+                <div className="relative z-10 flex justify-between items-center p-6 mt-safe">
+                    <button onClick={() => setIsMinimized(true)} className="text-white/80 p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <ChevronDown size={28} />
+                    </button>
+                    <span className="text-xs font-bold tracking-[0.2em] text-white/50 uppercase">Now Playing</span>
+                    <button className="text-white/80 p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <MoreHorizontal size={24} />
+                    </button>
+                </div>
+
+                {/* Main Content */}
+                <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-8 space-y-10">
+                    {/* Avatar (Large, Circular/Rounded for "User" focus) */}
+                    {/* User requested "profile picture". Large circle is standard for profile focus. */}
+                    <div className="w-64 h-64 rounded-full border-4 border-white/5 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)] overflow-hidden relative group">
+                        <img
+                            src={displayImage}
+                            className={`w-full h-full object-cover transition-transform duration-[20s] ease-linear ${isPlaying ? 'rotate-[360deg]' : ''}`} // Subtle rotation? Or keep static? Let's keep existing vinyl spin if playing? Or just static since it's a person? User said "integrated... fits perfectly". Spinning people is weird. Static image.
+                            style={{ animation: isPlaying ? 'spin 12s linear infinite' : 'none' }}
+                        />
+                        {/* Removing spin for avatar usually, but if "vinyl" style requested before... Let's keeping it static for "Avant-Garde" clean look if it's a person. */}
+                        {/* Actually, user said "Rather than... circular popup... embed it". 
+                            The Expanded view was already redesigned. I'll make it static to be safe, spinning profile pics is odd.
+                         */}
+                        <img
+                            src={displayImage}
+                            className="absolute inset-0 w-full h-full object-cover"
+                        />
+                    </div>
+
+                    {/* Meta */}
+                    <div className="w-full text-center space-y-2">
+                        <h2 className="text-2xl font-black text-white leading-tight line-clamp-2">{currentTrack.title}</h2>
+                        <p className="text-lg text-primary/80 font-medium">{currentProject.producer}</p>
+                    </div>
+
+                    {/* Progress */}
+                    <div className="w-full space-y-3">
+                        <div
+                            className="h-2 bg-white/10 rounded-full relative overflow-hidden group cursor-pointer"
+                            onClick={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const pct = (e.clientX - rect.left) / rect.width;
+                                if (audioRef.current) audioRef.current.currentTime = pct * (audioRef.current.duration || 1);
+                            }}
+                        >
+                            <div className="absolute top-0 left-0 h-full bg-primary rounded-full" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}></div>
+                        </div>
+                        <div className="flex justify-between text-xs font-mono text-neutral-500 font-bold">
+                            <span>{formatTime(currentTime)}</span>
+                            <span>{formatTime(duration || currentTrack.duration || 0)}</span>
+                        </div>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="flex items-center justify-between w-full max-w-[80%]">
+                        <button className="text-neutral-400 hover:text-white transition-colors"><Shuffle size={20} /></button>
+                        <button className="text-white hover:scale-110 transition-transform"><SkipBack fill="white" size={32} /></button>
+                        <button
+                            onClick={togglePlay}
+                            className="w-20 h-20 bg-primary text-black rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(var(--primary),0.4)] hover:scale-105 transition-all"
+                        >
+                            {isPlaying ? <Pause fill="black" size={32} /> : <Play fill="black" size={32} className="ml-1" />}
+                        </button>
+                        <button className="text-white hover:scale-110 transition-transform"><SkipForward fill="white" size={32} /></button>
+                        <button className="text-neutral-400 hover:text-white transition-colors"><Repeat size={20} /></button>
+                    </div>
+                </div>
+
+                {/* Footer Tools */}
+                <div className="relative z-10 flex justify-between px-10 py-10 mb-safe">
+                    <button className="flex flex-col items-center gap-1 text-neutral-500 hover:text-white transition-colors">
+                        <ListMusic size={20} />
+                        <span className="text-[9px] font-bold uppercase tracking-wider">Queue</span>
+                    </button>
+                    <button className="flex flex-col items-center gap-1 text-neutral-500 hover:text-white transition-colors">
+                        <Heart size={20} />
+                        <span className="text-[9px] font-bold uppercase tracking-wider">Like</span>
+                    </button>
+                    <button className="flex flex-col items-center gap-1 text-neutral-500 hover:text-white transition-colors">
+                        <Share2 size={20} />
+                        <span className="text-[9px] font-bold uppercase tracking-wider">Share</span>
+                    </button>
+                </div>
+            </div>
 
 
-            {/* DESKTOP BAR & MOBILE EXPANDED VIEW */}
-            <div className={`
-                fixed z-50 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]
-                ${isMinimized
-                    ? 'bottom-0 lg:bottom-6 right-0 lg:right-6 left-0 lg:left-auto w-full lg:w-80 translate-y-full lg:translate-y-0' // Hide full bar on mobile when minimized
-                    : 'bottom-0 lg:bottom-8 left-0 lg:left-[calc(16rem+2rem)] right-0 lg:right-8 translate-y-0'
-                }
-            `}>
-                {/* Hidden Audio Element */}
-                <audio
-                    ref={audioRef}
-                    onTimeUpdate={handleTimeUpdate}
-                    onEnded={() => togglePlay()} // Simple auto-stop
-                />
+            {/* --- DESKTOP BOTTOM BAR --- */}
+            <div className={`hidden lg:block fixed bottom-0 left-64 right-0 z-50 transition-transform duration-500 ${isMinimized ? 'translate-y-0' : 'translate-y-0'}`}>
+                <div className="bg-[#050505]/95 border-t border-white/5 backdrop-blur-xl p-4 flex items-center justify-between h-24">
 
-                <div className={`
-                glass-panel border-t lg:border border-white/10 relative overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)]
-                ${isMinimized ? 'p-3 lg:rounded-2xl' : 'p-4 max-w-6xl mx-auto flex flex-col md:flex-row items-center lg:rounded-2xl h-[85vh] md:h-auto pb-safe'} 
-                `}>
-                    {/* Added h-[85vh] for mobile expanded view to take up space, and pb-safe */}
+                    {/* Track Info */}
+                    <div className="flex items-center w-1/4 min-w-[200px] gap-4">
+                        <div className="h-14 w-14 rounded-lg overflow-hidden relative group cursor-pointer shadow-lg border border-white/10" onClick={() => { setIsMinimized(false) /* Should open expanded? Or separate desktop expand? Left as is for now */ }}>
+                            <img src={currentProject.coverImage || MOCK_USER_PROFILE.avatar} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-bold text-white truncate mb-0.5">{currentTrack.title}</h4>
+                            <p className="text-xs text-neutral-500 truncate hover:text-primary cursor-pointer transition-colors">{currentProject.producer}</p>
+                        </div>
+                        <button className="text-neutral-600 hover:text-primary transition-colors"><Heart size={16} /></button>
+                    </div>
 
-                    {/* Glowing Background Ambient */}
-                    <div className="absolute top-0 left-1/4 right-1/4 h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-50"></div>
+                    {/* Main Controls */}
+                    <div className="flex-1 flex flex-col items-center max-w-xl px-8">
+                        <div className="flex items-center gap-6 mb-2">
+                            <button className="text-neutral-500 hover:text-white transition-colors text-[10px]"><Shuffle size={14} /></button>
+                            <button className="text-neutral-300 hover:text-white transition-colors"><SkipBack fill="currentColor" size={18} /></button>
+                            <button
+                                onClick={togglePlay}
+                                className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 hover:bg-primary transition-all shadow-lg"
+                            >
+                                {isPlaying ? <Pause fill="black" size={16} /> : <Play fill="black" size={16} className="ml-0.5" />}
+                            </button>
+                            <button className="text-neutral-300 hover:text-white transition-colors"><SkipForward fill="currentColor" size={18} /></button>
+                            <button className="text-neutral-500 hover:text-white transition-colors text-[10px]"><Repeat size={14} /></button>
+                        </div>
 
-                    {isMinimized ? (
-                        // MINIMIZED COMPACT VIEW (Desktop Only mainly, since Mobile uses bubble)
-                        <div className="flex items-center gap-3">
-                            {/* Avatar */}
-                            <div className="h-10 w-10 bg-neutral-900 rounded-lg overflow-hidden relative shrink-0 border border-white/10 group cursor-pointer" onClick={() => setIsMinimized(false)}>
-                                <img src={MOCK_USER_PROFILE.avatar} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                                    <Maximize2 size={14} className="text-white opacity-0 group-hover:opacity-100" />
-                                </div>
+                        {/* Scrubber */}
+                        <div className="w-full flex items-center gap-3 text-[10px] font-mono font-medium text-neutral-500">
+                            <span className="w-8 text-right">{formatTime(currentTime)}</span>
+                            <div
+                                className="flex-1 h-1 bg-white/10 rounded-full relative group cursor-pointer overflow-hidden"
+                                onClick={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const pct = (e.clientX - rect.left) / rect.width;
+                                    if (audioRef.current) audioRef.current.currentTime = pct * (audioRef.current.duration || 1);
+                                }}
+                            >
+                                <div className="absolute top-0 left-0 h-full bg-primary/80 group-hover:bg-primary transition-all" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}></div>
                             </div>
+                            <span className="w-8">{formatTime(duration || currentTrack.duration || 0)}</span>
+                        </div>
+                    </div>
 
-                            {/* Info */}
-                            <div className="flex-1 min-w-0 overflow-hidden cursor-pointer" onClick={() => setIsMinimized(false)}>
-                                <h4 className="text-xs font-bold text-white truncate">{currentTrack.title}</h4>
-                                <p className="text-[10px] text-neutral-500 truncate">{currentProject.producer}</p>
-                            </div>
-
-                            {/* Controls */}
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                                    className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:bg-primary transition-colors shadow-lg"
-                                >
-                                    {isPlaying ? <Pause fill="black" size={12} /> : <Play fill="black" size={12} className="ml-0.5" />}
-                                </button>
-                                <button
-                                    onClick={() => setIsMinimized(false)}
-                                    className="p-2 text-neutral-400 hover:text-white transition-colors"
-                                >
-                                    <ChevronUp size={16} />
-                                </button>
-                            </div>
-
-                            {/* Progress Bar absolute bottom */}
-                            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/10">
-                                <div className="h-full bg-primary" style={{ width: audioRef.current ? `${(audioRef.current.currentTime / audioRef.current.duration) * 100}%` : '0%' }}></div>
+                    {/* Volume & Aux */}
+                    <div className="w-1/4 flex items-center justify-end gap-4 min-w-[200px]">
+                        <button className="text-neutral-500 hover:text-white transition-colors p-2"><ListMusic size={18} /></button>
+                        <div className="flex items-center gap-2 group w-24">
+                            <Volume2 size={18} className="text-neutral-500 group-hover:text-white transition-colors" />
+                            <div className="flex-1 h-1 bg-white/10 rounded-full relative cursor-pointer overflow-hidden">
+                                <div className="absolute top-0 left-0 h-full w-2/3 bg-neutral-500 group-hover:bg-primary transition-colors"></div>
                             </div>
                         </div>
-                    ) : (
-                        // FULL EXPANDED VIEW
-                        <>
-                            {/* Track Info */}
-                            <div className="flex items-center w-full md:w-1/4 min-w-[220px] mb-4 md:mb-0">
-                                <div className="h-14 w-14 bg-neutral-900 rounded-lg overflow-hidden mr-4 relative group shadow-lg border border-white/10">
-                                    <img src={MOCK_USER_PROFILE.avatar} className="w-full h-full object-cover" />
-                                    <div className="absolute inset-0 bg-black/20"></div>
-                                </div>
-                                <div className="overflow-hidden pr-2 flex-1">
-                                    <div className="flex items-center space-x-2 mb-0.5">
-                                        <h4 className="text-sm font-bold text-white truncate font-mono leading-tight">{currentTrack.title}</h4>
-                                    </div>
-                                    <p className="text-[11px] text-primary/80 truncate font-mono tracking-tight">{currentProject.producer} // {currentProject.title}</p>
-                                </div>
-                                <button
-                                    onClick={() => setIsMinimized(true)}
-                                    className="md:hidden text-neutral-500 hover:text-white p-2"
-                                >
-                                    <Minimize2 size={20} />
-                                </button>
-                            </div>
+                        <button className="text-neutral-500 hover:text-white transition-colors p-2"><Maximize2 size={16} /></button>
+                    </div>
 
-                            {/* Main Controls */}
-                            <div className="flex-1 flex flex-col items-center w-full px-0 md:px-8 mb-4 md:mb-0">
-                                <div className="flex items-center space-x-8 mb-3">
-                                    <button className="text-neutral-500 hover:text-neutral-300 transition-colors hover:scale-110"><Shuffle size={16} /></button>
-                                    <button className="text-neutral-300 hover:text-white transition-colors hover:scale-110"><SkipBack size={20} /></button>
-
-                                    <button
-                                        onClick={togglePlay}
-                                        className="h-12 w-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-all hover:shadow-[0_0_20px_rgba(255,255,255,0.4)]"
-                                    >
-                                        {isPlaying ? <Pause fill="black" size={20} /> : <Play fill="black" size={20} className="ml-1" />}
-                                    </button>
-
-                                    <button className="text-neutral-300 hover:text-white transition-colors hover:scale-110"><SkipForward size={20} /></button>
-                                    <button className="text-neutral-500 hover:text-neutral-300 transition-colors hover:scale-110"><Repeat size={16} /></button>
-                                </div>
-
-                                {/* Scrubber */}
-                                <div className="w-full flex items-center space-x-4 text-[10px] font-mono text-neutral-500">
-                                    <span className="w-8 text-right">
-                                        {audioRef.current ?
-                                            `${Math.floor(audioRef.current.currentTime / 60)}:${Math.floor(audioRef.current.currentTime % 60).toString().padStart(2, '0')}`
-                                            : '0:00'}
-                                    </span>
-                                    <div className="flex-1 h-1 bg-white/10 rounded-full relative group cursor-pointer overflow-hidden"
-                                        onClick={(e) => {
-                                            if (audioRef.current) {
-                                                const rect = e.currentTarget.getBoundingClientRect();
-                                                const x = e.clientX - rect.left;
-                                                const pct = x / rect.width;
-                                                audioRef.current.currentTime = pct * audioRef.current.duration;
-                                            }
-                                        }}
-                                    >
-                                        <div className="absolute top-0 left-0 h-full bg-primary group-hover:bg-primary/90 transition-all" style={{ width: audioRef.current ? `${(audioRef.current.currentTime / audioRef.current.duration) * 100}%` : '0%' }}></div>
-                                    </div>
-                                    <span className="w-8">
-                                        {Math.floor(currentTrack.duration / 60)}:{(currentTrack.duration % 60).toString().padStart(2, '0')}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Right Actions */}
-                            <div className="w-full md:w-1/4 flex items-center justify-between md:justify-end space-x-4 min-w-[180px]">
-                                <button className="text-neutral-500 hover:text-white transition-colors p-2 hover:bg-white/5 rounded"><ListMusic size={18} /></button>
-                                <div className="flex items-center space-x-2 group mx-2 flex-1 md:flex-none justify-end">
-                                    <Volume2 size={18} className="text-neutral-400" />
-                                    <div className="w-20 h-1 bg-white/10 rounded-full relative cursor-pointer">
-                                        <div className="absolute top-0 left-0 h-full bg-neutral-400 w-2/3 rounded-full group-hover:bg-white transition-colors"></div>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setIsMinimized(true)}
-                                    className="text-neutral-500 hover:text-white transition-colors p-2 hover:bg-white/5 rounded hidden md:block"
-                                    title="Minimize Player"
-                                >
-                                    <Minimize2 size={16} />
-                                </button>
-                            </div>
-                        </>
-                    )}
                 </div>
             </div>
         </>

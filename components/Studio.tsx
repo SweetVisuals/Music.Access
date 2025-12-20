@@ -62,7 +62,7 @@ interface StudioTrack extends Omit<Track, 'files'> {
     };
 }
 
-interface StudioProject extends Omit<Project, 'status' | 'tracks'> {
+interface StudioProject extends Omit<Project, 'status' | 'tracks' | 'tasks'> {
     releaseDate?: string;
     status: 'Planning' | 'In Progress' | 'Mixing' | 'Mastering' | 'Ready';
     progress: number;
@@ -180,7 +180,7 @@ const Studio: React.FC<StudioProps> = ({
             {/* NEW PROJECT MODAL */}
             {isCreateModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="w-full max-w-md bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden">
+                    <div className="w-full max-w-md bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <div className="p-6 border-b border-white/5 flex justify-between items-center">
                             <h3 className="text-lg font-bold text-white">New Release</h3>
                             <button onClick={() => setIsCreateModalOpen(false)}><X size={20} className="text-neutral-500 hover:text-white" /></button>
@@ -379,6 +379,23 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
     // Menu State
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+    // Library Assets State
+    const [assets, setAssets] = useState<LibraryAsset[]>(LIBRARY_ASSETS);
+
+    useEffect(() => {
+        const fetchAssets = async () => {
+            try {
+                // If you have a real backend service, use it here:
+                // const data = await getLibraryAssets();
+                // setAssets(data);
+                // For now, we use the mock data as default
+            } catch (error) {
+                console.error("Failed to fetch library assets", error);
+            }
+        };
+        fetchAssets();
+    }, []);
 
     useEffect(() => {
         const handleClickOutside = () => setOpenMenuId(null);
@@ -626,14 +643,14 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                             </div>
                             <button onClick={() => setActiveContract(null)} className="p-2 hover:bg-gray-200 rounded-full"><X size={20} /></button>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-8 font-serif text-sm leading-relaxed">
+                        <div className="flex-1 overflow-y-auto p-4 md:p-8 font-serif text-sm leading-relaxed">
                             <h1 className="text-center text-xl font-bold mb-6 underline">AGREEMENT TERMS</h1>
                             <p className="mb-4"><strong>Between:</strong> Producer (Me) AND Client ({activeContract.clientName || 'TBD'})</p>
                             <p className="mb-4"><strong>Date:</strong> {activeContract.created}</p>
                             <hr className="my-4 border-gray-300" />
                             <p className="mb-4 whitespace-pre-wrap">{activeContract.terms}</p>
 
-                            <div className="mt-8 grid grid-cols-2 gap-8">
+                            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
                                     <p className="font-bold mb-2">Producer Signature:</p>
                                     <div className="h-12 border-b border-black flex items-end font-signature text-2xl">

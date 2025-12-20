@@ -174,6 +174,7 @@ export const getProjects = async (): Promise<Project[]> => {
     id: project.id,
     title: project.title,
     producer: project.user?.username || 'Unknown',
+    producerAvatar: project.user?.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
     coverImage: project.cover_image_url,
     price: project.project_licenses?.[0]?.price || project.project_licenses?.[0]?.license?.default_price || 0,
     bpm: project.bpm,
@@ -819,7 +820,7 @@ export const searchUsers = async (searchTerm: string): Promise<UserProfile[]> =>
     id: user.id,
     username: user.username,
     handle: user.handle,
-    avatarUrl: user.avatar_url
+    avatar: user.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'
   }));
 };
 
@@ -839,6 +840,7 @@ export const createConversation = async (targetUserId: string): Promise<string> 
     .from('conversation_participants')
     .select(`
       conversation_id,
+      user_id,
       conversation:conversations (
         id
       )
@@ -1153,6 +1155,8 @@ export const deleteContract = async (contractId: string): Promise<void> => {
 
 
 export const getTalentProfiles = async (): Promise<TalentProfile[]> => {
+  const currentUser = await getCurrentUser();
+
   const { data, error } = await supabase
     .from('users')
     .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance')
@@ -1161,16 +1165,43 @@ export const getTalentProfiles = async (): Promise<TalentProfile[]> => {
 
   if (error) throw error;
 
-  return data.map(user => ({
-    id: user.id,
-    username: user.username,
-    handle: user.handle,
-    avatar: user.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
-    role: 'Producer', // TODO: add role field to users table
-    tags: [], // TODO: implement user tags
-    followers: '0', // TODO: calculate followers
-    isVerified: false
+  // Enhance with follower counts and follow status
+  const profilesWithStats = await Promise.all(data.map(async (user) => {
+    // Get follower count
+    const { count } = await supabase
+      .from('followers')
+      .select('*', { count: 'exact', head: true })
+      .eq('following_id', user.id);
+
+    // Check if current user is following this user
+    let isFollowing = false;
+    if (currentUser) {
+      const { data: followData } = await supabase
+        .from('followers')
+        .select('id')
+        .eq('follower_id', currentUser.id)
+        .eq('following_id', user.id)
+        .single();
+      isFollowing = !!followData;
+    }
+
+    // Get tags (mock for now, or fetch from a hypothetical user_tags table)
+    const tags = ['Producer', 'Beatmaker'];
+
+    return {
+      id: user.id,
+      username: user.username,
+      handle: user.handle,
+      avatar: user.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+      role: 'Producer', // Default role
+      tags: tags,
+      followers: (count || 0).toString(),
+      isVerified: false, // TODO: Add verification logic
+      isFollowing: isFollowing
+    };
   }));
+
+  return profilesWithStats;
 };
 
 export const getCollabServices = async (): Promise<CollabService[]> => {

@@ -200,7 +200,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 <div className="p-6 border-b border-white/5">
                     <h3 className="text-sm font-bold text-white">Transactions</h3>
                 </div>
-                <table className="w-full text-left">
+                <table className="w-full text-left hidden md:table">
                     <thead className="bg-neutral-900/50 text-[10px] font-mono uppercase text-neutral-500">
                         <tr><th className="px-6 py-3">ID</th><th className="px-6 py-3">Date</th><th className="px-6 py-3">Customer</th><th className="px-6 py-3">Amount</th><th className="px-6 py-3">Status</th></tr>
                     </thead>
@@ -222,6 +222,35 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                         ))}
                     </tbody>
                 </table>
+                {/* Mobile Card View */}
+                <div className="md:hidden">
+                    {sales.slice(0, 50).map((sale, i) => (
+                        <div key={sale.id} className="p-4 border-b border-white/5 flex flex-col gap-3">
+                            <div className="flex justify-between items-start">
+                                <div className="flex items-center gap-2">
+                                    {sale.buyerAvatar && <img src={sale.buyerAvatar} className="w-8 h-8 rounded-full" />}
+                                    <div>
+                                        <div className="text-sm font-bold text-white">{sale.buyer || 'Unknown'}</div>
+                                        <div className="text-[10px] text-neutral-500 font-mono">{sale.date}</div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="font-mono font-bold text-white">${sale.amount.toFixed(2)}</div>
+                                    <div className="text-[10px] font-mono text-neutral-500">#{sale.id.slice(0, 8)}</div>
+                                </div>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${sale.status === 'Completed' ? 'bg-green-500/10 text-green-500' :
+                                    sale.status === 'Processing' ? 'bg-blue-500/10 text-blue-500' :
+                                        'bg-red-500/10 text-red-500'
+                                    }`}>{sale.status}</span>
+                            </div>
+                        </div>
+                    ))}
+                    {sales.length === 0 && (
+                        <div className="p-8 text-center text-neutral-500 text-sm">No transactions found.</div>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -650,7 +679,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                        <table className="w-full text-left border-collapse hidden md:table">
                             <thead>
                                 <tr className="text-[10px] text-neutral-500 font-mono uppercase tracking-wider border-b border-white/5 bg-neutral-900/50">
                                     <th className="px-6 py-3 font-medium">Order ID</th>
@@ -687,6 +716,32 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                 )}
                             </tbody>
                         </table>
+                        {/* Mobile Card View */}
+                        <div className="md:hidden">
+                            {(dashboardAnalytics?.recentOrders || []).map((order, idx) => (
+                                <div key={order.id} className="p-4 border-b border-white/5 flex flex-col gap-3 hover:bg-white/5 transition-colors">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <div className="text-sm font-bold text-white">{order.item}</div>
+                                            <div className="text-[10px] text-neutral-500 font-mono mt-0.5">{order.date}</div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="font-mono font-bold text-white">{order.amount}</div>
+                                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mt-1 ${order.statusColor}`}>
+                                                {order.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="text-[10px] font-mono text-neutral-600">ID: #ORD-{idx + 1}</div>
+                                </div>
+                            ))}
+                            {!dashboardAnalytics?.recentOrders?.length && (
+                                <div className="p-8 text-center text-neutral-500">
+                                    <ShoppingCart size={24} className="mx-auto mb-2 opacity-50" />
+                                    <p className="text-sm font-medium">No Recent Orders</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 

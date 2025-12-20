@@ -189,8 +189,9 @@ export const getProjects = async (): Promise<Project[]> => {
     tracks: project.tracks?.map((track: any) => {
       // Generate Public URL if asset exists
       let mp3Url = '';
-      if (track.assigned_file?.storage_path) {
-        const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(track.assigned_file.storage_path);
+      const asset = track.assets || (track as any).assigned_file; // Fallback just in case
+      if (asset?.storage_path) {
+        const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(asset.storage_path);
         mp3Url = publicUrl;
       }
 

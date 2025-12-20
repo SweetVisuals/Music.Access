@@ -66,7 +66,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
 
             {/* --- MOBILE EMBEDDED BOTTOM BAR --- */}
             <div
-                className={`lg:hidden fixed left-0 right-0 z-40 bg-[#050505] border-t border-white/20 shadow-[0_-4px_20px_rgba(0,0,0,0.8)] transition-all duration-300 ${isMinimized ? (currentView === 'notes' ? 'bottom-[80px] translate-y-0 border-b border-white/10' : 'bottom-0 translate-y-0') : 'bottom-0 translate-y-full opacity-0 pointer-events-none'}`}
+                className={`lg:hidden fixed left-0 right-0 z-40 bg-[#050505] border-t border-white/20 shadow-[0_-4px_20px_rgba(0,0,0,0.8)] transition-all duration-300 ${isMinimized ? (currentView === 'notes' ? 'bottom-[calc(5rem+env(safe-area-inset-bottom))] translate-y-0 border-b border-white/10' : 'bottom-0 translate-y-0') : 'bottom-0 translate-y-full opacity-0 pointer-events-none'}`}
                 onClick={() => setIsMinimized(false)}
             >
                 {/* Progress Bar (Thin, Top) */}

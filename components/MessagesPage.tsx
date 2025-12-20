@@ -310,11 +310,14 @@ const MessagesPage: React.FC = () => {
                     <div className="flex-1 flex items-center justify-center text-neutral-500 flex-col">
                         <p>Select a conversation to start messaging</p>
                         <button
+                            onClick={() => setIsCreatingNew(true)}
+                            className="mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-sm text-white transition-colors"
+                        >
                             Start New Conversation
                         </button>
                     </div>
                 )}
-        </div>
+            </div>
         </div >
     );
 };

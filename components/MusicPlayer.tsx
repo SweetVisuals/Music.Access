@@ -59,9 +59,18 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
         <>
             <audio
                 ref={audioRef}
+                crossOrigin="anonymous"
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}
                 onEnded={() => togglePlay()}
+                onError={(e) => {
+                    console.error("Audio Playback Error Details:", {
+                        error: e.currentTarget.error,
+                        src: e.currentTarget.src,
+                        networkState: e.currentTarget.networkState,
+                        currentSrc: e.currentTarget.currentSrc
+                    });
+                }}
             />
 
             {/* --- MOBILE EMBEDDED BOTTOM BAR --- */}
@@ -152,134 +161,145 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                             <p className="text-xs text-primary font-mono tracking-widest uppercase opacity-90">{currentProject.producer}</p>
                         </div>
 
-                        {/* Scrubber */}
-                        <div className="w-full space-y-2">
-                            <div
-                                className="h-0.5 bg-neutral-800 rounded-full relative group cursor-pointer touch-none py-2 bg-clip-content" // Thicker hit area, thin visual line
+                        {/* Unified Command Deck */}
+                        <div className="w-full space-y-6">
+                            {/* Scrubber */}
+                            <div className="space-y-2 group"
+                                onTouchEnd={(e) => {
+                                    // Simple touch seek logic could go here
+                                }}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     const rect = e.currentTarget.getBoundingClientRect();
-                                    const pct = (e.clientX - rect.left) / rect.width;
-                                    if (audioRef.current) audioRef.current.currentTime = pct * (audioRef.current.duration || 1);
+                                    const p = (e.clientX - rect.left) / rect.width;
+                                    if (audioRef.current && Number.isFinite(duration) && duration > 0) {
+                                        audioRef.current.currentTime = p * duration;
+                                    }
                                 }}
                             >
-                                <div className="absolute top-1/2 -translate-y-1/2 left-0 h-0.5 bg-primary rounded-full" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}></div>
-                                {/* Scrubber Handle */}
+                                <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden backdrop-blur-sm relative">
+                                    <div className="h-full bg-white relative shadow-[0_0_10px_rgba(255,255,255,0.5)]" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}>
+                                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg scale-0 group-hover:scale-125 transition-transform duration-200"></div>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between text-[10px] font-mono font-bold text-neutral-500">
+                                    <span>{formatTime(currentTime)}</span>
+                                    <span>{formatTime(duration || currentTrack.duration || 0)}</span>
+                                </div>
+                            </div>
+
+                            {/* Control Deck - Glassmorphism Pill */}
+                            <div className="flex items-center justify-between bg-white/5 backdrop-blur-xl rounded-[2rem] p-2 border border-white/5 shadow-2xl mx-2" onClick={(e) => e.stopPropagation()}>
+                                {/* Shuffle */}
+                                <button className="w-12 h-12 flex items-center justify-center text-neutral-500 hover:text-white transition-colors active:scale-95">
+                                    <Shuffle size={18} />
+                                </button>
+
+                                {/* Center Controls */}
+                                <div className="flex items-center gap-4">
+                                    <button className="text-white hover:text-primary transition-colors active:scale-90 p-2">
+                                        <SkipBack size={28} fill="currentColor" />
+                                    </button>
+
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                                        className="w-16 h-16 flex items-center justify-center bg-white text-black rounded-full shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-105 active:scale-95 transition-all"
+                                    >
+                                        {isPlaying ?
+                                            <Pause fill="black" size={24} /> :
+                                            <Play fill="black" size={24} className="ml-1" />
+                                        }
+                                    </button>
+
+                                    <button className="text-white hover:text-primary transition-colors active:scale-90 p-2">
+                                        <SkipForward size={28} fill="currentColor" />
+                                    </button>
+                                </div>
+
+                                {/* Repeat */}
+                                <button className="w-12 h-12 flex items-center justify-center text-neutral-500 hover:text-white transition-colors active:scale-95">
+                                    <Repeat size={18} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom Actions Row */}
+                    <div className="relative z-10 flex justify-center gap-12 pb-12 w-full pt-2" onClick={(e) => e.stopPropagation()}>
+                        <button className="text-neutral-500 hover:text-white transition-colors active:scale-95"><Share2 size={20} /></button>
+                        <button className="text-neutral-500 hover:text-white transition-colors active:scale-95"><Heart size={20} /></button>
+                        <button className="text-neutral-500 hover:text-white transition-colors active:scale-95"><ListMusic size={20} /></button>
+                    </div>
+                </div>
+
+
+                {/* --- DESKTOP BOTTOM BAR --- */}
+                <div className={`hidden lg:block fixed bottom-0 left-64 right-0 z-50 transition-transform duration-500 ${isMinimized ? 'translate-y-0' : 'translate-y-0'}`}>
+                    <div className="bg-[#050505]/95 border-t border-white/5 backdrop-blur-xl p-4 flex items-center justify-between h-24">
+
+                        {/* Track Info */}
+                        <div className="flex items-center w-1/4 min-w-[200px] gap-4">
+                            <div className="h-14 w-14 rounded-lg overflow-hidden relative group cursor-pointer shadow-lg border border-white/10" onClick={() => { setIsMinimized(false) /* Should open expanded? Or separate desktop expand? Left as is for now */ }}>
+                                <img src={currentProject.coverImage || MOCK_USER_PROFILE.avatar} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="text-sm font-bold text-white truncate mb-0.5">{currentTrack.title}</h4>
+                                <p className="text-xs text-neutral-500 truncate hover:text-primary cursor-pointer transition-colors">{currentProject.producer}</p>
+                            </div>
+                            <button className="text-neutral-600 hover:text-primary transition-colors"><Heart size={16} /></button>
+                        </div>
+
+                        {/* Main Controls */}
+                        <div className="flex-1 flex flex-col items-center max-w-xl px-8">
+                            <div className="flex items-center gap-6 mb-2">
+                                <button className="text-neutral-500 hover:text-white transition-colors text-[10px]"><Shuffle size={14} /></button>
+                                <button className="text-neutral-300 hover:text-white transition-colors"><SkipBack fill="currentColor" size={18} /></button>
+                                <button
+                                    onClick={togglePlay}
+                                    className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 hover:bg-primary transition-all shadow-lg"
+                                >
+                                    {isPlaying ? <Pause fill="black" size={16} /> : <Play fill="black" size={16} className="ml-0.5" />}
+                                </button>
+                                <button className="text-neutral-300 hover:text-white transition-colors"><SkipForward fill="currentColor" size={18} /></button>
+                                <button className="text-neutral-500 hover:text-white transition-colors text-[10px]"><Repeat size={14} /></button>
+                            </div>
+
+                            {/* Scrubber */}
+                            <div className="w-full flex items-center gap-3 text-[10px] font-mono font-medium text-neutral-500">
+                                <span className="w-8 text-right">{formatTime(currentTime)}</span>
                                 <div
-                                    className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)]"
-                                    style={{ left: `${(currentTime / (duration || 1)) * 100}%`, transform: `translate(-50%, -50%)` }}
-                                ></div>
-                            </div>
-                            <div className="flex justify-between text-[9px] font-mono text-neutral-600 font-bold tracking-wider">
-                                <span>{formatTime(currentTime)}</span>
-                                <span>{formatTime(duration || currentTrack.duration || 0)}</span>
+                                    className="flex-1 h-1 bg-white/10 rounded-full relative group cursor-pointer overflow-hidden"
+                                    onClick={(e) => {
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        const pct = (e.clientX - rect.left) / rect.width;
+                                        if (audioRef.current) audioRef.current.currentTime = pct * (audioRef.current.duration || 1);
+                                    }}
+                                >
+                                    <div className="absolute top-0 left-0 h-full bg-primary/80 group-hover:bg-primary transition-all" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}></div>
+                                </div>
+                                <span className="w-8">{formatTime(duration || currentTrack.duration || 0)}</span>
                             </div>
                         </div>
 
-                        {/* Playback Controls */}
-                        <div className="flex items-center justify-between w-full max-w-[85%] mx-auto">
-                            <button type="button" onClick={(e) => e.stopPropagation()} className="text-neutral-600 hover:text-white transition-colors active:scale-90"><Shuffle size={18} /></button>
-                            <button type="button" onClick={(e) => e.stopPropagation()} className="text-white hover:text-primary transition-colors active:scale-90"><SkipBack fill="currentColor" size={24} /></button>
-
-                            <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                                className="w-16 h-16 bg-[#0A0A0A] text-white border border-white/20 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)] active:scale-95 active:bg-white active:text-black transition-all group"
-                            >
-                                {isPlaying ? <Pause fill="currentColor" size={24} className="group-active:fill-black" /> : <Play fill="currentColor" size={24} className="ml-1 group-active:fill-black" />}
+                        {/* Volume & Aux */}
+                        <div className="w-1/4 flex items-center justify-end gap-4 min-w-[200px]">
+                            <button className="text-neutral-500 hover:text-white transition-colors p-2"><ListMusic size={18} /></button>
+                            <div className="flex items-center gap-2 group w-24">
+                                <Volume2 size={18} className="text-neutral-500 group-hover:text-white transition-colors" />
+                                <div className="flex-1 h-1 bg-white/10 rounded-full relative cursor-pointer overflow-hidden">
+                                    <div className="absolute top-0 left-0 h-full w-2/3 bg-neutral-500 group-hover:bg-primary transition-colors"></div>
+                                </div>
+                            </div>
+                            <button onClick={onClose} className="text-neutral-500 hover:text-white transition-colors p-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                             </button>
-
-                            <button type="button" onClick={(e) => e.stopPropagation()} className="text-white hover:text-primary transition-colors active:scale-90"><SkipForward fill="currentColor" size={24} /></button>
-                            <button type="button" onClick={(e) => e.stopPropagation()} className="text-neutral-600 hover:text-white transition-colors active:scale-90"><Repeat size={18} /></button>
                         </div>
+
                     </div>
                 </div>
-
-                {/* Footer Actions */}
-                <div className="relative z-10 flex justify-center gap-10 pb-12 w-full border-t border-white/5 pt-6 bg-black/20 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
-                    <button type="button" className="flex flex-col items-center gap-1.5 text-neutral-500 hover:text-white transition-colors active:scale-95 group">
-                        <ListMusic size={18} />
-                        <span className="text-[8px] font-mono tracking-widest uppercase group-hover:text-primary">Queue</span>
-                    </button>
-                    <button type="button" className="flex flex-col items-center gap-1.5 text-neutral-500 hover:text-white transition-colors active:scale-95 group">
-                        <Heart size={18} />
-                        <span className="text-[8px] font-mono tracking-widest uppercase group-hover:text-primary">Like</span>
-                    </button>
-                    <button type="button" className="flex flex-col items-center gap-1.5 text-neutral-500 hover:text-white transition-colors active:scale-95 group">
-                        <Share2 size={18} />
-                        <span className="text-[8px] font-mono tracking-widest uppercase group-hover:text-primary">Share</span>
-                    </button>
-                </div>
-            </div>
-
-
-            {/* --- DESKTOP BOTTOM BAR --- */}
-            <div className={`hidden lg:block fixed bottom-0 left-64 right-0 z-50 transition-transform duration-500 ${isMinimized ? 'translate-y-0' : 'translate-y-0'}`}>
-                <div className="bg-[#050505]/95 border-t border-white/5 backdrop-blur-xl p-4 flex items-center justify-between h-24">
-
-                    {/* Track Info */}
-                    <div className="flex items-center w-1/4 min-w-[200px] gap-4">
-                        <div className="h-14 w-14 rounded-lg overflow-hidden relative group cursor-pointer shadow-lg border border-white/10" onClick={() => { setIsMinimized(false) /* Should open expanded? Or separate desktop expand? Left as is for now */ }}>
-                            <img src={currentProject.coverImage || MOCK_USER_PROFILE.avatar} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-bold text-white truncate mb-0.5">{currentTrack.title}</h4>
-                            <p className="text-xs text-neutral-500 truncate hover:text-primary cursor-pointer transition-colors">{currentProject.producer}</p>
-                        </div>
-                        <button className="text-neutral-600 hover:text-primary transition-colors"><Heart size={16} /></button>
-                    </div>
-
-                    {/* Main Controls */}
-                    <div className="flex-1 flex flex-col items-center max-w-xl px-8">
-                        <div className="flex items-center gap-6 mb-2">
-                            <button className="text-neutral-500 hover:text-white transition-colors text-[10px]"><Shuffle size={14} /></button>
-                            <button className="text-neutral-300 hover:text-white transition-colors"><SkipBack fill="currentColor" size={18} /></button>
-                            <button
-                                onClick={togglePlay}
-                                className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 hover:bg-primary transition-all shadow-lg"
-                            >
-                                {isPlaying ? <Pause fill="black" size={16} /> : <Play fill="black" size={16} className="ml-0.5" />}
-                            </button>
-                            <button className="text-neutral-300 hover:text-white transition-colors"><SkipForward fill="currentColor" size={18} /></button>
-                            <button className="text-neutral-500 hover:text-white transition-colors text-[10px]"><Repeat size={14} /></button>
-                        </div>
-
-                        {/* Scrubber */}
-                        <div className="w-full flex items-center gap-3 text-[10px] font-mono font-medium text-neutral-500">
-                            <span className="w-8 text-right">{formatTime(currentTime)}</span>
-                            <div
-                                className="flex-1 h-1 bg-white/10 rounded-full relative group cursor-pointer overflow-hidden"
-                                onClick={(e) => {
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    const pct = (e.clientX - rect.left) / rect.width;
-                                    if (audioRef.current) audioRef.current.currentTime = pct * (audioRef.current.duration || 1);
-                                }}
-                            >
-                                <div className="absolute top-0 left-0 h-full bg-primary/80 group-hover:bg-primary transition-all" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}></div>
-                            </div>
-                            <span className="w-8">{formatTime(duration || currentTrack.duration || 0)}</span>
-                        </div>
-                    </div>
-
-                    {/* Volume & Aux */}
-                    <div className="w-1/4 flex items-center justify-end gap-4 min-w-[200px]">
-                        <button className="text-neutral-500 hover:text-white transition-colors p-2"><ListMusic size={18} /></button>
-                        <div className="flex items-center gap-2 group w-24">
-                            <Volume2 size={18} className="text-neutral-500 group-hover:text-white transition-colors" />
-                            <div className="flex-1 h-1 bg-white/10 rounded-full relative cursor-pointer overflow-hidden">
-                                <div className="absolute top-0 left-0 h-full w-2/3 bg-neutral-500 group-hover:bg-primary transition-colors"></div>
-                            </div>
-                        </div>
-                        <button onClick={onClose} className="text-neutral-500 hover:text-white transition-colors p-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        </button>
-                    </div>
-
-                </div>
-            </div>
-        </>
-    );
+            </>
+            );
 };
 
-export default MusicPlayer;
+            export default MusicPlayer;

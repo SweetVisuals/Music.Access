@@ -668,21 +668,20 @@ const NotesPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Mobile Bottom Control Bar */}
-                <div className="lg:hidden absolute bottom-0 left-0 right-0 z-[48] bg-black/80 backdrop-blur-2xl border-t border-white/10 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
+                <div className="lg:hidden absolute bottom-0 left-0 right-0 z-[48] bg-[#050505] border-t border-white/20 pb-[env(safe-area-inset-bottom)]">
                     <div className="flex flex-col">
                         {/* Font Size Row (Expanded) */}
                         {isSizeExpanded && (
-                            <div className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] p-2 z-[60] animate-in slide-in-from-bottom-5 fade-in duration-200">
-                                <div className="flex items-center gap-3">
+                            <div className="absolute bottom-[calc(100%+1px)] left-0 right-0 bg-[#0A0A0A] border-t border-white/10 p-4 z-[60] animate-in slide-in-from-bottom-2 fade-in duration-200 flex justify-center shadow-2xl">
+                                <div className="flex items-center gap-6 bg-white/5 rounded-full px-4 py-2 border border-white/10">
                                     <button
                                         onClick={() => setTextSize(prev => prev === 'xs' ? 'xs' : prev === 'sm' ? 'xs' : prev === 'base' ? 'sm' : 'base')}
-                                        className={`p-2 rounded ${textSize === 'xs' ? 'text-neutral-600' : 'text-white hover:bg-white/10'}`}
+                                        className={`p-2 rounded-full transition-colors ${textSize === 'xs' ? 'text-neutral-600 cursor-not-allowed' : 'text-white hover:bg-white/10 active:bg-white/20'}`}
                                         disabled={textSize === 'xs'}
                                     >
-                                        <Minus size={16} />
+                                        <Minus size={18} />
                                     </button>
-                                    <span className="text-xs font-bold text-white w-14 text-center">
+                                    <span className="text-xs font-mono font-bold text-primary w-16 text-center uppercase tracking-wider">
                                         {textSize === 'xs' && 'Small'}
                                         {textSize === 'sm' && 'Medium'}
                                         {textSize === 'base' && 'Large'}
@@ -690,36 +689,35 @@ const NotesPage: React.FC = () => {
                                     </span>
                                     <button
                                         onClick={() => setTextSize(prev => prev === 'xs' ? 'sm' : prev === 'sm' ? 'base' : prev === 'base' ? 'lg' : 'lg')}
-                                        className={`p-2 rounded ${textSize === 'lg' ? 'text-neutral-600' : 'text-white hover:bg-white/10'}`}
+                                        className={`p-2 rounded-full transition-colors ${textSize === 'lg' ? 'text-neutral-600 cursor-not-allowed' : 'text-white hover:bg-white/10 active:bg-white/20'}`}
                                         disabled={textSize === 'lg'}
                                     >
-                                        <Plus size={16} />
+                                        <Plus size={18} />
                                     </button>
                                 </div>
                             </div>
                         )}
 
-
-                        <div className="h-20 flex items-center px-6 gap-8 justify-around">
+                        <div className="h-16 flex items-center justify-between px-2 w-full max-w-sm mx-auto">
                             {/* NEW: Integrated Create Note Button */}
                             <button
                                 onClick={handleCreateNote}
-                                className="group flex flex-col items-center gap-1.5 transition-all p-2 active:scale-90 text-neutral-400 hover:text-white"
+                                className="flex-1 group flex flex-col items-center gap-1 transition-all py-1"
                             >
-                                <div className="p-1.5 rounded-xl transition-all bg-transparent group-active:bg-primary/20 group-active:ring-1 group-active:ring-primary/50">
-                                    <Plus size={22} className="stroke-2" />
+                                <div className="w-9 h-9 rounded-lg flex items-center justify-center transition-all bg-white/5 border border-white/5 group-active:bg-primary group-active:text-black group-active:border-primary group-active:scale-95">
+                                    <Plus size={18} className="stroke-[2.5px]" />
                                 </div>
-                                <span className="text-[10px] uppercase tracking-wide font-bold">New</span>
+                                <span className="text-[9px] uppercase tracking-wider font-mono font-bold text-neutral-400 group-active:text-primary">New</span>
                             </button>
 
                             <button
                                 onClick={() => { setIsSizeExpanded(!isSizeExpanded); setMobileAssistantOpen(false); }}
-                                className={`group flex flex-col items-center gap-1.5 transition-all p-2 active:scale-90 ${isSizeExpanded ? 'text-primary' : 'text-neutral-400 hover:text-white'}`}
+                                className={`flex-1 group flex flex-col items-center gap-1 transition-all py-1`}
                             >
-                                <div className={`p-1.5 rounded-xl transition-all ${isSizeExpanded ? 'bg-primary/20 ring-1 ring-primary/50' : 'bg-transparent'}`}>
-                                    <Type size={22} className={isSizeExpanded ? "stroke-[2.5px]" : "stroke-2"} />
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${isSizeExpanded ? 'bg-primary text-black border-primary' : 'bg-transparent text-neutral-400 border-transparent group-hover:text-white'}`}>
+                                    <Type size={18} className="stroke-[2.5px]" />
                                 </div>
-                                <span className={`text-[10px] uppercase tracking-wide font-bold ${isSizeExpanded ? 'text-white' : ''}`}>Size</span>
+                                <span className={`text-[9px] uppercase tracking-wider font-mono font-bold ${isSizeExpanded ? 'text-primary' : 'text-neutral-500'}`}>Size</span>
                             </button>
 
                             <button
@@ -727,22 +725,22 @@ const NotesPage: React.FC = () => {
                                     setMobileAssistantOpen(!isMobileAssistantOpen);
                                     setIsSizeExpanded(false);
                                 }}
-                                className={`group flex flex-col items-center gap-1.5 transition-all p-2 active:scale-90 ${isMobileAssistantOpen ? 'text-primary' : 'text-neutral-400 hover:text-white'}`}
+                                className={`flex-1 group flex flex-col items-center gap-1 transition-all py-1`}
                             >
-                                <div className={`p-1.5 rounded-xl transition-all ${isMobileAssistantOpen ? 'bg-primary/20 ring-1 ring-primary/50' : 'bg-transparent'}`}>
-                                    <Sparkles size={22} className={isMobileAssistantOpen ? "stroke-[2.5px]" : "stroke-2"} />
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${isMobileAssistantOpen ? 'bg-primary text-black border-primary' : 'bg-transparent text-neutral-400 border-transparent group-hover:text-white'}`}>
+                                    <Sparkles size={18} className="stroke-[2.5px]" />
                                 </div>
-                                <span className={`text-[10px] uppercase tracking-wide font-bold ${isMobileAssistantOpen ? 'text-white' : ''}`}>Assistant</span>
+                                <span className={`text-[9px] uppercase tracking-wider font-mono font-bold ${isMobileAssistantOpen ? 'text-primary' : 'text-neutral-500'}`}>AI</span>
                             </button>
 
                             <button
                                 onClick={() => setRhymeMode(!rhymeMode)}
-                                className={`group flex flex-col items-center gap-1.5 transition-all p-2 active:scale-90 ${rhymeMode ? 'text-primary' : 'text-neutral-400 hover:text-white'}`}
+                                className={`flex-1 group flex flex-col items-center gap-1 transition-all py-1`}
                             >
-                                <div className={`p-1.5 rounded-xl transition-all ${rhymeMode ? 'bg-primary/20 ring-1 ring-primary/50' : 'bg-transparent'}`}>
-                                    <Highlighter size={22} className={rhymeMode ? "stroke-[2.5px]" : "stroke-2"} />
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${rhymeMode ? 'bg-primary text-black border-primary' : 'bg-transparent text-neutral-400 border-transparent group-hover:text-white'}`}>
+                                    <Highlighter size={18} className="stroke-[2.5px]" />
                                 </div>
-                                <span className={`text-[10px] uppercase tracking-wide font-bold ${rhymeMode ? 'text-white' : ''}`}>Highlights</span>
+                                <span className={`text-[9px] uppercase tracking-wider font-mono font-bold ${rhymeMode ? 'text-primary' : 'text-neutral-500'}`}>Rhyme</span>
                             </button>
                         </div>
                     </div>

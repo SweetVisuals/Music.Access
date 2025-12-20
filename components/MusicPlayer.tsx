@@ -130,63 +130,84 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                 </div>
 
                 {/* Main Content */}
-                <div className="relative z-10 flex-1 flex flex-col px-8 justify-evenly pb-10">
+                <div className="relative z-10 flex-1 flex flex-col px-8 justify-evenly pb-8" onClick={(e) => e.stopPropagation()}>
 
                     {/* Artwork / Producer Avatar */}
-                    <div className="w-full aspect-square max-h-[350px] mx-auto rounded-full border-4 border-white/5 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.7)] overflow-hidden relative group">
+                    {/* AVANT-GARDE: Large Static Circle with "Halo" effect */}
+                    <div className="w-full max-w-[280px] aspect-square mx-auto rounded-full border border-white/10 shadow-[0_0_50px_rgba(255,255,255,0.05)] p-1.5 relative group">
+                        <div className="absolute inset-0 rounded-full border border-white/5 animate-[spin_10s_linear_infinite] opacity-50"></div>
                         <img
                             src={displayImage}
-                            className="w-full h-full object-cover"
+                            alt="Producer"
+                            className="w-full h-full rounded-full object-cover shadow-2xl relative z-10"
                         />
                     </div>
 
                     {/* Meta & Controls Wrapper */}
-                    <div className="space-y-8 mt-4">
+                    <div className="space-y-10 mt-2">
                         {/* Meta */}
-                        <div className="w-full text-center space-y-1.5">
-                            <h2 className="text-2xl font-black text-white leading-tight line-clamp-2">{currentTrack.title}</h2>
-                            <p className="text-sm text-primary font-bold tracking-wide">{currentProject.producer}</p>
+                        <div className="w-full text-center space-y-2">
+                            <h2 className="text-xl font-bold text-white leading-tight line-clamp-2 tracking-tight">{currentTrack.title}</h2>
+                            <p className="text-xs text-primary font-mono tracking-widest uppercase opacity-90">{currentProject.producer}</p>
                         </div>
 
                         {/* Scrubber */}
                         <div className="w-full space-y-2">
                             <div
-                                className="h-1.5 bg-white/10 rounded-full relative overflow-hidden group cursor-pointer touch-none"
+                                className="h-0.5 bg-neutral-800 rounded-full relative group cursor-pointer touch-none py-2 bg-clip-content" // Thicker hit area, thin visual line
                                 onClick={(e) => {
+                                    e.stopPropagation();
                                     const rect = e.currentTarget.getBoundingClientRect();
                                     const pct = (e.clientX - rect.left) / rect.width;
                                     if (audioRef.current) audioRef.current.currentTime = pct * (audioRef.current.duration || 1);
                                 }}
                             >
-                                <div className="absolute top-0 left-0 h-full bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}></div>
+                                <div className="absolute top-1/2 -translate-y-1/2 left-0 h-0.5 bg-primary rounded-full" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}></div>
+                                {/* Scrubber Handle */}
+                                <div
+                                    className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+                                    style={{ left: `${(currentTime / (duration || 1)) * 100}%`, transform: `translate(-50%, -50%)` }}
+                                ></div>
                             </div>
-                            <div className="flex justify-between text-[10px] font-mono text-neutral-500 font-bold">
+                            <div className="flex justify-between text-[9px] font-mono text-neutral-600 font-bold tracking-wider">
                                 <span>{formatTime(currentTime)}</span>
                                 <span>{formatTime(duration || currentTrack.duration || 0)}</span>
                             </div>
                         </div>
 
                         {/* Playback Controls */}
-                        <div className="flex items-center justify-between w-full max-w-[90%] mx-auto">
-                            <button className="text-neutral-500 hover:text-white transition-colors active:scale-95"><Shuffle size={20} /></button>
-                            <button className="text-white hover:text-primary transition-colors active:scale-95"><SkipBack fill="white" size={28} /></button>
+                        <div className="flex items-center justify-between w-full max-w-[85%] mx-auto">
+                            <button type="button" onClick={(e) => e.stopPropagation()} className="text-neutral-600 hover:text-white transition-colors active:scale-90"><Shuffle size={18} /></button>
+                            <button type="button" onClick={(e) => e.stopPropagation()} className="text-white hover:text-primary transition-colors active:scale-90"><SkipBack fill="currentColor" size={24} /></button>
+
                             <button
-                                onClick={togglePlay}
-                                className="w-16 h-16 bg-white text-black rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-105 active:scale-95 transition-all"
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); togglePlay(); }}
+                                className="w-16 h-16 bg-[#0A0A0A] text-white border border-white/20 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)] active:scale-95 active:bg-white active:text-black transition-all group"
                             >
-                                {isPlaying ? <Pause fill="black" size={28} /> : <Play fill="black" size={28} className="ml-1" />}
+                                {isPlaying ? <Pause fill="currentColor" size={24} className="group-active:fill-black" /> : <Play fill="currentColor" size={24} className="ml-1 group-active:fill-black" />}
                             </button>
-                            <button className="text-white hover:text-primary transition-colors active:scale-95"><SkipForward fill="white" size={28} /></button>
-                            <button className="text-neutral-500 hover:text-white transition-colors active:scale-95"><Repeat size={20} /></button>
+
+                            <button type="button" onClick={(e) => e.stopPropagation()} className="text-white hover:text-primary transition-colors active:scale-90"><SkipForward fill="currentColor" size={24} /></button>
+                            <button type="button" onClick={(e) => e.stopPropagation()} className="text-neutral-600 hover:text-white transition-colors active:scale-90"><Repeat size={18} /></button>
                         </div>
                     </div>
                 </div>
 
                 {/* Footer Actions */}
-                <div className="relative z-10 flex justify-center gap-12 pb-12">
-                    <button className="text-neutral-500 hover:text-white transition-colors active:scale-95 p-2"><ListMusic size={22} /></button>
-                    <button className="text-neutral-500 hover:text-white transition-colors active:scale-95 p-2"><Heart size={22} /></button>
-                    <button className="text-neutral-500 hover:text-white transition-colors active:scale-95 p-2"><Share2 size={22} /></button>
+                <div className="relative z-10 flex justify-center gap-10 pb-12 w-full border-t border-white/5 pt-6 bg-black/20 backdrop-blur-sm" onClick={(e) => e.stopPropagation()}>
+                    <button type="button" className="flex flex-col items-center gap-1.5 text-neutral-500 hover:text-white transition-colors active:scale-95 group">
+                        <ListMusic size={18} />
+                        <span className="text-[8px] font-mono tracking-widest uppercase group-hover:text-primary">Queue</span>
+                    </button>
+                    <button type="button" className="flex flex-col items-center gap-1.5 text-neutral-500 hover:text-white transition-colors active:scale-95 group">
+                        <Heart size={18} />
+                        <span className="text-[8px] font-mono tracking-widest uppercase group-hover:text-primary">Like</span>
+                    </button>
+                    <button type="button" className="flex flex-col items-center gap-1.5 text-neutral-500 hover:text-white transition-colors active:scale-95 group">
+                        <Share2 size={18} />
+                        <span className="text-[8px] font-mono tracking-widest uppercase group-hover:text-primary">Share</span>
+                    </button>
                 </div>
             </div>
 

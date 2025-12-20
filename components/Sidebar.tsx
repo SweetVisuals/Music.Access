@@ -133,7 +133,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                 </div>
 
                 {/* Scrollable Content */}
-                <div className="flex-1 py-4 px-3 overflow-y-auto custom-scrollbar space-y-6">
+                <div className="flex-1 py-4 px-3 overflow-y-auto space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
 
                     {isDashboard ? (
                         /* --- DASHBOARD SIDEBAR LAYOUT (Only visible when logged in) --- */
@@ -453,7 +453,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                 </div>
 
                 {/* Footer - Storage & Profile or Guest */}
-                <div className="p-4 border-t border-neutral-800 bg-[#080808] shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                <div className="px-4 pt-4 pb-[calc(0.25rem+env(safe-area-inset-bottom))] border-t border-neutral-800 bg-[#080808] shrink-0">
 
                     {isLoggedIn ? (
                         <>

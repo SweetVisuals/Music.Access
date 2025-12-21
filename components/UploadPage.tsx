@@ -53,7 +53,7 @@ interface ContextMenuState {
     targetId?: string;
 }
 
-type ViewMode = 'grid' | 'column';
+type ViewMode = 'grid' | 'column' | 'list';
 
 interface UploadPageProps {
     onPlayTrack?: (project: Project, trackId: string) => void;
@@ -63,6 +63,8 @@ interface UploadPageProps {
     currentProject?: Project | null;
     userProfile?: any | null; // Typed as any to avoid import cycle if needed, or better UserProfile
 }
+
+type FilterType = 'all' | 'audio' | 'image' | 'text' | 'folder';
 
 // --- Initial Data ---
 // Start with empty array for production
@@ -91,6 +93,9 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     const [textEditorItem, setTextEditorItem] = useState<FileSystemItem | null>(null);
     const [infoItem, setInfoItem] = useState<FileSystemItem | null>(null);
     const [editorContent, setEditorContent] = useState('');
+
+    // Filter State
+    const [activeFilter, setActiveFilter] = useState<FilterType>('all');
     // Upload State
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
@@ -143,7 +148,15 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     };
 
     // --- Derived State ---
-    const currentItems = useMemo(() => items.filter(item => item.parentId === currentFolderId), [items, currentFolderId]);
+    const currentItems = useMemo(() => {
+        let filtered = items.filter(item => item.parentId === currentFolderId);
+
+        if (activeFilter !== 'all') {
+            filtered = filtered.filter(item => item.type === 'folder' || item.type === activeFilter);
+        }
+
+        return filtered;
+    }, [items, currentFolderId, activeFilter]);
     const currentFolder = items.find(i => i.id === currentFolderId);
 
     // Close menu on outside click
@@ -661,7 +674,15 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 </div>
 
                 <div className="flex items-center gap-3 px-2">
-                    <div className="hidden md:flex items-center bg-neutral-900 rounded-lg border border-white/5 p-0.5">
+                    <div className="flex items-center bg-neutral-900 rounded-lg border border-white/5 p-0.5">
+                        {/* Mobile: List vs Grid */}
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`md:hidden p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+                            title="List View"
+                        >
+                            <List size={16} />
+                        </button>
                         <button
                             onClick={() => setViewMode('grid')}
                             className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
@@ -669,9 +690,10 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                         >
                             <LayoutGrid size={16} />
                         </button>
+                        {/* Desktop: Grid vs Column */}
                         <button
                             onClick={() => setViewMode('column')}
-                            className={`p-1.5 rounded-md transition-all ${viewMode === 'column' ? 'bg-white/10 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+                            className={`hidden md:block p-1.5 rounded-md transition-all ${viewMode === 'column' ? 'bg-white/10 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
                             title="Column View"
                         >
                             <Columns size={16} />
@@ -682,9 +704,29 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
                     <button className="flex items-center space-x-2 px-3 py-1.5 rounded hover:bg-white/5 text-neutral-400 hover:text-white transition-colors text-xs font-mono border border-transparent hover:border-white/5">
                         <ArrowUpDown size={12} />
-                        <span>Sort: Date</span>
+                        <span className="hidden md:inline">Sort: Date</span>
+                        <span className="md:hidden">Date</span>
                     </button>
                 </div>
+            </div>
+
+            {/* Mobile Filter Bar */}
+            <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2 scrollbar-none md:hidden pt-2 pl-2">
+                {(['all', 'audio', 'image', 'text'] as FilterType[]).map(type => (
+                    <button
+                        key={type}
+                        onClick={() => setActiveFilter(type)}
+                        className={`
+                            px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap transition-all uppercase tracking-wider
+                            ${activeFilter === type
+                                ? 'bg-primary text-black border-primary shadow-[0_0_10px_rgba(var(--primary),0.3)]'
+                                : 'bg-neutral-900/50 text-neutral-400 border-white/10 hover:border-white/30'
+                            }
+                        `}
+                    >
+                        {type === 'all' ? 'All Files' : type + 's'}
+                    </button>
+                ))}
             </div>
 
             {/* Main Content Area */}
@@ -719,19 +761,90 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                         </div>
                     </div>
                 )}
-                {viewMode === 'grid' ? (
-                    // --- GRID VIEW ---
-                    <div className="p-6">
-                        {currentItems.length === 0 ? (
-                            <div
-                                className={`flex flex-col items-center justify-center h-64 border border-dashed rounded-xl transition-all ${isDraggingFiles ? 'border-primary bg-primary/10' : 'border-neutral-800 text-neutral-600'}`}
-                            >
-                                <UploadIcon size={48} className={`mb-4 ${isDraggingFiles ? 'text-primary animate-bounce' : 'opacity-50'}`} />
-                                <p className="text-sm font-bold">{isDraggingFiles ? 'Drop files here' : 'This folder is empty'}</p>
-                                <p className="text-xs">{isDraggingFiles ? 'Release to upload your files' : 'Drag and drop files here or click Upload Files'}</p>
+                {currentItems.length === 0 ? (
+                    <div
+                        className={`flex flex-col items-center justify-center h-64 border border-dashed rounded-xl transition-all ${isDraggingFiles ? 'border-primary bg-primary/10' : 'border-neutral-800 text-neutral-600'}`}
+                    >
+                        <UploadIcon size={48} className={`mb-4 ${isDraggingFiles ? 'text-primary animate-bounce' : 'opacity-50'}`} />
+                        <p className="text-sm font-bold">{isDraggingFiles ? 'Drop files here' : 'This folder is empty'}</p>
+                        <p className="text-xs">{isDraggingFiles ? 'Release to upload your files' : 'Drag and drop files here or click Upload Files'}</p>
+                    </div>
+                ) : (
+                    <>
+                        {viewMode === 'list' && (
+                            /* Mobile List View */
+                            <div className="p-4 flex flex-col gap-2">
+                                {/* FOLDERS */}
+                                {currentItems.filter(i => i.type === 'folder').map(folder => (
+                                    <div
+                                        key={folder.id}
+                                        onClick={() => handleNavigate(folder.id)}
+                                        className="flex items-center gap-4 p-4 bg-neutral-900/50 border border-white/5 rounded-xl active:scale-[0.98] transition-transform"
+                                    >
+                                        <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center text-primary">
+                                            <Folder size={20} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-bold text-white text-sm truncate">{folder.name}</div>
+                                            <div className="text-xs text-neutral-500 font-mono">{folder.size} items</div>
+                                        </div>
+                                        <ChevronRight size={16} className="text-neutral-600" />
+                                    </div>
+                                ))}
+
+                                {/* FILES */}
+                                {currentItems.filter(i => i.type !== 'folder').map(file => {
+                                    const isPlayingFile = currentProject?.id === 'upload_browser_proj' && currentTrackId === file.id && isPlaying;
+
+                                    return (
+                                        <div
+                                            key={file.id}
+                                            className="flex items-center gap-4 p-3 bg-neutral-900/30 border border-white/5 rounded-xl"
+                                            onClick={() => {
+                                                if (file.type === 'audio') handlePlay(file);
+                                                if (file.type === 'text') openTextEditor(file);
+                                                if (file.type === 'image') openInfo(file);
+                                            }}
+                                        >
+                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${file.type === 'audio' ? (isPlayingFile ? 'bg-primary text-black animate-pulse' : 'bg-neutral-800/80 text-primary') :
+                                                    file.type === 'image' ? 'bg-purple-500/20 text-purple-400' :
+                                                        'bg-blue-500/20 text-blue-400'
+                                                }`}>
+                                                {file.type === 'audio' ? (isPlayingFile ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />) :
+                                                    file.type === 'image' ? <LayoutGrid size={18} /> :
+                                                        <FileText size={18} />}
+                                            </div>
+
+                                            <div className="flex-1 min-w-0">
+                                                <div className={`font-bold text-sm truncate ${isPlayingFile ? 'text-primary' : 'text-zinc-200'}`}>
+                                                    {file.name}
+                                                </div>
+                                                <div className="flex items-center gap-3 mt-1">
+                                                    <span className="text-[10px] uppercase font-bold text-neutral-600 bg-white/5 px-1.5 py-0.5 rounded">{file.format || file.type}</span>
+                                                    <span className="text-[10px] font-mono text-neutral-500">{file.size}</span>
+                                                    {file.type === 'audio' && <span className="text-[10px] font-mono text-neutral-500">{Math.floor(file.duration! / 60)}:{(file.duration! % 60).toString().padStart(2, '0')}</span>}
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleContextMenu(e, 'file', file.id);
+                                                }}
+                                                className="p-2 text-neutral-600 hover:text-white"
+                                            >
+                                                <MoreVertical size={16} />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                        ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                        )}
+
+                        {viewMode === 'grid' && (
+                            /* Grid View - Now Visible on Mobile too */
+                            <div className="p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+
                                 {/* FOLDERS */}
                                 {currentItems.filter(i => i.type === 'folder').map(folder => {
                                     const isSelected = selectedIds.has(folder.id);
@@ -747,16 +860,16 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                             onDoubleClick={() => handleNavigate(folder.id)}
                                             onContextMenu={(e) => handleContextMenu(e, 'folder', folder.id)}
                                             className={`
-                                        group p-4 bg-neutral-900/30 border rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center relative aspect-square
-                                        ${isSelected
+                                     group p-4 bg-neutral-900/30 border rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center relative aspect-square
+                                     ${isSelected
                                                     ? 'border-primary/50 bg-primary/10 shadow-[0_0_15px_rgba(var(--primary),0.1)]'
                                                     : 'border-transparent hover:bg-white/5 hover:scale-[1.02] hover:shadow-lg'
                                                 }
-                                        ${dragOverFolderId === folder.id
+                                     ${dragOverFolderId === folder.id
                                                     ? 'border-primary bg-primary/10 scale-105 shadow-[0_0_20px_rgba(var(--primary),0.2)]'
                                                     : ''
                                                 }
-                                    `}
+                                 `}
                                         >
                                             <Folder
                                                 size={32}
@@ -800,13 +913,13 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                             onDoubleClick={() => file.type === 'audio' ? handlePlay(file) : file.type === 'text' ? openTextEditor(file) : null}
                                             onContextMenu={(e) => handleContextMenu(e, 'file', file.id)}
                                             className={`
-                                            group bg-neutral-900/30 border rounded-xl p-3 flex flex-col items-center relative select-none transition-all duration-200
-                                            ${draggedItemId === file.id ? 'opacity-50 border-dashed' : ''}
-                                            ${isSelected
+                                         group bg-neutral-900/30 border rounded-xl p-3 flex flex-col items-center relative select-none transition-all duration-200
+                                         ${draggedItemId === file.id ? 'opacity-50 border-dashed' : ''}
+                                         ${isSelected
                                                     ? 'border-primary/50 bg-primary/10 shadow-[0_0_15px_rgba(var(--primary),0.1)]'
                                                     : 'border-transparent hover:bg-white/5 hover:scale-[1.02] hover:shadow-lg'
                                                 }
-                                        `}
+                                     `}
                                         >
                                             <div className="w-full aspect-square rounded-lg bg-neutral-900 flex items-center justify-center mb-3 relative overflow-hidden border border-white/5">
                                                 {isPlayingFile ? (
@@ -819,7 +932,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                     <>
                                                         {file.type === 'audio' && <Music size={24} className={`transition-colors ${isSelected ? 'text-primary' : 'text-neutral-600 group-hover:text-neutral-400'}`} />}
                                                         {file.type === 'text' && <FileText size={24} className={`transition-colors ${isSelected ? 'text-white' : 'text-neutral-600 group-hover:text-neutral-400'}`} />}
-                                                        {file.type === 'image' && <div className="w-full h-full"><img src={URL.createObjectURL(new Blob([file.content || '']))} className="w-full h-full object-cover opacity-50" /></div>}
+                                                        {file.type === 'image' && <div className="w-full h-full"><img src={file.src || URL.createObjectURL(new Blob([file.content || '']))} className="w-full h-full object-cover opacity-50" /></div>}
                                                     </>
                                                 )}
 
@@ -864,8 +977,10 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                 })}
                             </div>
                         )}
-                    </div>
-                ) : (
+                    </>
+                )}
+
+                {viewMode === 'column' && (
                     // --- COLUMN VIEW ---
                     <div className="grid grid-cols-5 h-[600px] divide-x divide-white/5">
                         {getColumns().map((col, colIndex) => (

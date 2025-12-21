@@ -140,7 +140,7 @@ export const getProjects = async (): Promise<Project[]> => {
         note_id,
         status_tags,
       assigned_file_id,
-        assigned_file:assets (
+        assigned_file:assets!tracks_mp3_asset_id_fkey (
           storage_path
         )
       ),
@@ -745,22 +745,35 @@ export const getFollowersCount = async (userId: string): Promise<number> => {
 };
 
 export const checkIsFollowing = async (targetUserId: string): Promise<boolean> => {
-  const currentUser = await getCurrentUser();
-  if (!currentUser) return false;
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return false;
 
-  const { data, error } = await supabase
-    .from('followers')
-    .select('id')
-    .eq('follower_id', currentUser.id)
-    .eq('following_id', targetUserId)
-    .single();
+    if (!targetUserId) {
+      console.warn('checkIsFollowing called with empty targetUserId');
+      return false;
+    }
 
-  if (error && error.code !== 'PGRST116') {
-    console.error('Error checking follow status:', error);
+    const { data, error } = await supabase
+      .from('followers')
+      .select('id')
+      .eq('follower_id', currentUser.id)
+      .eq('following_id', targetUserId)
+      .maybeSingle(); // Use maybeSingle to avoid 406 errors if multiple rows exist (though they shouldn't)
+
+    if (error) {
+      // Filter out "JSON object requested, multiple (or no) rows returned" if we didn't use maybeSingle
+      if (error.code !== 'PGRST116') {
+        console.error('Error checking follow status:', error);
+      }
+      return false;
+    }
+
+    return !!data;
+  } catch (err) {
+    console.error('Unexpected error in checkIsFollowing:', err);
     return false;
   }
-
-  return !!data;
 };
 
 export const followUser = async (targetUserId: string) => {
@@ -1160,25 +1173,33 @@ export const getTalentProfiles = async (): Promise<TalentProfile[]> => {
 
   if (error) throw error;
 
+  // Optimization: Fetch all users the current user is following in ONE query
+  let followedUserIds = new Set<string>();
+  if (currentUser) {
+    const { data: followData, error: followError } = await supabase
+      .from('followers')
+      .select('following_id')
+      .eq('follower_id', currentUser.id);
+
+    if (followError) {
+      console.error('Error fetching following list:', followError);
+    } else if (followData) {
+      followData.forEach((f: any) => followedUserIds.add(f.following_id));
+    }
+  }
+
   // Enhance with follower counts and follow status
   const profilesWithStats = await Promise.all(data.map(async (user) => {
     // Get follower count
+    // Note: This is still N+1 but less critical than the checkIsFollowing burst. 
+    // Ideally we'd aggregate this too but Supabase simple client doesn't do group-by count easily without RPC.
     const { count } = await supabase
       .from('followers')
       .select('*', { count: 'exact', head: true })
       .eq('following_id', user.id);
 
-    // Check if current user is following this user
-    let isFollowing = false;
-    if (currentUser) {
-      const { data: followData } = await supabase
-        .from('followers')
-        .select('id')
-        .eq('follower_id', currentUser.id)
-        .eq('following_id', user.id)
-        .single();
-      isFollowing = !!followData;
-    }
+    // Check in-memory set
+    const isFollowing = followedUserIds.has(user.id);
 
     // Get tags (mock for now, or fetch from a hypothetical user_tags table)
     const tags = ['Producer', 'Beatmaker'];

@@ -3,10 +3,11 @@ import { GoogleGenAI } from "@google/genai";
 import { Project } from '../types';
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const GEMINI_MODEL = 'gemini-1.5-flash';
 
 export const generateCreativeDescription = async (project: Project): Promise<string> => {
   try {
-    const model = 'gemini-2.5-flash';
+    const model = GEMINI_MODEL;
     const prompt = `
       Analyze this music project and provide a single, high-impact sentence describing its vibe.
       
@@ -40,7 +41,7 @@ export const generateCreativeDescription = async (project: Project): Promise<str
 
 export const askAiAssistant = async (query: string, contextProjects: Project[]): Promise<string> => {
   try {
-    const model = 'gemini-2.5-flash';
+    const model = GEMINI_MODEL;
 
     const projectSummary = contextProjects.map(p =>
       `- ${p.title} by ${p.producer} (${p.genre}, ${p.bpm}BPM, ${p.key})`
@@ -72,7 +73,7 @@ export const askAiAssistant = async (query: string, contextProjects: Project[]):
 
 export const getWritingAssistance = async (userPrompt: string, currentText: string): Promise<string> => {
   try {
-    const model = 'gemini-2.5-flash';
+    const model = GEMINI_MODEL;
 
     const prompt = `
       Current Lyrics/Notes:
@@ -102,7 +103,7 @@ export const getWritingAssistance = async (userPrompt: string, currentText: stri
 
 export const getRhymesForWord = async (word: string): Promise<string[]> => {
   try {
-    const model = 'gemini-2.5-flash';
+    const model = GEMINI_MODEL;
     const prompt = `
             List 15 creative, slant, and perfect rhymes for the word "${word}" suitable for modern song lyrics (rap/pop/r&b).
             

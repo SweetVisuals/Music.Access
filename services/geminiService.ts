@@ -2,9 +2,7 @@
 // import { GoogleGenAI } from "@google/genai"; // DeepSeek Replacement
 import { Project } from '../types';
 
-// Hardcoded Key for LOCAL FALLBACK ONLY (User Request)
-// Ideally this is removed and only exists in Vercel Env Vars as DEEPSEEK_API_KEY
-const LOCAL_FALLBACK_KEY = 'sk-71eada7563114bde846c61969b83efe8';
+// Hardcoded Key REMOVED for Security.
 const PROXY_URL = '/api/deepseek';
 
 // Helper for DeepSeek API Calls
@@ -24,25 +22,23 @@ const callDeepSeek = async (systemPrompt: string, userPrompt: string, jsonMode =
         const data = await proxyResponse.json();
         return data.choices[0]?.message?.content || "";
       } else {
-        // If 404 (func not found locally) or 500, throw to trigger fallback
-        // Only log warning if it's not a 404 (common in local dev)
-        if (proxyResponse.status !== 404) {
-          const errText = await proxyResponse.text();
-          console.warn('Proxy failed, trying direct:', errText);
-        }
-        throw new Error('Proxy unreachable or failed');
+        throw new Error('Proxy unreachable');
       }
     } catch (proxyError) {
-      // 2. Fallback to Direct Call (For Local Dev without `vercel dev`)
-      // Note: This relies on the API allowing CORS or a browser extension/dev mode that ignores it.
-      // DeepSeek API usually blocks this, but we try as last resort since user provided key.
-      console.log('Falling back to direct API call...');
+      // 2. Fallback to Local Env Var (For Local Dev)
+      const localKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
 
+      if (!localKey) {
+        console.error("DeepSeek Setup Missing: Set DEEPSEEK_API_KEY in Vercel or VITE_DEEPSEEK_API_KEY in .env.local");
+        return "Error: AI not configured. Please set API Keys.";
+      }
+
+      console.log('Falling back to local env key...');
       const response = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${LOCAL_FALLBACK_KEY}`
+          'Authorization': `Bearer ${localKey}`
         },
         body: JSON.stringify({
           model: 'deepseek-chat',
@@ -57,7 +53,6 @@ const callDeepSeek = async (systemPrompt: string, userPrompt: string, jsonMode =
 
       if (!response.ok) {
         const error = await response.text();
-        // If it's CORS error, fetch throws, so this catches HTTP errors
         throw new Error(`Direct API Error: ${response.status} - ${error}`);
       }
 

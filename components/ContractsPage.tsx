@@ -173,42 +173,74 @@ const ContractsPage: React.FC = () => {
                 </div>
 
                 <div className="w-full md:w-auto -mx-4 px-4 md:mx-0 md:px-0">
-                    {/* Mobile: fit-row | Desktop: Segmented Control */}
-                    <div className="grid grid-cols-3 md:flex md:flex-nowrap md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 gap-1 md:gap-0">
+                    {/* Mobile Tabs Layout (Grid) */}
+                    <div className="lg:hidden relative pb-2">
+                        <div className="grid grid-cols-3 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5">
+                            <button
+                                onClick={() => setFilter('all')}
+                                className={`
+                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                    ${filter === 'all' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                                `}
+                            >
+                                <span className="text-[9px] font-bold uppercase tracking-tight">All</span>
+                            </button>
+                            <button
+                                onClick={() => setFilter('service')}
+                                className={`
+                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                    ${filter === 'service' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                                `}
+                            >
+                                <span className="text-[9px] font-bold uppercase tracking-tight">Service</span>
+                            </button>
+                            <button
+                                onClick={() => setFilter('audio')}
+                                className={`
+                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                    ${filter === 'audio' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                                `}
+                            >
+                                <span className="text-[9px] font-bold uppercase tracking-tight">Audio</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Desktop Segmented Control */}
+                    <div className="hidden lg:flex lg:bg-neutral-900 lg:p-1 lg:rounded-lg lg:border lg:border-neutral-800">
                         <button
                             onClick={() => setFilter('all')}
                             className={`
-                            py-2 px-0 md:px-4 md:py-1.5 text-[10px] md:text-xs font-bold rounded-lg md:rounded-md transition-all border flex items-center justify-center
-                            ${filter === 'all'
-                                    ? 'bg-white text-black border-white md:bg-neutral-800 md:text-white md:border-transparent md:shadow'
-                                    : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:bg-neutral-800 hover:text-white md:bg-transparent md:border-transparent md:hover:bg-white/5'
+                                px-4 py-1.5 text-xs font-bold rounded-md transition-all border flex items-center justify-center
+                                ${filter === 'all'
+                                    ? 'bg-neutral-800 text-white border-transparent shadow'
+                                    : 'bg-transparent text-neutral-400 border-transparent hover:bg-white/5'
                                 }
-                        `}
+                            `}
                         >
-                            <span className="md:hidden">All</span>
-                            <span className="hidden md:inline">All Contracts</span>
+                            All Contracts
                         </button>
                         <button
                             onClick={() => setFilter('service')}
                             className={`
-                            py-2 px-0 md:px-4 md:py-1.5 text-[10px] md:text-xs font-bold rounded-lg md:rounded-md transition-all border flex items-center justify-center
-                            ${filter === 'service'
-                                    ? 'bg-white text-black border-white md:bg-neutral-800 md:text-white md:border-transparent md:shadow'
-                                    : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:bg-neutral-800 hover:text-white md:bg-transparent md:border-transparent md:hover:bg-white/5'
+                                px-4 py-1.5 text-xs font-bold rounded-md transition-all border flex items-center justify-center
+                                ${filter === 'service'
+                                    ? 'bg-neutral-800 text-white border-transparent shadow'
+                                    : 'bg-transparent text-neutral-400 border-transparent hover:bg-white/5'
                                 }
-                        `}
+                            `}
                         >
                             Service
                         </button>
                         <button
                             onClick={() => setFilter('audio')}
                             className={`
-                            py-2 px-0 md:px-4 md:py-1.5 text-[10px] md:text-xs font-bold rounded-lg md:rounded-md transition-all border flex items-center justify-center
-                            ${filter === 'audio'
-                                    ? 'bg-white text-black border-white md:bg-neutral-800 md:text-white md:border-transparent md:shadow'
-                                    : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:bg-neutral-800 hover:text-white md:bg-transparent md:border-transparent md:hover:bg-white/5'
+                                px-4 py-1.5 text-xs font-bold rounded-md transition-all border flex items-center justify-center
+                                ${filter === 'audio'
+                                    ? 'bg-neutral-800 text-white border-transparent shadow'
+                                    : 'bg-transparent text-neutral-400 border-transparent hover:bg-white/5'
                                 }
-                        `}
+                            `}
                         >
                             Audio
                         </button>

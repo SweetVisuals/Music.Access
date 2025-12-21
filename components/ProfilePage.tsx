@@ -171,31 +171,34 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     }, [userProfile]);
 
     // Check if following
-    useEffect(() => {
-        const checkFollowStatus = async () => {
-            if (userProfile && !isOwnProfile) {
-                // If we have a user ID (which we should if userProfile is loaded from DB), check status
-                // If userProfile is partial/mock without ID, we can't check.
-                // However, userProfile type doesn't mandate ID. We'll need to fetch real ID if missing or rely on what we have.
-                // Actually getUserProfile returns mock ID sometimes? 
-                // Let's rely on the assumption that if we are viewing a profile, we have their ID potentially from the lookup.
-                // But wait, userProfile from getUserProfile MIGHT NOT have ID if it's the fallback mock?
-                // The current types say id is optional.
+    // Initial check handled by the effect below that depends on userProfile?.id
 
-                // Let's try to get ID from profileUsername or userProfile
-                // Best effort
-                if (userProfile.username) {
-                    // If we don't have ID in userProfile, we might need to look it up again or just rely on handle
-                    const isFollowing = await checkIsFollowing(userProfile.id || '');
-                    setIsFollowing(isFollowing);
-                }
+    // Re-check follow status when the component mounts or userProfile ID changes specifically
+    useEffect(() => {
+        if (userProfile?.id && !isOwnProfile) {
+            checkFollowStatus();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userProfile?.id, isOwnProfile]);
+
+    const checkFollowStatus = async () => {
+        if (userProfile?.id && !isOwnProfile) {
+            try {
+                const following = await checkIsFollowing(userProfile.id);
+                setIsFollowing(following);
+            } catch (e) {
+                console.error("Error checking follow status:", e);
             }
-        };
-        checkFollowStatus();
-    }, [userProfile, isOwnProfile]);
+        }
+    };
 
     const handleToggleFollow = async () => {
-        if (!userProfile?.id || isFollowLoading) return;
+        if (!userProfile?.id) {
+            console.warn("Cannot follow: User ID missing", userProfile);
+            return;
+        }
+        if (isFollowLoading) return;
+
         setIsFollowLoading(true);
         const previousState = isFollowing;
         const previousCount = userProfile.subscribers;
@@ -218,9 +221,20 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             // Revert
             setIsFollowing(previousState);
             setUserProfile(prev => prev ? ({ ...prev, subscribers: previousCount }) : null);
-            alert("Failed to update follow status."); // Simple feedback
+            alert("Failed to update follow status.");
         } finally {
             setIsFollowLoading(false);
+        }
+    };
+
+    const handleMessage = async () => {
+        if (!userProfile?.id) return;
+        try {
+            const conversationId = await import('../services/supabaseService').then(m => m.createConversation(userProfile.id!));
+            // Navigate to messages
+            window.location.href = `/messages?cid=${conversationId}`;
+        } catch (error) {
+            console.error("Failed to start conversation:", error);
         }
     };
 
@@ -636,7 +650,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             <UserPlus size={16} />
                                             {isFollowing ? 'FOLLOWING' : 'FOLLOW'}
                                         </button>
-                                        <button className="h-11 px-6 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-white/10 transition-colors flex items-center justify-center gap-2 flex-1 md:flex-auto">
+                                        <button
+                                            onClick={handleMessage}
+                                            className="h-11 px-6 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-white/10 transition-colors flex items-center justify-center gap-2 flex-1 md:flex-auto"
+                                        >
                                             <MessageSquare size={16} />
                                             MESSAGE
                                         </button>
@@ -649,7 +666,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
 
             {/* TABS NAVIGATION */}
-            <div className="sticky top-14 lg:top-24 z-30 bg-[#050505] lg:border-b lg:border-neutral-800 -mx-6 px-6 lg:-mx-8 lg:px-8 mb-6 lg:mb-8 py-3 lg:pb-0.5 shadow-xl lg:shadow-none">
+            {/* Fix: Removed sticky on mobile if it causes issues, or ensured top offset is correct. 
+                Using explicit z-index and background to ensure visibility without pushing content.
+            */}
+            <div className="sticky top-14 md:top-24 z-30 bg-[#050505] lg:border-b lg:border-neutral-800 -mx-6 px-6 lg:-mx-8 lg:px-8 mb-6 lg:mb-8 py-2 shadow-xl lg:shadow-none transition-all">
 
                 {/* Mobile Tabs Layout (Single Row Grid) */}
                 <div className="lg:hidden relative pb-2">

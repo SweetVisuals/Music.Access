@@ -710,23 +710,24 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 </div>
             </div>
 
-            {/* Mobile Filter Bar */}
-            <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2 scrollbar-none md:hidden pt-2 pl-2">
-                {(['all', 'audio', 'image', 'text'] as FilterType[]).map(type => (
-                    <button
-                        key={type}
-                        onClick={() => setActiveFilter(type)}
-                        className={`
-                            px-4 py-2 rounded-full text-xs font-bold border whitespace-nowrap transition-all uppercase tracking-wider
-                            ${activeFilter === type
-                                ? 'bg-primary text-black border-primary shadow-[0_0_10px_rgba(var(--primary),0.3)]'
-                                : 'bg-neutral-900/50 text-neutral-400 border-white/10 hover:border-white/30'
-                            }
-                        `}
-                    >
-                        {type === 'all' ? 'All Files' : type + 's'}
-                    </button>
-                ))}
+            {/* Mobile Filter Bar (Standardized Grid) */}
+            <div className="lg:hidden relative pb-2 px-2 md:px-0">
+                <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5">
+                    {(['all', 'audio', 'image', 'text'] as FilterType[]).map(type => (
+                        <button
+                            key={type}
+                            onClick={() => setActiveFilter(type)}
+                            className={`
+                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                ${activeFilter === type ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                            `}
+                        >
+                            <span className="text-[9px] font-bold uppercase tracking-tight">
+                                {type === 'all' ? 'All' : type}
+                            </span>
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Main Content Area */}
@@ -807,8 +808,8 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                             }}
                                         >
                                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${file.type === 'audio' ? (isPlayingFile ? 'bg-primary text-black animate-pulse' : 'bg-neutral-800/80 text-primary') :
-                                                    file.type === 'image' ? 'bg-purple-500/20 text-purple-400' :
-                                                        'bg-blue-500/20 text-blue-400'
+                                                file.type === 'image' ? 'bg-purple-500/20 text-purple-400' :
+                                                    'bg-blue-500/20 text-blue-400'
                                                 }`}>
                                                 {file.type === 'audio' ? (isPlayingFile ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />) :
                                                     file.type === 'image' ? <LayoutGrid size={18} /> :

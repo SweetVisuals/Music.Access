@@ -2,40 +2,70 @@
 // import { GoogleGenAI } from "@google/genai"; // DeepSeek Replacement
 import { Project } from '../types';
 
-// Hardcoded for user session as requested (unable to update .env.local)
-const DEEPSEEK_API_KEY = 'sk-71eada7563114bde846c61969b83efe8';
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
-const MODEL_NAME = 'deepseek-chat';
+// Hardcoded Key for LOCAL FALLBACK ONLY (User Request)
+// Ideally this is removed and only exists in Vercel Env Vars as DEEPSEEK_API_KEY
+const LOCAL_FALLBACK_KEY = 'sk-71eada7563114bde846c61969b83efe8';
+const PROXY_URL = '/api/deepseek';
 
 // Helper for DeepSeek API Calls
 const callDeepSeek = async (systemPrompt: string, userPrompt: string, jsonMode = false): Promise<string> => {
   try {
-    const response = await fetch(DEEPSEEK_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: MODEL_NAME,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ],
-        response_format: jsonMode ? { type: "json_object" } : { type: "text" },
-        stream: false
-      })
-    });
+    // 1. Try Vercel Proxy (Secure, No CORS)
+    try {
+      const proxyResponse = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ systemPrompt, userPrompt, jsonMode, model: 'deepseek-chat' })
+      });
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`DeepSeek API Error: ${response.status} - ${error}`);
+      const proxyContentType = proxyResponse.headers.get('content-type');
+
+      if (proxyResponse.ok && proxyContentType && proxyContentType.includes('application/json')) {
+        const data = await proxyResponse.json();
+        return data.choices[0]?.message?.content || "";
+      } else {
+        // If 404 (func not found locally) or 500, throw to trigger fallback
+        // Only log warning if it's not a 404 (common in local dev)
+        if (proxyResponse.status !== 404) {
+          const errText = await proxyResponse.text();
+          console.warn('Proxy failed, trying direct:', errText);
+        }
+        throw new Error('Proxy unreachable or failed');
+      }
+    } catch (proxyError) {
+      // 2. Fallback to Direct Call (For Local Dev without `vercel dev`)
+      // Note: This relies on the API allowing CORS or a browser extension/dev mode that ignores it.
+      // DeepSeek API usually blocks this, but we try as last resort since user provided key.
+      console.log('Falling back to direct API call...');
+
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${LOCAL_FALLBACK_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          response_format: jsonMode ? { type: "json_object" } : { type: "text" },
+          stream: false
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        // If it's CORS error, fetch throws, so this catches HTTP errors
+        throw new Error(`Direct API Error: ${response.status} - ${error}`);
+      }
+
+      const data = await response.json();
+      return data.choices[0]?.message?.content || "";
     }
-
-    const data = await response.json();
-    return data.choices[0]?.message?.content || "";
   } catch (error) {
-    console.error("DeepSeek Call Failed:", error);
+    console.error("DeepSeek Call Failed (Proxy & Direct):", error);
     throw error;
   }
 };

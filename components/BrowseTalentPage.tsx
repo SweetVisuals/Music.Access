@@ -30,21 +30,42 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
 
     useEffect(() => {
         const fetchData = async () => {
+            setLoading(true);
+
+            // 1. Fetch Talents
             try {
-                const [talentData, serviceData, projectData] = await Promise.all([
-                    getTalentProfiles(),
-                    getServices(),
-                    getProjects()
-                ]);
-                setTalents(talentData.length > 0 ? talentData : MOCK_TALENT);
+                const talentData = await getTalentProfiles();
+                // If we get 0 talents, we might still want to show mocks during development/demo 
+                // BUT the user asked why it's not real data. So let's show real data (empty) if it's empty, 
+                // or maybe keep mocks only if it's REALLY empty and we want to populate the UI.
+                // For now, let's prefer real data. If empty, show empty state or mocks if strictly needed for layout.
+                // Reverting to MOCK_TALENT only on ERROR or if explicitly desired for empty state.
+                setTalents(talentData.length > 0 ? talentData : []);
+            } catch (error) {
+                console.error('Error fetching talent profiles:', error);
+                // Fallback to mock only on error to keep UI usable
+                setTalents(MOCK_TALENT);
+            }
+
+            // 2. Fetch Services
+            try {
+                const serviceData = await getServices();
                 setServices(serviceData);
+            } catch (error) {
+                console.error('Error fetching services:', error);
+                setServices([]);
+            }
+
+            // 3. Fetch Projects
+            try {
+                const projectData = await getProjects();
                 setProjects(projectData);
             } catch (error) {
-                console.error('Error fetching browse data:', error);
-                setTalents(MOCK_TALENT);
-            } finally {
-                setLoading(false);
+                console.error('Error fetching projects:', error);
+                setProjects([]);
             }
+
+            setLoading(false);
         };
         fetchData();
     }, []);
@@ -154,8 +175,8 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                                     <button
                                         onClick={(e) => handleFollow(e, talent)}
                                         className={`flex-1 text-xs font-bold flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors border ${talent.isFollowing
-                                                ? 'bg-transparent border-neutral-700 text-neutral-400 hover:text-red-500 hover:border-red-900'
-                                                : 'text-white bg-primary/10 hover:bg-primary hover:text-black border-primary/20'
+                                            ? 'bg-transparent border-neutral-700 text-neutral-400 hover:text-red-500 hover:border-red-900'
+                                            : 'text-white bg-primary/10 hover:bg-primary hover:text-black border-primary/20'
                                             }`}
                                     >
                                         <UserPlus size={14} /> {talent.isFollowing ? 'Following' : 'Follow'}

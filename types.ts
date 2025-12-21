@@ -108,6 +108,7 @@ export interface TalentProfile {
   tags: string[];
   followers: string;
   isVerified?: boolean;
+  isFollowing?: boolean;
 }
 
 export interface CollabService {

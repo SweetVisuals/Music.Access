@@ -1,13 +1,47 @@
 
-import { GoogleGenAI } from "@google/genai";
+// import { GoogleGenAI } from "@google/genai"; // DeepSeek Replacement
 import { Project } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-const GEMINI_MODEL = 'gemini-1.5-flash';
+// Hardcoded for user session as requested (unable to update .env.local)
+const DEEPSEEK_API_KEY = 'sk-71eada7563114bde846c61969b83efe8';
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+const MODEL_NAME = 'deepseek-chat';
+
+// Helper for DeepSeek API Calls
+const callDeepSeek = async (systemPrompt: string, userPrompt: string, jsonMode = false): Promise<string> => {
+  try {
+    const response = await fetch(DEEPSEEK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: MODEL_NAME,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        response_format: jsonMode ? { type: "json_object" } : { type: "text" },
+        stream: false
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`DeepSeek API Error: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0]?.message?.content || "";
+  } catch (error) {
+    console.error("DeepSeek Call Failed:", error);
+    throw error;
+  }
+};
 
 export const generateCreativeDescription = async (project: Project): Promise<string> => {
   try {
-    const model = GEMINI_MODEL;
     const prompt = `
       Analyze this music project and provide a single, high-impact sentence describing its vibe.
       
@@ -27,12 +61,11 @@ export const generateCreativeDescription = async (project: Project): Promise<str
       5. Example format: "Dark, cinematic textures blended with aggressive 808s for a late-night trap anthem."
     `;
 
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: prompt,
-    });
+    return await callDeepSeek(
+      "You are a music marketing expert.",
+      prompt
+    ) || "Analysis unavailable.";
 
-    return response.text?.trim() || "Analysis unavailable.";
   } catch (error) {
     console.error("Error generating description:", error);
     return "System error: Unable to retrieve AI analysis.";
@@ -41,30 +74,25 @@ export const generateCreativeDescription = async (project: Project): Promise<str
 
 export const askAiAssistant = async (query: string, contextProjects: Project[]): Promise<string> => {
   try {
-    const model = GEMINI_MODEL;
-
     const projectSummary = contextProjects.map(p =>
       `- ${p.title} by ${p.producer} (${p.genre}, ${p.bpm}BPM, ${p.key})`
     ).join('\n');
 
     const prompt = `
-      You are "System.AI", a helpful assistant inside a music production terminal app.
-      User Query: "${query}"
-      
       Here is the current list of trending projects available on the screen:
       ${projectSummary}
+
+      User Query: "${query}"
 
       Answer the user's query based on the available projects or general music production advice. 
       Keep the response concise, technical, and helpful. 
       If recommending a project, mention its title.
     `;
 
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: prompt,
-    });
-
-    return response.text || "No response.";
+    return await callDeepSeek(
+      "You are 'System.AI', a helpful assistant inside a music production terminal app.",
+      prompt
+    ) || "No response.";
   } catch (error) {
     console.error("Error asking assistant:", error);
     return "Error: AI Assistant offline.";
@@ -73,8 +101,6 @@ export const askAiAssistant = async (query: string, contextProjects: Project[]):
 
 export const getWritingAssistance = async (userPrompt: string, currentText: string): Promise<string> => {
   try {
-    const model = GEMINI_MODEL;
-
     const prompt = `
       Current Lyrics/Notes:
       "${currentText}"
@@ -89,12 +115,10 @@ export const getWritingAssistance = async (userPrompt: string, currentText: stri
       - Keep it concise.
     `;
 
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: prompt,
-    });
-
-    return response.text || "No advice generated.";
+    return await callDeepSeek(
+      "You are an expert songwriter and lyricist.",
+      prompt
+    ) || "No advice generated.";
   } catch (error) {
     console.error("Error getting writing assistance:", error);
     return "System error: AI writing assistant unavailable.";
@@ -103,7 +127,6 @@ export const getWritingAssistance = async (userPrompt: string, currentText: stri
 
 export const getRhymesForWord = async (word: string): Promise<string[]> => {
   try {
-    const model = GEMINI_MODEL;
     const prompt = `
             List 15 creative, slant, and perfect rhymes for the word "${word}" suitable for modern song lyrics (rap/pop/r&b).
             
@@ -117,15 +140,13 @@ export const getRhymesForWord = async (word: string): Promise<string[]> => {
                - Multi-syllabic rhymes if applicable.
         `;
 
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: prompt,
-    });
+    const text = await callDeepSeek(
+      "You are a rhyming dictionary API. Output JSON only.",
+      prompt,
+      true // JSON Mode
+    );
 
-    const text = response.text || "[]";
-    // Clean up potential markdown code blocks if the AI misbehaves
     const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
     return JSON.parse(cleanText);
   } catch (error) {
     console.error("Error fetching AI rhymes:", error);

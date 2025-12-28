@@ -314,10 +314,11 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
   if (data) {
     // Fetch related data
     try {
-      const [projects, services, followersCount] = await Promise.all([
+      const [projects, services, followersCount, stats] = await Promise.all([
         getProjectsByUserId(data.id),
         getServicesByUserId(data.id),
-        getFollowersCount(data.id)
+        getFollowersCount(data.id),
+        getUserStats(data.id)
       ]);
 
       return {
@@ -328,7 +329,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
         avatar: data.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
         banner: data.banner_url || '',
         subscribers: followersCount,
-        streams: 0, // TODO: calculate from tracks
+        streams: stats.streams,
         gems: data.gems || 0,
         balance: data.balance || 0,
         lastGemClaimDate: data.last_gem_claim_date,
@@ -431,10 +432,11 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
 
   if (data) {
     // Fetch related data
-    const [projects, services, followersCount] = await Promise.all([
+    const [projects, services, followersCount, stats] = await Promise.all([
       getProjectsByUserId(data.id),
       getServicesByUserId(data.id),
-      getFollowersCount(data.id)
+      getFollowersCount(data.id),
+      getUserStats(data.id)
     ]);
 
     return {
@@ -445,7 +447,7 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
       avatar: data.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
       banner: data.banner_url || '',
       subscribers: followersCount,
-      streams: 0, // TODO: calculate from tracks
+      streams: stats.streams,
       gems: data.gems,
       balance: data.balance,
       lastGemClaimDate: data.last_gem_claim_date,
@@ -742,6 +744,30 @@ export const getFollowersCount = async (userId: string): Promise<number> => {
 
   if (error) throw error;
   return count || 0;
+};
+
+export const getUserStats = async (userId: string): Promise<{ streams: number; tracks: number }> => {
+  try {
+    // Fetch all tracks for projects owned by this user
+    // We join on projects to filter by user_id
+    const { data, error } = await supabase
+      .from('tracks')
+      .select('play_count, project:projects!inner(user_id)')
+      .eq('project.user_id', userId);
+
+    if (error) {
+      console.error('Error fetching user stats:', error);
+      return { streams: 0, tracks: 0 };
+    }
+
+    const totalTracks = data.length;
+    const totalStreams = data.reduce((sum, track) => sum + (track.play_count || 0), 0);
+
+    return { streams: totalStreams, tracks: totalTracks };
+  } catch (err) {
+    console.error('Unexpected error in getUserStats:', err);
+    return { streams: 0, tracks: 0 };
+  }
 };
 
 export const checkIsFollowing = async (targetUserId: string): Promise<boolean> => {
@@ -1213,11 +1239,23 @@ export const getTalentProfiles = async (): Promise<TalentProfile[]> => {
       tags: tags,
       followers: (count || 0).toString(),
       isVerified: false, // TODO: Add verification logic
-      isFollowing: isFollowing
+      isFollowing: isFollowing,
+      streams: 0, // Populated below
+      tracks: 0   // Populated below
     };
   }));
 
-  return profilesWithStats;
+  // Fetch stats in parallel for all profiles
+  const profilesWithFullStats = await Promise.all(profilesWithStats.map(async (profile) => {
+    const stats = await getUserStats(profile.id);
+    return {
+      ...profile,
+      streams: stats.streams,
+      tracks: stats.tracks
+    };
+  }));
+
+  return profilesWithFullStats;
 };
 
 export const getCollabServices = async (): Promise<CollabService[]> => {

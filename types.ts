@@ -107,6 +107,8 @@ export interface TalentProfile {
   role: string;
   tags: string[];
   followers: string;
+  streams: number;
+  tracks: number;
   isVerified?: boolean;
   isFollowing?: boolean;
 }

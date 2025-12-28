@@ -161,11 +161,11 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                                         </div>
                                         <div className="text-center border-l border-neutral-800">
                                             <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Plays</div>
-                                            <div className="text-xs font-bold text-white">125K</div>
+                                            <div className="text-xs font-bold text-white">{talent.streams ? talent.streams.toLocaleString() : '0'}</div>
                                         </div>
                                         <div className="text-center border-l border-neutral-800">
                                             <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Tracks</div>
-                                            <div className="text-xs font-bold text-white">42</div>
+                                            <div className="text-xs font-bold text-white">{talent.tracks || 0}</div>
                                         </div>
                                     </div>
                                 </div>

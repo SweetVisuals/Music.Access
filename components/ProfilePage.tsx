@@ -848,17 +848,25 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 </div>
                             )}
 
-                            {localProjects.map(project => (
-                                <div key={project.id} className="h-[340px]">
-                                    <ProjectCard
-                                        project={project}
-                                        currentTrackId={currentTrackId}
-                                        isPlaying={currentProject?.id === project.id && isPlaying}
-                                        onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
-                                        onTogglePlay={onTogglePlay}
-                                    />
-                                </div>
-                            ))}
+                            {localProjects
+                                .filter(project => {
+                                    // If not owner (or viewing as visitor), only show published projects
+                                    if (!isOwnProfile || isViewerMode) {
+                                        return project.status === 'published';
+                                    }
+                                    return true; // Owner sees all
+                                })
+                                .map(project => (
+                                    <div key={project.id} className="h-[340px]">
+                                        <ProjectCard
+                                            project={project}
+                                            currentTrackId={currentTrackId}
+                                            isPlaying={currentProject?.id === project.id && isPlaying}
+                                            onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
+                                            onTogglePlay={onTogglePlay}
+                                        />
+                                    </div>
+                                ))}
                         </div>
                     </div>
                 )}

@@ -540,7 +540,7 @@ export const createProject = async (project: Partial<Project>) => {
       key: project.key,
       genre: project.genre,
       sub_genre: project.subGenre,
-      status: 'published' // Default to published for now
+      status: project.status || 'published' // Default to published if not specified
     })
     .select()
     .single();

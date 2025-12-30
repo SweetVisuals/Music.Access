@@ -590,6 +590,17 @@ const EditProjectModal = ({ project, onClose, onSave }: { project: Project; onCl
     const [genre, setGenre] = useState(project.genre || '');
     const [subGenre, setSubGenre] = useState(project.subGenre || '');
     const [saving, setSaving] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setIsVisible(true), 10);
+        return () => clearTimeout(timer);
+    }, []);
+
+    const handleClose = () => {
+        setIsVisible(false);
+        setTimeout(onClose, 300);
+    };
 
     const handleSave = async () => {
         setSaving(true);
@@ -600,105 +611,86 @@ const EditProjectModal = ({ project, onClose, onSave }: { project: Project; onCl
                 genre,
                 subGenre
             });
-            onClose();
+            handleClose();
         } catch (e) {
             console.error(e);
-        } finally {
             setSaving(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 z-[60] bg-[#050505] flex flex-col animate-in slide-in-from-bottom duration-300">
-
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 safe-area-top relative z-10 w-full">
+        <div className={`fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col transition-transform duration-300 ease-out will-change-transform ${isVisible ? 'translate-y-0' : 'translate-y-full'}`}>
+            {/* iOS-style Header Actions */}
+            <div className="flex items-center justify-between px-4 py-4 border-b border-white/5 bg-black/50 safe-area-top">
                 <button
-                    onClick={onClose}
-                    className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/10 transition-all backdrop-blur-md"
+                    onClick={handleClose}
+                    className="text-neutral-400 hover:text-white px-2 py-2 text-sm font-medium transition-colors"
                 >
-                    <X size={20} />
+                    Cancel
                 </button>
-                <div className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
-                    Edit Metadata
-                </div>
-                <div className="w-10"></div> {/* Spacer */}
+                <span className="font-bold text-white text-sm">Edit Project</span>
+                <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="text-primary font-bold px-2 py-2 text-sm disabled:opacity-50 transition-colors"
+                >
+                    {saving ? 'Saving...' : 'Save'}
+                </button>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto px-6 pb-32 relative z-10 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-6 pb-40">
+                <div className="space-y-6 max-w-md mx-auto">
 
-                <div className="space-y-10 mt-6">
-                    {/* Main Info */}
-                    <div className="space-y-8">
-                        <div className="space-y-1 group">
-                            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1 group-focus-within:text-primary transition-colors">Project Title</label>
-                            <input
-                                type="text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                className="w-full bg-transparent border-b-2 border-neutral-800 focus:border-primary px-0 py-2 text-2xl md:text-3xl font-bold text-white placeholder-neutral-800 focus:outline-none transition-all"
-                                placeholder="Untitled Project"
-                            />
-                        </div>
-
-                        <div className="space-y-3 group">
-                            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1 group-focus-within:text-primary transition-colors">Description</label>
-                            <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                className="w-full bg-neutral-900/30 border border-neutral-800 focus:border-neutral-600 rounded-2xl p-6 text-neutral-300 leading-relaxed focus:outline-none focus:bg-neutral-900/50 transition-all h-28 resize-none text-base"
-                                placeholder="Describe the vibe, instruments used, or inspiration..."
-                            />
-                        </div>
+                    {/* Title Input */}
+                    <div className="space-y-2">
+                        <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Project Title</label>
+                        <input
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Untitled Project"
+                            className="w-full bg-neutral-900/50 rounded-xl px-4 py-4 text-lg font-bold text-white border border-white/5 focus:border-primary/50 focus:bg-neutral-900 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder-neutral-700"
+                        />
                     </div>
 
-                    {/* Meta Grid */}
-                    <div>
-                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1 mb-4 block">Attributes</label>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="p-3 bg-neutral-900/20 rounded-2xl border border-white/5 space-y-0.5 focus-within:border-primary/50 focus-within:bg-neutral-900/40 transition-colors">
-                                <label className="text-[9px] font-bold text-neutral-600 uppercase tracking-widest">Genre</label>
+                    {/* Description Input */}
+                    <div className="space-y-2">
+                        <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Description</label>
+                        <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Add a description..."
+                            className="w-full bg-neutral-900/50 rounded-xl px-4 py-4 text-sm text-neutral-200 border border-white/5 focus:border-primary/50 focus:bg-neutral-900 focus:ring-1 focus:ring-primary/50 outline-none transition-all h-28 resize-none placeholder-neutral-700 leading-relaxed"
+                        />
+                    </div>
+
+                    {/* Metadata Row */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Genre</label>
+                            <div className="bg-neutral-900/50 rounded-xl px-3 py-3 border border-white/5 focus-within:border-primary/50 focus-within:bg-neutral-900 focus-within:ring-1 focus-within:ring-primary/50 transition-all flex items-center">
+                                <Music size={14} className="text-neutral-500 mr-2 shrink-0" />
                                 <input
-                                    type="text"
                                     value={genre}
                                     onChange={(e) => setGenre(e.target.value)}
-                                    className="w-full bg-transparent border-none p-0 text-white font-bold text-lg focus:ring-0 placeholder-neutral-700"
-                                    placeholder="None"
+                                    className="bg-transparent w-full text-sm font-medium outline-none text-white placeholder-neutral-700"
+                                    placeholder="Unspecified"
                                 />
                             </div>
-                            <div className="p-3 bg-neutral-900/20 rounded-2xl border border-white/5 space-y-0.5 focus-within:border-primary/50 focus-within:bg-neutral-900/40 transition-colors">
-                                <label className="text-[9px] font-bold text-neutral-600 uppercase tracking-widest">Sub Genre</label>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Sub-Genre</label>
+                            <div className="bg-neutral-900/50 rounded-xl px-3 py-3 border border-white/5 focus-within:border-primary/50 focus-within:bg-neutral-900 focus-within:ring-1 focus-within:ring-primary/50 transition-all flex items-center">
+                                <Disc size={14} className="text-neutral-500 mr-2 shrink-0" />
                                 <input
-                                    type="text"
                                     value={subGenre}
                                     onChange={(e) => setSubGenre(e.target.value)}
-                                    className="w-full bg-transparent border-none p-0 text-white font-bold text-lg focus:ring-0 placeholder-neutral-700"
-                                    placeholder="None"
+                                    className="bg-transparent w-full text-sm font-medium outline-none text-white placeholder-neutral-700"
+                                    placeholder="Unspecified"
                                 />
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            {/* Footer Actions */}
-            <div className="p-6 pb-24 border-t border-white/5 bg-[#050505] w-full">
-                <div className="flex gap-4">
-                    <button
-                        onClick={onClose}
-                        className="flex-1 py-4 rounded-xl bg-neutral-900 text-white font-bold text-sm hover:bg-neutral-800 transition-all active:scale-[0.98]"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="flex-1 py-4 rounded-xl bg-primary text-black font-bold text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none active:scale-[0.98] flex items-center justify-center gap-2"
-                    >
-                        {saving && <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />}
-                        {saving ? 'Saving...' : 'Save Changes'}
-                    </button>
                 </div>
             </div>
         </div>

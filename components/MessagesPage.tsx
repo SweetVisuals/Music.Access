@@ -26,15 +26,17 @@ const SwipeableConversationItem = ({
     conv: Conversation;
     activeId: string | null;
     onClick: () => void;
-    onDelete: () => void;
+    onDelete: () => Promise<void>;
 }) => {
     const [offset, setOffset] = useState(0);
     const [startX, setStartX] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
     const threshold = 100; // px to reveal
     const deleteThreshold = window.innerWidth * 0.75; // 75% of screen width
 
     const handleTouchStart = (e: React.TouchEvent) => {
         setStartX(e.touches[0].clientX);
+        setIsDragging(true);
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
@@ -48,10 +50,12 @@ const SwipeableConversationItem = ({
         }
     };
 
-    const handleTouchEnd = () => {
+    const handleTouchEnd = async () => {
+        setIsDragging(false);
         if (offset > deleteThreshold) {
-            // Auto delete if dragged far enough
-            onDelete();
+            // Auto trigger delete logic
+            await onDelete();
+            // Snap back if not deleted (cancelled)
             setOffset(0);
         } else if (offset > threshold) {
             // Snap to open
@@ -64,13 +68,24 @@ const SwipeableConversationItem = ({
 
     return (
         <div className="relative overflow-hidden touch-pan-y select-none group bg-black lg:bg-[#0a0a0a]">
-            {/* Background / Actions (Use conditional opacity/z-index to hide unless swiping) */}
+            {/* Background / Actions */}
             <div
-                className="absolute inset-y-0 left-0 bg-red-600 flex items-center justify-start pl-8 w-full z-0 cursor-pointer"
-                style={{ opacity: offset > 0 ? 1 : 0, transition: 'opacity 0.2s' }}
-                onClick={onDelete}
+                className="absolute inset-y-0 left-0 bg-red-600 flex items-center justify-start pl-8 z-0 cursor-pointer overflow-hidden whitespace-nowrap"
+                style={{
+                    // Width matches the swipe offset so only the revealed part is red
+                    width: `${Math.max(offset, 0)}px`,
+                    opacity: offset > 0 ? 1 : 0,
+                    transition: isDragging ? 'none' : 'width 0.3s ease-out, opacity 0.2s',
+                    // Min width to ensure icon is visible if snapped open
+                    minWidth: offset > threshold ? '100%' : '0px'
+                }}
+                onClick={async (e) => {
+                    e.stopPropagation();
+                    await onDelete();
+                    setOffset(0);
+                }}
             >
-                <span className="text-white font-bold flex items-center gap-2 animate-in fade-in zoom-in duration-300">
+                <span className="text-white font-bold flex items-center gap-2 animate-in fade-in zoom-in duration-300 fixed left-8">
                     <Trash size={20} />
                     <span className="text-xs font-semibold uppercase tracking-wider">Delete</span>
                 </span>
@@ -79,10 +94,13 @@ const SwipeableConversationItem = ({
             {/* Foreground Content */}
             <div
                 className={`
-                    relative z-10 bg-black lg:bg-[#0a0a0a] transition-transform duration-300 ease-out border-b border-white/5
+                    relative z-10 bg-black lg:bg-[#0a0a0a] border-b border-white/5
                     ${activeId === conv.id ? 'bg-white/5 border-l-2 border-l-primary' : ''}
                 `}
-                style={{ transform: `translateX(${offset}px)` }}
+                style={{
+                    transform: `translateX(${offset}px)`,
+                    transition: isDragging ? 'none' : 'transform 0.3s ease-out'
+                }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}

@@ -84,37 +84,10 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
         }
     };
 
-    // --- Helpers from GoalsPage ---
-    const getGoalIcon = (type: string) => {
-        switch (type) {
-            case 'revenue': return <DollarSign size={16} />;
-            case 'followers': return <Users size={16} />;
-            case 'uploads': return <Music size={16} />;
-            case 'plays': return <TrendingUp size={16} />;
-            case 'sales': return <BarChart3 size={16} />;
-            default: return <Target size={16} />;
-        }
-    };
-
-    const getGoalColor = (type: string) => {
-        switch (type) {
-            case 'revenue': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
-            case 'followers': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-            case 'uploads': return 'text-purple-400 bg-purple-400/10 border-purple-400/20';
-            case 'plays': return 'text-orange-400 bg-orange-400/10 border-orange-400/20';
-            case 'sales': return 'text-pink-400 bg-pink-400/10 border-pink-400/20';
-            default: return 'text-neutral-400 bg-neutral-400/10 border-neutral-400/20';
-        }
-    };
-
-    const calculateProgress = (current: number, target: number) => {
-        if (target === 0) return 0;
-        return Math.min((current / target) * 100, 100);
-    };
-
     // ------------------------------
 
     const [openStrategyWizard, setOpenStrategyWizard] = useState<string | null>(null);
+    const [showFullCalendar, setShowFullCalendar] = useState(false);
 
     return (
         <div className="w-full max-w-[1800px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
@@ -126,7 +99,7 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
                     <div>
                         <h1 className="text-3xl font-black text-white mb-2 flex items-center gap-3">
                             <Map className="text-primary" size={32} />
-                            Roadmap & Planning
+                            Roadmap
                         </h1>
                         <p className="text-neutral-500 text-sm">Plan your career trajectory, manage campaigns, and track goals.</p>
                     </div>
@@ -159,58 +132,20 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
                     </div>
                 </div>
 
-                {/* Goals Section (Compact) */}
-                <div className="mb-8">
-                    <div className="flex items-center justify-between mb-4 cursor-pointer" onClick={() => setIsGoalsExpanded(!isGoalsExpanded)}>
-                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                            <Target className="text-primary" size={18} />
-                            Active Goals
-                            <ChevronDown size={16} className={`text-neutral-500 transition-transform ${isGoalsExpanded ? 'rotate-180' : ''}`} />
-                        </h2>
-                        <button className="text-xs font-bold text-neutral-500 hover:text-white transition-colors">
-                            {isGoalsExpanded ? 'Collapse' : 'Expand'}
-                        </button>
-                    </div>
-
-                    {isGoalsExpanded && (
-                        <>
-                            {loadingGoals ? (
-                                <div className="h-24 bg-white/5 animate-pulse rounded-xl"></div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in slide-in-from-top-2 duration-200">
-                                    {goals.slice(0, 4).map(goal => { // Show top 4 goals
-                                        const progress = calculateProgress(goal.current, goal.target);
-                                        return (
-                                            <div key={goal.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-lg p-4 hover:border-neutral-700 transition-colors">
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div className={`p-1.5 rounded-md border ${getGoalColor(goal.type)}`}>
-                                                        {getGoalIcon(goal.type)}
-                                                    </div>
-                                                    <span className="text-[10px] uppercase font-bold text-neutral-500">{goal.category}</span>
-                                                </div>
-                                                <h3 className="text-sm font-bold text-white truncate mb-1">{goal.title}</h3>
-                                                <div className="w-full bg-neutral-900 rounded-full h-1.5 mb-2">
-                                                    <div className="bg-primary h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
-                                                </div>
-                                                <div className="flex justify-between text-[10px] text-neutral-500">
-                                                    <span>{Math.round(progress)}%</span>
-                                                    <span>{goal.current} / {goal.target}</span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-
-                                    {/* Add Goal Button */}
-                                    <button className="bg-white/5 border border-dashed border-neutral-800 rounded-lg p-4 hover:bg-white/10 hover:border-neutral-600 transition-all flex flex-col items-center justify-center gap-2 group">
-                                        <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 group-hover:bg-primary group-hover:text-black transition-colors">
-                                            <Plus size={16} />
-                                        </div>
-                                        <span className="text-xs font-bold text-neutral-400 group-hover:text-white">Add New Goal</span>
-                                    </button>
-                                </div>
-                            )}
-                        </>
-                    )}
+                {/* Mobile Calendar Trigger - Swapped Position */}
+                <div className="md:hidden pb-8">
+                    <button
+                        onClick={() => setShowFullCalendar(true)}
+                        className="w-full py-5 bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800 rounded-xl flex flex-col items-center justify-center gap-3 text-neutral-400 hover:text-white hover:border-primary/50 transition-all shadow-lg active:scale-95 group"
+                    >
+                        <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-colors shadow-inner">
+                            <CalendarIcon size={24} />
+                        </div>
+                        <div>
+                            <span className="block text-lg font-black text-white">Open Calendar</span>
+                            <span className="block text-xs font-medium text-neutral-500 mt-1">View full schedule & events</span>
+                        </div>
+                    </button>
                 </div>
 
                 <div className="h-px bg-neutral-800"></div>
@@ -218,7 +153,17 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
 
             {/* Main Content Area */}
             <div className="min-h-[500px]">
-                {activeTab === 'planner' && <PlannerTab strategies={strategies} />}
+                {activeTab === 'planner' && (
+                    <PlannerTab
+                        strategies={strategies}
+                        goals={goals}
+                        loadingGoals={loadingGoals}
+                        isGoalsExpanded={isGoalsExpanded}
+                        setIsGoalsExpanded={setIsGoalsExpanded}
+                        showFullCalendar={showFullCalendar}
+                        setShowFullCalendar={setShowFullCalendar}
+                    />
+                )}
 
                 {activeTab === 'strategy' && (
                     <StrategyTab
@@ -237,7 +182,53 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
 
 // --- Planner Tab ---
 
-const PlannerTab: React.FC<{ strategies: Strategy[] }> = ({ strategies }) => {
+interface PlannerTabProps {
+    strategies: Strategy[];
+    goals: Goal[];
+    loadingGoals: boolean;
+    isGoalsExpanded: boolean;
+    setIsGoalsExpanded: (expanded: boolean) => void;
+    showFullCalendar: boolean;
+    setShowFullCalendar: (show: boolean) => void;
+}
+
+const PlannerTab: React.FC<PlannerTabProps> = ({
+    strategies,
+    goals,
+    loadingGoals,
+    isGoalsExpanded,
+    setIsGoalsExpanded,
+    showFullCalendar,
+    setShowFullCalendar
+}) => {
+
+    // --- Helpers from GoalsPage ---
+    const getGoalIcon = (type: string) => {
+        switch (type) {
+            case 'revenue': return <DollarSign size={16} />;
+            case 'followers': return <Users size={16} />;
+            case 'uploads': return <Music size={16} />;
+            case 'plays': return <TrendingUp size={16} />;
+            case 'sales': return <BarChart3 size={16} />;
+            default: return <Target size={16} />;
+        }
+    };
+
+    const getGoalColor = (type: string) => {
+        switch (type) {
+            case 'revenue': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+            case 'followers': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+            case 'uploads': return 'text-purple-400 bg-purple-400/10 border-purple-400/20';
+            case 'plays': return 'text-orange-400 bg-orange-400/10 border-orange-400/20';
+            case 'sales': return 'text-pink-400 bg-pink-400/10 border-pink-400/20';
+            default: return 'text-neutral-400 bg-neutral-400/10 border-neutral-400/20';
+        }
+    };
+
+    const calculateProgress = (current: number, target: number) => {
+        if (target === 0) return 0;
+        return Math.min((current / target) * 100, 100);
+    };
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [loading, setLoading] = useState(true);
@@ -356,124 +347,219 @@ const PlannerTab: React.FC<{ strategies: Strategy[] }> = ({ strategies }) => {
                 }}
             />
 
-            <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden shadow-2xl">
-                {/* Calendar Header */}
-                <div className="p-6 border-b border-neutral-800 flex items-center justify-between bg-neutral-900/50">
-                    <div>
-                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                            <CalendarIcon size={20} className="text-primary" />
-                            {format(currentDate, 'MMMM yyyy')}
-                        </h3>
-                        <p className="text-xs text-neutral-500 mt-1">
-                            {events.filter(e => isSameMonth(new Date(e.startDate), currentDate)).length} events scheduled
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button onClick={handlePrevMonth} className="p-2 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white transition-colors border border-transparent hover:border-neutral-700">
-                            <ChevronDown size={20} className="rotate-90" />
-                        </button>
-                        <button onClick={() => setCurrentDate(new Date())} className="px-3 py-2 hover:bg-white/10 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors border border-transparent hover:border-neutral-700">
-                            Today
-                        </button>
-                        <button onClick={handleNextMonth} className="p-2 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white transition-colors border border-transparent hover:border-neutral-700">
-                            <ChevronDown size={20} className="-rotate-90" />
-                        </button>
-
-                        <div className="w-px h-8 bg-neutral-800 mx-2"></div>
-
-                        <button
-                            onClick={() => handleAddEvent()}
-                            className="px-4 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 flex items-center gap-2"
-                        >
-                            <Plus size={14} /> New Event
-                        </button>
-                    </div>
+            {/* Active Goals Section (Swapped with Mobile Calendar Trigger) */}
+            <div className="mb-8 mt-8">
+                <div className="flex items-center justify-between mb-4 cursor-pointer" onClick={() => setIsGoalsExpanded(!isGoalsExpanded)}>
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                        <Target className="text-primary" size={18} />
+                        Active Goals
+                        <ChevronDown size={16} className={`text-neutral-500 transition-transform ${isGoalsExpanded ? 'rotate-180' : ''}`} />
+                    </h2>
+                    <button className="text-xs font-bold text-neutral-500 hover:text-white transition-colors">
+                        {isGoalsExpanded ? 'Collapse' : 'Expand'}
+                    </button>
                 </div>
 
-                {/* Days Header */}
-                <div className="grid grid-cols-7 border-b border-neutral-800 bg-neutral-900/80">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                        <div key={day} className="py-3 text-center text-[10px] font-black text-neutral-500 uppercase tracking-widest">
-                            {day}
-                        </div>
-                    ))}
-                </div>
-
-                {/* Calendar Grid */}
-                {loading ? (
-                    <div className="h-[600px] flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-7 auto-rows-[140px] bg-neutral-900/20">
-                        {/* Empty slots for start of month */}
-                        {[...Array(startDay)].map((_, i) => (
-                            <div key={`empty-${i}`} className="border-r border-b border-neutral-800/50 bg-neutral-900/40"></div>
-                        ))}
-
-                        {/* Days */}
-                        {days.map((day) => {
-                            const isToday = isSameDay(day, new Date());
-                            const dayEvents = events.filter(e => isSameDay(new Date(e.startDate), day));
-
-                            // Check for Active Strategy Campaign
-                            const activeStrategyCampaign = strategyCampaigns.find(c =>
-                                c.start && c.end && isWithinInterval(day, { start: c.start, end: c.end })
-                            );
-
-                            return (
-                                <div
-                                    key={day.toISOString()}
-                                    className={`
-                                        border-r border-b p-2 relative group transition-colors cursor-pointer flex flex-col gap-1
-                                        ${activeStrategyCampaign
-                                            ? `${activeStrategyCampaign.style.bg} ${activeStrategyCampaign.style.border}`
-                                            : `border-neutral-800/50 ${isToday ? 'bg-primary/5' : 'hover:bg-white/5'}`
-                                        }
-                                    `}
-                                    onClick={() => handleAddEvent(day)}
-                                >
-                                    {/* Campaign Label (if active) - Show on every day or just start? Show on every day for "colour coded" feel, maybe a small badge */}
-                                    {activeStrategyCampaign && (
-                                        <div className={`text-[8px] font-black uppercase tracking-wider truncate px-1 rounded-sm opacity-80 ${activeStrategyCampaign.style.text}`}>
-                                            {activeStrategyCampaign.name}
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className={`
-                                            text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full
-                                            ${isToday ? 'bg-primary text-black' : 'text-neutral-500 group-hover:text-white'}
-                                        `}>
-                                            {format(day, 'd')}
-                                        </span>
-                                        <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded text-neutral-400 hover:text-white transition-opacity">
-                                            <Plus size={12} />
-                                        </button>
-                                    </div>
-
-                                    {/* Event List */}
-                                    <div className="space-y-1 overflow-y-auto max-h-[90px] custom-scrollbar">
-                                        {dayEvents.map((event) => (
-                                            <div
-                                                key={event.id}
-                                                onClick={(e) => handleEditEvent(event, e)}
-                                                className={`p-1.5 rounded-md border text-[10px] font-bold truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 ${getTypeColor(event.type)}`}
-                                            >
-                                                {/* Mini Icons per type */}
-                                                {event.platform === 'instagram' && <Smartphone size={8} />}
-                                                {event.type === 'meeting' && <Users size={8} />}
-
-                                                <span className={event.status === 'completed' ? 'line-through opacity-50' : ''}>
-                                                    {event.title}
-                                                </span>
+                {isGoalsExpanded && (
+                    <>
+                        {loadingGoals ? (
+                            <div className="h-24 bg-white/5 animate-pulse rounded-xl"></div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in slide-in-from-top-2 duration-200">
+                                {goals.slice(0, 4).map(goal => { // Show top 4 goals
+                                    const progress = calculateProgress(goal.current, goal.target);
+                                    return (
+                                        <div key={goal.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-lg p-4 hover:border-neutral-700 transition-colors">
+                                            <div className="flex items-start justify-between mb-3">
+                                                <div className={`p-1.5 rounded-md border ${getGoalColor(goal.type)}`}>
+                                                    {getGoalIcon(goal.type)}
+                                                </div>
+                                                <span className="text-[10px] uppercase font-bold text-neutral-500">{goal.category}</span>
                                             </div>
-                                        ))}
+                                            <h3 className="text-sm font-bold text-white truncate mb-1">{goal.title}</h3>
+                                            <div className="w-full bg-neutral-900 rounded-full h-1.5 mb-2">
+                                                <div className="bg-primary h-1.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                                            </div>
+                                            <div className="flex justify-between text-[10px] text-neutral-500">
+                                                <span>{Math.round(progress)}%</span>
+                                                <span>{goal.current} / {goal.target}</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+
+                                {/* Add Goal Button */}
+                                <button className="bg-white/5 border border-dashed border-neutral-800 rounded-lg p-4 hover:bg-white/10 hover:border-neutral-600 transition-all flex flex-col items-center justify-center gap-2 group">
+                                    <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 group-hover:bg-primary group-hover:text-black transition-colors">
+                                        <Plus size={16} />
                                     </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                                    <span className="text-xs font-bold text-neutral-400 group-hover:text-white">Add New Goal</span>
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
+            </div>
+
+            <div className={`
+                bg-[#0a0a0a] border border-neutral-800 transition-all duration-300
+                ${showFullCalendar
+                    ? 'fixed top-[60px] bottom-0 inset-x-0 z-[40] flex flex-col border-t border-b border-neutral-800 shadow-2xl'
+                    : 'rounded-xl overflow-hidden shadow-2xl hidden md:block'
+                }
+            `}>
+
+                {/* Calendar Header */}
+                <div className={`
+                    border-b border-neutral-800 bg-neutral-900/50 flex items-center justify-between shrink-0
+                    ${showFullCalendar ? 'p-4' : 'p-6'}
+                `}>
+                    {/* Mobile Header View */}
+                    {showFullCalendar && (
+                        <div className="md:hidden w-full flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => setShowFullCalendar(false)} className="mr-2">
+                                    <ArrowRight size={20} className="rotate-180 text-neutral-400" />
+                                </button>
+                                <span className="text-lg font-bold text-white">Calendar</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button onClick={handlePrevMonth} className="p-2 bg-neutral-800 rounded-lg text-white">
+                                    <ChevronDown size={18} className="rotate-90" />
+                                </button>
+                                <span className="text-sm font-bold text-white w-20 text-center">{format(currentDate, 'MMM yyyy')}</span>
+                                <button onClick={handleNextMonth} className="p-2 bg-neutral-800 rounded-lg text-white">
+                                    <ChevronDown size={18} className="-rotate-90" />
+                                </button>
+                            </div>
+
+                            <button onClick={() => setShowFullCalendar(false)} className="p-2 bg-neutral-800 rounded-full text-white">
+                                <X size={20} />
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Desktop Header View */}
+                    <div className={`${showFullCalendar ? 'hidden md:flex' : 'flex'} w-full items-center justify-between`}>
+                        <div>
+                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <CalendarIcon size={20} className="text-primary" />
+                                {format(currentDate, 'MMMM yyyy')}
+                            </h3>
+                            <p className="text-xs text-neutral-500 mt-1">
+                                {events.filter(e => isSameMonth(new Date(e.startDate), currentDate)).length} events scheduled
+                            </p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={handlePrevMonth} className="p-2 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white transition-colors border border-transparent hover:border-neutral-700">
+                                <ChevronDown size={20} className="rotate-90" />
+                            </button>
+                            <button onClick={() => setCurrentDate(new Date())} className="px-3 py-2 hover:bg-white/10 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors border border-transparent hover:border-neutral-700">
+                                Today
+                            </button>
+                            <button onClick={handleNextMonth} className="p-2 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white transition-colors border border-transparent hover:border-neutral-700">
+                                <ChevronDown size={20} className="-rotate-90" />
+                            </button>
+
+                            <div className="w-px h-8 bg-neutral-800 mx-2"></div>
+
+                            <button
+                                onClick={() => handleAddEvent()}
+                                className="px-4 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 flex items-center gap-2"
+                            >
+                                <Plus size={14} /> New Event
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Calendar Grid Wrapper for Scroll */}
+                <div className="overflow-auto flex-1 relative custom-scrollbar bg-neutral-900/20">
+                    {/* Sticky Days Header */}
+                    <div className="grid grid-cols-7 border-b border-neutral-800 bg-neutral-900/95 backdrop-blur-sm sticky top-0 z-10 min-w-[700px] md:min-w-0">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                            <div key={day} className="py-3 text-center text-[10px] font-black text-neutral-500 uppercase tracking-widest">
+                                {day}
+                            </div>
+                        ))}
+                    </div>
+
+                    {loading ? (
+                        <div className="h-full flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-7 auto-rows-[140px] min-w-[700px] md:min-w-0 pb-32">
+                            {/* Empty slots for start of month */}
+                            {[...Array(startDay)].map((_, i) => (
+                                <div key={`empty - ${i} `} className="border-r border-b border-neutral-800/50 bg-neutral-900/40"></div>
+                            ))}
+
+                            {/* Days */}
+                            {days.map((day) => {
+                                const isToday = isSameDay(day, new Date());
+                                const dayEvents = events.filter(e => isSameDay(new Date(e.startDate), day));
+
+                                // Check for Active Strategy Campaign
+                                const activeStrategyCampaign = strategyCampaigns.find(c =>
+                                    c.start && c.end && isWithinInterval(day, { start: c.start, end: c.end })
+                                );
+
+                                return (
+                                    <div
+                                        key={day.toISOString()}
+                                        className={`
+                                            border-r border-b p-2 relative group transition-colors cursor-pointer flex flex-col gap-1
+                                            ${activeStrategyCampaign
+                                                ? `${activeStrategyCampaign.style.bg} ${activeStrategyCampaign.style.border}`
+                                                : `border-neutral-800/50 ${isToday ? 'bg-primary/5' : 'hover:bg-white/5'}`
+                                            }
+                                        `}
+                                        onClick={() => handleAddEvent(day)}
+                                    >
+                                        {/* Campaign Label */}
+                                        {activeStrategyCampaign && (
+                                            <div className={`text-[8px] font-black uppercase tracking-wider truncate px-1 rounded-sm opacity-80 ${activeStrategyCampaign.style.text}`}>
+                                                {activeStrategyCampaign.name}
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className={`
+                                                text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full
+                                                ${isToday ? 'bg-primary text-black' : 'text-neutral-500 group-hover:text-white'}
+                                            `}>
+                                                {format(day, 'd')}
+                                            </span>
+                                            <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded text-neutral-400 hover:text-white transition-opacity">
+                                                <Plus size={12} />
+                                            </button>
+                                        </div>
+
+                                        {/* Event List */}
+                                        <div className="space-y-1 overflow-y-auto max-h-[90px] custom-scrollbar">
+                                            {dayEvents.map((event) => (
+                                                <div
+                                                    key={event.id}
+                                                    onClick={(e) => handleEditEvent(event, e)}
+                                                    className={`p-1.5 rounded-md border text-[10px] font-bold truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 ${getTypeColor(event.type)}`}
+                                                >
+                                                    {/* Mini Icons per type */}
+                                                    {event.platform === 'instagram' && <Smartphone size={8} />}
+                                                    {event.type === 'meeting' && <Users size={8} />}
+
+                                                    <span className={event.status === 'completed' ? 'line-through opacity-50' : ''}>
+                                                        {event.title}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
             </div>
 
             <CalendarEventModal
@@ -599,9 +685,9 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                         <div key={stage.id} className="flex flex-col group h-full">
                             {/* Card */}
                             <div className={`
-                                w-full h-[200px] flex flex-col relative
-                                rounded-xl border backdrop-blur-sm transition-all duration-300
-                                hover:translate-y-[-4px] hover:shadow-xl
+                    w - full h - [200px] flex flex - col relative
+                    rounded - xl border backdrop - blur - sm transition - all duration - 300
+                    hover: translate - y - [-4px] hover: shadow - xl
                                 ${status === 'completed'
                                     ? 'bg-green-500/10 border-green-500/30 hover:shadow-green-500/20'
                                     : isInProgress
@@ -610,19 +696,19 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                             ? 'bg-neutral-900/40 border-neutral-800/50 opacity-60'
                                             : 'bg-neutral-900/60 border-neutral-800 hover:border-primary/50 hover:shadow-primary/10'
                                 }
-                            `}>
+                    `}>
                                 {/* Header Image / Icon Area */}
                                 <div className={`
-                                    h-16 w-full border-b flex items-center justify-center relative overflow-hidden
+                    h - 16 w - full border - b flex items - center justify - center relative overflow - hidden
                                     ${status === 'completed' ? 'border-green-500/20 bg-green-500/5' : isInProgress ? 'border-primary/20 bg-primary/5' : 'border-neutral-800 bg-black/20'}
-                                `}>
+                    `}>
                                     <div className="absolute top-2 right-2 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
                                         Step {String(index + 1).padStart(2, '0')}
                                     </div>
 
                                     {/* Icon Circle */}
                                     <div className={`
-                                        w-10 h-10 rounded-full flex items-center justify-center border-2 shadow-lg z-10 transition-all duration-500
+                    w - 10 h - 10 rounded - full flex items - center justify - center border - 2 shadow - lg z - 10 transition - all duration - 500
                                         ${status === 'completed'
                                             ? 'bg-green-500 text-black border-green-400'
                                             : isInProgress
@@ -631,7 +717,7 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                                     ? 'bg-neutral-800 text-neutral-600 border-neutral-700'
                                                     : 'bg-neutral-900 text-primary border-primary/30 group-hover:scale-110'
                                         }
-                                    `}>
+                    `}>
                                         {status === 'completed' ? <CheckCircle size={18} /> : <div className="text-sm font-bold">{index + 1}</div>}
                                     </div>
 
@@ -646,7 +732,7 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
 
                                 {/* Content */}
                                 <div className="p-3 flex-1 flex flex-col">
-                                    <h3 className={`text-xs font-bold mb-1 ${status === 'completed' ? 'text-green-400' : isInProgress ? 'text-primary' : 'text-white'}`}>
+                                    <h3 className={`text - xs font - bold mb - 1 ${status === 'completed' ? 'text-green-400' : isInProgress ? 'text-primary' : 'text-white'} `}>
                                         {stage.title}
                                     </h3>
                                     <p className="text-[10px] text-neutral-400 leading-snug mb-2 flex-1 line-clamp-2">
@@ -659,7 +745,7 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                             onClick={() => onStartStage(stage.id)}
                                             disabled={isLocked}
                                             className={`
-                                                w-full py-2.5 rounded-lg font-bold text-xs tracking-wide transition-all flex items-center justify-center gap-1.5
+                    w - full py - 2.5 rounded - lg font - bold text - xs tracking - wide transition - all flex items - center justify - center gap - 1.5
                                                 ${status === 'completed'
                                                     ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/20'
                                                     : isInProgress
@@ -668,7 +754,7 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                                             ? 'bg-neutral-800 text-neutral-500 border border-neutral-700 cursor-not-allowed'
                                                             : 'bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/10'
                                                 }
-                                            `}
+                    `}
                                         >
                                             {status === 'completed' ? (
                                                 <>Edit <div className="w-1.5 h-1.5 rounded-full bg-green-500 ml-1"></div></>

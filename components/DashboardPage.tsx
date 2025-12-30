@@ -514,7 +514,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
 
             {/* Top Stats Row - Use real data */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4 mb-6">
                 <StatCard
                     title="Live Listeners"
                     value={liveListeners.toString()}
@@ -806,7 +806,7 @@ const StatCard = ({ title, value, icon, trend, positive, live, subtext, color, b
     <div
         onClick={onClick}
         className={`
-            bg-[#0a0a0a] border rounded-xl p-5 transition-all duration-300 hover:shadow-lg group relative overflow-hidden cursor-pointer
+            bg-[#0a0a0a] border rounded-xl p-4 md:p-5 transition-all duration-300 hover:shadow-lg group relative overflow-hidden cursor-pointer
             ${isActive ? 'border-primary ring-1 ring-primary/50' : 'border-neutral-800 hover:border-white/20'}
         `}
     >

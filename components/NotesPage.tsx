@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Note } from '../types';
 import { getNotes, createNote, updateNote, deleteNote, getUserFiles, uploadFile } from '../services/supabaseService';
@@ -206,6 +207,11 @@ const NotesPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [audioFiles, setAudioFiles] = useState<any[]>([]); // Real files state
 
+    // Navigation handling
+    const location = useLocation();
+    const navigate = useNavigate();
+    const hasHandledNavigation = useRef(false);
+
     // View State
     const [viewMode, setViewMode] = useState<'editor' | 'browser'>('editor');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state
@@ -244,7 +250,44 @@ const NotesPage: React.FC = () => {
             }
         };
         fetchNotes();
+        fetchNotes();
     }, []);
+
+    // Handle incoming navigation (e.g. from Music Player to create new note)
+    useEffect(() => {
+        const checkNavigationState = async () => {
+            if (hasHandledNavigation.current) return;
+
+            // Check if we have state to create a new note
+            const state = location.state as {
+                createNewNote?: boolean;
+                trackTitle?: string;
+                trackId?: string;
+                fileName?: string;
+            } | null;
+
+            if (state?.createNewNote && !loading) {
+                console.log('Detected navigation state to create note:', state);
+                hasHandledNavigation.current = true;
+
+                // Construct note details
+                const noteTitle = state.trackTitle ? `${state.trackTitle} - Lyrics` : 'New Song Idea';
+                const noteContent = state.trackTitle ? `Lyrics for ${state.trackTitle}\n\n` : '';
+
+                // Create the note
+                await handleCreateNote(noteTitle, noteContent, state.fileName);
+
+                // Clear the state so we don't duplicate on refresh (requires replace: true on next nav, 
+                // but react-router doesn't let us easily clear state in place without full navigation. 
+                // The ref handles the duplicate prevention for this mount.)
+                navigate(location.pathname, { replace: true, state: {} });
+            }
+        };
+
+        if (!loading) {
+            checkNavigationState();
+        }
+    }, [location.state, loading, navigate]);
 
     // Load Audio Files
     useEffect(() => {
@@ -456,9 +499,13 @@ const NotesPage: React.FC = () => {
         }
     };
 
-    const handleCreateNote = async () => {
+    const handleCreateNote = async (
+        initialTitle: string = 'Untitled Note',
+        initialContent: string = '',
+        initialAudio?: string
+    ) => {
         try {
-            const newNote = await createNote();
+            const newNote = await createNote(initialTitle, initialContent, initialAudio);
             setNotes([newNote, ...notes]);
             setActiveNoteId(newNote.id);
             setViewMode('editor');

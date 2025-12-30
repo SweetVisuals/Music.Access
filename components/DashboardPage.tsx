@@ -357,53 +357,54 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                         <TabButton active={activePurchaseTab === 'kits'} onClick={() => setActivePurchaseTab('kits')} label="Sound Packs" />
                         <TabButton active={activePurchaseTab === 'services'} onClick={() => setActivePurchaseTab('services')} label="Services & Orders" />
                     </div>
-                    {/* Mobile Tabs Layout (Grid) */}
-                    <div className="md:hidden relative pb-2 overflow-x-auto no-scrollbar w-full">
-                        <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5 min-w-[320px]">
-                            <button
-                                onClick={() => setActivePurchaseTab('all')}
-                                className={`
-                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
-                                    ${activePurchaseTab === 'all' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
-                                `}
-                            >
-                                <LayoutGrid size={14} className={activePurchaseTab === 'all' ? 'text-primary' : ''} />
-                                <span className="text-[9px] font-bold uppercase tracking-tight">All</span>
-                            </button>
+                </div>
 
-                            <button
-                                onClick={() => setActivePurchaseTab('beats')}
-                                className={`
-                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
-                                    ${activePurchaseTab === 'beats' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
-                                `}
-                            >
-                                <Music size={14} className={activePurchaseTab === 'beats' ? 'text-primary' : ''} />
-                                <span className="text-[9px] font-bold uppercase tracking-tight">Beats</span>
-                            </button>
+                {/* Mobile Tabs Layout (Grid) */}
+                <div className="md:hidden relative pb-2 overflow-x-auto no-scrollbar w-auto -mx-4 px-4 mb-4">
+                    <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5 min-w-[320px]">
+                        <button
+                            onClick={() => setActivePurchaseTab('all')}
+                            className={`
+                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                ${activePurchaseTab === 'all' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                            `}
+                        >
+                            <LayoutGrid size={14} className={activePurchaseTab === 'all' ? 'text-primary' : ''} />
+                            <span className="text-[9px] font-bold uppercase tracking-tight">All</span>
+                        </button>
 
-                            <button
-                                onClick={() => setActivePurchaseTab('kits')}
-                                className={`
-                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
-                                    ${activePurchaseTab === 'kits' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
-                                `}
-                            >
-                                <Package size={14} className={activePurchaseTab === 'kits' ? 'text-primary' : ''} />
-                                <span className="text-[9px] font-bold uppercase tracking-tight">Kits</span>
-                            </button>
+                        <button
+                            onClick={() => setActivePurchaseTab('beats')}
+                            className={`
+                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                ${activePurchaseTab === 'beats' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                            `}
+                        >
+                            <Music size={14} className={activePurchaseTab === 'beats' ? 'text-primary' : ''} />
+                            <span className="text-[9px] font-bold uppercase tracking-tight">Beats</span>
+                        </button>
 
-                            <button
-                                onClick={() => setActivePurchaseTab('services')}
-                                className={`
-                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
-                                    ${activePurchaseTab === 'services' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
-                                `}
-                            >
-                                <Briefcase size={14} className={activePurchaseTab === 'services' ? 'text-primary' : ''} />
-                                <span className="text-[9px] font-bold uppercase tracking-tight">Services</span>
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => setActivePurchaseTab('kits')}
+                            className={`
+                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                ${activePurchaseTab === 'kits' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                            `}
+                        >
+                            <Package size={14} className={activePurchaseTab === 'kits' ? 'text-primary' : ''} />
+                            <span className="text-[9px] font-bold uppercase tracking-tight">Kits</span>
+                        </button>
+
+                        <button
+                            onClick={() => setActivePurchaseTab('services')}
+                            className={`
+                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                ${activePurchaseTab === 'services' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                            `}
+                        >
+                            <Briefcase size={14} className={activePurchaseTab === 'services' ? 'text-primary' : ''} />
+                            <span className="text-[9px] font-bold uppercase tracking-tight">Services</span>
+                        </button>
                     </div>
                 </div>
 

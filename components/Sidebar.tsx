@@ -25,7 +25,8 @@ import {
     LogIn,
     X,
     Target,
-    Map
+    Map,
+    Gem
 } from 'lucide-react';
 import { View, UserProfile, TalentProfile } from '../types';
 import { getTalentProfiles, getStorageUsage } from '../services/supabaseService';
@@ -123,9 +124,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                         />
                         {/* Mobile Gem Count */}
                         {isLoggedIn && userProfile && (
-                            <div className="lg:hidden flex items-center gap-1 px-1.5 py-0.5 bg-white/5 rounded-full border border-white/10">
-                                <span className="w-1 h-1 rounded-full bg-primary animate-pulse"></span>
-                                <span className="text-[9px] font-bold text-white font-mono">{userProfile.gems.toLocaleString()}</span>
+                            <div className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20 shadow-[0_0_10px_rgba(var(--primary),0.1)]">
+                                <Gem size={14} className="text-primary" />
+                                <span className="text-xs font-bold text-white font-mono leading-none">{userProfile.gems.toLocaleString()}</span>
                             </div>
                         )}
                     </div>

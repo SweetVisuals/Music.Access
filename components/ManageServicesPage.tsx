@@ -23,7 +23,7 @@ import {
 
 const ManageServicesPage: React.FC = () => {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-    const [filter, setFilter] = useState('all');
+    const [filter, setFilter] = useState('active');
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -63,7 +63,7 @@ const ManageServicesPage: React.FC = () => {
 
                 {/* Desktop Filter Tabs */}
                 <div className="hidden md:flex gap-1 bg-neutral-900 p-1 rounded-lg border border-neutral-800 overflow-x-auto max-w-full no-scrollbar w-full md:w-auto">
-                    {['all', 'active', 'pending', 'delivered', 'completed'].map(status => (
+                    {['active', 'pending', 'delivered', 'completed'].map(status => (
                         <button
                             key={status}
                             onClick={() => setFilter(status)}
@@ -73,32 +73,31 @@ const ManageServicesPage: React.FC = () => {
                         </button>
                     ))}
                 </div>
+            </div>
 
-                {/* Mobile Filter Tabs */}
-                <div className={`md:hidden relative pb-4 overflow-x-auto no-scrollbar w-full ${selectedOrder ? 'hidden' : 'block'}`}>
-                    <div className="grid grid-cols-5 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5 min-w-[450px]">
-                        {['all', 'active', 'pending', 'delivered', 'completed'].map(status => {
-                            const Icon = status === 'all' ? List :
-                                status === 'active' ? Radio :
-                                    status === 'pending' ? Clock :
-                                        status === 'delivered' ? Send :
-                                            CheckCircle;
+            {/* Mobile Filter Tabs */}
+            <div className={`md:hidden relative pb-4 overflow-x-auto no-scrollbar w-auto -mx-4 px-4 ${selectedOrder ? 'hidden' : 'block'}`}>
+                <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5">
+                    {['active', 'pending', 'delivered', 'completed'].map(status => {
+                        const Icon = status === 'active' ? Radio :
+                            status === 'pending' ? Clock :
+                                status === 'delivered' ? Send :
+                                    CheckCircle;
 
-                            return (
-                                <button
-                                    key={status}
-                                    onClick={() => setFilter(status)}
-                                    className={`
-                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
-                                    ${filter === status ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
-                                `}
-                                >
-                                    <Icon size={14} className={filter === status ? 'text-primary' : ''} />
-                                    <span className="text-[9px] font-bold uppercase tracking-tight">{status}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
+                        return (
+                            <button
+                                key={status}
+                                onClick={() => setFilter(status)}
+                                className={`
+                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                ${filter === status ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                            `}
+                            >
+                                <Icon size={14} className={filter === status ? 'text-primary' : ''} />
+                                <span className="text-[9px] font-bold uppercase tracking-tight">{status}</span>
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 

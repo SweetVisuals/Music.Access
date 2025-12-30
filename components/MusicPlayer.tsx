@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Shuffle, Repeat, Maximize2, ListMusic, Minimize2, ChevronUp, Move, Heart, Share2, MoreHorizontal, ChevronDown, StickyNote, PlusCircle, BookmarkPlus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Project, View } from '../types';
 import { MOCK_USER_PROFILE } from '../constants';
 
@@ -13,6 +14,7 @@ interface MusicPlayerProps {
 }
 
 const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackId, isPlaying, togglePlay, currentView, onClose }) => {
+    const navigate = useNavigate();
     const [isMinimized, setIsMinimized] = useState(true);
 
     // --- Audio Logic ---
@@ -75,15 +77,15 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
         return `${min}:${sec.toString().padStart(2, '0')}`;
     };
 
-    if (!currentProject || !currentTrack) return null;
-
     // Use producer avatar as requested for mobile
-    const displayImage = currentProject.producerAvatar || currentProject.coverImage || MOCK_USER_PROFILE.avatar;
+    const displayImage = currentProject?.producerAvatar || currentProject?.coverImage || MOCK_USER_PROFILE.avatar;
 
     // Reset image loaded state when track changes
     useEffect(() => {
         setImageLoaded(false);
     }, [displayImage]);
+
+    if (!currentProject || !currentTrack) return null;
 
     return (
         <>
@@ -337,7 +339,21 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                         </div>
 
                         <div className="flex items-center gap-6">
-                            <button className="text-neutral-400 hover:text-white transition-colors active:scale-95">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsMinimized(true);
+                                    navigate('/notes', {
+                                        state: {
+                                            createNewNote: true,
+                                            trackTitle: currentTrack.title,
+                                            trackId: currentTrack.id,
+                                            fileName: currentTrack.files?.mp3?.split('/').pop() || `${currentTrack.title}.mp3` // Fallback name
+                                        }
+                                    });
+                                }}
+                                className="text-neutral-400 hover:text-white transition-colors active:scale-95"
+                            >
                                 <StickyNote size={22} />
                             </button>
                             <button

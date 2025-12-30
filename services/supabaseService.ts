@@ -1938,7 +1938,11 @@ export const getNotes = async (): Promise<Note[]> => {
   }));
 };
 
-export const createNote = async (title: string = 'Untitled Note') => {
+export const createNote = async (
+  title: string = 'Untitled Note',
+  content: string = '',
+  attachedAudio?: string
+) => {
   const user = await ensureUserExists();
   if (!user) throw new Error('User not logged in');
 
@@ -1947,8 +1951,9 @@ export const createNote = async (title: string = 'Untitled Note') => {
     .insert({
       user_id: user.id,
       title,
-      content: '',
-      preview: '',
+      content,
+      preview: content.slice(0, 100),
+      attached_audio: attachedAudio, // Must match DB column name
       updated_at: new Date().toISOString()
     })
     .select()

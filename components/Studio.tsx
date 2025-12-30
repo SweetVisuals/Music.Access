@@ -64,7 +64,7 @@ interface StudioTrack extends Omit<Track, 'files'> {
 
 interface StudioProject extends Omit<Project, 'status' | 'tracks' | 'tasks'> {
     releaseDate?: string;
-    status: 'Planning' | 'In Progress' | 'Mixing' | 'Mastering' | 'Ready';
+    status: 'planning' | 'in_progress' | 'mixing' | 'mastering' | 'ready';
     progress: number;
     format: 'Album' | 'EP' | 'Single';
     tasks: { id: string; text: string; completed: boolean }[];
@@ -112,7 +112,7 @@ const Studio: React.FC<StudioProps> = ({
     // We map the `projects` prop to `StudioProject` interface.
     const studioProjects = projects.map(p => ({
         ...p,
-        status: (p.status || 'Planning') as any,
+        status: (p.status || 'planning') as any,
         format: (p.format || 'Album') as any,
         progress: p.progress || 0,
         tasks: p.tasks || [],
@@ -129,7 +129,7 @@ const Studio: React.FC<StudioProps> = ({
                 title: newProjectTitle || 'Untitled Project',
                 type: 'beat_tape',
                 format: newProjectFormat,
-                status: 'Planning' as any,
+                status: 'planning' as any,
                 bpm: 0,
                 key: '-',
                 genre: 'Unsorted',
@@ -146,7 +146,7 @@ const Studio: React.FC<StudioProps> = ({
             // Open it (casting to satisfy local requirements until next render)
             openProject({
                 ...studioProj,
-                status: 'Planning',
+                status: 'planning',
                 format: newProjectFormat,
                 progress: 0,
                 tasks: [],
@@ -179,8 +179,8 @@ const Studio: React.FC<StudioProps> = ({
         <div className="w-full h-full flex flex-col relative">
             {/* NEW PROJECT MODAL */}
             {isCreateModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="w-full max-w-md bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm md:p-4 animate-in fade-in duration-200">
+                    <div className="w-full h-full md:h-auto md:max-w-md bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl shadow-2xl flex flex-col max-h-none md:max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <div className="p-6 border-b border-white/5 flex justify-between items-center">
                             <h3 className="text-lg font-bold text-white">New Release</h3>
                             <button onClick={() => setIsCreateModalOpen(false)}><X size={20} className="text-neutral-500 hover:text-white" /></button>
@@ -264,8 +264,8 @@ const Studio: React.FC<StudioProps> = ({
                                     <div className="absolute inset-0 bg-gradient-to-b from-neutral-900 to-[#0a0a0a]"></div>
 
                                     <div className="relative flex justify-between items-start">
-                                        <span className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider border ${project.status === 'Ready' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                                            project.status === 'Planning' ? 'bg-neutral-800 text-neutral-400 border-neutral-700' :
+                                        <span className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider border ${project.status === 'ready' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                            project.status === 'planning' ? 'bg-neutral-800 text-neutral-400 border-neutral-700' :
                                                 'bg-blue-500/10 text-blue-400 border-blue-500/20'
                                             }`}>
                                             {project.status}
@@ -599,8 +599,8 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
             {/* ATTACH NOTE MODAL */}
             {attachNoteModalOpen && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-lg bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm md:p-4 animate-in fade-in duration-200">
+                    <div className="w-full h-full md:h-auto md:max-w-lg bg-neutral-900 border-0 md:border border-neutral-800 rounded-none md:rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-none md:max-h-[85vh]">
                         <div className="flex items-center justify-between p-4 border-b border-white/5">
                             <h3 className="font-bold text-white flex items-center gap-2">
                                 <StickyNote size={16} className="text-yellow-500" />
@@ -634,8 +634,8 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
             {/* CONTRACT VIEWER MODAL */}
             {activeContract && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-2xl bg-white text-black rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in slide-in-from-bottom-4 duration-300">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm md:p-4 animate-in fade-in duration-200">
+                    <div className="w-full h-full md:h-auto md:max-w-2xl bg-white text-black rounded-none md:rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-none md:max-h-[85vh] animate-in slide-in-from-bottom-4 duration-300">
                         <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
                             <div>
                                 <h3 className="font-bold text-lg">{activeContract.title}</h3>
@@ -687,7 +687,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                             <span>•</span>
                             <span>{project.tracks.length} Tracks</span>
                             <span>•</span>
-                            <span className={project.status === 'Ready' ? 'text-green-500' : 'text-primary'}>{project.status}</span>
+                            <span className={`uppercase font-bold ${project.status === 'ready' ? 'text-green-500' : 'text-primary'}`}>{project.status}</span>
                         </div>
                     </div>
                     {/* Mobile Library Toggle */}

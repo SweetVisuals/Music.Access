@@ -70,14 +70,13 @@ const SwipeableConversationItem = ({
         <div className="relative overflow-hidden touch-pan-y select-none group bg-black lg:bg-[#0a0a0a]">
             {/* Background / Actions */}
             <div
-                className="absolute inset-y-0 left-0 bg-red-600 flex items-center justify-start pl-8 z-0 cursor-pointer overflow-hidden whitespace-nowrap"
+                className="absolute inset-y-0 left-0 bg-red-600 flex items-center justify-end pr-6 z-0 cursor-pointer overflow-hidden whitespace-nowrap"
                 style={{
-                    // Width matches the swipe offset so only the revealed part is red
+                    // Width matches the swipe offset exactly
                     width: `${Math.max(offset, 0)}px`,
                     opacity: offset > 0 ? 1 : 0,
+                    // Disable transition during drag for 1:1 follow, enable easing on release
                     transition: isDragging ? 'none' : 'width 0.3s ease-out, opacity 0.2s',
-                    // Min width to ensure icon is visible if snapped open
-                    minWidth: offset > threshold ? '100%' : '0px'
                 }}
                 onClick={async (e) => {
                     e.stopPropagation();
@@ -85,7 +84,7 @@ const SwipeableConversationItem = ({
                     setOffset(0);
                 }}
             >
-                <span className="text-white font-bold flex items-center gap-2 animate-in fade-in zoom-in duration-300 fixed left-8">
+                <span className="text-white font-bold flex items-center gap-2">
                     <Trash size={20} />
                     <span className="text-xs font-semibold uppercase tracking-wider">Delete</span>
                 </span>

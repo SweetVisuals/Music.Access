@@ -51,7 +51,7 @@ export interface Project {
   description?: string;
   notes?: string;
   licenses?: LicenseInfo[]; // Available licenses for this project
-  status?: 'draft' | 'published' | 'Planning' | 'In Progress' | 'Mixing' | 'Mastering' | 'Ready';
+  status?: 'draft' | 'published' | 'planning' | 'in_progress' | 'mixing' | 'mastering' | 'ready';
   created?: string;
   userId?: string;
   releaseDate?: string;

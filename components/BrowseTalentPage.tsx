@@ -91,6 +91,8 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
             ));
             await import('../services/supabaseService').then(({ followUser }) => followUser(talent.id));
         }
+        // Dispatch event to notify sidebar
+        window.dispatchEvent(new CustomEvent('following-updated'));
     };
 
     return (

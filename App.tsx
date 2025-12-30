@@ -448,8 +448,8 @@ const App: React.FC = () => {
                         </div>
                       ))
                     ) : (
-                      <div className="col-span-full py-32 text-center border border-dashed border-neutral-800 rounded-xl bg-white/5">
-                        <p className="text-neutral-500 font-mono mb-4">No data found matching query parameters.</p>
+                      <div className="col-span-full py-20 text-center border border-dashed border-neutral-800 rounded-xl bg-white/5">
+                        <p className="text-neutral-500 font-mono text-xs mb-4">No data found matching query parameters.</p>
                         <button
                           onClick={() => setFilters({ ...filters, genre: "All Genres", key: "All Keys", searchQuery: "" })}
                           className="px-4 py-2 bg-primary/10 text-primary border border-primary/50 rounded hover:bg-primary hover:text-black transition-colors font-mono text-xs uppercase tracking-wider"
@@ -608,8 +608,8 @@ const App: React.FC = () => {
           currentView={currentView}
           onNavigate={handleNavigate}
         />
-      </div>
-    </CartProvider>
+      </div >
+    </CartProvider >
   );
 };
 

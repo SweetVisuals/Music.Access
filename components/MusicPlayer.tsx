@@ -1,9 +1,10 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Shuffle, Repeat, Maximize2, ListMusic, Minimize2, ChevronUp, Move, Heart, Share2, MoreHorizontal, ChevronDown, StickyNote, PlusCircle, BookmarkPlus } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Shuffle, Repeat, Maximize2, ListMusic, Minimize2, ChevronUp, Move, Share2, MoreHorizontal, ChevronDown, StickyNote, PlusCircle, BookmarkPlus } from 'lucide-react';
 import WaveformVisualizer from './WaveformVisualizer';
 import { useNavigate } from 'react-router-dom';
 import { Project, View } from '../types';
 import { MOCK_USER_PROFILE } from '../constants';
+import { checkIsProjectSaved, saveProject, unsaveProject } from '../services/supabaseService';
 
 import BottomNav from './BottomNav';
 
@@ -45,7 +46,16 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
         }
         if (isPlaying) audioRef.current.play().catch(console.error);
         else audioRef.current.pause();
-    }, [currentTrack, isPlaying]);
+
+        // Check if project is saved
+        const checkSavedStatus = async () => {
+            if (currentProject?.id) {
+                const saved = await checkIsProjectSaved(currentProject.id);
+                setIsSaved(saved);
+            }
+        };
+        checkSavedStatus();
+    }, [currentTrack, isPlaying, currentProject?.id]);
 
     const handleTimeUpdate = () => {
         if (audioRef.current && !isScrubbing) {
@@ -121,9 +131,9 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
 
             {/* --- MOBILE EMBEDDED BOTTOM BAR --- */}
             <div
-                className={`lg:hidden fixed left-0 right-0 z-[119] bg-[#050505] border-t border-white/20 transition-all duration-300 ${isMinimized
+                className={`lg:hidden fixed left-0 right-0 z-[119] bg-[#050505] border-t border-white/20 border-b-0 shadow-none transition-all duration-300 ${isMinimized
                     ? (currentView === 'notes'
-                        ? 'bottom-[calc(8.5rem+env(safe-area-inset-bottom)-1px)] translate-y-0 border-b-0'
+                        ? 'bottom-[calc(8.5rem+env(safe-area-inset-bottom)-1px)] translate-y-0'
                         : 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] translate-y-0')
                     : 'bottom-0 translate-y-full opacity-0 pointer-events-none'
                     }`}
@@ -147,7 +157,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                     />
                     <div className="absolute inset-0 bg-white/5">
                         <div
-                            className="h-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.6)] relative"
+                            className="h-full bg-primary relative"
                             style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
                         >
                             <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-primary rounded-full scale-0 group-hover:scale-100 transition-transform"></div>
@@ -173,7 +183,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                     <div className="flex items-center gap-4 shrink-0 pl-3">
                         <button
                             onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                            className="w-8 h-8 flex items-center justify-center bg-white text-black rounded-full shadow-lg active:scale-95 transition-transform"
+                            className="w-8 h-8 flex items-center justify-center bg-white text-black rounded-full active:scale-95 transition-transform"
                         >
                             {isPlaying ? <Pause fill="black" size={14} /> : <Play fill="black" size={14} className="ml-0.5" />}
                         </button>
@@ -188,7 +198,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
             </div>
 
             {/* --- IMMERSIVE MOBILE FULLSCREEN PLAYER --- */}
-            <div className={`lg:hidden fixed inset-0 z-[130] bg-black flex flex-col transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) ${isMinimized ? 'translate-y-full pointer-events-none' : 'translate-y-0'}`}>
+            <div className={`lg:hidden fixed inset-0 z-[130] bg-black flex flex-col transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) shadow-none overflow-hidden ${isMinimized ? 'translate-y-full opacity-0 invisible pointer-events-none' : 'translate-y-0 opacity-100 visible'}`}>
 
                 {/* Background & Blur */}
                 <div className="absolute inset-0 z-0">
@@ -333,12 +343,6 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                             <button className="text-neutral-400 hover:text-white transition-colors active:scale-95">
                                 <Share2 size={22} />
                             </button>
-                            <button
-                                onClick={() => setIsLiked(!isLiked)}
-                                className={`transition-colors active:scale-95 ${isLiked ? 'text-red-500' : 'text-neutral-400 hover:text-white'}`}
-                            >
-                                <Heart size={22} fill={isLiked ? "currentColor" : "none"} />
-                            </button>
                         </div>
 
                         <div className="flex items-center gap-6">
@@ -366,8 +370,21 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                                 <ListMusic size={22} />
                             </button>
                             <button
-                                onClick={() => setIsSaved(!isSaved)}
-                                className={`transition-colors active:scale-95 ${isSaved ? 'text-primary' : 'text-neutral-400 hover:text-white'}`}
+                                onClick={async () => {
+                                    if (!currentProject?.id) return;
+                                    try {
+                                        if (isSaved) {
+                                            await unsaveProject(currentProject.id);
+                                            setIsSaved(false);
+                                        } else {
+                                            await saveProject(currentProject.id);
+                                            setIsSaved(true);
+                                        }
+                                    } catch (error) {
+                                        console.error('Failed to toggle save:', error);
+                                    }
+                                }}
+                                className={`transition-all duration-300 active:scale-75 ${isSaved ? 'text-primary' : 'text-neutral-400 hover:text-white'}`}
                             >
                                 <BookmarkPlus size={22} fill={isSaved ? "currentColor" : "none"} />
                             </button>
@@ -454,7 +471,26 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                             <h4 className="text-sm font-bold text-white truncate mb-0.5">{currentTrack.title}</h4>
                             <p className="text-xs text-neutral-500 truncate hover:text-primary cursor-pointer transition-colors">{currentProject.producer}</p>
                         </div>
-                        <button className="text-neutral-600 hover:text-primary transition-colors"><Heart size={16} /></button>
+                        <button
+                            onClick={async () => {
+                                if (!currentProject?.id) return;
+                                try {
+                                    if (isSaved) {
+                                        await unsaveProject(currentProject.id);
+                                        setIsSaved(false);
+                                    } else {
+                                        await saveProject(currentProject.id);
+                                        setIsSaved(true);
+                                    }
+                                } catch (error) {
+                                    console.error('Failed to toggle save:', error);
+                                }
+                            }}
+                            className={`transition-all duration-300 active:scale-75 ${isSaved ? 'text-primary' : 'text-neutral-600 hover:text-primary'}`}
+                            title={isSaved ? "Unsave Project" : "Save Project"}
+                        >
+                            <BookmarkPlus size={18} fill={isSaved ? "currentColor" : "none"} />
+                        </button>
                     </div>
 
                     {/* Main Controls */}

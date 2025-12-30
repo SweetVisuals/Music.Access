@@ -29,7 +29,7 @@ import {
     Gem
 } from 'lucide-react';
 import { View, UserProfile, TalentProfile } from '../types';
-import { getTalentProfiles, getStorageUsage } from '../services/supabaseService';
+import { getStorageUsage, getFollowingProfilesForSidebar } from '../services/supabaseService';
 
 interface SidebarProps {
     currentView: View;
@@ -57,22 +57,38 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
     }, [isOpen]);
 
     useEffect(() => {
-        if (isLoggedIn) {
-            const fetchFollowing = async () => {
-                setLoadingFollowing(true);
-                try {
-                    const data = await getTalentProfiles();
-                    // Filter out the user's own profile from following
-                    const filteredData = data.filter(talent => talent.handle !== userProfile?.handle);
-                    setFollowing(filteredData.slice(0, 4)); // Show first 4 for now
-                } catch (error) {
-                    console.error('Failed to fetch following:', error);
-                } finally {
-                    setLoadingFollowing(false);
-                }
-            };
+        const fetchFollowing = async () => {
+            if (!isLoggedIn) {
+                setFollowing([]);
+                return;
+            }
+            setLoadingFollowing(true);
+            try {
+                const data = await getFollowingProfilesForSidebar();
+                setFollowing(data);
+            } catch (error) {
+                console.error('Failed to fetch following:', error);
+            } finally {
+                setLoadingFollowing(false);
+            }
+        };
+
+        fetchFollowing();
+
+        // Listen for following updates
+        const handleFollowingUpdate = () => {
             fetchFollowing();
-        }
+        };
+
+        window.addEventListener('following-updated', handleFollowingUpdate);
+
+        // Also listen for message updates since they affect sorting
+        window.addEventListener('messages-updated', handleFollowingUpdate);
+
+        return () => {
+            window.removeEventListener('following-updated', handleFollowingUpdate);
+            window.removeEventListener('messages-updated', handleFollowingUpdate);
+        };
     }, [isLoggedIn, userProfile?.handle]);
 
     useEffect(() => {

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { Play, Pause, MoreVertical, Cpu, Gem, ShoppingCart, Bookmark, Sparkles, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Play, Pause, MoreVertical, Cpu, ShoppingCart, Bookmark, Sparkles, Clock, BookmarkPlus } from 'lucide-react';
 import { Project } from '../types';
 import { generateCreativeDescription } from '../services/geminiService';
 import PurchaseModal from './PurchaseModal';
 import { useCart } from '../contexts/CartContext';
+import { checkIsProjectSaved, saveProject, unsaveProject } from '../services/supabaseService';
 
 interface ProjectCardProps {
     project: Project;
@@ -22,7 +23,34 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, currentTrackId, isPl
     const [loadingDesc, setLoadingDesc] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
     const { addToCart } = useCart();
+
+    useEffect(() => {
+        const checkSavedStatus = async () => {
+            if (project.id) {
+                const saved = await checkIsProjectSaved(project.id);
+                setIsSaved(saved);
+            }
+        };
+        checkSavedStatus();
+    }, [project.id]);
+
+    const handleToggleSave = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!project.id) return;
+        try {
+            if (isSaved) {
+                await unsaveProject(project.id);
+                setIsSaved(false);
+            } else {
+                await saveProject(project.id);
+                setIsSaved(true);
+            }
+        } catch (error) {
+            console.error('Failed to toggle save:', error);
+        }
+    };
 
     const handleAnalyze = async () => {
         if (description) {
@@ -184,8 +212,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, currentTrackId, isPl
 
                         <div className="w-px h-3 bg-neutral-800 mx-1"></div>
 
-                        <button className="p-1.5 text-neutral-500 hover:text-white hover:bg-white/5 rounded transition-colors">
-                            <Bookmark size={12} />
+                        <button
+                            onClick={handleToggleSave}
+                            className={`p-1.5 rounded transition-all active:scale-75 ${isSaved ? 'text-primary bg-primary/5' : 'text-neutral-500 hover:text-white hover:bg-white/5'}`}
+                            title={isSaved ? "Unsave Project" : "Save Project"}
+                        >
+                            <BookmarkPlus size={12} fill={isSaved ? "currentColor" : "none"} />
                         </button>
                         {!isPurchased && (
                             <button

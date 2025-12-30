@@ -74,15 +74,6 @@ const RightActions: React.FC<{
         return (
             <div className={`flex items-center justify-end gap-2 sm:gap-3 z-40 h-full shrink-0 transition-all duration-300 ${mobileSearchOpen ? 'opacity-0 translate-x-8 pointer-events-none' : 'opacity-100 translate-x-0'} ${spacerClass}`}>
 
-                {/* Mobile Search Icon */}
-                {currentView === 'home' && (
-                    <button
-                        onClick={isSpacer ? undefined : onMobileSearchOpen}
-                        className="lg:hidden p-2 text-neutral-400 hover:text-white"
-                    >
-                        <Search size={18} />
-                    </button>
-                )}
 
                 {/* Group 1: Balances */}
                 {isLoggedIn && !isFocused && (
@@ -117,6 +108,13 @@ const RightActions: React.FC<{
 
                 {/* Group 2: Icons */}
                 <div className="flex items-center gap-1">
+                    {/* Mobile Search Icon */}
+                    <button
+                        onClick={isSpacer ? undefined : onMobileSearchOpen}
+                        className="lg:hidden p-2 text-neutral-400 hover:text-white"
+                    >
+                        <Search size={16} />
+                    </button>
 
                     {/* Color Picker */}
                     <div className="relative" ref={isSpacer ? null : themeRef}>
@@ -315,6 +313,7 @@ const RightActions: React.FC<{
 
                                     <div
                                         onClick={(e) => {
+                                            if (isSpacer) return;
                                             e.stopPropagation();
                                             setIsProfileOpen(false);
                                             onNavigate('dashboard-wallet');
@@ -324,9 +323,22 @@ const RightActions: React.FC<{
                                         <div className="flex items-center gap-2">
                                             <Wallet size={12} className="text-emerald-500" />
                                             <span className="text-[10px] font-mono font-bold text-white">
-                                                ${(userProfile?.balance !== undefined ? userProfile.balance : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                {showBalance
+                                                    ? `$${(userProfile?.balance !== undefined ? userProfile.balance : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                                    : '$••••••'}
                                             </span>
                                         </div>
+                                        <button
+                                            onClick={(e) => {
+                                                if (isSpacer) return;
+                                                e.stopPropagation();
+                                                setShowBalance(!showBalance);
+                                            }}
+                                            className="p-1 -mr-1 text-neutral-500 hover:text-primary transition-colors"
+                                            title={showBalance ? "Hide Balance" : "Show Balance"}
+                                        >
+                                            {showBalance ? <EyeOff size={10} /> : <Eye size={10} />}
+                                        </button>
                                     </div>
                                 </div>
                                 <div className="p-1.5">
@@ -390,7 +402,7 @@ const TopBar: React.FC<TopBarProps> = ({
     const [searchValue, setSearchValue] = useState('');
     const [aiResponse, setAiResponse] = useState<string | null>(null);
     const [aiLoading, setAiLoading] = useState(false);
-    const [showBalance, setShowBalance] = useState(true);
+    const [showBalance, setShowBalance] = useState(false);
     const [isThemeOpen, setIsThemeOpen] = useState(false);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);

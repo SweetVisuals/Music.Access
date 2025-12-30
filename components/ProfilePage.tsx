@@ -216,6 +216,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             } else {
                 await followUser(userProfile.id);
             }
+            // Dispatch event to notify sidebar
+            window.dispatchEvent(new CustomEvent('following-updated'));
         } catch (error) {
             console.error('Toggle follow failed:', error);
             // Revert
@@ -607,9 +609,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/40 to-transparent" />
 
-                    {/* Banner Hover Overlay */}
+                    {/* Banner Hover Overlay - Hidden on Mobile to prevent "pops up" issue */}
                     {!isViewerMode && isOwnProfile && (
-                        <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover/banner:opacity-100 transition-all duration-300 bg-black/20 backdrop-blur-sm">
+                        <div className="absolute inset-0 hidden md:flex items-center justify-center gap-2 opacity-0 group-hover/banner:opacity-100 transition-all duration-300 bg-black/20 backdrop-blur-sm">
                             <Camera size={18} />
                             <span className="text-xs font-bold uppercase tracking-wide">Change Banner</span>
                         </div>

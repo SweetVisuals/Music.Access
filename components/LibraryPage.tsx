@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Project } from '../types';
-import { LayoutGrid, List, Heart, Disc, Clock, Play, Search, Plus, ChevronDown } from 'lucide-react';
+import { LayoutGrid, List, Disc, Play, Search, Plus, BookmarkPlus } from 'lucide-react';
 import ProjectCard from './ProjectCard';
-import { getUserProfile } from '../services/supabaseService';
+import { getUserProfile, getSavedProjects } from '../services/supabaseService';
 
 interface LibraryPageProps {
     currentTrackId: string | null;
@@ -20,9 +20,13 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     onPlayTrack,
     onTogglePlay
 }) => {
-    const [activeTab, setActiveTab] = useState<'all' | 'liked' | 'purchased' | 'playlists'>('all');
+    const [activeTab, setActiveTab] = useState<'all' | 'saved' | 'purchased' | 'playlists'>('all');
     const [userProfile, setUserProfile] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const [savedProjects, setSavedProjects] = useState<Project[]>([]);
+    const [loadingProfile, setLoadingProfile] = useState(true);
+    const [loadingSaved, setLoadingSaved] = useState(true);
+
+    const loading = loadingProfile || loadingSaved;
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -32,14 +36,36 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
             } catch (error) {
                 console.error('Failed to fetch user profile:', error);
             } finally {
-                setLoading(false);
+                setLoadingProfile(false);
             }
         };
+
+        const fetchSaved = async () => {
+            try {
+                const saved = await getSavedProjects();
+                setSavedProjects(saved);
+            } catch (error) {
+                console.error('Failed to fetch saved projects:', error);
+            } finally {
+                setLoadingSaved(false);
+            }
+        };
+
         fetchUserProfile();
+        fetchSaved();
     }, []);
 
     // Filter projects based on active tab
-    const displayProjects = userProfile?.projects || [];
+    const displayProjects = activeTab === 'all'
+        ? Array.from(new Map([
+            ...(userProfile?.projects || []),
+            ...savedProjects
+        ].map(p => [p.id, p])).values())
+        : activeTab === 'saved'
+            ? savedProjects
+            : activeTab === 'purchased'
+                ? (userProfile?.projects?.filter((p: any) => p.isPurchased) || []) // Placeholder check
+                : [];
 
     return (
         <div className="w-full max-w-[1600px] mx-auto pb-32 pt-4 lg:pt-6 px-4 lg:px-8 animate-in fade-in duration-500">
@@ -68,14 +94,14 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                         </button>
 
                         <button
-                            onClick={() => setActiveTab('liked')}
+                            onClick={() => setActiveTab('saved')}
                             className={`
                                 flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
-                                ${activeTab === 'liked' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                                ${activeTab === 'saved' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
                             `}
                         >
-                            <Heart size={14} className={activeTab === 'liked' ? 'text-primary' : ''} />
-                            <span className="text-[9px] font-bold uppercase tracking-tight">Liked</span>
+                            <BookmarkPlus size={14} className={activeTab === 'saved' ? 'text-primary' : ''} />
+                            <span className="text-[9px] font-bold uppercase tracking-tight">Saved</span>
                         </button>
 
                         <button
@@ -105,7 +131,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 {/* Desktop Segmented Control */}
                 <div className="hidden md:flex md:flex-nowrap md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 gap-1 md:gap-0">
                     <TabButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} label="All" mobileCompact />
-                    <TabButton active={activeTab === 'liked'} onClick={() => setActiveTab('liked')} label="Liked" icon={<Heart size={10} />} mobileCompact />
+                    <TabButton active={activeTab === 'saved'} onClick={() => setActiveTab('saved')} label="Saved" icon={<BookmarkPlus size={10} />} mobileCompact />
                     <TabButton active={activeTab === 'purchased'} onClick={() => setActiveTab('purchased')} label="Bought" icon={<Disc size={10} />} mobileCompact />
                     <TabButton active={activeTab === 'playlists'} onClick={() => setActiveTab('playlists')} label="Lists" icon={<List size={10} />} mobileCompact />
                 </div>

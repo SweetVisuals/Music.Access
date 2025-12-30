@@ -22,6 +22,20 @@ import {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL!;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY!;
 
+const isUuid = (val: string) => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(val);
+};
+
+// Add SavedProject interface
+export interface SavedProject {
+  id: string;
+  user_id: string;
+  project_id: string;
+  created_at: string;
+  project?: Project;
+}
+
 console.log('Supabase URL:', SUPABASE_URL);
 console.log('Supabase Key exists:', !!SUPABASE_ANON_KEY);
 
@@ -340,7 +354,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
         lastGemClaimDate: data.last_gem_claim_date,
         bio: data.bio,
         website: data.website,
-        projects: projects.filter(p => p.type === 'beat_tape'),
+        projects: projects,
         services: services,
         soundPacks: projects.filter(p => p.type === 'sound_pack').map(p => ({
           id: p.id,
@@ -723,6 +737,153 @@ export const getProjectsByUserId = async (userId: string): Promise<Project[]> =>
     created: project.created_at,
     userId: project.user_id
   }));
+};
+
+export const getSavedProjects = async (): Promise<Project[]> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return [];
+
+  const { data, error } = await supabase
+    .from('saved_projects')
+    .select(`
+      project_id,
+      project:projects (
+        *,
+        user:user_id (
+          username,
+          handle,
+          avatar_url
+        ),
+        tracks (
+          id,
+          title,
+          duration_seconds,
+          track_number,
+          note_id,
+          status_tags,
+          assigned_file_id
+        ),
+        project_licenses (
+          license:licenses (
+            id,
+            name,
+            type,
+            default_price,
+            features,
+            file_types_included
+          ),
+          price
+        ),
+        project_tags (
+          tag:tags (
+            name
+          )
+        )
+      )
+    `)
+    .eq('user_id', currentUser.id);
+
+  if (error) throw error;
+
+  return (data as any[]).map(item => {
+    const project = item.project;
+    if (!project) return null;
+    return {
+      id: project.id,
+      title: project.title,
+      producer: project.user?.username || 'Unknown',
+      producerAvatar: project.user?.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+      coverImage: project.cover_image_url,
+      price: project.project_licenses?.[0]?.price || project.project_licenses?.[0]?.license?.default_price || 0,
+      bpm: project.bpm,
+      key: project.key,
+      genre: project.genre,
+      subGenre: project.sub_genre,
+      type: project.type,
+      tags: project.project_tags?.map((pt: any) => pt.tag?.name).filter(Boolean) || [],
+      tracks: project.tracks?.map((track: any) => ({
+        id: track.id,
+        title: track.title,
+        duration: track.duration_seconds,
+        trackNumber: track.track_number,
+        noteId: track.note_id,
+        statusTags: track.status_tags,
+        assignedFileId: track.assigned_file_id
+      })) || [],
+      description: project.description,
+      licenses: project.project_licenses?.map((pl: any) => ({
+        id: pl.license?.id,
+        type: pl.license?.type,
+        name: pl.license?.name,
+        price: pl.price || pl.license?.default_price,
+        features: pl.license?.features || [],
+        fileTypesIncluded: pl.license?.file_types_included || []
+      })) || [],
+      status: project.status,
+      created: project.created_at,
+      userId: project.user_id
+    };
+  }).filter(Boolean) as Project[];
+};
+
+export const checkIsProjectSaved = async (projectId: string): Promise<boolean> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser || !projectId || !isUuid(projectId)) return false;
+
+  const { data, error } = await supabase
+    .from('saved_projects')
+    .select('id')
+    .eq('user_id', currentUser.id)
+    .eq('project_id', projectId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error checking if project is saved:', error);
+    return false;
+  }
+
+  return !!data;
+};
+
+export const saveProject = async (projectId: string) => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+  if (!projectId || !isUuid(projectId)) {
+    console.warn('Attempted to save non-UUID project ID:', projectId);
+    return;
+  }
+
+  const { error } = await supabase
+    .from('saved_projects')
+    .insert({
+      user_id: currentUser.id,
+      project_id: projectId
+    });
+
+  if (error && error.code !== '23505') { // Ignore unique violation
+    console.error('Error saving project:', error);
+    throw error;
+  }
+};
+
+export const unsaveProject = async (projectId: string) => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) throw new Error('User not authenticated');
+  if (!projectId || !isUuid(projectId)) {
+    console.warn('Attempted to unsave non-UUID project ID:', projectId);
+    return;
+  }
+
+  const { error } = await supabase
+    .from('saved_projects')
+    .delete()
+    .eq('user_id', currentUser.id)
+    .eq('project_id', projectId);
+
+  if (error) {
+    console.error('Error unsaving project:', error);
+    throw error;
+  }
 };
 
 export const getServicesByUserId = async (userId: string): Promise<Service[]> => {
@@ -1287,6 +1448,111 @@ export const getTalentProfiles = async (): Promise<TalentProfile[]> => {
 
   return profilesWithFullStats;
 };
+
+export const getFollowingProfilesForSidebar = async (): Promise<TalentProfile[]> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return [];
+
+  try {
+    // 1. Fetch users the current user is following
+    const { data: followData, error: followError } = await supabase
+      .from('followers')
+      .select('following_id, created_at')
+      .eq('follower_id', currentUser.id);
+
+    if (followError) throw followError;
+    if (!followData || followData.length === 0) return [];
+
+    const followingIds = followData.map((f: any) => f.following_id);
+    const followDates = new Map(followData.map((f: any) => [f.following_id, f.created_at]));
+
+    // 2. Fetch profiles for these users
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('id, username, handle, avatar_url, role')
+      .in('id', followingIds);
+
+    if (userError) throw userError;
+    if (!userData) return [];
+
+    // 3. Fetch recent conversations to get latest interaction times
+    const { data: convData, error: convError } = await supabase
+      .from('conversation_participants')
+      .select(`
+        conversation_id,
+        conversation:conversations (
+          updated_at
+        )
+      `)
+      .eq('user_id', currentUser.id);
+
+    // Map of conversation_id to updated_at
+    const convUpdates = new Map<string, string>();
+    if (convData) {
+      convData.forEach((cp: any) => {
+        if (cp.conversation?.updated_at) {
+          convUpdates.set(cp.conversation_id, cp.conversation.updated_at);
+        }
+      });
+    }
+
+    // Now we need to find the other participants in those conversations to match with following_id
+    let userInteractions = new Map<string, string>();
+    if (convUpdates.size > 0) {
+      const { data: otherParticipants } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id, user_id')
+        .in('conversation_id', Array.from(convUpdates.keys()))
+        .neq('user_id', currentUser.id);
+
+      if (otherParticipants) {
+        otherParticipants.forEach((op: any) => {
+          const updatedAt = convUpdates.get(op.conversation_id);
+          if (updatedAt) {
+            const currentLast = userInteractions.get(op.user_id);
+            if (!currentLast || new Date(updatedAt) > new Date(currentLast)) {
+              userInteractions.set(op.user_id, updatedAt);
+            }
+          }
+        });
+      }
+    }
+
+    // 4. combine and sort
+    const profiles: TalentProfile[] = userData.map((user: any) => {
+      const lastInteraction = userInteractions.get(user.id);
+      const followDate = followDates.get(user.id) as string;
+
+      const sortDate = lastInteraction && new Date(lastInteraction) > new Date(followDate)
+        ? lastInteraction
+        : followDate;
+
+      return {
+        id: user.id,
+        username: user.username,
+        handle: user.handle,
+        avatar: user.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+        role: user.role,
+        tags: user.role ? [user.role] : [],
+        followers: '0',
+        isVerified: false,
+        isFollowing: true,
+        streams: 0,
+        tracks: 0,
+        sortDate: sortDate // Internal use for sorting
+      } as any;
+    });
+
+    return profiles
+      .sort((a: any, b: any) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime())
+      .slice(0, 3);
+
+  } catch (error) {
+    console.error('Error in getFollowingProfilesForSidebar:', error);
+    return [];
+  }
+};
+
 
 export const getCollabServices = async (): Promise<CollabService[]> => {
   const { data, error } = await supabase

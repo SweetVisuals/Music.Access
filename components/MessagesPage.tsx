@@ -117,6 +117,8 @@ const MessagesPage: React.FC = () => {
             const data = await getConversations();
             setConversations(data);
             setActiveId(newConvId); // Select the new conversation
+            // Dispatch event to notify sidebar to re-sort
+            window.dispatchEvent(new CustomEvent('following-updated'));
         } catch (e) {
             console.error("Failed to start conversation", e);
             alert("Failed to start conversation. Please try again.");

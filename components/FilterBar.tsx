@@ -20,7 +20,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
 
   return (
     <div className="flex flex-col space-y-6 pb-6">
-      <div className="flex items-end justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-white tracking-tight">Marketplace</h2>
         </div>
@@ -84,7 +84,6 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
           />
         </div>
 
-        <div className="flex-1"></div>
       </div>
     </div>
   );

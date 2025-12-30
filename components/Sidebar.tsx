@@ -351,20 +351,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                         active={currentView === 'collaborate'}
                                         onClick={() => onNavigate('collaborate')}
                                     />
-                                    {isLoggedIn && (
-                                        <>
-                                            <SidebarItem
-                                                icon={<Headphones size={14} />}
-                                                label="My Studio"
-                                                onClick={() => onNavigate('dashboard-studio')}
-                                            />
-                                            <SidebarItem
-                                                icon={<Briefcase size={14} />}
-                                                label="Manage Orders"
-                                                onClick={() => onNavigate('dashboard-manage')}
-                                            />
-                                        </>
-                                    )}
                                 </nav>
                             </div>
 

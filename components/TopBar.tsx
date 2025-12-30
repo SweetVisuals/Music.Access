@@ -72,7 +72,7 @@ const RightActions: React.FC<{
         const spacerClass = isSpacer ? "opacity-0 pointer-events-none select-none" : "opacity-100";
 
         return (
-            <div className={`flex items-center justify-end gap-3 z-40 h-full shrink-0 ${mobileSearchOpen ? 'hidden' : ''} transition-opacity duration-200 ${spacerClass}`}>
+            <div className={`flex items-center justify-end gap-2 sm:gap-3 z-40 h-full shrink-0 transition-all duration-300 ${mobileSearchOpen ? 'opacity-0 translate-x-8 pointer-events-none' : 'opacity-100 translate-x-0'} ${spacerClass}`}>
 
                 {/* Mobile Search Icon */}
                 {currentView === 'home' && (
@@ -201,14 +201,7 @@ const RightActions: React.FC<{
                                         </div>
                                     </div>
 
-                                    {/* Mobile Full Screen Notifications */}
-                                    <MobileNotifications
-                                        isOpen={isNotificationsOpen}
-                                        onClose={() => setIsNotificationsOpen(false)}
-                                        notifications={notifications}
-                                        onMarkAllRead={handleMarkAllRead}
-                                        onMarkRead={handleMarkRead}
-                                    />
+
                                 </>
                             )}
                         </div>
@@ -365,7 +358,7 @@ const THEMES = [
     { name: 'Ocean', value: 'ocean', color: '#0ea5e9' },
     { name: 'Crimson', value: 'crimson', color: '#ef4444' },
     { name: 'Violet', value: 'violet', color: '#8b5cf6' },
-    { name: 'Amber', value: 'amber', color: '#f59e0b' }
+    { name: 'Orange', value: 'orange', color: '#f97316' }
 ];
 
 const hexToRgb = (hex: string): string | null => {
@@ -576,37 +569,33 @@ const TopBar: React.FC<TopBarProps> = ({
             </div>
 
             {/* Hamburger Menu (Mobile) - Hide if search open */}
-            {!mobileSearchOpen && (
-                <button
-                    onClick={onMenuClick}
-                    className="lg:hidden p-2 -ml-2 text-neutral-400 hover:text-white transition-colors"
-                >
-                    <Menu size={20} />
-                </button>
-            )}
+            <button
+                onClick={onMenuClick}
+                className={`lg:hidden p-2 -ml-2 text-neutral-400 hover:text-white transition-all duration-300 ${mobileSearchOpen ? 'opacity-0 -translate-x-8 pointer-events-none' : 'opacity-100 translate-x-0'}`}
+            >
+                <Menu size={20} />
+            </button>
 
             {/* Mobile Page Title Portal Target */}
-            <div id="mobile-page-title" className={`lg:hidden flex-1 flex justify-center items-center px-2 min-w-0 ${mobileSearchOpen ? 'hidden' : ''}`}></div>
+            <div id="mobile-page-title" className={`lg:hidden flex-1 flex justify-center items-center px-2 min-w-0 transition-all duration-300 ${mobileSearchOpen ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}></div>
 
             {/* SEARCH BAR */}
             <div
                 className={`
-                transition-all duration-300 z-30
+                transition-all duration-400 z-50
                 ${mobileSearchOpen
-                        ? 'absolute inset-0 bg-[#050505] flex items-center px-4 z-50'
-                        : 'hidden lg:flex flex-1 justify-center px-4'
+                        ? 'absolute inset-0 bg-[#050505] flex items-center px-4 opacity-100 pointer-events-auto translate-x-0'
+                        : 'opacity-0 pointer-events-none absolute inset-0 translate-x-4 lg:relative lg:flex lg:opacity-100 lg:pointer-events-auto flex-1 justify-center px-4 lg:bg-transparent lg:translate-x-0'
                     }
                 ${!mobileSearchOpen && isFocused ? 'lg:max-w-[35rem] xl:max-w-[45rem] w-full' : 'lg:max-w-[24rem] xl:max-w-[32rem] w-full'}
             `}
             >
-                {mobileSearchOpen && (
-                    <button
-                        onClick={() => setMobileSearchOpen(false)}
-                        className="mr-3 p-2 -ml-2 text-neutral-400"
-                    >
-                        <ArrowLeft size={18} />
-                    </button>
-                )}
+                <button
+                    onClick={() => setMobileSearchOpen(false)}
+                    className={`mr-3 p-2 -ml-2 text-neutral-400 transition-all duration-300 lg:hidden ${mobileSearchOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none absolute'}`}
+                >
+                    <ArrowLeft size={18} />
+                </button>
 
                 <div
                     ref={searchRef}
@@ -719,6 +708,14 @@ const TopBar: React.FC<TopBarProps> = ({
                 cartTotal={cartTotal} removeFromCart={removeFromCart} dropdownRef={dropdownRef}
                 isProfileOpen={isProfileOpen} setIsProfileOpen={setIsProfileOpen} onOpenAuth={onOpenAuth}
                 onLogout={onLogout} isSpacer={false} onMobileSearchOpen={() => setMobileSearchOpen(true)}
+            />
+            {/* Mobile Notifications Portal - Rendered outside transformed containers */}
+            <MobileNotifications
+                isOpen={isNotificationsOpen}
+                onClose={() => setIsNotificationsOpen(false)}
+                notifications={notifications}
+                onMarkAllRead={handleMarkAllRead}
+                onMarkRead={handleMarkRead}
             />
         </header>
     );

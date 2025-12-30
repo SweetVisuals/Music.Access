@@ -129,11 +129,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             <img
                                 src="/images/musicaccesslogowhite.png"
                                 alt="Music Access"
-                                className="h-full w-auto opacity-0"
+                                className="h-full w-auto"
                             />
                             <div
                                 className="absolute inset-0 bg-primary"
                                 style={{
+                                    clipPath: 'inset(0 calc(100% - 27px) 0 0)',
+                                    WebkitClipPath: 'inset(0 calc(100% - 27px) 0 0)',
                                     maskImage: 'url("/images/musicaccesslogowhite.png")',
                                     WebkitMaskImage: 'url("/images/musicaccesslogowhite.png")',
                                     maskSize: 'contain',

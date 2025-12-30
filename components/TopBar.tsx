@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
     Search, Bell, Menu, User, LogOut, Settings, Terminal, ShoppingBag,
     ArrowRight, ArrowLeft, Clock, Gem, Wallet, Eye, EyeOff, Palette,
-    Command, Sparkles, Music, Package, Mic, Info, X, ChevronDown, Trash2
+    Command, Sparkles, Music, Package, Mic, Info, X, ChevronDown, Trash2, Check
 } from 'lucide-react';
 import { Project, UserProfile, Notification, View } from '../types';
+import MobileNotifications from './MobileNotifications';
 import { useCart } from '../contexts/CartContext';
 import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/supabaseService';
 
@@ -118,7 +119,7 @@ const RightActions: React.FC<{
                 <div className="flex items-center gap-1">
 
                     {/* Color Picker */}
-                    <div className="relative hidden sm:block" ref={isSpacer ? null : themeRef}>
+                    <div className="relative" ref={isSpacer ? null : themeRef}>
                         <button
                             onClick={isSpacer ? undefined : () => setIsThemeOpen(!isThemeOpen)}
                             className={`p-2 rounded-lg transition-all duration-200 ${isThemeOpen && !isSpacer ? 'bg-white/10 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
@@ -157,46 +158,58 @@ const RightActions: React.FC<{
                             </button>
 
                             {isNotificationsOpen && !isSpacer && (
-                                <div className="absolute right-0 top-full mt-3 w-72 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="p-3 border-b border-white/5 flex justify-between items-center">
-                                        <h3 className="text-xs font-bold text-white">Notifications</h3>
-                                        <button
-                                            onClick={handleMarkAllRead}
-                                            className="text-[9px] text-primary hover:underline"
-                                        >
-                                            Mark all read
-                                        </button>
-                                    </div>
-                                    <div className="max-h-[280px] overflow-y-auto custom-scrollbar">
-                                        {notifications.length === 0 ? (
-                                            <div className="p-4 text-center text-neutral-500 text-xs">
-                                                No notifications
-                                            </div>
-                                        ) : (
-                                            notifications.map(notif => (
-                                                <div
-                                                    key={notif.id}
-                                                    onClick={() => handleMarkRead(notif.id)}
-                                                    className={`p-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!notif.read ? 'bg-white/[0.02]' : ''}`}
-                                                >
-                                                    <div className="flex gap-3">
-                                                        <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${notif.type === 'sale' ? 'bg-green-500' : notif.type === 'system' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
-                                                        <div>
-                                                            <h4 className="text-xs font-bold text-white mb-0.5">{notif.title}</h4>
-                                                            <p className="text-[10px] text-neutral-400 leading-snug mb-1.5">{notif.message}</p>
-                                                            <div className="flex items-center gap-1 text-[9px] text-neutral-600">
-                                                                <Clock size={8} /> {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                <>
+                                    {/* Desktop Dropdown */}
+                                    <div className="hidden lg:block absolute right-0 top-full mt-3 w-72 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="p-3 border-b border-white/5 flex justify-between items-center">
+                                            <h3 className="text-xs font-bold text-white">Notifications</h3>
+                                            <button
+                                                onClick={handleMarkAllRead}
+                                                className="text-[9px] text-primary hover:underline"
+                                            >
+                                                Mark all read
+                                            </button>
+                                        </div>
+                                        <div className="max-h-[280px] overflow-y-auto custom-scrollbar">
+                                            {notifications.length === 0 ? (
+                                                <div className="p-4 text-center text-neutral-500 text-xs">
+                                                    No notifications
+                                                </div>
+                                            ) : (
+                                                notifications.map(notif => (
+                                                    <div
+                                                        key={notif.id}
+                                                        onClick={() => handleMarkRead(notif.id)}
+                                                        className={`p-3 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!notif.read ? 'bg-white/[0.02]' : ''}`}
+                                                    >
+                                                        <div className="flex gap-3">
+                                                            <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${notif.type === 'sale' ? 'bg-green-500' : notif.type === 'system' ? 'bg-blue-500' : 'bg-purple-500'}`}></div>
+                                                            <div>
+                                                                <h4 className="text-xs font-bold text-white mb-0.5">{notif.title}</h4>
+                                                                <p className="text-[10px] text-neutral-400 leading-snug mb-1.5">{notif.message}</p>
+                                                                <div className="flex items-center gap-1 text-[9px] text-neutral-600">
+                                                                    <Clock size={8} /> {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            ))
-                                        )}
+                                                ))
+                                            )}
+                                        </div>
+                                        <div className="p-2 bg-neutral-900/50 text-center">
+                                            <button className="text-[9px] font-bold text-neutral-500 hover:text-white transition-colors">View Activity Log</button>
+                                        </div>
                                     </div>
-                                    <div className="p-2 bg-neutral-900/50 text-center">
-                                        <button className="text-[9px] font-bold text-neutral-500 hover:text-white transition-colors">View Activity Log</button>
-                                    </div>
-                                </div>
+
+                                    {/* Mobile Full Screen Notifications */}
+                                    <MobileNotifications
+                                        isOpen={isNotificationsOpen}
+                                        onClose={() => setIsNotificationsOpen(false)}
+                                        notifications={notifications}
+                                        onMarkAllRead={handleMarkAllRead}
+                                        onMarkRead={handleMarkRead}
+                                    />
+                                </>
                             )}
                         </div>
                     )}

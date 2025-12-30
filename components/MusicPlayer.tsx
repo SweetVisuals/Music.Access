@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { Project, View } from '../types';
 import { MOCK_USER_PROFILE } from '../constants';
 
+import BottomNav from './BottomNav';
+
 interface MusicPlayerProps {
     currentProject: Project | null;
     currentTrackId: string | null;
@@ -12,9 +14,10 @@ interface MusicPlayerProps {
     togglePlay: () => void;
     currentView?: View;
     onClose: () => void;
+    onNavigate: (view: View | string) => void;
 }
 
-const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackId, isPlaying, togglePlay, currentView, onClose }) => {
+const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackId, isPlaying, togglePlay, currentView, onClose, onNavigate }) => {
     const navigate = useNavigate();
     const [isMinimized, setIsMinimized] = useState(true);
 
@@ -118,7 +121,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
 
             {/* --- MOBILE EMBEDDED BOTTOM BAR --- */}
             <div
-                className={`lg:hidden fixed left-0 right-0 z-[119] bg-[#050505] border-t border-white/20 shadow-[0_-4px_20px_rgba(0,0,0,0.8)] transition-all duration-300 ${isMinimized
+                className={`lg:hidden fixed left-0 right-0 z-[119] bg-[#050505] border-t border-white/20 transition-all duration-300 ${isMinimized
                     ? (currentView === 'notes'
                         ? 'bottom-[calc(8.5rem+env(safe-area-inset-bottom)-1px)] translate-y-0 border-b-0'
                         : 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] translate-y-0')
@@ -185,7 +188,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
             </div>
 
             {/* --- IMMERSIVE MOBILE FULLSCREEN PLAYER --- */}
-            <div className={`lg:hidden fixed inset-0 z-[130] bg-black flex flex-col transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) ${isMinimized ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
+            <div className={`lg:hidden fixed inset-0 z-[130] bg-black flex flex-col transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) ${isMinimized ? 'translate-y-full pointer-events-none' : 'translate-y-0'}`}>
 
                 {/* Background & Blur */}
                 <div className="absolute inset-0 z-0">
@@ -210,7 +213,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                 </div>
 
                 {/* Main Content */}
-                <div className="relative z-10 flex-1 flex flex-col px-6 pb-6 pt-2 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <div className="relative z-10 flex-1 flex flex-col px-6 pb-24 pt-2 overflow-hidden" onClick={(e) => e.stopPropagation()}>
 
                     {/* Artwork / Producer Avatar - SOLID Unified Order */}
                     <div className="w-full max-w-[200px] aspect-square mx-auto relative group shrink-0">
@@ -324,8 +327,8 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                         </div>
                     </div>
 
-                    {/* Bottom Actions Row - Pinned to bottom */}
-                    <div className="relative z-10 flex justify-between items-center px-4 w-full pt-2 shrink-0 mt-auto" onClick={(e) => e.stopPropagation()}>
+                    {/* Bottom Actions Row - Pinned to bottom - moved up with mt-6 */}
+                    <div className="relative z-10 flex justify-between items-center px-4 w-full pt-2 shrink-0 mt-6 pb-2" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-6">
                             <button className="text-neutral-400 hover:text-white transition-colors active:scale-95">
                                 <Share2 size={22} />
@@ -370,6 +373,16 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                             </button>
                         </div>
                     </div>
+                </div>
+
+                {/* --- BOTTOM NAVIGATION BAR IN FULLSCREEN --- */}
+                <div onClick={(e) => {
+                    // Prevent closing player when clicking nav
+                    e.stopPropagation();
+                    // Minimize player when navigating
+                    setIsMinimized(true);
+                }}>
+                    <BottomNav currentView={currentView || 'home'} onNavigate={onNavigate} />
                 </div>
 
                 {/* --- QUEUE OVERLAY --- */}
@@ -426,7 +439,6 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                     </div>
                 </div>
             </div>
-
 
             {/* --- DESKTOP BOTTOM BAR --- */}
             <div className={`hidden lg:block fixed bottom-0 left-64 right-0 z-50 transition-transform duration-500 ${isMinimized ? 'translate-y-0' : 'translate-y-0'}`}>

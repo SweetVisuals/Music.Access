@@ -38,6 +38,7 @@ import {
     LayoutGrid
 } from 'lucide-react';
 import Studio from './Studio';
+import WalletPage from './WalletPage';
 import { MOCK_PURCHASES } from '../constants';
 import { getPurchases, getSales, getDashboardAnalytics, subscribeToArtistPresence } from '../services/supabaseService';
 
@@ -256,55 +257,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         </div>
     );
 
-    const WalletView = () => (
-        <div className="w-full max-w-4xl mx-auto p-8 animate-in fade-in duration-500">
-            <h1 className="text-3xl font-black text-white mb-8">Wallet</h1>
-            <div className="bg-gradient-to-br from-neutral-900 to-black border border-white/10 rounded-2xl p-8 mb-8 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-32 bg-primary/5 rounded-full blur-3xl"></div>
-                <div className="relative z-10">
-                    <div className="flex gap-8">
-                        <div>
-                            <div className="text-neutral-500 font-mono text-sm uppercase tracking-widest mb-2">Total Balance</div>
-                            <div className="text-5xl font-black text-white mb-6">${getSafeUserProfileValue(userProfile.balance, 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                        </div>
-                        <div className="pl-8 border-l border-white/10">
-                            <div className="text-neutral-500 font-mono text-sm uppercase tracking-widest mb-2">Gem Balance</div>
-                            <div className="text-5xl font-black text-primary mb-6 flex items-center gap-2">
-                                {getSafeUserProfileValue(userProfile.gems, 0).toLocaleString()} <Gem size={32} />
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex gap-4">
-                        <button className="px-6 py-3 bg-primary text-black font-bold rounded-lg hover:bg-primary/90">Withdraw Funds</button>
-                        <button className="px-6 py-3 bg-white/5 text-white font-bold rounded-lg hover:bg-white/10 border border-white/10">View Statement</button>
-                    </div>
-                </div>
-            </div>
-            <div className="space-y-4">
-                <h3 className="text-lg font-bold text-white">Payment Methods</h3>
-                <div className="p-4 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-6 bg-blue-600 rounded flex items-center justify-center text-[8px] font-bold text-white">VISA</div>
-                        <div>
-                            <div className="text-sm font-bold text-white">•••• •••• •••• 4242</div>
-                            <div className="text-xs text-neutral-500">Expires 12/28</div>
-                        </div>
-                    </div>
-                    <button className="text-xs text-neutral-400 hover:text-white">Edit</button>
-                </div>
-                <div className="p-4 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-6 bg-[#003087] rounded flex items-center justify-center text-[8px] font-bold text-white">PAYPAL</div>
-                        <div>
-                            <div className="text-sm font-bold text-white">{getSafeUserProfileValue(userProfile.email, 'user@example.com')}</div>
-                            <div className="text-xs text-neutral-500">Primary Payout Method</div>
-                        </div>
-                    </div>
-                    <button className="text-xs text-neutral-400 hover:text-white">Edit</button>
-                </div>
-            </div>
-        </div>
-    );
+
 
     // --- ROUTING ---
 
@@ -324,7 +277,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     }
 
     if (view === 'dashboard-wallet') {
-        return <WalletView />;
+        return <WalletPage userProfile={userProfile} />;
     }
 
     if (view === 'dashboard-orders') {

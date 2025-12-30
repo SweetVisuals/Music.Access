@@ -601,6 +601,7 @@ const App: React.FC = () => {
             setCurrentProject(null);
             setCurrentTrackId(null);
           }}
+          onNavigate={handleNavigate}
         />
 
         <BottomNav

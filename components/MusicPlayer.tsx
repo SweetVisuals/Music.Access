@@ -134,7 +134,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
             <div
                 className={`lg:hidden fixed left-0 right-0 z-[119] bg-[#050505] border-t border-white/20 border-b-0 shadow-none transition-all duration-300 ${isMinimized
                     ? (currentView === 'notes' && !isSidebarOpen
-                        ? 'bottom-[calc(8.5rem+env(safe-area-inset-bottom)-4px)] translate-y-0 z-[47]'
+                        ? 'bottom-[calc(8.5rem+env(safe-area-inset-bottom)-1px)] translate-y-0 z-[47]'
                         : 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] translate-y-0 z-[119]')
                     : 'bottom-0 translate-y-full opacity-0 pointer-events-none'
                     }`}

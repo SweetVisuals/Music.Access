@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ShoppingBag, Trash2, ArrowRight, Music, Package, Mic } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { View } from '../types';
@@ -10,10 +11,30 @@ interface MobileCartProps {
 const MobileCart: React.FC<MobileCartProps> = ({ onNavigate }) => {
     const { items, cartTotal, isOpen, setIsOpen, removeFromCart } = useCart();
 
-    if (!isOpen) return null;
+    const [render, setRender] = useState(false);
+    const [visible, setVisible] = useState(false);
 
-    return (
-        <div className="fixed inset-0 z-[100] lg:hidden flex flex-col bg-black animate-in fade-in duration-300">
+    useEffect(() => {
+        if (isOpen) {
+            setRender(true);
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => setVisible(true));
+        } else {
+            setVisible(false);
+            document.body.style.overflow = '';
+            const timer = setTimeout(() => setRender(false), 300);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen]);
+
+    if (!render) return null;
+
+    return createPortal(
+        <div className={`
+            fixed inset-0 z-[100] lg:hidden flex flex-col bg-black 
+            transition-transform duration-300 ease-in-out will-change-transform
+            ${visible ? 'translate-y-0' : 'translate-y-full'}
+        `}>
             {/* Background Blur Effect */}
             <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
 
@@ -140,7 +161,8 @@ const MobileCart: React.FC<MobileCartProps> = ({ onNavigate }) => {
                     </button>
                 </div>
             )}
-        </div>
+        </div>,
+        document.body
     );
 };
 

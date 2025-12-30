@@ -72,6 +72,8 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
 
     const handleFollow = async (e: React.MouseEvent, talent: TalentProfile) => {
         e.stopPropagation(); // Prevent card click
+        const { followUser, unfollowUser } = await import('../services/supabaseService');
+
         if (talent.isFollowing) {
             // Unfollow
             // Optimistic Update
@@ -80,7 +82,17 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                     ? { ...t, isFollowing: false, followers: (parseInt(t.followers) - 1).toString() }
                     : t
             ));
-            await import('../services/supabaseService').then(({ unfollowUser }) => unfollowUser(talent.id));
+            try {
+                await unfollowUser(talent.id);
+            } catch (error) {
+                console.error('Unfollow failed:', error);
+                // Revert
+                setTalents(prev => prev.map(t =>
+                    t.id === talent.id
+                        ? { ...t, isFollowing: true, followers: (parseInt(t.followers) + 1).toString() }
+                        : t
+                ));
+            }
         } else {
             // Follow
             // Optimistic Update
@@ -89,7 +101,17 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                     ? { ...t, isFollowing: true, followers: (parseInt(t.followers) + 1).toString() }
                     : t
             ));
-            await import('../services/supabaseService').then(({ followUser }) => followUser(talent.id));
+            try {
+                await followUser(talent.id);
+            } catch (error) {
+                console.error('Follow failed:', error);
+                // Revert
+                setTalents(prev => prev.map(t =>
+                    t.id === talent.id
+                        ? { ...t, isFollowing: false, followers: (parseInt(t.followers) - 1).toString() }
+                        : t
+                ));
+            }
         }
         // Dispatch event to notify sidebar
         window.dispatchEvent(new CustomEvent('following-updated'));

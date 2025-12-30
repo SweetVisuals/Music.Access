@@ -29,7 +29,7 @@ import {
     Gem
 } from 'lucide-react';
 import { View, UserProfile, TalentProfile } from '../types';
-import { getStorageUsage, getFollowingProfilesForSidebar } from '../services/supabaseService';
+import { getStorageUsage, getFollowingProfilesForSidebar, supabase } from '../services/supabaseService';
 
 interface SidebarProps {
     currentView: View;
@@ -57,6 +57,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
     }, [isOpen]);
 
     useEffect(() => {
+        let subscription: any = null;
+
         const fetchFollowing = async () => {
             if (!isLoggedIn) {
                 setFollowing([]);
@@ -73,23 +75,52 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
             }
         };
 
-        fetchFollowing();
+        const setupRealtime = async () => {
+            if (!isLoggedIn || !userProfile?.id) return;
 
-        // Listen for following updates
-        const handleFollowingUpdate = () => {
+            // Initial fetch
+            fetchFollowing();
+
+            console.log("Setting up realtime subscription for followers...");
+            subscription = supabase
+                .channel('sidebar-following-changes')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*', // Listen for INSERT and DELETE (and UPDATE)
+                        schema: 'public',
+                        table: 'followers',
+                        filter: `follower_id=eq.${userProfile.id}`
+                    },
+                    (payload) => {
+                        console.log('Real-time following update received:', payload);
+                        // Small delay to ensure DB commit is readable if race condition exists, though RT implies it happened.
+                        setTimeout(fetchFollowing, 200);
+                    }
+                )
+                .subscribe();
+        };
+
+        setupRealtime();
+
+        // Listen for message updates since they affect sorting (less frequent, handle manually or keep event)
+        const handleMessageUpdate = () => {
             fetchFollowing();
         };
+        window.addEventListener('messages-updated', handleMessageUpdate);
 
-        window.addEventListener('following-updated', handleFollowingUpdate);
-
-        // Also listen for message updates since they affect sorting
-        window.addEventListener('messages-updated', handleFollowingUpdate);
+        // Keep manual refresh event as backup
+        const handleManualUpdate = () => {
+            setTimeout(fetchFollowing, 500);
+        };
+        window.addEventListener('following-updated', handleManualUpdate);
 
         return () => {
-            window.removeEventListener('following-updated', handleFollowingUpdate);
-            window.removeEventListener('messages-updated', handleFollowingUpdate);
+            if (subscription) supabase.removeChannel(subscription);
+            window.removeEventListener('messages-updated', handleMessageUpdate);
+            window.removeEventListener('following-updated', handleManualUpdate);
         };
-    }, [isLoggedIn, userProfile?.handle]);
+    }, [isLoggedIn, userProfile?.id]);
 
     useEffect(() => {
         const fetchStorageUsage = async () => {
@@ -386,10 +417,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                             <div className="flex items-center justify-center py-3">
                                                 <div className="w-4 h-4 border border-primary/30 border-t-primary rounded-full animate-spin"></div>
                                             </div>
-                                        ) : following.length > 0 ? following.map((talent) => (
+                                        ) : following.length > 0 ? following.slice(0, 3).map((talent) => (
                                             <div
                                                 key={talent.id}
-                                                onClick={() => onNavigate('browse-talent')}
+                                                onClick={() => onNavigate(`@${talent.handle}`)}
                                                 className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 rounded-lg group transition-all text-left cursor-pointer"
                                             >
                                                 <div className="relative shrink-0">

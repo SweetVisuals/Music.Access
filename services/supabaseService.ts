@@ -340,6 +340,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
       ]);
 
       return {
+        id: data.id,
         username: data.username,
         handle: data.handle,
         role: data.role || (data as any).raw_user_meta_data?.role || 'Producer',
@@ -369,6 +370,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
       console.error('Error fetching related profile data:', err);
       // Return basic profile if related data fails
       return {
+        id: data.id,
         username: data.username,
         handle: data.handle,
         email: authEmail,
@@ -420,6 +422,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
       }
 
       return {
+        id: currentUser.id,
         username,
         handle,
         email: authEmail,
@@ -459,6 +462,7 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
     ]);
 
     return {
+      id: data.id,
       username: data.username,
       handle: data.handle,
       role: 'Producer',
@@ -950,7 +954,7 @@ export const checkIsFollowing = async (targetUserId: string): Promise<boolean> =
 
     const { data, error } = await supabase
       .from('followers')
-      .select('id')
+      .select('follower_id')
       .eq('follower_id', currentUser.id)
       .eq('following_id', targetUserId)
       .limit(1);
@@ -1459,6 +1463,8 @@ export const getFollowingProfilesForSidebar = async (): Promise<TalentProfile[]>
       .from('followers')
       .select('following_id, created_at')
       .eq('follower_id', currentUser.id);
+    // Supabase-js is direct usually, but if client-side caching exists, ensure freshness?
+    // No standard 'no-cache' option in select(), but we can assume normal behavior.
 
     if (followError) throw followError;
     if (!followData || followData.length === 0) return [];
@@ -1544,8 +1550,7 @@ export const getFollowingProfilesForSidebar = async (): Promise<TalentProfile[]>
     });
 
     return profiles
-      .sort((a: any, b: any) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime())
-      .slice(0, 3);
+      .sort((a: any, b: any) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime());
 
   } catch (error) {
     console.error('Error in getFollowingProfilesForSidebar:', error);

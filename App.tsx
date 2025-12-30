@@ -374,7 +374,7 @@ const App: React.FC = () => {
           profileLoading={profileLoading}
           isOpen={isMobileMenuOpen}
           onClose={() => setIsMobileMenuOpen(false)}
-          isPlaying={isPlaying}
+          isPlayerActive={!!currentTrackId}
         />
 
         {/* Main Layout Container - Adjusted padding for mobile and smaller sidebar */}
@@ -530,7 +530,7 @@ const App: React.FC = () => {
             )}
 
             {currentView === 'dashboard-messages' && (
-              isLoggedIn ? <MessagesPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+              isLoggedIn ? <MessagesPage isPlayerActive={!!currentTrackId} /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
             )}
 
             {currentView === 'dashboard-manage' && (

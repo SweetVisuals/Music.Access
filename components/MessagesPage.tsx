@@ -129,7 +129,7 @@ const SwipeableConversationItem = ({
     );
 };
 
-const MessagesPage: React.FC = () => {
+const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }) => {
     // Default open on desktop, closed on mobile
     const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
     const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -463,9 +463,12 @@ const MessagesPage: React.FC = () => {
                             <div className={`
                                 p-3 border-t border-neutral-800 bg-neutral-900/95 backdrop-blur-xl shrink-0
                                 lg:static lg:bg-neutral-900/50
-                                fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-0 right-0 z-20 border-t lg:border-t-0
+                                fixed left-0 right-0 z-20 border-t lg:border-t-0
                                 border-white/10 lg:border-neutral-800
-                            `}>
+                                transition-all duration-300
+                            `}
+                                style={{ bottom: isPlayerActive ? 'calc(8rem + env(safe-area-inset-bottom))' : 'calc(4.5rem + env(safe-area-inset-bottom))' }}
+                            >
                                 <div className="flex items-center gap-3 max-w-[1600px] mx-auto">
                                     <button className="p-2 text-neutral-400 hover:text-white hover:bg-white/10 rounded-full transition-colors shrink-0 flex items-center justify-center">
                                         <Paperclip size={20} />

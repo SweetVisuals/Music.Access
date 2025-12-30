@@ -40,10 +40,10 @@ interface SidebarProps {
     profileLoading?: boolean;
     isOpen?: boolean;
     onClose?: () => void;
-    isPlaying?: boolean;
+    isPlayerActive?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, onOpenAuth, userProfile, profileLoading = false, isOpen, onClose, isPlaying }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, onOpenAuth, userProfile, profileLoading = false, isOpen, onClose, isPlayerActive }) => {
     const isDashboard = currentView.startsWith('dashboard');
     const [following, setFollowing] = useState<TalentProfile[]>([]);
     const [loadingFollowing, setLoadingFollowing] = useState(false);
@@ -520,8 +520,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
 
                     {isLoggedIn ? (
                         <>
-                            {/* Storage Info */}
-                            {!isPlaying && (
+                            {/* Storage Info - Hide if player is active (playing or paused) */}
+                            {!isPlayerActive && (
                                 <div className="mb-4 px-0.5">
                                     <div className="flex justify-between items-end mb-2">
                                         <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Storage</span>
@@ -536,7 +536,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                 </div>
                             )}
 
-                            {!isPlaying && <div className="h-px bg-neutral-800/50 mb-4"></div>}
+                            {!isPlayerActive && <div className="h-px bg-neutral-800/50 mb-4"></div>}
 
                             {/* User Profile */}
                             {profileLoading || !userProfile ? (

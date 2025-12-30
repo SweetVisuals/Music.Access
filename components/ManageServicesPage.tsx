@@ -16,7 +16,9 @@ import {
     Shield,
     CheckCircle,
     ChevronDown,
-    ArrowLeft
+    ArrowLeft,
+    Radio,
+    List
 } from 'lucide-react';
 
 const ManageServicesPage: React.FC = () => {
@@ -72,22 +74,30 @@ const ManageServicesPage: React.FC = () => {
                     ))}
                 </div>
 
-                {/* Mobile Filter Dropdown */}
-                <div className="md:hidden w-full relative">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <div className={`w-2 h-2 rounded-full ${filter === 'active' ? 'bg-blue-500' : filter === 'completed' ? 'bg-green-500' : 'bg-neutral-500'}`}></div>
-                    </div>
-                    <select
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                        className="w-full appearance-none bg-neutral-900 border border-neutral-800 text-white py-3 pl-8 pr-10 rounded-xl text-xs font-bold uppercase focus:outline-none focus:border-primary/50"
-                    >
-                        {['all', 'active', 'pending', 'delivered', 'completed'].map(status => (
-                            <option key={status} value={status}>{status}</option>
-                        ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-500">
-                        <ChevronDown size={14} />
+                {/* Mobile Filter Tabs */}
+                <div className={`md:hidden relative pb-4 overflow-x-auto no-scrollbar w-full ${selectedOrder ? 'hidden' : 'block'}`}>
+                    <div className="grid grid-cols-5 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5 min-w-[450px]">
+                        {['all', 'active', 'pending', 'delivered', 'completed'].map(status => {
+                            const Icon = status === 'all' ? List :
+                                status === 'active' ? Radio :
+                                    status === 'pending' ? Clock :
+                                        status === 'delivered' ? Send :
+                                            CheckCircle;
+
+                            return (
+                                <button
+                                    key={status}
+                                    onClick={() => setFilter(status)}
+                                    className={`
+                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                    ${filter === status ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                                `}
+                                >
+                                    <Icon size={14} className={filter === status ? 'text-primary' : ''} />
+                                    <span className="text-[9px] font-bold uppercase tracking-tight">{status}</span>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             </div>

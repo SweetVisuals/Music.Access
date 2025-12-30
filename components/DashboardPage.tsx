@@ -34,7 +34,8 @@ import {
     Send,
     Link,
     X,
-    Terminal
+    Terminal,
+    LayoutGrid
 } from 'lucide-react';
 import Studio from './Studio';
 import { MOCK_PURCHASES } from '../constants';
@@ -356,20 +357,52 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                         <TabButton active={activePurchaseTab === 'kits'} onClick={() => setActivePurchaseTab('kits')} label="Sound Packs" />
                         <TabButton active={activePurchaseTab === 'services'} onClick={() => setActivePurchaseTab('services')} label="Services & Orders" />
                     </div>
-                    {/* Mobile Dropdown */}
-                    <div className="relative w-full md:hidden">
-                        <select
-                            value={activePurchaseTab}
-                            onChange={(e) => setActivePurchaseTab(e.target.value as any)}
-                            className="w-full appearance-none bg-neutral-900 border border-neutral-800 text-white text-sm font-bold rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors"
-                        >
-                            <option value="all">All Items</option>
-                            <option value="beats">Beats & Projects</option>
-                            <option value="kits">Sound Packs</option>
-                            <option value="services">Services & Orders</option>
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-500">
-                            <ChevronDown size={16} />
+                    {/* Mobile Tabs Layout (Grid) */}
+                    <div className="md:hidden relative pb-2 overflow-x-auto no-scrollbar w-full">
+                        <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5 min-w-[320px]">
+                            <button
+                                onClick={() => setActivePurchaseTab('all')}
+                                className={`
+                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                    ${activePurchaseTab === 'all' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                                `}
+                            >
+                                <LayoutGrid size={14} className={activePurchaseTab === 'all' ? 'text-primary' : ''} />
+                                <span className="text-[9px] font-bold uppercase tracking-tight">All</span>
+                            </button>
+
+                            <button
+                                onClick={() => setActivePurchaseTab('beats')}
+                                className={`
+                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                    ${activePurchaseTab === 'beats' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                                `}
+                            >
+                                <Music size={14} className={activePurchaseTab === 'beats' ? 'text-primary' : ''} />
+                                <span className="text-[9px] font-bold uppercase tracking-tight">Beats</span>
+                            </button>
+
+                            <button
+                                onClick={() => setActivePurchaseTab('kits')}
+                                className={`
+                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                    ${activePurchaseTab === 'kits' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                                `}
+                            >
+                                <Package size={14} className={activePurchaseTab === 'kits' ? 'text-primary' : ''} />
+                                <span className="text-[9px] font-bold uppercase tracking-tight">Kits</span>
+                            </button>
+
+                            <button
+                                onClick={() => setActivePurchaseTab('services')}
+                                className={`
+                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                    ${activePurchaseTab === 'services' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                                `}
+                            >
+                                <Briefcase size={14} className={activePurchaseTab === 'services' ? 'text-primary' : ''} />
+                                <span className="text-[9px] font-bold uppercase tracking-tight">Services</span>
+                            </button>
                         </div>
                     </div>
                 </div>

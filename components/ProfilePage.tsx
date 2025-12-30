@@ -24,7 +24,8 @@ import {
     Music,
     CheckCircle,
     Calendar,
-    ChevronDown
+    ChevronDown,
+    User
 } from 'lucide-react';
 import ProjectCard from './ProjectCard';
 import CreateProjectModal from './CreateProjectModal';
@@ -72,7 +73,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         username: '',
         location: '',
         bio: '',
-        website: ''
+        website: '',
+        role: ''
     });
 
     // Local projects state
@@ -316,7 +318,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             username: editForm.username,
             location: editForm.location,
             bio: editForm.bio,
-            website: editForm.website
+            website: editForm.website,
+            role: editForm.role
         };
         setUserProfile(updatedProfile);
         setIsEditModalOpen(false);
@@ -329,7 +332,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     username: editForm.username,
                     location: editForm.location,
                     bio: editForm.bio,
-                    website: editForm.website
+                    website: editForm.website,
+                    role: editForm.role
                 });
 
                 // Refetch to confirm the update
@@ -392,7 +396,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             username: userProfile.username,
             location: userProfile.location || "",
             bio: userProfile.bio || "",
-            website: userProfile.website || ""
+            website: userProfile.website || "",
+            role: userProfile.role || ""
         });
         setIsEditModalOpen(true);
     };
@@ -508,6 +513,27 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             />
                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-neutral-600 font-mono">Read-only</div>
                                         </div>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Role</label>
+                                        <div className="relative">
+                                            <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+                                            <select
+                                                value={editForm.role}
+                                                onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                                                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg pl-10 pr-10 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900 appearance-none cursor-pointer"
+                                            >
+                                                <option value="" className="bg-neutral-900">Select your role...</option>
+                                                <option value="artist" className="bg-neutral-900">Artist</option>
+                                                <option value="producer" className="bg-neutral-900">Producer</option>
+                                                <option value="engineer" className="bg-neutral-900">Engineer</option>
+                                                <option value="professional" className="bg-neutral-900">Professional / Other</option>
+                                                <option value="listener" className="bg-neutral-900">Listener</option>
+                                            </select>
+                                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+                                        </div>
+                                        <p className="text-[10px] text-neutral-600">This determines how you appear in Browse Talent</p>
                                     </div>
 
                                     <div className="space-y-1.5">

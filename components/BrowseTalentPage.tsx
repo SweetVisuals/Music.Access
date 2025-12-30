@@ -170,14 +170,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                                         )}
                                     </div>
 
-                                    {/* Tags - Moved above stats for better flow */}
-                                    <div className="flex flex-wrap gap-1.5 mb-3 content-start">
-                                        {talent.tags.filter(tag => tag !== talent.role).map((tag, i) => (
-                                            <span key={i} className="px-2 py-1 bg-neutral-900 rounded text-[9px] text-neutral-400 border border-neutral-800">
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
+
 
                                     {/* Stats Grid - No bottom margin to align with footer spacing */}
                                     <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2 border border-neutral-800">
@@ -221,7 +214,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
             <div className="mb-12">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Music size={18} className="text-primary" /> Trending Beat Tapes
+                        <Music size={18} className="text-primary" /> Trending Projects
                     </h2>
                     <button className="text-xs text-neutral-500 hover:text-white flex items-center gap-1">View All <ChevronRight size={12} /></button>
                 </div>

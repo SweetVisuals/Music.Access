@@ -4,7 +4,7 @@ import WaveformVisualizer from './WaveformVisualizer';
 import { useNavigate } from 'react-router-dom';
 import { Project, View } from '../types';
 import { MOCK_USER_PROFILE } from '../constants';
-import { checkIsProjectSaved, saveProject, unsaveProject } from '../services/supabaseService';
+import { checkIsProjectSaved, saveProject, unsaveProject, convertAssetToProject } from '../services/supabaseService';
 
 import BottomNav from './BottomNav';
 
@@ -373,12 +373,24 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                                 onClick={async () => {
                                     if (!currentProject?.id) return;
                                     try {
-                                        if (isSaved) {
-                                            await unsaveProject(currentProject.id);
-                                            setIsSaved(false);
+                                        if (currentProject.id === 'upload_browser_proj') {
+                                            // Handle converting local upload to saved project
+                                            if (currentTrack?.id && !isSaved) {
+                                                await convertAssetToProject(
+                                                    currentTrack.id,
+                                                    currentTrack.title,
+                                                    { username: currentProject.producer, avatar: currentProject.producerAvatar }
+                                                );
+                                                setIsSaved(true);
+                                            }
                                         } else {
-                                            await saveProject(currentProject.id);
-                                            setIsSaved(true);
+                                            if (isSaved) {
+                                                await unsaveProject(currentProject.id);
+                                                setIsSaved(false);
+                                            } else {
+                                                await saveProject(currentProject.id);
+                                                setIsSaved(true);
+                                            }
                                         }
                                     } catch (error) {
                                         console.error('Failed to toggle save:', error);
@@ -475,12 +487,24 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                             onClick={async () => {
                                 if (!currentProject?.id) return;
                                 try {
-                                    if (isSaved) {
-                                        await unsaveProject(currentProject.id);
-                                        setIsSaved(false);
+                                    if (currentProject.id === 'upload_browser_proj') {
+                                        // Handle converting local upload to saved project
+                                        if (currentTrack?.id && !isSaved) {
+                                            await convertAssetToProject(
+                                                currentTrack.id,
+                                                currentTrack.title,
+                                                { username: currentProject.producer, avatar: currentProject.producerAvatar }
+                                            );
+                                            setIsSaved(true);
+                                        }
                                     } else {
-                                        await saveProject(currentProject.id);
-                                        setIsSaved(true);
+                                        if (isSaved) {
+                                            await unsaveProject(currentProject.id);
+                                            setIsSaved(false);
+                                        } else {
+                                            await saveProject(currentProject.id);
+                                            setIsSaved(true);
+                                        }
                                     }
                                 } catch (error) {
                                     console.error('Failed to toggle save:', error);

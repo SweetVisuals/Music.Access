@@ -66,7 +66,7 @@ export const signUp = async (email: string, password: string, username: string, 
         username,
         handle,
         email,
-        role: role || 'Producer', // Save the selected role
+        role: role || 'producer', // Save the selected role (lowercase for consistency)
         hashed_password: '', // Not needed since Supabase handles auth
         gems: 0,
         balance: 0.00
@@ -186,7 +186,9 @@ export const getProjects = async (): Promise<Project[]> => {
         completed,
         created_at
       )
-    `);
+    `)
+    .eq('status', 'published'); // Only show published projects on public pages
+
 
   if (error) throw error;
 
@@ -890,6 +892,264 @@ export const unsaveProject = async (projectId: string) => {
   }
 };
 
+export const convertAssetToProject = async (assetId: string, trackTitle: string, userProfile: any): Promise<string> => {
+  const projectTitle = trackTitle || 'Untitled Upload';
+
+  // Use the established createProject function to ensure we satisfy all RLS/Constraints
+  // Use 'draft' status to keep converted uploads private (not shown on public Browse pages)
+  const projectData = await createProject({
+    title: projectTitle,
+    description: 'Converted from uploaded file',
+    type: 'beat_tape',
+    status: 'draft',
+    genre: 'Uploads',
+    bpm: 0,
+    key: 'C'
+  });
+
+  if (!projectData) throw new Error('Failed to create project');
+  const projectId = projectData.id;
+
+
+  // 2. Create the Track linked to the Asset
+  const { error: trackError } = await supabase
+    .from('tracks')
+    .insert({
+      project_id: projectId,
+      title: projectTitle,
+      duration_seconds: 180,
+      track_number: 1,
+      assigned_file_id: assetId
+    });
+
+  if (trackError) {
+    console.error("Error creating track for convertAssetToProject", trackError);
+  }
+
+  // 3. Save (Bookmark) the new Project for the user
+  await saveProject(projectId);
+
+  return projectId;
+};
+
+export const renameProject = async (projectId: string, newTitle: string) => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+  if (!projectId || !isUuid(projectId)) throw new Error('Invalid project ID');
+
+  const { error } = await supabase
+    .from('projects')
+    .update({ title: newTitle, updated_at: new Date().toISOString() })
+    .eq('id', projectId)
+    .eq('user_id', currentUser.id);
+
+  if (error) throw error;
+};
+
+export const addTrackToProject = async (projectId: string, trackTitle: string, assetId: string) => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  // Get current max track number
+  const { data: tracks, error: fetchError } = await supabase
+    .from('tracks')
+    .select('track_number')
+    .eq('project_id', projectId)
+    .order('track_number', { ascending: false })
+    .limit(1);
+
+  if (fetchError) throw fetchError;
+  const nextTrackNumber = (tracks && tracks.length > 0) ? (tracks[0].track_number + 1) : 1;
+
+  const { error } = await supabase
+    .from('tracks')
+    .insert({
+      project_id: projectId,
+      title: trackTitle,
+      track_number: nextTrackNumber,
+      assigned_file_id: assetId,
+      duration_seconds: 180 // Default
+    });
+
+  if (error) throw error;
+};
+
+export interface Asset {
+  id: string;
+  name: string;
+  storagePath: string;
+  publicUrl: string;
+  created_at: string;
+}
+
+export const getUserAssets = async (): Promise<Asset[]> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return [];
+
+  const { data, error } = await supabase
+    .from('assets')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  return (data as any[]).map(asset => {
+    const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(asset.storage_path);
+    return {
+      id: asset.id,
+      name: asset.name,
+      storagePath: asset.storage_path,
+      publicUrl: publicUrl,
+      created_at: asset.created_at
+    };
+  });
+};
+
+// --- PLAYLISTS ---
+
+export interface PlaylistTrack {
+  id: string;
+  title: string;
+  duration: number;
+  trackOrder: number;
+  trackId?: string;
+  assetId?: string;
+  publicUrl?: string;
+}
+
+export interface Playlist {
+  id: string;
+  title: string;
+  description?: string;
+  coverImageUrl?: string;
+  tracks: PlaylistTrack[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const getPlaylists = async (): Promise<Playlist[]> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return [];
+
+  const { data, error } = await supabase
+    .from('playlists')
+    .select(`
+            *,
+            playlist_tracks (
+                id,
+                track_id,
+                asset_id,
+                title,
+                duration_seconds,
+                track_order,
+                asset:assets (storage_path),
+                track:tracks (
+                    id,
+                    assigned_file_id,
+                    assigned_file:assets!tracks_mp3_asset_id_fkey (storage_path)
+                )
+            )
+        `)
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  return (data as any[]).map(playlist => ({
+    id: playlist.id,
+    title: playlist.title,
+    description: playlist.description,
+    coverImageUrl: playlist.cover_image_url,
+    createdAt: playlist.created_at,
+    updatedAt: playlist.updated_at,
+    tracks: (playlist.playlist_tracks || [])
+      .sort((a: any, b: any) => a.track_order - b.track_order)
+      .map((pt: any) => {
+        let publicUrl = '';
+        const assetPath = pt.asset?.storage_path || pt.track?.assigned_file?.storage_path;
+        if (assetPath) {
+          const { data: { publicUrl: url } } = supabase.storage.from('assets').getPublicUrl(assetPath);
+          publicUrl = url;
+        }
+        return {
+          id: pt.id,
+          title: pt.title,
+          duration: pt.duration_seconds || 180,
+          trackOrder: pt.track_order,
+          trackId: pt.track_id,
+          assetId: pt.asset_id,
+          publicUrl
+        };
+      })
+  }));
+};
+
+export const createPlaylist = async (title: string, trackItems: { title: string; assetId?: string; trackId?: string; duration?: number }[]): Promise<Playlist> => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  // Create playlist
+  const { data: playlistData, error: playlistError } = await supabase
+    .from('playlists')
+    .insert({
+      user_id: currentUser.id,
+      title: title || 'Untitled Playlist'
+    })
+    .select()
+    .single();
+
+  if (playlistError) throw playlistError;
+
+  // Add tracks
+  if (trackItems.length > 0) {
+    const tracksToInsert = trackItems.map((item, idx) => ({
+      playlist_id: playlistData.id,
+      title: item.title,
+      asset_id: item.assetId || null,
+      track_id: item.trackId || null,
+      duration_seconds: item.duration || 180,
+      track_order: idx
+    }));
+
+    const { error: tracksError } = await supabase
+      .from('playlist_tracks')
+      .insert(tracksToInsert);
+
+    if (tracksError) console.error('Error adding tracks to playlist:', tracksError);
+  }
+
+  return {
+    id: playlistData.id,
+    title: playlistData.title,
+    description: playlistData.description,
+    coverImageUrl: playlistData.cover_image_url,
+    createdAt: playlistData.created_at,
+    updatedAt: playlistData.updated_at,
+    tracks: trackItems.map((item, idx) => ({
+      id: `temp-${idx}`,
+      title: item.title,
+      duration: item.duration || 180,
+      trackOrder: idx,
+      assetId: item.assetId,
+      trackId: item.trackId
+    }))
+  };
+};
+
+export const deletePlaylist = async (playlistId: string): Promise<void> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  const { error } = await supabase
+    .from('playlists')
+    .delete()
+    .eq('id', playlistId)
+    .eq('user_id', currentUser.id);
+
+  if (error) throw error;
+};
+
 export const getServicesByUserId = async (userId: string): Promise<Service[]> => {
   const { data, error } = await supabase
     .from('services')
@@ -1118,6 +1378,38 @@ export const createConversation = async (targetUserId: string): Promise<string> 
   return conversationId;
 };
 
+export const sendMessage = async (conversationId: string, content: string) => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      sender_id: currentUser.id,
+      content: content
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  // Update conversation timestamp
+  await supabase
+    .from('conversations')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', conversationId);
+
+  return {
+    id: data.id,
+    sender: 'Me',
+    avatar: currentUser.user_metadata?.avatar_url || '',
+    text: data.content,
+    timestamp: data.created_at,
+    isMe: true
+  };
+};
+
 export const getServices = async (): Promise<Service[]> => {
   const { data, error } = await supabase
     .from('services')
@@ -1276,7 +1568,7 @@ export const createContract = async (contract: Partial<Contract>): Promise<Contr
       royalty_split: contract.royaltySplit || 50,
       revenue_split: contract.revenueSplit || 50,
       notes: contract.notes || '',
-      dist_notes: contract.distNotes || '',
+      // dist_notes: contract.distNotes || '', // Column missing in DB
       pub_notes: contract.pubNotes || '',
       publisher_name: contract.publisherName || '',
       producer_signature: contract.producerSignature || '',
@@ -1410,19 +1702,25 @@ export const getTalentProfiles = async (): Promise<TalentProfile[]> => {
     // Check in-memory set
     const isFollowing = followedUserIds.has(user.id);
 
-    // Get role (default to 'Producer' if not set)
-    const userRole = (user as any).role;
+    // Get role from database (stored as lowercase)
+    const rawRole = (user as any).role as string | null | undefined;
+
+    // Capitalize the role for display (artist -> Artist, producer -> Producer)
+    const displayRole = rawRole ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase() : null;
 
     // Generate tags based on role
-    const effectiveRole = userRole as string;
-    let tags = [];
-    if (effectiveRole) {
-      tags.push(effectiveRole);
+    let tags: string[] = [];
+    if (displayRole) {
+      tags.push(displayRole);
     }
-    if (effectiveRole === 'Artist') {
+    // Add additional tags based on role type (case-insensitive comparison)
+    const roleLC = rawRole?.toLowerCase();
+    if (roleLC === 'artist') {
       tags.push('Musician', 'Vocalist');
-    } else if (effectiveRole === 'Engineer') {
+    } else if (roleLC === 'engineer') {
       tags.push('Mixing');
+    } else if (roleLC === 'producer') {
+      tags.push('Beatmaker');
     }
 
     return {
@@ -1430,7 +1728,7 @@ export const getTalentProfiles = async (): Promise<TalentProfile[]> => {
       username: user.username,
       handle: user.handle,
       avatar: user.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
-      role: userRole,
+      role: displayRole || '', // Empty string if no role, so UI can conditionally hide
       tags: tags,
       followers: (count || 0).toString(),
       isVerified: false, // TODO: Add verification logic

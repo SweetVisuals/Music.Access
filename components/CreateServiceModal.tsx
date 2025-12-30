@@ -63,7 +63,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
             <div className="w-full h-full md:max-w-5xl md:h-auto md:max-h-[90vh] bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-3xl flex shadow-2xl overflow-hidden relative mx-0 md:mx-4">
 
                 {/* LEFT SIDE - FORM */}

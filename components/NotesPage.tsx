@@ -1200,7 +1200,7 @@ const NotesPage: React.FC = () => {
                             type="file"
                             ref={fileInputRef}
                             onChange={handleFileUpload}
-                            accept="audio/*"
+                            accept="audio/*,.mp3,.wav,.m4a,.ogg"
                             className="hidden"
                         />
                         <Paperclip size={24} className="mb-2" />

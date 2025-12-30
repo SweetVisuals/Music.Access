@@ -65,7 +65,7 @@ const ContractsPage: React.FC = () => {
                 revenueSplit: 50,
                 terms: 'Enter your terms and conditions here. This contract serves as a binding agreement between the Producer and the Licensee.',
                 notes: '',
-                distNotes: 'Worldwide',
+                // distNotes is deprecated/missing in DB
                 pubNotes: '',
                 publisherName: '',
                 producerSignature: '',
@@ -76,6 +76,8 @@ const ContractsPage: React.FC = () => {
             setSelectedContract(newContract);
             setEditForm(newContract);
             setIsEditing(true);
+            setMobileView('detail');
+            setShowMobileInfo(true);
         } catch (err) {
             console.error('Error creating contract:', err);
             setError('Failed to create contract');
@@ -86,6 +88,7 @@ const ContractsPage: React.FC = () => {
         if (!selectedContract) return;
         setEditForm({ ...selectedContract });
         setIsEditing(true);
+        setShowMobileInfo(true);
     };
 
     const handleDeleteContract = async (contractId: string, e: React.MouseEvent) => {
@@ -528,23 +531,9 @@ const ContractsPage: React.FC = () => {
                                                         title="Click to sign"
                                                     >
                                                         {isSigning ? (
-                                                            <input
-                                                                autoFocus
-                                                                type="text"
-                                                                value={signatureInput}
-                                                                onChange={(e) => setSignatureInput(e.target.value)}
-                                                                onBlur={handleSaveSignature}
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter') {
-                                                                        e.preventDefault();
-                                                                        handleSaveSignature();
-                                                                    }
-                                                                    if (e.key === 'Escape') setIsSigning(false);
-                                                                }}
-                                                                className="w-full h-full text-center font-signature text-xl text-black bg-transparent border-none focus:outline-none transform -rotate-2 p-0 m-0 placeholder-gray-300"
-                                                                placeholder="Sign Here"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            />
+                                                            <div className="w-full h-full flex flex-col items-center justify-center animate-pulse bg-primary/5 rounded">
+                                                                <span className="font-signature text-xl text-black/50 transform -rotate-2">Signing...</span>
+                                                            </div>
                                                         ) : (
                                                             displayData?.producerSignature ? (
                                                                 <span className="font-signature text-2xl lg:text-3xl text-black transform -rotate-2 select-none truncate px-2">{displayData.producerSignature}</span>
@@ -582,6 +571,60 @@ const ContractsPage: React.FC = () => {
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+            {/* Mobile Signing Modal */}
+            {isSigning && (
+                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-neutral-900 border border-neutral-800 w-full max-w-md rounded-2xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300">
+                        <h3 className="text-lg font-bold text-white mb-2">Sign Contract</h3>
+                        <p className="text-neutral-400 text-sm mb-6">Type your full name below to sign this contract.</p>
+
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Signature Preview</label>
+                                <div className="h-24 bg-white rounded-lg flex items-center justify-center overflow-hidden relative">
+                                    <span className="font-signature text-4xl text-black transform -rotate-2 select-none px-4 text-center break-words w-full">
+                                        {signatureInput || <span className="text-gray-300 text-xl font-sans not-italic">Your Signature</span>}
+                                    </span>
+                                    <div className="absolute bottom-2 right-3 text-[10px] text-gray-400 font-sans">
+                                        Signed by: {signatureInput}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Full Name</label>
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    value={signatureInput}
+                                    onChange={(e) => setSignatureInput(e.target.value)}
+                                    placeholder="e.g. Mani Rae"
+                                    className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none transition-colors"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleSaveSignature();
+                                    }}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => setIsSigning(false)}
+                                    className="px-4 py-3 rounded-xl font-bold text-neutral-400 hover:bg-white/5 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveSignature}
+                                    disabled={!signatureInput.trim()}
+                                    className="px-4 py-3 rounded-xl bg-primary text-black font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(var(--primary),0.3)]"
+                                >
+                                    Sign Contract
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

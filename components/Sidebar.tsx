@@ -417,7 +417,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                             <div className="flex items-center justify-center py-3">
                                                 <div className="w-4 h-4 border border-primary/30 border-t-primary rounded-full animate-spin"></div>
                                             </div>
-                                        ) : following.length > 0 ? following.slice(0, 3).map((talent) => (
+                                        ) : following.length > 0 ? following.slice(0, 2).map((talent) => (
                                             <div
                                                 key={talent.id}
                                                 onClick={() => onNavigate(`@${talent.handle}`)}

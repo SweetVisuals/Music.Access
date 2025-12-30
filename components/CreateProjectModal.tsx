@@ -35,6 +35,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
 
     const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
     const [selectedSubGenres, setSelectedSubGenres] = useState<string[]>([]);
+    const [showAllGenres, setShowAllGenres] = useState(false);
+    const [showAllSubGenres, setShowAllSubGenres] = useState(false);
 
     const [projectData, setProjectData] = useState<Partial<Project>>({
         title: '',
@@ -157,7 +159,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="w-full h-full md:h-[85vh] md:max-w-5xl bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl flex flex-col shadow-2xl overflow-hidden relative">
 
                 <div className="h-14 md:h-16 border-b border-neutral-800 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
@@ -232,7 +234,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                             <label className="text-xs font-bold text-neutral-400 uppercase">Genre (Max 3)</label>
                                             <span className="text-[10px] text-primary">{selectedGenres.length}/3</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-2 p-2 border border-neutral-800 rounded-lg bg-neutral-900">
+                                        <div className={`flex flex-wrap gap-2 p-2 border border-neutral-800 rounded-lg bg-neutral-900 overflow-hidden transition-all ${showAllGenres ? 'max-h-[500px]' : 'max-h-[82px]'}`}>
                                             {GENRE_LIST.map(g => (
                                                 <button
                                                     key={g}
@@ -243,13 +245,19 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                 </button>
                                             ))}
                                         </div>
+                                        <button
+                                            onClick={() => setShowAllGenres(!showAllGenres)}
+                                            className="text-[10px] uppercase font-bold text-neutral-500 hover:text-white w-full text-center py-1 mt-1 border-t border-transparent hover:border-neutral-800"
+                                        >
+                                            {showAllGenres ? 'Show Less' : 'Show More'}
+                                        </button>
                                     </div>
                                     <div className="space-y-2">
                                         <div className="flex justify-between items-center">
                                             <label className="text-xs font-bold text-neutral-400 uppercase">Sub-Genre (Max 3)</label>
                                             <span className="text-[10px] text-primary">{selectedSubGenres.length}/3</span>
                                         </div>
-                                        <div className="flex flex-wrap gap-2 p-2 border border-neutral-800 rounded-lg bg-neutral-900">
+                                        <div className={`flex flex-wrap gap-2 p-2 border border-neutral-800 rounded-lg bg-neutral-900 overflow-hidden transition-all ${showAllSubGenres ? 'max-h-[500px]' : 'max-h-[82px]'}`}>
                                             {SUB_GENRES.map(g => (
                                                 <button
                                                     key={g}
@@ -260,6 +268,12 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                 </button>
                                             ))}
                                         </div>
+                                        <button
+                                            onClick={() => setShowAllSubGenres(!showAllSubGenres)}
+                                            className="text-[10px] uppercase font-bold text-neutral-500 hover:text-white w-full text-center py-1 mt-1 border-t border-transparent hover:border-neutral-800"
+                                        >
+                                            {showAllSubGenres ? 'Show Less' : 'Show More'}
+                                        </button>
                                     </div>
                                 </div>
 
@@ -417,11 +431,17 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                     )}
                 </div>
 
-                <div className="h-auto md:h-20 py-4 md:py-0 border-t border-neutral-800 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 bg-neutral-900/50 gap-4 shrink-0">
+                <div className="h-auto py-4 border-t border-neutral-800 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 bg-neutral-900/50 gap-4 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                     <div className="text-xs text-neutral-500 hidden md:block">
                         {step === 3 && "Review details before publishing."}
                     </div>
-                    <div className="flex w-full md:w-auto gap-4">
+                    <div className="flex flex-col-reverse md:flex-row w-full md:w-auto gap-4">
+                        <button
+                            onClick={onClose}
+                            className="flex-1 md:flex-none px-6 py-3 md:py-2 rounded-lg font-bold text-xs text-neutral-500 hover:text-white bg-transparent justify-center md:justify-start"
+                        >
+                            Cancel
+                        </button>
                         {step > 1 && (
                             <button onClick={() => setStep(s => s - 1)} className="flex-1 md:flex-none px-6 py-3 md:py-2 rounded-lg font-bold text-xs text-neutral-400 hover:text-white bg-white/5 md:bg-transparent justify-center md:justify-start">
                                 Back

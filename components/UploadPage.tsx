@@ -655,7 +655,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                         ref={fileInputRef}
                         type="file"
                         multiple
-                        accept="audio/*,image/*,text/*"
+                        accept="*"
                         onChange={handleFileInputChange}
                         className="hidden"
                     />

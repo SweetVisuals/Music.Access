@@ -84,15 +84,26 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, currentTrackId, isPl
                 <div className="p-4 pb-2 flex flex-col relative z-10 bg-gradient-to-b from-white/[0.02] to-transparent">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-1.5">
-                            <span className="px-1.5 py-0.5 rounded-[3px] bg-neutral-900 border border-white/10 text-[9px] font-mono font-bold text-neutral-400 uppercase tracking-wider">
-                                {project.genre}
-                            </span>
-                            <span className="px-1.5 py-0.5 rounded-[3px] bg-neutral-900 border border-white/10 text-[9px] font-mono text-neutral-500">
-                                {project.bpm} BPM
-                            </span>
-                            <span className="px-1.5 py-0.5 rounded-[3px] bg-neutral-900 border border-white/10 text-[9px] font-mono text-neutral-500">
-                                {project.key}
-                            </span>
+                            {project.genre && project.genre !== 'Uploads' && (
+                                <span className="px-1.5 py-0.5 rounded-[3px] bg-neutral-900 border border-white/10 text-[9px] font-mono font-bold text-neutral-400 uppercase tracking-wider">
+                                    {project.genre}
+                                </span>
+                            )}
+                            {project.bpm > 0 && project.genre !== 'Uploads' && (
+                                <span className="px-1.5 py-0.5 rounded-[3px] bg-neutral-900 border border-white/10 text-[9px] font-mono text-neutral-500">
+                                    {project.bpm} BPM
+                                </span>
+                            )}
+                            {project.key && project.key !== 'C' && project.genre !== 'Uploads' && (
+                                <span className="px-1.5 py-0.5 rounded-[3px] bg-neutral-900 border border-white/10 text-[9px] font-mono text-neutral-500">
+                                    {project.key}
+                                </span>
+                            )}
+                            {project.genre === 'Uploads' && (
+                                <span className="px-1.5 py-0.5 rounded-[3px] bg-primary/10 border border-primary/20 text-[9px] font-mono font-bold text-primary uppercase tracking-wider">
+                                    Upload
+                                </span>
+                            )}
                         </div>
                         <button className="text-neutral-600 hover:text-white transition-colors">
                             <MoreVertical size={14} />

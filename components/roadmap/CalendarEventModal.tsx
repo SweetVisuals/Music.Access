@@ -100,29 +100,42 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="w-full max-w-lg bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-2 duration-200 max-h-[85vh] flex flex-col">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-xl md:p-4 animate-in fade-in duration-300">
+            <div className="w-full h-full md:h-auto md:max-w-lg bg-[#0a0a0a] md:border md:border-neutral-800 md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between p-3 border-b border-neutral-800 bg-neutral-900/50">
-                    <h3 className="text-base font-bold text-white flex items-center gap-2">
-                        {existingEvent ? 'Edit Event' : 'New Event'}
-                    </h3>
-                    <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors text-neutral-400 hover:text-white">
-                        <X size={18} />
-                    </button>
+                <div className="flex items-center justify-between px-4 py-4 md:py-3 border-b border-neutral-800 bg-neutral-900/50 sticky top-0 z-10">
+                    <div className="flex items-center gap-3">
+                        <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors text-neutral-400 hover:text-white md:hidden">
+                            <X size={24} />
+                        </button>
+                        <h3 className="text-lg md:text-base font-bold text-white flex items-center gap-2">
+                            {existingEvent ? 'Edit Event' : 'New Event'}
+                        </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button onClick={onClose} className="hidden md:flex p-1 hover:bg-white/10 rounded-full transition-colors text-neutral-400 hover:text-white">
+                            <X size={18} />
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            className="px-6 md:px-4 py-2 md:py-1.5 rounded-full md:rounded-lg text-sm md:text-xs font-bold bg-primary text-black hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 active:scale-95"
+                        >
+                            Save
+                        </button>
+                    </div>
                 </div>
 
                 {/* Body */}
-                <div className="p-4 space-y-3 overflow-y-auto custom-scrollbar flex-1">
+                <div className="p-6 md:p-4 space-y-6 md:space-y-3 overflow-y-auto custom-scrollbar flex-1 pb-32 md:pb-4">
 
                     {/* Title */}
                     <div>
-                        <label className="text-[10px] font-bold text-neutral-400 uppercase mb-1 flex items-center gap-1.5">
-                            <Type size={10} /> Title
+                        <label className="text-[10px] font-bold text-neutral-400 uppercase mb-2 md:mb-1 flex items-center gap-1.5">
+                            <Type size={12} className="md:w-3 md:h-3" /> Title
                         </label>
                         <input
                             type="text"
-                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-primary/50"
+                            className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:border-primary/50"
                             placeholder="e.g. Teaser Video, Strategy Meeting..."
                             value={formData.title}
                             onChange={e => setFormData({ ...formData, title: e.target.value })}
@@ -130,13 +143,13 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                     </div>
 
                     {/* Type & Status */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-4 md:gap-3">
                         <div>
-                            <label className="text-[10px] font-bold text-neutral-400 uppercase mb-1 flex items-center gap-1.5">
-                                <Layers size={10} /> Type
+                            <label className="text-[10px] font-bold text-neutral-400 uppercase mb-2 md:mb-1 flex items-center gap-1.5">
+                                <Layers size={12} className="md:w-3 md:h-3" /> Type
                             </label>
                             <select
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-primary/50"
+                                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:border-primary/50 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23666666%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px] bg-[right_12px_center] bg-no-repeat"
                                 value={formData.type}
                                 onChange={e => setFormData({ ...formData, type: e.target.value as any })}
                             >
@@ -148,11 +161,11 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                             </select>
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-neutral-400 uppercase mb-1 flex items-center gap-1.5">
+                            <label className="text-[10px] font-bold text-neutral-400 uppercase mb-2 md:mb-1 flex items-center gap-1.5">
                                 Status
                             </label>
                             <select
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-primary/50"
+                                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:border-primary/50 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23666666%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px] bg-[right_12px_center] bg-no-repeat"
                                 value={formData.status}
                                 onChange={e => setFormData({ ...formData, status: e.target.value as any })}
                             >
@@ -164,25 +177,25 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                     </div>
 
                     {/* Dates */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-4 md:gap-3">
                         <div>
-                            <label className="text-[10px] font-bold text-neutral-400 uppercase mb-1 flex items-center gap-1.5">
-                                <Calendar size={10} /> Start Date
+                            <label className="text-[10px] font-bold text-neutral-400 uppercase mb-2 md:mb-1 flex items-center gap-1.5">
+                                <Calendar size={12} className="md:w-3 md:h-3" /> Start Date
                             </label>
                             <input
                                 type="date"
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-primary/50 text-neutral-400"
+                                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:border-primary/50 text-neutral-400"
                                 value={formData.startDate}
                                 onChange={e => setFormData({ ...formData, startDate: e.target.value })}
                             />
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-neutral-400 uppercase mb-1 flex items-center gap-1.5">
+                            <label className="text-[10px] font-bold text-neutral-400 uppercase mb-2 md:mb-1 flex items-center gap-1.5">
                                 End Date (Opt)
                             </label>
                             <input
                                 type="date"
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-primary/50 text-neutral-400"
+                                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:border-primary/50 text-neutral-400"
                                 value={formData.endDate}
                                 onChange={e => setFormData({ ...formData, endDate: e.target.value })}
                             />
@@ -192,11 +205,11 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                     {/* Platform (If Content) */}
                     {formData.type === 'content' && (
                         <div>
-                            <label className="text-[10px] font-bold text-neutral-400 uppercase mb-1 flex items-center gap-1.5">
-                                <Smartphone size={10} /> Platform
+                            <label className="text-[10px] font-bold text-neutral-400 uppercase mb-2 md:mb-1 flex items-center gap-1.5">
+                                <Smartphone size={12} className="md:w-3 md:h-3" /> Platform
                             </label>
                             <select
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-primary/50"
+                                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:border-primary/50 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23666666%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px] bg-[right_12px_center] bg-no-repeat"
                                 value={formData.platform}
                                 onChange={e => setFormData({ ...formData, platform: e.target.value as any })}
                             >
@@ -210,13 +223,13 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                     )}
 
                     {/* Context Linking */}
-                    <div className="border-t border-neutral-800 pt-3 mt-1">
-                        <h4 className="text-[10px] font-black text-white mb-2">Context & Strategy Link</h4>
-                        <div className="grid grid-cols-2 gap-3">
+                    <div className="border-t border-neutral-800 pt-6 md:pt-3 mt-2 md:mt-1">
+                        <h4 className="text-[10px] font-black text-white mb-4 md:mb-2 uppercase tracking-widest text-primary">Context & Strategy Link</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-3">
                             <div>
-                                <label className="text-[8px] font-bold text-neutral-500 uppercase mb-1 block">Linked Campaign</label>
+                                <label className="text-[8px] font-bold text-neutral-500 uppercase mb-2 md:mb-1 block">Linked Campaign</label>
                                 <select
-                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-[10px] text-white focus:outline-none focus:border-primary/50"
+                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-[10px] text-white focus:outline-none focus:border-primary/50 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23666666%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px] bg-[right_12px_center] bg-no-repeat"
                                     value={formData.linkedCampaign}
                                     onChange={e => setFormData({ ...formData, linkedCampaign: e.target.value })}
                                 >
@@ -225,9 +238,9 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                                 </select>
                             </div>
                             <div>
-                                <label className="text-[8px] font-bold text-neutral-500 uppercase mb-1 block">Content Bucket</label>
+                                <label className="text-[8px] font-bold text-neutral-500 uppercase mb-2 md:mb-1 block">Content Bucket</label>
                                 <select
-                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-[10px] text-white focus:outline-none focus:border-primary/50"
+                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-[10px] text-white focus:outline-none focus:border-primary/50 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23666666%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px] bg-[right_12px_center] bg-no-repeat"
                                     value={formData.contentBucket}
                                     onChange={e => setFormData({ ...formData, contentBucket: e.target.value })}
                                 >
@@ -240,11 +253,11 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
 
                     {/* Description */}
                     <div>
-                        <label className="text-[10px] font-bold text-neutral-400 uppercase mb-1 flex items-center gap-1.5">
-                            <AlignLeft size={10} /> Description / Notes
+                        <label className="text-[10px] font-bold text-neutral-400 uppercase mb-2 md:mb-1 flex items-center gap-1.5">
+                            <AlignLeft size={12} className="md:w-3 md:h-3" /> Description / Notes
                         </label>
                         <textarea
-                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-primary/50 min-h-[80px] resize-y"
+                            className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-3 md:py-2 text-base md:text-xs text-white focus:outline-none focus:border-primary/50 min-h-[120px] md:min-h-[80px] resize-none"
                             placeholder="Add details..."
                             value={formData.description}
                             onChange={e => setFormData({ ...formData, description: e.target.value })}
@@ -252,8 +265,8 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div className="p-3 border-t border-neutral-800 bg-neutral-900/30 flex justify-end gap-2">
+                {/* Desktop Footer (Hidden on mobile as save is in header) */}
+                <div className="hidden md:flex p-3 border-t border-neutral-800 bg-neutral-900/30 justify-end gap-2">
                     <button
                         onClick={onClose}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"

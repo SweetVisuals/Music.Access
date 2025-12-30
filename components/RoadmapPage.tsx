@@ -475,7 +475,7 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                 </div>
 
                 {/* Calendar Grid Wrapper for Scroll */}
-                <div className="overflow-auto flex-1 relative custom-scrollbar bg-neutral-900/20">
+                <div className="overflow-x-auto overflow-y-auto flex-1 relative custom-scrollbar bg-neutral-900/20 overscroll-x-contain">
                     {/* Sticky Days Header */}
                     <div className="grid grid-cols-7 border-b border-neutral-800 bg-neutral-900/95 backdrop-blur-sm sticky top-0 z-10 min-w-[700px] md:min-w-0">
                         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (

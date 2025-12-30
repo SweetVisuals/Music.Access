@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Pause, MoreVertical, Cpu, ShoppingCart, Bookmark, Sparkles, Clock, BookmarkPlus } from 'lucide-react';
+import { Play, Pause, MoreVertical, Cpu, ShoppingCart, Bookmark, Sparkles, Clock, BookmarkPlus, Lock } from 'lucide-react';
 import { Project } from '../types';
 import { generateCreativeDescription } from '../services/geminiService';
 import PurchaseModal from './PurchaseModal';
@@ -106,15 +106,22 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, currentTrackId, isPl
                                 </span>
                             )}
                         </div>
-                        <button
-                            className="text-neutral-600 hover:text-white transition-colors p-1"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (onEdit) onEdit(project);
-                            }}
-                        >
-                            <MoreVertical size={14} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {project.status && project.status !== 'published' && (
+                                <div className="p-1 rounded bg-neutral-900 border border-white/5 text-neutral-500" title="Private Project">
+                                    <Lock size={12} />
+                                </div>
+                            )}
+                            <button
+                                className="text-neutral-600 hover:text-white transition-colors p-1"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onEdit) onEdit(project);
+                                }}
+                            >
+                                <MoreVertical size={14} />
+                            </button>
+                        </div>
                     </div>
 
                     <h3 className="text-lg font-bold text-white truncate tracking-tight group-hover:text-primary transition-colors duration-300">

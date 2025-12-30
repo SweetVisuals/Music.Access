@@ -79,6 +79,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
     // Local projects state
     const [localProjects, setLocalProjects] = useState<Project[]>([]);
+    const [hidePrivate, setHidePrivate] = useState(false);
 
     // Hidden file inputs for image uploads
     const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -829,9 +830,20 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                             <h2 className="text-lg font-bold text-white flex items-center gap-2">
                                 <Music size={18} className="text-primary" /> Latest Projects
                             </h2>
-                            <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
-                                Sort By: Newest
-                            </button>
+                            <div className="flex items-center gap-2">
+                                {!isViewerMode && isOwnProfile && (
+                                    <button
+                                        onClick={() => setHidePrivate(!hidePrivate)}
+                                        className={`flex items-center gap-2 text-[10px] font-mono px-3 py-1.5 rounded border transition-all uppercase ${hidePrivate ? 'bg-primary/20 border-primary/30 text-primary shadow-[0_0_10px_rgba(var(--primary),0.1)]' : 'text-neutral-500 border-white/10 hover:text-white hover:bg-white/5'}`}
+                                    >
+                                        {hidePrivate ? <Eye size={12} /> : <EyeOff size={12} />}
+                                        {hidePrivate ? 'Show Private' : 'Hide Private'}
+                                    </button>
+                                )}
+                                <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
+                                    Sort By: Newest
+                                </button>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -854,7 +866,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     if (!isOwnProfile || isViewerMode) {
                                         return project.status === 'published';
                                     }
-                                    return true; // Owner sees all
+                                    // If owner and hidePrivate is active, also only show published
+                                    if (hidePrivate) {
+                                        return project.status === 'published';
+                                    }
+                                    return true; // Owner sees all by default
                                 })
                                 .map(project => (
                                     <div key={project.id} className="h-[340px]">

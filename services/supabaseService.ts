@@ -998,7 +998,7 @@ export const getUserAssets = async (): Promise<Asset[]> => {
     const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(asset.storage_path);
     return {
       id: asset.id,
-      name: asset.name,
+      name: asset.file_name || asset.name, // Handle file_name column from DB
       storagePath: asset.storage_path,
       publicUrl: publicUrl,
       created_at: asset.created_at
@@ -1202,6 +1202,215 @@ export const getUserStats = async (userId: string): Promise<{ streams: number; t
   }
 };
 
+// --- Conversations ---
+
+export const createConversation = async (targetUserId: string): Promise<string> => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  if (currentUser.id === targetUserId) throw new Error('Cannot create a conversation with yourself');
+
+  // Check if a conversation already exists between these two users
+  const { data: existingConversations, error: existingError } = await supabase
+    .from('conversation_participants')
+    .select('conversation_id')
+    .eq('user_id', currentUser.id);
+
+  if (existingError) throw existingError;
+
+  if (existingConversations && existingConversations.length > 0) {
+    const conversationIds = existingConversations.map(c => c.conversation_id);
+
+    // Find if targetUser is also in any of these conversations
+    const { data: commonConversations, error: commonError } = await supabase
+      .from('conversation_participants')
+      .select('conversation_id')
+      .in('conversation_id', conversationIds)
+      .eq('user_id', targetUserId);
+
+    if (commonError) throw commonError;
+
+    if (commonConversations && commonConversations.length > 0) {
+      return commonConversations[0].conversation_id;
+    }
+  }
+
+  // If no existing conversation, create a new one using RPC (bypasses RLS issues)
+  const { data: conversationId, error: convError } = await supabase
+    .rpc('create_new_conversation', { target_user_id: targetUserId });
+
+  if (convError) throw convError;
+
+  return conversationId;
+};
+
+export const sendMessage = async (conversationId: string, content: string) => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      sender_id: currentUser.id,
+      content: content
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  // Update conversation timestamp
+  await supabase
+    .from('conversations')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', conversationId);
+
+  return {
+    id: data.id,
+    sender: 'Me',
+    avatar: currentUser.user_metadata?.avatar_url || '',
+    text: data.content,
+    timestamp: data.created_at,
+    isMe: true
+  };
+};
+
+export const getConversations = async (): Promise<Conversation[]> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return [];
+
+  const { data, error } = await supabase
+    .from('conversation_participants')
+    .select(`
+      conversation:conversations (
+        id,
+        updated_at,
+        messages:messages (
+          id,
+          content,
+          sender_id,
+          created_at
+        ),
+        participants:conversation_participants (
+          user:users (
+            id,
+            username,
+            avatar_url
+          )
+        )
+      )
+    `)
+    .eq('user_id', currentUser.id);
+
+  if (error) throw error;
+
+  return (data as any[]).map(participant => {
+    const conversation = participant.conversation;
+    // Find the participant that is NOT the current user
+    const otherParticipantEntry = conversation.participants?.find((p: any) => p.user?.id !== currentUser.id);
+    const otherParticipant = otherParticipantEntry?.user;
+
+    // If no other participant (e.g. self-chat or data error), fallback gracefully or use self
+    // For now, assuming 1:1, if we can't find another, it might be a test self-chat or glitch.
+
+    const lastMessage = conversation.messages?.[conversation.messages.length - 1];
+
+    return {
+      id: conversation.id,
+      user: otherParticipant?.username || 'Unknown User',
+      avatar: otherParticipant?.avatar_url || 'https://i.pravatar.cc/150?u=user',
+      lastMessage: lastMessage?.content || 'No messages yet',
+      timestamp: formatTimeAgo(lastMessage?.created_at || conversation.updated_at),
+      unread: 0,
+      messages: conversation.messages?.map((msg: any) => ({
+        id: msg.id,
+        sender: msg.sender_id === currentUser.id ? 'Me' : otherParticipant?.username || 'Unknown',
+        avatar: msg.sender_id === currentUser.id ? (currentUser.user_metadata?.avatar_url || 'https://i.pravatar.cc/150?u=me') : (otherParticipant?.avatar_url || 'https://i.pravatar.cc/150?u=user'),
+        text: msg.content,
+        timestamp: new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }),
+        isMe: msg.sender_id === currentUser.id
+      })) || []
+    };
+  });
+};
+
+export const deleteConversation = async (conversationId: string): Promise<void> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  // Remove the current user from the participants list
+  // This effectively hides the conversation from their list
+  const { error } = await supabase
+    .from('conversation_participants')
+    .delete()
+    .eq('conversation_id', conversationId)
+    .eq('user_id', currentUser.id);
+
+  if (error) throw error;
+};
+
+export const getServices = async (): Promise<Service[]> => {
+  const { data, error } = await supabase
+    .from('services')
+    .select(`
+      *,
+      user:user_id (
+        username,
+        handle
+      )
+    `);
+
+  if (error) throw error;
+
+  return data.map(service => ({
+    id: service.id,
+    title: service.title,
+    description: service.description,
+    price: service.price,
+    features: service.features || [],
+    rateType: service.rate_type
+  }));
+};
+
+export const getOrders = async (): Promise<Order[]> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return [];
+
+  const { data, error } = await supabase
+    .from('orders')
+    .select(`
+      *,
+      purchase_item:purchase_items (
+        service:services (
+          title
+        ),
+        seller:seller_id (
+          username
+        )
+      ),
+      client:client_id (
+        username,
+        avatar_url
+      )
+    `)
+    .or(`client_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`);
+
+  if (error) throw error;
+
+  return data.map(order => ({
+    id: order.id,
+    serviceTitle: order.purchase_item?.service?.title || 'Unknown Service',
+    clientName: order.client?.username || 'Unknown',
+    clientAvatar: order.client?.avatar_url || 'https://i.pravatar.cc/150?u=client',
+    amount: order.purchase_item?.price || 0,
+    status: order.status,
+    deadline: order.deadline,
+    requirements: order.requirements || '',
+    files: [] // TODO: implement file attachments
+  }));
+};
+
 export const checkIsFollowing = async (targetUserId: string): Promise<boolean> => {
   try {
     const currentUser = await getCurrentUser();
@@ -1322,204 +1531,6 @@ export const searchUsers = async (searchTerm: string): Promise<UserProfile[]> =>
   }));
 };
 
-export const createConversation = async (targetUserId: string): Promise<string> => {
-  const currentUser = await ensureUserExists();
-  if (!currentUser) throw new Error('User not authenticated');
-
-  if (currentUser.id === targetUserId) throw new Error('Cannot create a conversation with yourself');
-
-  // Check if a conversation already exists between these two users
-  const { data: existingConversations, error: existingError } = await supabase
-    .from('conversation_participants')
-    .select('conversation_id')
-    .eq('user_id', currentUser.id);
-
-  if (existingError) throw existingError;
-
-  if (existingConversations && existingConversations.length > 0) {
-    const conversationIds = existingConversations.map(c => c.conversation_id);
-
-    // Find if targetUser is also in any of these conversations
-    // We only want 1-on-1 conversations, but for simplicity we'll check for intersection
-    const { data: commonConversations, error: commonError } = await supabase
-      .from('conversation_participants')
-      .select('conversation_id')
-      .in('conversation_id', conversationIds)
-      .eq('user_id', targetUserId);
-
-    if (commonError) throw commonError;
-
-    if (commonConversations && commonConversations.length > 0) {
-      return commonConversations[0].conversation_id;
-    }
-  }
-
-  // If no existing conversation, create a new one
-  const { data: newConversation, error: convError } = await supabase
-    .from('conversations')
-    .insert({})
-    .select('id')
-    .single();
-
-  if (convError) throw convError;
-
-  const conversationId = newConversation.id;
-
-  // Add participants to the new conversation
-  const { error: participantError } = await supabase
-    .from('conversation_participants')
-    .insert([
-      { conversation_id: conversationId, user_id: currentUser.id },
-      { conversation_id: conversationId, user_id: targetUserId }
-    ]);
-
-  if (participantError) throw participantError;
-
-  return conversationId;
-};
-
-export const sendMessage = async (conversationId: string, content: string) => {
-  const currentUser = await ensureUserExists();
-  if (!currentUser) throw new Error('User not authenticated');
-
-  const { data, error } = await supabase
-    .from('messages')
-    .insert({
-      conversation_id: conversationId,
-      sender_id: currentUser.id,
-      content: content
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-
-  // Update conversation timestamp
-  await supabase
-    .from('conversations')
-    .update({ updated_at: new Date().toISOString() })
-    .eq('id', conversationId);
-
-  return {
-    id: data.id,
-    sender: 'Me',
-    avatar: currentUser.user_metadata?.avatar_url || '',
-    text: data.content,
-    timestamp: data.created_at,
-    isMe: true
-  };
-};
-
-export const getServices = async (): Promise<Service[]> => {
-  const { data, error } = await supabase
-    .from('services')
-    .select(`
-      *,
-      user:user_id (
-        username,
-        handle
-      )
-    `);
-
-  if (error) throw error;
-
-  return data.map(service => ({
-    id: service.id,
-    title: service.title,
-    description: service.description,
-    price: service.price,
-    features: service.features || [],
-    rateType: service.rate_type
-  }));
-};
-
-export const getOrders = async (): Promise<Order[]> => {
-  const currentUser = await getCurrentUser();
-  if (!currentUser) return [];
-
-  const { data, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      purchase_item:purchase_items (
-        service:services (
-          title
-        ),
-        seller:seller_id (
-          username
-        )
-      ),
-      client:client_id (
-        username,
-        avatar_url
-      )
-    `)
-    .or(`client_id.eq.${currentUser.id},seller_id.eq.${currentUser.id}`);
-
-  if (error) throw error;
-
-  return data.map(order => ({
-    id: order.id,
-    serviceTitle: order.purchase_item?.service?.title || 'Unknown Service',
-    clientName: order.client?.username || 'Unknown',
-    clientAvatar: order.client?.avatar_url || 'https://i.pravatar.cc/150?u=client',
-    amount: order.purchase_item?.price || 0,
-    status: order.status,
-    deadline: order.deadline,
-    requirements: order.requirements || '',
-    files: [] // TODO: implement file attachments
-  }));
-};
-
-export const getConversations = async (): Promise<Conversation[]> => {
-  const currentUser = await getCurrentUser();
-  if (!currentUser) return [];
-
-  const { data, error } = await supabase
-    .from('conversation_participants')
-    .select(`
-      conversation:conversations (
-        id,
-        updated_at,
-        messages:messages (
-          id,
-          content,
-          sender_id,
-          created_at
-        )
-      ),
-      user:users!conversation_participants_user_id_fkey (
-        username,
-        avatar_url
-      )
-    `)
-    .eq('user_id', currentUser.id);
-
-  if (error) throw error;
-
-  return (data as any[]).map(participant => {
-    const conversation = participant.conversation;
-    const otherParticipant = participant.user;
-    const lastMessage = conversation.messages?.[conversation.messages.length - 1];
-
-    return {
-      id: conversation.id,
-      user: otherParticipant?.username || 'Unknown',
-      avatar: otherParticipant?.avatar_url || 'https://i.pravatar.cc/150?u=user',
-      lastMessage: lastMessage?.content || 'No messages yet',
-      timestamp: lastMessage?.created_at || conversation.updated_at,
-      unread: 0, // TODO: implement unread count
-      messages: conversation.messages?.map((msg: any) => ({
-        id: msg.id,
-        sender: msg.sender_id === currentUser.id ? 'Me' : otherParticipant?.username || 'Unknown',
-        avatar: msg.sender_id === currentUser.id ? 'https://i.pravatar.cc/150?u=me' : otherParticipant?.avatar_url || 'https://i.pravatar.cc/150?u=user',
-        text: msg.content,
-        timestamp: msg.created_at,
-        isMe: msg.sender_id === currentUser.id
-      })) || []
-    };
-  });
-};
 
 export const getContracts = async (): Promise<Contract[]> => {
   const currentUser = await getCurrentUser();
@@ -2613,6 +2624,8 @@ export const updateProject = async (projectId: string, updates: Partial<Project>
   if (updates.releaseDate !== undefined) updateObj.release_date = updates.releaseDate;
   if (updates.format !== undefined) updateObj.format = updates.format;
   if (updates.progress !== undefined) updateObj.progress = updates.progress;
+  if (updates.description !== undefined) updateObj.description = updates.description;
+  if (updates.subGenre !== undefined) updateObj.sub_genre = updates.subGenre;
 
   const { error } = await supabase
     .from('projects')

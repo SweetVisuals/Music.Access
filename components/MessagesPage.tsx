@@ -1,19 +1,114 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Conversation } from '../types';
-import { Search, Send, Paperclip, MoreVertical, Phone, Video, ArrowLeft, Plus, Menu, X, MessageCircle } from 'lucide-react';
-import { getConversations } from '../services/supabaseService';
+import { Search, Send, Paperclip, MoreVertical, Phone, Video, ArrowLeft, Plus, Menu, X, MessageCircle, Trash } from 'lucide-react';
+import { getConversations, deleteConversation } from '../services/supabaseService';
 
 const StaticFab = ({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) => {
     return createPortal(
         <button
             onClick={onClick}
             className="fixed z-[100] right-4 w-14 h-14 bg-primary text-black rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-200 lg:hidden"
-            style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom) + 10px)' }}
+            style={{ bottom: 'calc(10rem + env(safe-area-inset-bottom))' }}
         >
             {isOpen ? <X size={24} /> : <MessageCircle size={24} fill="currentColor" />}
         </button>,
         document.body
+    );
+};
+
+const SwipeableConversationItem = ({
+    conv,
+    activeId,
+    onClick,
+    onDelete
+}: {
+    conv: Conversation;
+    activeId: string | null;
+    onClick: () => void;
+    onDelete: () => void;
+}) => {
+    const [offset, setOffset] = useState(0);
+    const [startX, setStartX] = useState(0);
+    const threshold = 100; // px to reveal
+    const deleteThreshold = window.innerWidth * 0.75; // 75% of screen width
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setStartX(e.touches[0].clientX);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        const currentX = e.touches[0].clientX;
+        const diff = currentX - startX;
+
+        // Allow swiping right (diff > 0)
+        // Add resistance if trying to swipe left
+        if (diff > 0) {
+            setOffset(diff);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        if (offset > deleteThreshold) {
+            // Auto delete if dragged far enough
+            onDelete();
+            setOffset(0);
+        } else if (offset > threshold) {
+            // Snap to open
+            setOffset(threshold);
+        } else {
+            // Snap back
+            setOffset(0);
+        }
+    };
+
+    return (
+        <div className="relative overflow-hidden touch-pan-y select-none group bg-black lg:bg-[#0a0a0a]">
+            {/* Background / Actions (Use conditional opacity/z-index to hide unless swiping) */}
+            <div
+                className="absolute inset-y-0 left-0 bg-red-600 flex items-center justify-start pl-8 w-full z-0 cursor-pointer"
+                style={{ opacity: offset > 0 ? 1 : 0, transition: 'opacity 0.2s' }}
+                onClick={onDelete}
+            >
+                <span className="text-white font-bold flex items-center gap-2 animate-in fade-in zoom-in duration-300">
+                    <Trash size={20} />
+                    <span className="text-xs font-semibold uppercase tracking-wider">Delete</span>
+                </span>
+            </div>
+
+            {/* Foreground Content */}
+            <div
+                className={`
+                    relative z-10 bg-black lg:bg-[#0a0a0a] transition-transform duration-300 ease-out border-b border-white/5
+                    ${activeId === conv.id ? 'bg-white/5 border-l-2 border-l-primary' : ''}
+                `}
+                style={{ transform: `translateX(${offset}px)` }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onClick={() => {
+                    if (offset > 0) {
+                        setOffset(0); // Close if open
+                    } else {
+                        onClick();
+                    }
+                }}
+            >
+                <div className="p-4 flex items-center gap-3 cursor-pointer hover:bg-white/5 transition-colors">
+                    <div className="relative shrink-0">
+                        <img src={conv.avatar} alt={conv.user} className="w-10 h-10 rounded-full object-cover" />
+                        {conv.unread > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-[#0a0a0a]"></span>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-baseline mb-1">
+                            <h4 className={`text-sm font-bold truncate ${activeId === conv.id ? 'text-white' : 'text-neutral-300'}`}>{conv.user}</h4>
+                            <span className="text-[10px] text-neutral-500">{conv.timestamp}</span>
+                        </div>
+                        <p className={`text-xs truncate ${conv.unread > 0 ? 'text-white font-bold' : 'text-neutral-500'}`}>{conv.lastMessage}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 };
 
@@ -155,6 +250,21 @@ const MessagesPage: React.FC = () => {
         }
     };
 
+    const handleDeleteConversation = async (convId: string) => {
+        if (!confirm('Are you sure you want to delete this conversation?')) return;
+
+        try {
+            await deleteConversation(convId);
+            const updated = conversations.filter(c => c.id !== convId);
+            setConversations(updated);
+            setFilteredConversations(updated); // Simplified sync
+            if (activeId === convId) setActiveId(null);
+        } catch (e) {
+            console.error('Failed to delete conversation', e);
+            alert('Failed to delete conversation');
+        }
+    };
+
     const isOverlayOpen = isSidebarOpen;
 
     return (
@@ -223,27 +333,17 @@ const MessagesPage: React.FC = () => {
                                 </div>
                             </div>
                         ) : filteredConversations.length > 0 ? filteredConversations.map(conv => (
-                            <div
+                            <SwipeableConversationItem
                                 key={conv.id}
+                                conv={conv}
+                                activeId={activeId}
                                 onClick={() => {
                                     setActiveId(conv.id);
                                     setIsCreatingNew(false);
                                     setIsSidebarOpen(false);
                                 }}
-                                className={`p-4 flex items-center gap-3 border-b border-white/5 cursor-pointer hover:bg-white/5 transition-colors ${activeId === conv.id ? 'bg-white/5 border-l-2 border-l-primary' : ''}`}
-                            >
-                                <div className="relative">
-                                    <img src={conv.avatar} alt={conv.user} className="w-10 h-10 rounded-full object-cover" />
-                                    {conv.unread > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-[#0a0a0a]"></span>}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-baseline mb-1">
-                                        <h4 className={`text-sm font-bold truncate ${activeId === conv.id ? 'text-white' : 'text-neutral-300'}`}>{conv.user}</h4>
-                                        <span className="text-[10px] text-neutral-500">{conv.timestamp}</span>
-                                    </div>
-                                    <p className={`text-xs truncate ${conv.unread > 0 ? 'text-white font-bold' : 'text-neutral-500'}`}>{conv.lastMessage}</p>
-                                </div>
-                            </div>
+                                onDelete={() => handleDeleteConversation(conv.id)}
+                            />
                         )) : (
                             <div className="flex items-center justify-center py-8 px-4 text-center">
                                 <div>
@@ -309,27 +409,22 @@ const MessagesPage: React.FC = () => {
                         </div>
                     ) : activeConv ? (
                         <>
-                            {/* Chat Header - Hidden on Mobile since we have portal title, but keeping controls/info */}
-                            <div className="h-14 lg:h-16 border-b border-neutral-800 flex items-center justify-between px-4 lg:px-6 bg-neutral-900/30 shrink-0">
+                            {/* Chat Header */}
+                            <div className="h-16 lg:h-16 border-b border-neutral-800 flex items-center justify-between px-4 lg:px-6 bg-neutral-900/80 backdrop-blur-md shrink-0">
                                 <div className="flex items-center gap-3">
-                                    {/* On desktop, show avatar/name. On mobile, we might want to hide name if in portal, but portal is generic sometimes. 
-                                       Actually, portal logic above shows activeConv.user. 
-                                       So on mobile we can hide this info or keep it as context. 
-                                       Let's keep it for now but adjust spacing.
-                                   */}
-                                    <img src={activeConv.avatar} className="w-8 h-8 rounded-full object-cover hidden lg:block" />
-                                    <div className="hidden lg:block">
+                                    <img src={activeConv.avatar} className="w-9 h-9 rounded-full object-cover border border-white/10" />
+                                    <div>
                                         <h3 className="text-sm font-bold text-white">{activeConv.user}</h3>
-                                        <span className="text-[10px] text-green-500 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Online</span>
-                                    </div>
-                                    <div className="lg:hidden">
-                                        <span className="text-[10px] text-green-500 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Online</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
+                                            <span className="text-[10px] text-neutral-400">Online</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 text-neutral-400">
-                                    <button className="p-2 hover:bg-white/5 rounded"><Phone size={18} /></button>
-                                    <button className="p-2 hover:bg-white/5 rounded"><Video size={18} /></button>
-                                    <button className="p-2 hover:bg-white/5 rounded"><MoreVertical size={18} /></button>
+                                <div className="flex items-center gap-1 text-neutral-400">
+                                    {/* Call button hidden by default as requested (until following check is impl) */}
+                                    {/* <button className="p-2 hover:bg-white/5 rounded-lg hover:text-white transition-colors"><Phone size={18} /></button> */}
+                                    <button className="p-2 hover:bg-white/5 rounded-lg hover:text-white transition-colors"><MoreVertical size={18} /></button>
                                 </div>
                             </div>
 
@@ -349,23 +444,33 @@ const MessagesPage: React.FC = () => {
 
                             {/* Input Area */}
                             <div className={`
-                                p-4 border-t border-neutral-800 bg-neutral-900/90 backdrop-blur-md shrink-0
+                                p-3 border-t border-neutral-800 bg-neutral-900/95 backdrop-blur-xl shrink-0
                                 lg:static lg:bg-neutral-900/50
                                 fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-0 right-0 z-20 border-t lg:border-t-0
-                                border-white/20 lg:border-neutral-800
+                                border-white/10 lg:border-neutral-800
                             `}>
-                                <div className="flex items-end gap-2 max-w-[1600px] mx-auto">
-                                    <button className="p-3 text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg shrink-0"><Paperclip size={20} /></button>
-                                    <div className="flex-1 bg-black/50 lg:bg-neutral-950 border border-neutral-800 rounded-lg p-2 focus-within:border-primary/50 transition-colors">
+                                <div className="flex items-center gap-3 max-w-[1600px] mx-auto">
+                                    <button className="p-2 text-neutral-400 hover:text-white hover:bg-white/10 rounded-full transition-colors shrink-0 flex items-center justify-center">
+                                        <Paperclip size={20} />
+                                    </button>
+                                    <div className="flex-1 bg-black/40 lg:bg-neutral-950 border border-neutral-800 rounded-2xl p-1.5 pl-3 focus-within:border-neutral-600 transition-colors flex items-center">
                                         <textarea
                                             value={inputText}
                                             onChange={(e) => setInputText(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                                            className="w-full bg-transparent text-sm text-white p-1 focus:outline-none resize-none h-10 max-h-32 custom-scrollbar placeholder-neutral-500"
-                                            placeholder="Type a message..."
+                                            className="w-full bg-transparent text-sm text-white focus:outline-none resize-none h-9 max-h-32 custom-scrollbar placeholder-neutral-600 py-2 leading-tight"
+                                            placeholder="Message..."
+                                            rows={1}
+                                            style={{ minHeight: '36px' }}
                                         />
                                     </div>
-                                    <button onClick={handleSend} className="p-3 bg-primary text-black rounded-lg hover:bg-primary/90 transition-colors shrink-0"><Send size={20} /></button>
+                                    <button
+                                        onClick={handleSend}
+                                        disabled={!inputText.trim()}
+                                        className={`p-2.5 rounded-full transition-all duration-200 shrink-0 flex items-center justify-center ${inputText.trim() ? 'bg-primary text-black hover:scale-105 hover:shadow-lg hover:shadow-primary/20' : 'bg-neutral-800 text-neutral-500'}`}
+                                    >
+                                        <Send size={18} fill={inputText.trim() ? "currentColor" : "none"} />
+                                    </button>
                                 </div>
                             </div>
                         </>

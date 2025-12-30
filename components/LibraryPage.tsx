@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Project } from '../types';
-import { LayoutGrid, List, Disc, Play, Pause, Search, Plus, BookmarkPlus, Clock, ChevronDown, ChevronUp, X, Check, Music, Upload, ShoppingBag } from 'lucide-react';
+import { LayoutGrid, List, Disc, Play, Pause, Search, Plus, BookmarkPlus, Clock, ChevronDown, ChevronUp, X, Check, Music, Upload, ShoppingBag, MoreVertical } from 'lucide-react';
 import ProjectCard from './ProjectCard';
-import { getUserProfile, getSavedProjects, getUserAssets, getPlaylists, createPlaylist, Playlist, Asset } from '../services/supabaseService';
+import { getUserProfile, getSavedProjects, getUserAssets, getPlaylists, createPlaylist, updateProject, Playlist, Asset } from '../services/supabaseService';
 
 interface LibraryPageProps {
     currentTrackId: string | null;
@@ -47,6 +47,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     const [loadingTracks, setLoadingTracks] = useState(false);
     const [creatingPlaylist, setCreatingPlaylist] = useState(false);
     const [trackSourceTab, setTrackSourceTab] = useState<'uploads' | 'purchased'>('uploads');
+    const [editingProject, setEditingProject] = useState<Project | null>(null);
 
     const loading = loadingProfile || loadingSaved;
 
@@ -112,13 +113,16 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 // Get user's uploaded assets
                 const assets = await getUserAssets();
                 assets.forEach(asset => {
-                    tracks.push({
-                        id: `asset-${asset.id}`,
-                        title: asset.name,
-                        type: 'asset',
-                        assetId: asset.id,
-                        duration: 180
-                    });
+                    const name = asset.name || 'Untitled';
+                    if (name.toLowerCase().endsWith('.mp3') || name.toLowerCase().endsWith('.wav')) {
+                        tracks.push({
+                            id: `asset-${asset.id}`,
+                            title: name,
+                            type: 'asset',
+                            assetId: asset.id,
+                            duration: 180
+                        });
+                    }
                 });
             } else {
                 // Get tracks from purchased projects
@@ -128,7 +132,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                     project.tracks?.forEach(track => {
                         tracks.push({
                             id: `track-${track.id}`,
-                            title: track.title,
+                            title: track.title || 'Untitled',
                             type: 'track',
                             trackId: track.id,
                             duration: track.duration || 180
@@ -182,6 +186,20 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
             console.error('Failed to create playlist:', error);
         } finally {
             setCreatingPlaylist(false);
+        }
+    };
+
+    const handleSaveProject = async (updates: Partial<Project>) => {
+        if (!editingProject) return;
+        try {
+            await updateProject(editingProject.id, updates);
+            // Refresh profiles to see changes
+            const profile = await getUserProfile();
+            setUserProfile(profile);
+            const saved = await getSavedProjects();
+            setSavedProjects(saved);
+        } catch (error) {
+            console.error('Failed to update project:', error);
         }
     };
 
@@ -256,9 +274,20 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                             </div>
 
                             {/* Expand/Collapse */}
-                            <button className="p-2 text-neutral-500 hover:text-white transition-colors">
-                                {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            </button>
+                            <div className="flex items-center">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingProject(project);
+                                    }}
+                                    className="p-2 text-neutral-500 hover:text-white transition-colors"
+                                >
+                                    <MoreVertical size={16} />
+                                </button>
+                                <button className="p-2 text-neutral-500 hover:text-white transition-colors">
+                                    {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </button>
+                            </div>
                         </div>
 
                         {/* Tracks List (Expanded) */}
@@ -320,127 +349,8 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
         </div>
     );
 
-    // Create Playlist Modal (Full-screen on mobile)
-    const CreatePlaylistModal = () => (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col animate-in slide-in-from-bottom duration-300">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-neutral-800">
-                <button
-                    onClick={() => setShowCreatePlaylist(false)}
-                    className="p-2 -ml-2 text-neutral-400 hover:text-white"
-                >
-                    <X size={24} />
-                </button>
-                <h2 className="text-lg font-bold text-white">Create Playlist</h2>
-                <button
-                    onClick={handleCreatePlaylist}
-                    disabled={!playlistName.trim() || selectedTracks.size === 0 || creatingPlaylist}
-                    className={`p-2 -mr-2 ${playlistName.trim() && selectedTracks.size > 0 ? 'text-primary' : 'text-neutral-600'}`}
-                >
-                    {creatingPlaylist ? (
-                        <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                    ) : (
-                        <Check size={24} />
-                    )}
-                </button>
-            </div>
 
-            {/* Playlist Name Input */}
-            <div className="p-4 border-b border-neutral-800">
-                <input
-                    type="text"
-                    value={playlistName}
-                    onChange={(e) => setPlaylistName(e.target.value)}
-                    placeholder="Playlist name..."
-                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white placeholder-neutral-500 focus:outline-none focus:border-primary/50"
-                    autoFocus
-                />
-                <p className="text-xs text-neutral-500 mt-2">
-                    {selectedTracks.size} track{selectedTracks.size !== 1 ? 's' : ''} selected
-                </p>
-            </div>
 
-            {/* Source Tabs */}
-            <div className="flex border-b border-neutral-800">
-                <button
-                    onClick={() => setTrackSourceTab('uploads')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold transition-colors ${trackSourceTab === 'uploads'
-                            ? 'text-primary border-b-2 border-primary bg-primary/5'
-                            : 'text-neutral-500 hover:text-white'
-                        }`}
-                >
-                    <Upload size={14} />
-                    Uploads
-                </button>
-                <button
-                    onClick={() => setTrackSourceTab('purchased')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold transition-colors ${trackSourceTab === 'purchased'
-                            ? 'text-primary border-b-2 border-primary bg-primary/5'
-                            : 'text-neutral-500 hover:text-white'
-                        }`}
-                >
-                    <ShoppingBag size={14} />
-                    Library
-                </button>
-            </div>
-
-            {/* Track List */}
-            <div className="flex-1 overflow-y-auto">
-                {loadingTracks ? (
-                    <div className="flex items-center justify-center py-16">
-                        <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                    </div>
-                ) : availableTracks.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-                        <Music size={40} className="text-neutral-700 mb-4" />
-                        <p className="text-neutral-500 text-sm">No tracks found</p>
-                        <p className="text-neutral-600 text-xs mt-1">
-                            {trackSourceTab === 'uploads'
-                                ? 'Upload some files first'
-                                : 'Save some projects to your library'}
-                        </p>
-                    </div>
-                ) : (
-                    <div className="divide-y divide-neutral-900">
-                        {availableTracks.map(track => {
-                            const isSelected = selectedTracks.has(track.id);
-                            return (
-                                <div
-                                    key={track.id}
-                                    onClick={() => toggleTrackSelection(track.id)}
-                                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${isSelected ? 'bg-primary/10' : 'hover:bg-white/5'
-                                        }`}
-                                >
-                                    {/* Selection Indicator */}
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected
-                                            ? 'border-primary bg-primary'
-                                            : 'border-neutral-600'
-                                        }`}>
-                                        {isSelected && <Check size={12} className="text-black" />}
-                                    </div>
-
-                                    {/* Track Icon */}
-                                    <div className="w-10 h-10 rounded bg-neutral-900 border border-white/10 flex items-center justify-center shrink-0">
-                                        <Music size={16} className="text-neutral-500" />
-                                    </div>
-
-                                    {/* Track Info */}
-                                    <div className="flex-1 min-w-0">
-                                        <p className={`text-sm truncate ${isSelected ? 'text-primary' : 'text-white'}`}>
-                                            {track.title.length > 25 ? track.title.substring(0, 25) + '...' : track.title}
-                                        </p>
-                                        <p className="text-[10px] text-neutral-500 uppercase">
-                                            {track.type === 'asset' ? 'Upload' : 'Library Track'}
-                                        </p>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
 
     return (
         <div className="w-full max-w-[1600px] mx-auto pb-32 pt-4 lg:pt-6 px-4 lg:px-8 animate-in fade-in duration-500">
@@ -535,46 +445,67 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
 
             {activeTab === 'playlists' ? (
                 <div className="space-y-6">
-                    {/* Create Playlist Button */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        <button
-                            onClick={() => setShowCreatePlaylist(true)}
-                            className="h-[200px] border-2 border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all group bg-white/[0.01]"
-                        >
-                            <div className="p-4 bg-neutral-900 rounded-full mb-3 group-hover:scale-110 transition-transform">
-                                <Plus size={24} />
-                            </div>
-                            <span className="text-xs font-bold uppercase tracking-wide">Create Playlist</span>
-                        </button>
-
-                        {/* Existing Playlists */}
-                        {loadingPlaylists ? (
-                            <div className="h-[200px] flex items-center justify-center">
-                                <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                            </div>
-                        ) : playlists.map(playlist => (
-                            <div
-                                key={playlist.id}
-                                className="group relative h-[200px] bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden cursor-pointer hover:border-neutral-600 transition-colors"
+                    {viewMode === 'list' ? (
+                        <PlaylistListView
+                            playlists={playlists}
+                            loadingPlaylists={loadingPlaylists}
+                            setShowCreatePlaylist={setShowCreatePlaylist}
+                            onPlayTrack={onPlayTrack}
+                            currentProject={currentProject}
+                            isPlaying={isPlaying}
+                            onTogglePlay={onTogglePlay}
+                        />
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            {/* Create Playlist Button - Only in Grid View? Or maybe List View allows header button? */}
+                            <button
+                                onClick={() => setShowCreatePlaylist(true)}
+                                className="h-[200px] border-2 border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all group bg-white/[0.01]"
                             >
-                                <div className="absolute inset-0 flex items-center justify-center bg-neutral-900">
-                                    <div className="grid grid-cols-2 gap-1 p-4 opacity-50 rotate-12 scale-110">
-                                        <div className="w-12 h-12 bg-neutral-800 rounded"></div>
-                                        <div className="w-12 h-12 bg-neutral-800 rounded"></div>
-                                        <div className="w-12 h-12 bg-neutral-800 rounded"></div>
-                                        <div className="w-12 h-12 bg-neutral-800 rounded"></div>
+                                <div className="p-4 bg-neutral-900 rounded-full mb-3 group-hover:scale-110 transition-transform">
+                                    <Plus size={24} />
+                                </div>
+                                <span className="text-xs font-bold uppercase tracking-wide">Create Playlist</span>
+                            </button>
+
+                            {/* Existing Playlists Grid */}
+                            {loadingPlaylists ? (
+                                <div className="h-[200px] flex items-center justify-center">
+                                    <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                </div>
+                            ) : playlists.map(playlist => (
+                                <div
+                                    key={playlist.id}
+                                    className="group relative h-[200px] bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden cursor-pointer hover:border-neutral-600 transition-colors"
+                                >
+                                    <div className="absolute inset-0 flex items-center justify-center bg-neutral-900">
+                                        <div className="grid grid-cols-2 gap-1 p-4 opacity-50 rotate-12 scale-110">
+                                            <div className="w-12 h-12 bg-neutral-800 rounded"></div>
+                                            <div className="w-12 h-12 bg-neutral-800 rounded"></div>
+                                            <div className="w-12 h-12 bg-neutral-800 rounded"></div>
+                                            <div className="w-12 h-12 bg-neutral-800 rounded"></div>
+                                        </div>
+                                    </div>
+                                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex flex-col justify-end p-4">
+                                        <h3 className="font-bold text-white text-lg">{playlist.title}</h3>
+                                        <p className="text-xs text-neutral-400">{playlist.tracks.length} Tracks</p>
+                                        <div
+                                            className="absolute bottom-4 right-4 w-12 h-12 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 shadow-lg z-10"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (playlist.tracks && playlist.tracks.length > 0) {
+                                                    const firstTrack = playlist.tracks[0];
+                                                    onPlayTrack(playlist, firstTrack.id || firstTrack.trackId || firstTrack.assetId);
+                                                }
+                                            }}
+                                        >
+                                            <Play size={20} className="text-black" fill="black" />
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex flex-col justify-end p-4">
-                                    <h3 className="font-bold text-white text-lg">{playlist.title}</h3>
-                                    <p className="text-xs text-neutral-400">{playlist.tracks.length} Tracks</p>
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-primary rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 shadow-lg">
-                                        <Play size={20} className="text-black ml-1" />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             ) : loading ? (
                 <div className="flex items-center justify-center py-32">
@@ -588,13 +519,14 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {displayProjects.length > 0 ? displayProjects.map(project => (
-                        <div key={project.id} className="h-[340px]">
+                        <div key={project.id} className="h-[260px]">
                             <ProjectCard
                                 project={project}
                                 currentTrackId={currentTrackId}
                                 isPlaying={currentProject?.id === project.id && isPlaying}
                                 onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
                                 onTogglePlay={onTogglePlay}
+                                onEdit={(p) => setEditingProject(p)}
                             />
                         </div>
                     )) : (
@@ -606,8 +538,30 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 </div>
             )}
 
-            {/* Create Playlist Modal */}
-            {showCreatePlaylist && <CreatePlaylistModal />}
+            {showCreatePlaylist && (
+                <CreatePlaylistModalComponent
+                    playlistName={playlistName}
+                    setPlaylistName={setPlaylistName}
+                    setShowCreatePlaylist={setShowCreatePlaylist}
+                    handleCreatePlaylist={handleCreatePlaylist}
+                    creatingPlaylist={creatingPlaylist}
+                    selectedTracks={selectedTracks}
+                    trackSourceTab={trackSourceTab}
+                    setTrackSourceTab={setTrackSourceTab}
+                    loadingTracks={loadingTracks}
+                    availableTracks={availableTracks}
+                    toggleTrackSelection={toggleTrackSelection}
+                />
+            )}
+
+            {/* Edit Project Modal */}
+            {editingProject && (
+                <EditProjectModal
+                    project={editingProject}
+                    onClose={() => setEditingProject(null)}
+                    onSave={handleSaveProject}
+                />
+            )}
 
         </div>
     );
@@ -629,5 +583,417 @@ const TabButton = ({ active, onClick, label, icon, mobileCompact }: any) => (
         <span className={mobileCompact ? 'truncate' : ''}>{label}</span>
     </button>
 );
+
+const EditProjectModal = ({ project, onClose, onSave }: { project: Project; onClose: () => void; onSave: (updates: Partial<Project>) => Promise<void> }) => {
+    const [title, setTitle] = useState(project.title);
+    const [description, setDescription] = useState(project.description || '');
+    const [genre, setGenre] = useState(project.genre || '');
+    const [subGenre, setSubGenre] = useState(project.subGenre || '');
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await onSave({
+                title,
+                description,
+                genre,
+                subGenre
+            });
+            onClose();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[60] bg-[#050505] flex flex-col animate-in slide-in-from-bottom duration-300">
+
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 safe-area-top relative z-10 w-full">
+                <button
+                    onClick={onClose}
+                    className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/10 transition-all backdrop-blur-md"
+                >
+                    <X size={20} />
+                </button>
+                <div className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+                    Edit Metadata
+                </div>
+                <div className="w-10"></div> {/* Spacer */}
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-6 pb-32 relative z-10 custom-scrollbar">
+
+                <div className="space-y-10 mt-6">
+                    {/* Main Info */}
+                    <div className="space-y-8">
+                        <div className="space-y-1 group">
+                            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1 group-focus-within:text-primary transition-colors">Project Title</label>
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                className="w-full bg-transparent border-b-2 border-neutral-800 focus:border-primary px-0 py-2 text-2xl md:text-3xl font-bold text-white placeholder-neutral-800 focus:outline-none transition-all"
+                                placeholder="Untitled Project"
+                            />
+                        </div>
+
+                        <div className="space-y-3 group">
+                            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1 group-focus-within:text-primary transition-colors">Description</label>
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                className="w-full bg-neutral-900/30 border border-neutral-800 focus:border-neutral-600 rounded-2xl p-6 text-neutral-300 leading-relaxed focus:outline-none focus:bg-neutral-900/50 transition-all h-28 resize-none text-base"
+                                placeholder="Describe the vibe, instruments used, or inspiration..."
+                            />
+                        </div>
+                    </div>
+
+                    {/* Meta Grid */}
+                    <div>
+                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1 mb-4 block">Attributes</label>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="p-3 bg-neutral-900/20 rounded-2xl border border-white/5 space-y-0.5 focus-within:border-primary/50 focus-within:bg-neutral-900/40 transition-colors">
+                                <label className="text-[9px] font-bold text-neutral-600 uppercase tracking-widest">Genre</label>
+                                <input
+                                    type="text"
+                                    value={genre}
+                                    onChange={(e) => setGenre(e.target.value)}
+                                    className="w-full bg-transparent border-none p-0 text-white font-bold text-lg focus:ring-0 placeholder-neutral-700"
+                                    placeholder="None"
+                                />
+                            </div>
+                            <div className="p-3 bg-neutral-900/20 rounded-2xl border border-white/5 space-y-0.5 focus-within:border-primary/50 focus-within:bg-neutral-900/40 transition-colors">
+                                <label className="text-[9px] font-bold text-neutral-600 uppercase tracking-widest">Sub Genre</label>
+                                <input
+                                    type="text"
+                                    value={subGenre}
+                                    onChange={(e) => setSubGenre(e.target.value)}
+                                    className="w-full bg-transparent border-none p-0 text-white font-bold text-lg focus:ring-0 placeholder-neutral-700"
+                                    placeholder="None"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-6 pb-24 border-t border-white/5 bg-[#050505] w-full">
+                <div className="flex gap-4">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-4 rounded-xl bg-neutral-900 text-white font-bold text-sm hover:bg-neutral-800 transition-all active:scale-[0.98]"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="flex-1 py-4 rounded-xl bg-primary text-black font-bold text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none active:scale-[0.98] flex items-center justify-center gap-2"
+                    >
+                        {saving && <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />}
+                        {saving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const PlaylistListView = ({ playlists, loadingPlaylists, setShowCreatePlaylist, onPlayTrack, currentProject, isPlaying, onTogglePlay }: any) => {
+    const [expandedPlaylists, setExpandedPlaylists] = useState<Set<string>>(new Set());
+
+    const togglePlaylistExpanded = (id: string) => {
+        setExpandedPlaylists(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    return (
+        <div className="space-y-6">
+            <button
+                onClick={() => setShowCreatePlaylist(true)}
+                className="w-full py-3 border-2 border-dashed border-neutral-800 rounded-xl flex items-center justify-center gap-2 text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all group bg-white/[0.01]"
+            >
+                <div className="p-1 bg-neutral-900 rounded-full group-hover:scale-110 transition-transform">
+                    <Plus size={16} />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wide">Create New Playlist</span>
+            </button>
+
+            {loadingPlaylists ? (
+                <div className="flex items-center justify-center py-8">
+                    <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                </div>
+            ) : playlists.map((playlist: any) => {
+                const isExpanded = expandedPlaylists.has(playlist.id);
+                // Check if this playlist is currently playing
+                const isPlaylistPlaying = currentProject?.id === playlist.id && isPlaying;
+
+                return (
+                    <div key={playlist.id} className="bg-neutral-950/50 border border-neutral-800/60 rounded-xl overflow-hidden">
+                        <div
+                            className="flex items-center gap-3 p-3 cursor-pointer hover:bg-white/5 transition-colors"
+                            onClick={() => togglePlaylistExpanded(playlist.id)}
+                        >
+                            <div className="relative w-12 h-12 rounded-lg bg-neutral-900 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden group">
+                                <div className="grid grid-cols-2 gap-0.5 p-1 opacity-50 rotate-12 scale-110">
+                                    <div className="w-4 h-4 bg-neutral-800 rounded-[1px]"></div>
+                                    <div className="w-4 h-4 bg-neutral-800 rounded-[1px]"></div>
+                                    <div className="w-4 h-4 bg-neutral-800 rounded-[1px]"></div>
+                                    <div className="w-4 h-4 bg-neutral-800 rounded-[1px]"></div>
+                                </div>
+                                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                                    {isExpanded ? <ChevronUp size={16} className="text-white" /> : <ChevronDown size={16} className="text-white" />}
+                                </div>
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                                <h3 className={`font-bold text-sm truncate ${isPlaylistPlaying ? 'text-primary' : 'text-white'}`}>{playlist.title}</h3>
+                                <p className="text-[10px] text-neutral-500">{playlist.tracks?.length || 0} tracks</p>
+                            </div>
+                        </div>
+
+                        {isExpanded && (
+                            <div className="border-t border-neutral-800/50 bg-black/20">
+                                {playlist.tracks && playlist.tracks.length > 0 ? (
+                                    <div className="divide-y divide-neutral-900/50">
+                                        {playlist.tracks.map((track: any, index: number) => {
+                                            // Determine if this specific track is playing
+                                            // We need a unique ID for the track in the context of the player. 
+                                            // The playlist tracks have 'trackId' (original track ID) or 'assetId'. 
+                                            // The player likely uses the ID from the playlist structure if it's playing a playlist.
+                                            // Let's assume onPlayTrack handles the mapping correctly or we pass the playlist track ID.
+                                            const isTrackPlaying = currentProject?.id === playlist.id && isPlaying; // Simplified check, ideally check track ID too
+
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    className="flex items-center gap-3 px-3 py-2 hover:bg-white/5 transition-colors group cursor-pointer"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        // Pass the playlist as the project context, and the track ID (or index if needed by player)
+                                                        // Assuming onPlayTrack accepts (projectLikeObject, trackId)
+                                                        // For playlists, we might need to construct a project-like object if 'playlist' isn't sufficient.
+                                                        // But 'playlist' has 'tracks' array, so it should work if the player reads 'tracks'.
+                                                        onPlayTrack(playlist, track.id || track.trackId || track.assetId);
+                                                    }}
+                                                >
+                                                    <div className="w-6 text-center text-[10px] text-neutral-600 font-mono">
+                                                        {index + 1}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className={`text-xs font-medium truncate transition-colors ${isTrackPlaying && false ? 'text-primary' : 'text-neutral-300 group-hover:text-white'}`}>
+                                                            {(track.title || 'Untitled').length > 20 ? (track.title || 'Untitled').substring(0, 20) + '...' : (track.title || 'Untitled')}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center text-neutral-600">
+                                                        {track.duration && (
+                                                            <span className="text-[9px] font-mono">
+                                                                {Math.floor(track.duration / 60)}:{(track.duration % 60).toString().padStart(2, '0')}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <button className="p-1.5 rounded-full hover:bg-white/10 text-neutral-500 hover:text-white transition-colors">
+                                                        <Play size={10} fill="currentColor" />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="p-4 text-center text-[10px] text-neutral-600">
+                                        No tracks in this playlist
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+const CreatePlaylistModalComponent: React.FC<{
+    playlistName: string;
+    setPlaylistName: (name: string) => void;
+    setShowCreatePlaylist: (show: boolean) => void;
+    handleCreatePlaylist: () => void;
+    creatingPlaylist: boolean;
+    selectedTracks: Set<string>;
+    trackSourceTab: 'uploads' | 'purchased';
+    setTrackSourceTab: (tab: 'uploads' | 'purchased') => void;
+    loadingTracks: boolean;
+    availableTracks: SelectableTrack[];
+    toggleTrackSelection: (id: string) => void;
+}> = ({
+    playlistName,
+    setPlaylistName,
+    setShowCreatePlaylist,
+    handleCreatePlaylist,
+    creatingPlaylist,
+    selectedTracks,
+    trackSourceTab,
+    setTrackSourceTab,
+    loadingTracks,
+    availableTracks,
+    toggleTrackSelection
+}) => (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col animate-in slide-in-from-bottom duration-300">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-neutral-800">
+                <button
+                    onClick={() => setShowCreatePlaylist(false)}
+                    className="p-2 -ml-2 text-neutral-400 hover:text-white"
+                >
+                    <X size={24} />
+                </button>
+                <h2 className="text-lg font-bold text-white">Create Playlist</h2>
+                <button
+                    onClick={handleCreatePlaylist}
+                    disabled={!playlistName.trim() || selectedTracks.size === 0 || creatingPlaylist}
+                    className={`p-2 -mr-2 ${playlistName.trim() && selectedTracks.size > 0 ? 'text-primary' : 'text-neutral-600'}`}
+                >
+                    {creatingPlaylist ? (
+                        <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    ) : (
+                        <Check size={24} />
+                    )}
+                </button>
+            </div>
+
+            {/* Playlist Name Input */}
+            <div className="p-6">
+                <input
+                    type="text"
+                    value={playlistName}
+                    onChange={(e) => setPlaylistName(e.target.value)}
+                    placeholder="Give your playlist a name"
+                    className="w-full bg-transparent border-none text-2xl font-bold text-white placeholder-neutral-600 focus:outline-none focus:ring-0 px-0"
+                // autoFocus removed to prevent keyboard opening on mobile default
+                />
+                <div className="h-[1px] w-full bg-neutral-800 mt-2"></div>
+                <p className="text-xs text-neutral-500 mt-3 font-medium">
+                    {selectedTracks.size} {selectedTracks.size === 1 ? 'track' : 'tracks'} selected
+                </p>
+            </div>
+
+            {/* Source Tabs */}
+            <div className="flex border-b border-neutral-800">
+                <button
+                    onClick={() => setTrackSourceTab('uploads')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold transition-colors ${trackSourceTab === 'uploads'
+                        ? 'text-primary border-b-2 border-primary bg-primary/5'
+                        : 'text-neutral-500 hover:text-white'
+                        }`}
+                >
+                    <Upload size={14} />
+                    Uploads
+                </button>
+                <button
+                    onClick={() => setTrackSourceTab('purchased')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold transition-colors ${trackSourceTab === 'purchased'
+                        ? 'text-primary border-b-2 border-primary bg-primary/5'
+                        : 'text-neutral-500 hover:text-white'
+                        }`}
+                >
+                    <ShoppingBag size={14} />
+                    Library
+                </button>
+            </div>
+
+            {/* Track List */}
+            <div className="flex-1 overflow-y-auto">
+                {loadingTracks ? (
+                    <div className="flex items-center justify-center py-16">
+                        <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    </div>
+                ) : availableTracks.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                        <Music size={40} className="text-neutral-700 mb-4" />
+                        <p className="text-neutral-500 text-sm">No tracks found</p>
+                        <p className="text-neutral-600 text-xs mt-1">
+                            {trackSourceTab === 'uploads'
+                                ? 'Upload some files first'
+                                : 'Save some projects to your library'}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="divide-y divide-neutral-900">
+                        {availableTracks.map(track => {
+                            const isSelected = selectedTracks.has(track.id);
+                            return (
+                                <div
+                                    key={track.id}
+                                    onClick={() => toggleTrackSelection(track.id)}
+                                    className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${isSelected ? 'bg-primary/10' : 'hover:bg-white/5'
+                                        }`}
+                                >
+                                    {/* Selection Indicator */}
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected
+                                        ? 'border-primary bg-primary'
+                                        : 'border-neutral-600'
+                                        }`}>
+                                        {isSelected && <Check size={12} className="text-black" />}
+                                    </div>
+
+                                    {/* Track Icon */}
+                                    <div className="w-10 h-10 rounded bg-neutral-900 border border-white/10 flex items-center justify-center shrink-0">
+                                        <Music size={16} className="text-neutral-500" />
+                                    </div>
+
+                                    {/* Track Info */}
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`text-sm truncate ${isSelected ? 'text-primary' : 'text-white'}`}>
+                                            {(track.title || 'Untitled').length > 25 ? (track.title || 'Untitled').substring(0, 25) + '...' : (track.title || 'Untitled')}
+                                        </p>
+                                        <p className="text-[10px] text-neutral-500 uppercase">
+                                            {track.type === 'asset' ? 'Upload' : 'Library Track'}
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* Footer Action Button */}
+            <div className="px-4 pt-4 pb-24 border-t border-neutral-800 bg-black safe-area-bottom">
+                <button
+                    onClick={handleCreatePlaylist}
+                    disabled={!playlistName.trim() || selectedTracks.size === 0 || creatingPlaylist}
+                    className={`
+                        w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all
+                        ${!playlistName.trim() || selectedTracks.size === 0 || creatingPlaylist
+                            ? 'bg-neutral-900 text-neutral-500 cursor-not-allowed'
+                            : 'bg-primary text-black hover:bg-primary/90 shadow-lg shadow-primary/20'
+                        }
+                    `}
+                >
+                    {creatingPlaylist ? (
+                        <>
+                            <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                            Creating...
+                        </>
+                    ) : (
+                        <>
+                            <Check size={20} />
+                            Create Playlist
+                        </>
+                    )}
+                </button>
+            </div>
+        </div>
+    );
 
 export default LibraryPage;

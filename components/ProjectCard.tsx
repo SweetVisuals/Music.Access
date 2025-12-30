@@ -14,11 +14,12 @@ interface ProjectCardProps {
     onTogglePlay: () => void;
     renderTrackAction?: (track: any) => React.ReactNode;
     isPurchased?: boolean;
+    onEdit?: (project: Project) => void;
 }
 
 // ... (keep interface)
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ project, currentTrackId, isPlaying, onPlayTrack, onTogglePlay, renderTrackAction, isPurchased }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({ project, currentTrackId, isPlaying, onPlayTrack, onTogglePlay, renderTrackAction, isPurchased, onEdit }) => {
     const [description, setDescription] = useState<string | null>(null);
     const [loadingDesc, setLoadingDesc] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
@@ -105,7 +106,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, currentTrackId, isPl
                                 </span>
                             )}
                         </div>
-                        <button className="text-neutral-600 hover:text-white transition-colors">
+                        <button
+                            className="text-neutral-600 hover:text-white transition-colors p-1"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onEdit) onEdit(project);
+                            }}
+                        >
                             <MoreVertical size={14} />
                         </button>
                     </div>

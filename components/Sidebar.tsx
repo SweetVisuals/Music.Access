@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Upload,
     PlusCircle,
@@ -47,6 +47,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
     const [following, setFollowing] = useState<TalentProfile[]>([]);
     const [loadingFollowing, setLoadingFollowing] = useState(false);
     const [storageUsage, setStorageUsage] = useState<{ used: number; limit: number }>({ used: 0, limit: 500 * 1024 * 1024 });
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // Reset scroll position when sidebar opens
+    useEffect(() => {
+        if (isOpen && scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = 0;
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         if (isLoggedIn) {
@@ -152,7 +160,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                 </div>
 
                 {/* Scrollable Content */}
-                <div className="flex-1 py-4 px-3 overflow-y-auto space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+                <div ref={scrollContainerRef} className="flex-1 py-4 px-3 overflow-y-auto space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
 
                     {isDashboard ? (
                         /* --- DASHBOARD SIDEBAR LAYOUT (Only visible when logged in) --- */

@@ -295,8 +295,8 @@ const NotesPage: React.FC = () => {
                 hasHandledNavigation.current = true;
 
                 // Construct note details
-                const noteTitle = state.trackTitle ? `${state.trackTitle} - Lyrics` : 'New Song Idea';
-                const noteContent = state.trackTitle ? `Lyrics for ${state.trackTitle}\n\n` : '';
+                const noteTitle = 'Untitled Note';
+                const noteContent = '';
 
                 // Create the note
                 await handleCreateNote(noteTitle, noteContent, state.fileName);

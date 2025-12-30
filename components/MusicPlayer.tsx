@@ -229,29 +229,23 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                         </div>
                     </div>
 
+                    {/* Meta with Scrolling Title - Moved Up for Closer Proximity */}
+                    <div className="w-full text-center space-y-1 mt-4 mb-2 shrink-0">
+                        <div className="relative overflow-hidden h-7 w-64 mx-auto flex items-center justify-center">
+                            {currentTrack.title.length > 25 ? (
+                                <div className="flex animate-marquee whitespace-nowrap">
+                                    <h2 className="text-base font-bold text-white tracking-tight mr-12">{currentTrack.title}</h2>
+                                    <h2 className="text-base font-bold text-white tracking-tight mr-12">{currentTrack.title}</h2>
+                                </div>
+                            ) : (
+                                <h2 className="text-base font-bold text-white tracking-tight truncate px-4">{currentTrack.title}</h2>
+                            )}
+                        </div>
+                        <p className="text-xs text-primary font-mono tracking-widest uppercase opacity-90">{currentProject.producer}</p>
+                    </div>
+
                     {/* Meta & Controls Wrapper - Seamless, no internal delays */}
                     <div className="flex flex-col justify-end mt-2 flex-1 min-h-0">
-
-                        {/* Meta with Scrolling Title */}
-                        <div className="w-full text-center space-y-1 mb-2 shrink-0">
-                            <div className="relative overflow-hidden h-7 w-64 mx-auto flex items-center justify-center">
-                                {/* Only animate if title is long enough? For now, simpler to center or static-scroll if overly long. 
-                                    Let's use a simpler approach: Just center, if too long, truncate. 
-                                    The user specifically asked for "scroll if too long". 
-                                    Implementing a conditional marquee is non-trivial without measuring. 
-                                    We will apply marquee if string length is > 25 chars for a rough heuristic. 
-                                */}
-                                {currentTrack.title.length > 25 ? (
-                                    <div className="flex animate-marquee whitespace-nowrap">
-                                        <h2 className="text-base font-bold text-white tracking-tight mr-12">{currentTrack.title}</h2>
-                                        <h2 className="text-base font-bold text-white tracking-tight mr-12">{currentTrack.title}</h2>
-                                    </div>
-                                ) : (
-                                    <h2 className="text-base font-bold text-white tracking-tight truncate px-4">{currentTrack.title}</h2>
-                                )}
-                            </div>
-                            <p className="text-xs text-primary font-mono tracking-widest uppercase opacity-90">{currentProject.producer}</p>
-                        </div>
 
                         {/* Visualizer */}
                         <div className="w-full mb-2 opacity-80">

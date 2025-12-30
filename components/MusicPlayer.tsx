@@ -75,7 +75,12 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
 
             {/* --- MOBILE EMBEDDED BOTTOM BAR --- */}
             <div
-                className={`lg:hidden fixed left-0 right-0 z-40 bg-[#050505] border-t border-white/20 shadow-[0_-4px_20px_rgba(0,0,0,0.8)] transition-all duration-300 ${isMinimized ? (currentView === 'notes' ? 'bottom-[calc(4rem+env(safe-area-inset-bottom)-1px)] translate-y-0 border-b-0' : 'bottom-0 translate-y-0') : 'bottom-0 translate-y-full opacity-0 pointer-events-none'}`}
+                className={`lg:hidden fixed left-0 right-0 z-40 bg-[#050505] border-t border-white/20 shadow-[0_-4px_20px_rgba(0,0,0,0.8)] transition-all duration-300 ${isMinimized
+                    ? (currentView === 'notes'
+                        ? 'bottom-[calc(8.5rem+env(safe-area-inset-bottom)-1px)] translate-y-0 border-b-0'
+                        : 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] translate-y-0')
+                    : 'bottom-0 translate-y-full opacity-0 pointer-events-none'
+                    }`}
                 onClick={() => setIsMinimized(false)}
             >
                 {/* Progress Bar (Thin, Top) */}
@@ -86,7 +91,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                     ></div>
                 </div>
 
-                <div className={`flex items-center justify-between px-4 h-14 box-content ${currentView === 'notes' ? '' : 'pb-[env(safe-area-inset-bottom)]'}`}>
+                <div className={`flex items-center justify-between px-4 h-14 box-content`}>
                     <div className="flex items-center gap-3 overflow-hidden flex-1">
                         {/* Producer Avatar (Circular) */}
                         <img

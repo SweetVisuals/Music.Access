@@ -669,9 +669,9 @@ const NotesPage: React.FC = () => {
                 </div>
 
                 {/* Spacer to prevent content from being hidden behind fixed bottom bar */}
-                <div className="h-16 lg:hidden shrink-0" />
+                <div className="h-32 lg:hidden shrink-0" />
 
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[48] bg-[#050505] border-t border-white/20 pb-[env(safe-area-inset-bottom)]">
+                <div className="lg:hidden fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-0 right-0 z-[48] bg-[#050505] border-t border-white/20 pb-0">
                     <div className="flex flex-col">
                         {/* Font Size Row (Expanded) */}
                         {isSizeExpanded && (

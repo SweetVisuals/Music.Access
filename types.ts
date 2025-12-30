@@ -84,6 +84,7 @@ export interface UserProfile {
   handle: string;
   email?: string;
   is_public?: boolean;
+  role?: string;
   location?: string;
   avatar: string;
   banner: string;

@@ -13,7 +13,9 @@ import {
   LicenseInfo,
   Goal,
   DashboardAnalytics,
-  Notification
+  Notification,
+  Strategy,
+  CalendarEvent
 } from '../types';
 
 // Supabase configuration
@@ -27,14 +29,15 @@ console.log('Supabase Key exists:', !!SUPABASE_ANON_KEY);
 export const supabase: SupabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Auth functions
-export const signUp = async (email: string, password: string, username: string, handle: string) => {
+export const signUp = async (email: string, password: string, username: string, handle: string, role?: string) => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         username,
-        handle
+        handle,
+        role
       }
     }
   });
@@ -173,7 +176,7 @@ export const getProjects = async (): Promise<Project[]> => {
   if (error) throw error;
 
   // Transform data to match Project interface
-  return data.map(project => ({
+  return (data as any[]).map(project => ({
     id: project.id,
     title: project.title,
     producer: project.user?.username || 'Unknown',
@@ -290,7 +293,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
     .eq('id', targetUserId)
     .single();
 
-  if (error && error.code !== 'PGRST116' && error.status !== 406) {
+  if (error && error.code !== 'PGRST116') {
     console.error('Error fetching user from DB:', error);
     // Continue to fallback if possible, but log error
   }
@@ -324,6 +327,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
       return {
         username: data.username,
         handle: data.handle,
+        role: (data as any).raw_user_meta_data?.role || 'Producer',
         email: authEmail,
         location: data.location,
         avatar: data.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
@@ -428,7 +432,7 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
     .eq('handle', handle)
     .single();
 
-  if (error && error.code !== 'PGRST116' && error.status !== 406) throw error;
+  if (error && error.code !== 'PGRST116') throw error;
 
   if (data) {
     // Fetch related data
@@ -442,6 +446,7 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
     return {
       username: data.username,
       handle: data.handle,
+      role: 'Producer',
       email: data.email,
       location: data.location,
       avatar: data.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
@@ -875,7 +880,21 @@ export const searchUsers = async (searchTerm: string): Promise<UserProfile[]> =>
     id: user.id,
     username: user.username,
     handle: user.handle,
-    avatar: user.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'
+    avatar: user.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+    role: user.role || 'Producer',
+    // Mock/Default remaining fields to satisfy UserProfile
+    email: '',
+    location: '',
+    banner: '',
+    subscribers: 0,
+    streams: 0,
+    gems: 0,
+    balance: 0,
+    bio: '',
+    website: '',
+    projects: [],
+    services: [],
+    soundPacks: []
   }));
 };
 
@@ -954,7 +973,7 @@ export const getServices = async (): Promise<Service[]> => {
     description: service.description,
     price: service.price,
     features: service.features || [],
-    rateType: service.rate_type || 'flat'
+    rateType: service.rate_type
   }));
 };
 
@@ -1022,7 +1041,7 @@ export const getConversations = async (): Promise<Conversation[]> => {
 
   if (error) throw error;
 
-  return data.map(participant => {
+  return (data as any[]).map(participant => {
     const conversation = participant.conversation;
     const otherParticipant = participant.user;
     const lastMessage = conversation.messages?.[conversation.messages.length - 1];
@@ -1227,15 +1246,24 @@ export const getTalentProfiles = async (): Promise<TalentProfile[]> => {
     // Check in-memory set
     const isFollowing = followedUserIds.has(user.id);
 
-    // Get tags (mock for now, or fetch from a hypothetical user_tags table)
-    const tags = ['Producer', 'Beatmaker'];
+    // Get role (default to 'Producer' if not set)
+    const userRole = 'Producer';
+
+    // Generate tags based on role
+    const effectiveRole = userRole as string;
+    let tags = [userRole];
+    if (effectiveRole === 'Artist') {
+      tags.push('Musician', 'Vocalist');
+    } else if (effectiveRole === 'Engineer') {
+      tags.push('Mixing');
+    }
 
     return {
       id: user.id,
       username: user.username,
       handle: user.handle,
       avatar: user.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
-      role: 'Producer', // Default role
+      role: userRole,
       tags: tags,
       followers: (count || 0).toString(),
       isVerified: false, // TODO: Add verification logic

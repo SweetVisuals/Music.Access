@@ -4,7 +4,7 @@ import { CartItem } from '../types';
 interface CartContextType {
     items: CartItem[];
     addToCart: (item: CartItem) => void;
-    removeFromCart: (itemId: number) => void;
+    removeFromCart: (itemId: number | string) => void;
     clearCart: () => void;
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
@@ -48,7 +48,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsOpen(true); // Auto open cart when adding
     };
 
-    const removeFromCart = (itemId: number) => {
+    const removeFromCart = (itemId: number | string) => {
         setItems(prev => prev.filter(item => item.id !== itemId));
     };
 

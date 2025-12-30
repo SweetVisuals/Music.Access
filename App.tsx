@@ -23,8 +23,10 @@ import AuthModal from './components/AuthModal';
 import { TermsPage, PrivacyPage } from './components/LegalPages';
 import InvoicesPage from './components/InvoicesPage';
 import RoadmapPage from './components/RoadmapPage';
+import MobileCart from './components/MobileCart';
 import NotLoggedInState from './components/NotLoggedInState';
 import { FloatingMessenger } from './components/FloatingMessenger';
+import BottomNav from './components/BottomNav';
 import { getProjects, getUserProfile, supabase, signOut, updateUserProfile, getCurrentUser } from './services/supabaseService';
 import { Project, FilterState, View, UserProfile } from './types';
 
@@ -350,6 +352,7 @@ const App: React.FC = () => {
   return (
     <CartProvider>
       <div className="h-screen w-full flex overflow-hidden selection:bg-primary/30 selection:text-primary transition-colors duration-500">
+        <MobileCart onNavigate={handleNavigate} />
         <AuthModal
           isOpen={isAuthModalOpen}
           onClose={() => setIsAuthModalOpen(false)}
@@ -592,6 +595,11 @@ const App: React.FC = () => {
             setCurrentProject(null);
             setCurrentTrackId(null);
           }}
+        />
+
+        <BottomNav
+          currentView={currentView}
+          onNavigate={handleNavigate}
         />
       </div>
     </CartProvider>

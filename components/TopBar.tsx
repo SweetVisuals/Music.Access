@@ -231,7 +231,7 @@ const RightActions: React.FC<{
                         </button>
 
                         {isCartOpen && !isSpacer && (
-                            <div className="absolute right-0 top-full mt-3 w-72 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                            <div className="hidden lg:block absolute right-0 top-full mt-3 w-72 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                                 <div className="p-3 border-b border-white/5 flex justify-between items-center">
                                     <h3 className="text-xs font-bold text-white">Your Cart ({cartItems.length})</h3>
                                     <span className="text-[9px] font-mono text-neutral-500">Total: ${cartTotal.toFixed(2)}</span>

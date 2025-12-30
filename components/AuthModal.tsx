@@ -58,7 +58,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
         setError(null);
 
         try {
-            await signUp(email, password, username, handle);
+            await signUp(email, password, username, handle, selectedRole || 'listener');
             // After signup, automatically log in
             await signIn(email, password);
             onLogin();

@@ -52,6 +52,7 @@ export const signUp = async (email: string, password: string, username: string, 
         username,
         handle,
         email,
+        role: role || 'Producer', // Save the selected role
         hashed_password: '', // Not needed since Supabase handles auth
         gems: 0,
         balance: 0.00
@@ -493,6 +494,7 @@ export const updateUserProfile = async (userId: string, updates: Partial<UserPro
   if (updates.balance !== undefined) updateObj.balance = updates.balance;
   if (updates.lastGemClaimDate !== undefined) updateObj.last_gem_claim_date = updates.lastGemClaimDate;
   if (updates.is_public !== undefined) updateObj.is_public = updates.is_public;
+  if (updates.role !== undefined) updateObj.role = updates.role;
 
   const { error } = await supabase
     .from('users')
@@ -790,17 +792,14 @@ export const checkIsFollowing = async (targetUserId: string): Promise<boolean> =
       .select('id')
       .eq('follower_id', currentUser.id)
       .eq('following_id', targetUserId)
-      .maybeSingle(); // Use maybeSingle to avoid 406 errors if multiple rows exist (though they shouldn't)
+      .limit(1);
 
     if (error) {
-      // Filter out "JSON object requested, multiple (or no) rows returned" if we didn't use maybeSingle
-      if (error.code !== 'PGRST116') {
-        console.error('Error checking follow status:', error);
-      }
+      console.error('Error checking follow status:', error);
       return false;
     }
 
-    return !!data;
+    return data && data.length > 0;
   } catch (err) {
     console.error('Unexpected error in checkIsFollowing:', err);
     return false;
@@ -821,9 +820,9 @@ export const followUser = async (targetUserId: string) => {
     .select('*')
     .eq('follower_id', currentUser.id)
     .eq('following_id', targetUserId)
-    .single();
+    .limit(1);
 
-  if (existing) {
+  if (existing && existing.length > 0) {
     console.log('[Follow] Already following');
     return;
   }
@@ -871,7 +870,7 @@ export const unfollowUser = async (targetUserId: string) => {
 export const searchUsers = async (searchTerm: string): Promise<UserProfile[]> => {
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, avatar_url')
+    .select('id, username, handle, avatar_url, role')
     .or(`username.ilike.%${searchTerm}%,handle.ilike.%${searchTerm}%`);
 
   if (error) throw error;
@@ -881,7 +880,7 @@ export const searchUsers = async (searchTerm: string): Promise<UserProfile[]> =>
     username: user.username,
     handle: user.handle,
     avatar: user.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
-    role: user.role || 'Producer',
+    role: user.role,
     // Mock/Default remaining fields to satisfy UserProfile
     email: '',
     location: '',
@@ -1212,7 +1211,7 @@ export const getTalentProfiles = async (): Promise<TalentProfile[]> => {
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance')
+    .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance, role')
     .order('created_at', { ascending: false }) // Show new users first
     .limit(50); // Increased limit
 
@@ -1247,11 +1246,14 @@ export const getTalentProfiles = async (): Promise<TalentProfile[]> => {
     const isFollowing = followedUserIds.has(user.id);
 
     // Get role (default to 'Producer' if not set)
-    const userRole = 'Producer';
+    const userRole = (user as any).role;
 
     // Generate tags based on role
     const effectiveRole = userRole as string;
-    let tags = [userRole];
+    let tags = [];
+    if (effectiveRole) {
+      tags.push(effectiveRole);
+    }
     if (effectiveRole === 'Artist') {
       tags.push('Musician', 'Vocalist');
     } else if (effectiveRole === 'Engineer') {
@@ -1924,16 +1926,45 @@ export const getNotes = async (): Promise<Note[]> => {
     return [];
   }
 
-  // Map DB fields to Note type if necessary (snake_case to camelCase mapping mostly auto-handled if types match, but check manually)
-  // DB: updated_at, attached_audio
-  // Type: updated, attachedAudio
-  return data.map((n: any) => ({
+  // Filter out trash tag
+  const activeNotes = data.filter((n: any) => !n.tags?.includes('TRASH'));
+
+  return activeNotes.map((n: any) => ({
     id: n.id,
     title: n.title,
     content: n.content || '',
     preview: n.preview || '',
     tags: n.tags || [],
-    updated: new Date(n.updated_at).toLocaleDateString(), // Format date
+    updated: new Date(n.updated_at).toLocaleDateString(),
+    attachedAudio: n.attached_audio
+  }));
+};
+
+export const getDeletedNotes = async (): Promise<Note[]> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from('notes')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching deleted notes:', error);
+    return [];
+  }
+
+  // Filter FOR trash tag
+  const deletedNotes = data.filter((n: any) => n.tags?.includes('TRASH'));
+
+  return deletedNotes.map((n: any) => ({
+    id: n.id,
+    title: n.title,
+    content: n.content || '',
+    preview: n.preview || '',
+    tags: n.tags || [],
+    updated: new Date(n.updated_at).toLocaleDateString(),
     attachedAudio: n.attached_audio
   }));
 };
@@ -2156,17 +2187,95 @@ export const getLibraryAssets = async () => {
 };
 
 
-export const deleteNote = async (id: string) => {
+export const deleteNote = async (id: string, permanent: boolean = false) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not logged in');
 
+  if (permanent) {
+    // Hard delete
+    const { error } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) throw error;
+  } else {
+    // Soft delete - Add TRASH tag
+    // First fetch current tags to append
+    const { data: note } = await supabase
+      .from('notes')
+      .select('tags')
+      .eq('id', id)
+      .single();
+
+    const currentTags = note?.tags || [];
+    if (!currentTags.includes('TRASH')) {
+      const { error } = await supabase
+        .from('notes')
+        .update({
+          tags: [...currentTags, 'TRASH'],
+          updated_at: new Date().toISOString() // Update timestamp to track when it was binned
+        })
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    }
+  }
+};
+
+export const restoreNote = async (id: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not logged in');
+
+  const { data: note } = await supabase
+    .from('notes')
+    .select('tags')
+    .eq('id', id)
+    .single();
+
+  const currentTags = note?.tags || [];
+  const newTags = currentTags.filter((t: string) => t !== 'TRASH');
+
   const { error } = await supabase
     .from('notes')
-    .delete()
+    .update({
+      tags: newTags,
+      updated_at: new Date().toISOString() // Update timestamp to bring it to top
+    })
     .eq('id', id)
     .eq('user_id', user.id);
 
   if (error) throw error;
+};
+
+export const cleanupOldNotes = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  // Fetch all notes with TRASH tag
+  // In a real optimized scenario, we'd use a postgres function or specific query, 
+  // but for client-side logic with small data:
+  const { data: notes, error } = await supabase
+    .from('notes')
+    .select('id, updated_at, tags')
+    .eq('user_id', user.id);
+
+  if (error || !notes) return;
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const notesToDelete = notes.filter((n: any) =>
+    n.tags?.includes('TRASH') &&
+    new Date(n.updated_at) < thirtyDaysAgo
+  );
+
+  for (const note of notesToDelete) {
+    console.log(`Auto-deleting old note: ${note.id}`);
+    await deleteNote(note.id, true);
+  }
 };
 
 // ... existing code ...

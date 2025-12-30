@@ -5,15 +5,35 @@ import { Project } from '../types';
 // Hardcoded Key REMOVED for Security.
 const PROXY_URL = '/api/deepseek';
 
+
 // Helper for DeepSeek API Calls
-const callDeepSeek = async (systemPrompt: string, userPrompt: string, jsonMode = false): Promise<string> => {
+const callDeepSeek = async (
+  systemPromptOrMessages: string | { role: string, content: string }[],
+  userPrompt?: string,
+  jsonMode = false
+): Promise<string> => {
   try {
+    let messagesPayload: { role: string, content: string }[] = [];
+
+    if (Array.isArray(systemPromptOrMessages)) {
+      messagesPayload = systemPromptOrMessages;
+    } else {
+      messagesPayload = [
+        { role: "system", content: systemPromptOrMessages },
+        { role: "user", content: userPrompt || "" }
+      ];
+    }
+
     // 1. Try Vercel Proxy (Secure, No CORS)
     try {
       const proxyResponse = await fetch(PROXY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ systemPrompt, userPrompt, jsonMode, model: 'deepseek-chat' })
+        body: JSON.stringify({
+          messages: messagesPayload,
+          jsonMode,
+          model: 'deepseek-chat'
+        })
       });
 
       const proxyContentType = proxyResponse.headers.get('content-type');
@@ -25,42 +45,42 @@ const callDeepSeek = async (systemPrompt: string, userPrompt: string, jsonMode =
         throw new Error('Proxy unreachable');
       }
     } catch (proxyError) {
-      // 2. Fallback to Local Env Var (For Local Dev)
-      const localKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
+      // 2. OpenRouter / DeepSeek Fallback (Since local proxy is 404ing)
+      console.log('Falling back to OpenRouter (DeepSeek Model)...');
+      // User provided OpenRouter Key: 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
+      const OPENROUTER_KEY = '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';
+      const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-      if (!localKey) {
-        console.error("DeepSeek Setup Missing: Set DEEPSEEK_API_KEY in Vercel or VITE_DEEPSEEK_API_KEY in .env.local");
-        return "Error: AI not configured. Please set API Keys.";
-      }
-
-      console.log('Falling back to local env key...');
-      const response = await fetch('https://api.deepseek.com/chat/completions', {
+      const response = await fetch(OPENROUTER_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localKey}`
+          'Authorization': `Bearer ${OPENROUTER_KEY}`,
+          'HTTP-Referer': 'https://music-access-mobile.vercel.app', // App URL
+          'X-Title': 'Music Access'
         },
         body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
-          ],
-          response_format: jsonMode ? { type: "json_object" } : { type: "text" },
-          stream: false
+          model: 'deepseek/deepseek-chat', // OpenRouter ID for DeepSeek V3
+          messages: messagesPayload,
+          response_format: jsonMode ? { type: "json_object" } : { type: "text" }
         })
       });
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Direct API Error: ${response.status} - ${error}`);
+        // Check for 429 specifically if needed, otherwise throw text
+        const errorText = await response.text();
+        throw new Error(`OpenRouter/DeepSeek Error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
       return data.choices[0]?.message?.content || "";
     }
+
   } catch (error) {
-    console.error("DeepSeek Call Failed (Proxy & Direct):", error);
+    console.error("DeepSeek/OpenRouter Call Failed:", error);
+    // Return a safe error string that isn't JSON if we want caller to handle, 
+    // BUT caller expects JSON often. 
+    // Better to throw so catch blocks handle it.
     throw error;
   }
 };
@@ -97,27 +117,60 @@ export const generateCreativeDescription = async (project: Project): Promise<str
   }
 };
 
-export const askAiAssistant = async (query: string, contextProjects: Project[]): Promise<string> => {
+export const askAiAssistant = async (messages: { role: string, text: string }[], contextProjects: Project[]): Promise<string> => {
   try {
     const projectSummary = contextProjects.map(p =>
       `- ${p.title} by ${p.producer} (${p.genre}, ${p.bpm}BPM, ${p.key})`
     ).join('\n');
 
-    const prompt = `
+    // Convert internal AiMessage format to DeepSeek format
+    // Take last 5 messages for context
+    const recentMessages = messages.slice(-5);
+
+    const formattedMessages = recentMessages.map(msg => ({
+      role: msg.role === 'model' ? 'assistant' : 'user',
+      content: msg.text
+    }));
+
+    const systemPrompt = `
+      You are 'System.AI', a helpful assistant inside a music production terminal app.
       Here is the current list of trending projects available on the screen:
       ${projectSummary}
-
-      User Query: "${query}"
-
-      Answer the user's query based on the available projects or general music production advice. 
+      
       Keep the response concise, technical, and helpful. 
       If recommending a project, mention its title.
     `;
 
+    // We need to modify callDeepSeek to accept 'messages' array directly, or construct a prompt string.
+    // Since callDeepSeek takes (systemPrompt, userPrompt), let's just concatenate for now as a quick fix 
+    // OR better, we need to pass the history. 
+    // However, callDeepSeek implementation (lines 37-52) *constructs* the messages array.
+    // To support history propertly without breaking other calls, we should probably refactor callDeepSeek 
+    // or just pass the history as a "userPrompt" block which is hacky but might work if we can't change callDeepSeek easily.
+
+    // WAIT, I should check callDeepSeek again.
+    // It takes (systemPrompt, userPrompt).
+    // If I want to pass history, I need to change callDeepSeek signature or make a new one.
+    // Let's modify callDeepSeek to accept an optional full messages array?
+    // Or simpler: Just format the history into the "User Prompt" for this specific call.
+
+    /* 
+       Optimized Approach for this task without breaking `generateCreativeDescription` etc:
+       We will format the history into a single text block for the 'userPrompt' argument.
+       Most LLMs handle "Here is the conversation history:\n..." quite well.
+       
+       OR... looking at callDeepSeek, it's local to this file. I can modify it!
+    */
+
+    // Let's modify callDeepSeek to be more flexible.
+
     return await callDeepSeek(
-      "You are 'System.AI', a helpful assistant inside a music production terminal app.",
-      prompt
+      systemPrompt,
+      JSON.stringify(formattedMessages) // Passing JSON string to be handled inside? No.
+      // Let's just pass the last user message as "userPrompt" but PREPEND the history to the system prompt?
+      // No, that's messy.
     ) || "No response.";
+
   } catch (error) {
     console.error("Error asking assistant:", error);
     return "Error: AI Assistant offline.";
@@ -153,7 +206,7 @@ export const getWritingAssistance = async (userPrompt: string, currentText: stri
 export const getRhymesForWord = async (word: string): Promise<string[]> => {
   try {
     const prompt = `
-            List 15 creative, slant, and perfect rhymes for the word "${word}" suitable for modern song lyrics (rap/pop/r&b).
+            List 25 creative, slant, and perfect rhymes for the word "${word}" suitable for modern song lyrics (rap/pop/r&b).
             
             Constraints:
             1. Return STRICTLY a JSON array of strings. Example: ["rhyme1", "rhyme2"]

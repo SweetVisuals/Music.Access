@@ -669,7 +669,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             {/* Fix: Removed sticky on mobile if it causes issues, or ensured top offset is correct. 
                 Using explicit z-index and background to ensure visibility without pushing content.
             */}
-            <div className="sticky top-14 md:top-24 z-30 bg-[#050505] lg:border-b lg:border-neutral-800 -mx-6 px-6 lg:-mx-8 lg:px-8 mb-6 lg:mb-8 py-2 shadow-xl lg:shadow-none transition-all">
+            <div className="relative bg-[#050505] lg:border-b lg:border-neutral-800 -mx-6 px-6 lg:-mx-8 lg:px-8 mb-6 lg:mb-8 py-2 transition-all">
 
                 {/* Mobile Tabs Layout (Single Row Grid) */}
                 <div className="lg:hidden relative pb-2">

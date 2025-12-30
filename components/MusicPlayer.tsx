@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Shuffle, Repeat, Maximize2, ListMusic, Minimize2, ChevronUp, Move, Heart, Share2, MoreHorizontal, ChevronDown, StickyNote, PlusCircle, BookmarkPlus } from 'lucide-react';
+import WaveformVisualizer from './WaveformVisualizer';
 import { useNavigate } from 'react-router-dom';
 import { Project, View } from '../types';
 import { MOCK_USER_PROFILE } from '../constants';
@@ -252,6 +253,11 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                             <p className="text-sm text-primary font-mono tracking-widest uppercase opacity-90">{currentProject.producer}</p>
                         </div>
 
+                        {/* Visualizer */}
+                        <div className="w-full mb-2 opacity-80">
+                            <WaveformVisualizer isPlaying={isPlaying} />
+                        </div>
+
                         {/* Unified Command Deck - Clean, Performant Scrubber */}
                         <div className="w-full space-y-4 px-2">
                             {/* Scrubber - Simplified for performance */}
@@ -348,7 +354,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                                             createNewNote: true,
                                             trackTitle: currentTrack.title,
                                             trackId: currentTrack.id,
-                                            fileName: currentTrack.files?.mp3?.split('/').pop() || `${currentTrack.title}.mp3` // Fallback name
+                                            fileName: `${currentTrack.title}.mp3`
                                         }
                                     });
                                 }}

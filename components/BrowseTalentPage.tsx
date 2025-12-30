@@ -139,16 +139,18 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                                             </div>
                                         </div>
 
-                                        <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-bold text-primary uppercase tracking-wide">
-                                            {talent.role}
-                                        </span>
+                                        {talent.role && (
+                                            <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-bold text-primary uppercase tracking-wide">
+                                                {talent.role}
+                                            </span>
+                                        )}
                                     </div>
 
                                     {/* Tags - Moved above stats for better flow */}
                                     <div className="flex flex-wrap gap-1.5 mb-3 content-start">
                                         {talent.tags.map((tag, i) => (
                                             <span key={i} className="px-2 py-1 bg-neutral-900 rounded text-[9px] text-neutral-400 border border-neutral-800">
-                                                #{tag}
+                                                {tag}
                                             </span>
                                         ))}
                                     </div>

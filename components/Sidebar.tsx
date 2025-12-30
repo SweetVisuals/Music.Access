@@ -117,11 +117,26 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                 {/* Logo Area */}
                 <div className="relative h-16 flex items-center justify-between lg:justify-center px-4 border-b border-neutral-800 shrink-0 overflow-hidden">
                     <div className="flex items-center gap-2 group cursor-pointer" onClick={() => onNavigate('home')}>
-                        <img
-                            src="/images/musicaccesslogowhite.png"
-                            alt="Music Access"
-                            className="h-7 lg:h-10 w-auto object-contain lg:scale-100 transition-transform lg:group-hover:scale-105 origin-left lg:origin-center"
-                        />
+                        <div className="relative h-7 lg:h-10 w-auto flex items-center lg:scale-100 transition-transform lg:group-hover:scale-105 origin-left lg:origin-center">
+                            <img
+                                src="/images/musicaccesslogowhite.png"
+                                alt="Music Access"
+                                className="h-full w-auto opacity-0"
+                            />
+                            <div
+                                className="absolute inset-0 bg-primary"
+                                style={{
+                                    maskImage: 'url("/images/musicaccesslogowhite.png")',
+                                    WebkitMaskImage: 'url("/images/musicaccesslogowhite.png")',
+                                    maskSize: 'contain',
+                                    WebkitMaskSize: 'contain',
+                                    maskRepeat: 'no-repeat',
+                                    WebkitMaskRepeat: 'no-repeat',
+                                    maskPosition: 'center',
+                                    WebkitMaskPosition: 'center'
+                                }}
+                            />
+                        </div>
                         {/* Mobile Gem Count */}
                         {isLoggedIn && userProfile && (
                             <div className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 rounded-full border border-primary/20 shadow-[0_0_10px_rgba(var(--primary),0.1)]">

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Note } from '../types';
-import { getNotes, createNote, updateNote, deleteNote, getUserFiles, uploadFile } from '../services/supabaseService';
+import { getNotes, createNote, updateNote, deleteNote, getUserFiles, uploadFile, getDeletedNotes, restoreNote, cleanupOldNotes } from '../services/supabaseService';
 import {
     Plus,
     Copy,
@@ -30,9 +30,16 @@ import {
     Minus,
     MessageSquare,
     ArrowRight,
-    ChevronDown
+    ChevronDown,
+    RotateCcw,
+    Trash
 } from 'lucide-react';
-import { getWritingAssistance, getRhymesForWord } from '../services/geminiService';
+import { getWritingAssistance } from '../services/geminiService';
+import { getRhymesForWord } from '../services/geminiService';
+
+// ... (existing code)
+
+
 
 // Mock rhyme database helper for suggestions sidebar
 const MOCK_RHYMES: Record<string, string[]> = {
@@ -224,34 +231,51 @@ const NotesPage: React.FC = () => {
     // Debounce timer ref
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Load Notes
+    // Trash State
+    const [trashView, setTrashView] = useState(false);
+
+    // Initial Load & Cleanup
     useEffect(() => {
-        const fetchNotes = async () => {
-            try {
-                const { data: { user } } = await import('../services/supabaseService').then(m => m.supabase.auth.getUser());
-                console.log('Fetching notes...');
-                const data = await getNotes();
-                console.log('Notes fetched:', data);
+        const init = async () => {
+            await cleanupOldNotes();
+            fetchNotes();
+        };
+        init();
+    }, []);
 
-                // Temporary Debug
-                if (data.length === 0) {
-                    alert(`Debug: Found 0 notes. User: ${user ? user.id.slice(0, 5) : 'None'}. Auth: ${!!user}`);
-                }
+    // Fetch Notes based on view
+    const fetchNotes = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = trashView ? await getDeletedNotes() : await getNotes();
+            setNotes(data);
 
-                setNotes(data);
-                if (data.length > 0 && !activeNoteId) {
+            // If active note is not in the new list, clear it or set to first
+            if (data.length > 0) {
+                // Try to keep current if valid, else first
+                if (!activeNoteId || !data.find(n => n.id === activeNoteId)) {
                     setActiveNoteId(data[0].id);
                 }
-            } catch (error) {
-                console.error('Failed to load notes', error);
-                alert('Debug: Error loading notes: ' + error);
-            } finally {
-                setLoading(false);
+            } else {
+                setActiveNoteId(null);
             }
-        };
+        } catch (error) {
+            console.error('Failed to load notes', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [trashView, activeNoteId]);
+
+    // Re-fetch when view changes
+    useEffect(() => {
         fetchNotes();
-        fetchNotes();
-    }, []);
+    }, [fetchNotes]);
+
+
+    // Legacy Load Notes (replaced by init above, but keeping for safety if I missed something, 
+    // actually the above init replaces the original useEffect completely so I will target the original useEffect block)
+
+
 
     // Handle incoming navigation (e.g. from Music Player to create new note)
     useEffect(() => {
@@ -352,39 +376,75 @@ const NotesPage: React.FC = () => {
 
 
 
-    const checkSelection = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
-        const target = e.currentTarget;
-        const start = target.selectionStart;
-        const end = target.selectionEnd;
+    // --- Rhyme Trigger Logic ---
+    const [debouncedRhymeTrigger, setDebouncedRhymeTrigger] = useState<NodeJS.Timeout | null>(null);
+    const lastRhymedWordRef = useRef<string | null>(null);
 
-        if (start !== end) {
-            const text = target.value.substring(start, end);
-            if (text.trim().length > 0) {
-                setSelection({
-                    start: start,
-                    end: end,
-                    text: text.trim()
-                });
-                return;
-            }
+    // Helper to get word at specific index
+    // Note: getWordUnderCursor is defined later in file, moving it here or ensuring scope
+    // We'll define a robust one here for the trigger
+    const getTargetWord = (text: string, index: number) => {
+        if (!text) return '';
+        // Find boundaries
+        let start = index;
+        while (start > 0 && /[a-zA-Z']/.test(text[start - 1])) {
+            start--;
         }
-        setSelection(null);
+        let end = index;
+        while (end < text.length && /[a-zA-Z']/.test(text[end])) {
+            end++;
+        }
+        return text.slice(start, end);
     };
 
-    const handleAiRhymeSearch = async () => {
-        if (!selection) return;
+    const handleSelectionChange = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+        const target = e.currentTarget;
+        setCursorIndex(target.selectionStart);
+
+        // Mobile Selection Bug Fix: Don't rely on 'selection' state for rhymes.
+        // Instead, find word under cursor dynamically.
+
+        if (debouncedRhymeTrigger) clearTimeout(debouncedRhymeTrigger);
+
+        const newTimer = setTimeout(() => {
+            const word = getTargetWord(target.value, target.selectionStart);
+            if (word && word.length > 2 && word !== lastRhymedWordRef.current) {
+                // Check for rate limiting or duplicate fetch
+                lastRhymedWordRef.current = word; // Optimistic lock
+                handleAiRhymeSearch(word);
+            }
+        }, 1000); // 1s debounce to avoid spamming while typing/moving
+
+        setDebouncedRhymeTrigger(newTimer);
+    };
+
+    // Keep checkSelection for manual highlighting if needed, but remove auto-trigger from it
+    const checkSelection = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+        const target = e.currentTarget;
+        if (target.selectionStart !== target.selectionEnd) {
+            setSelection({
+                start: target.selectionStart,
+                end: target.selectionEnd,
+                text: target.value.substring(target.selectionStart, target.selectionEnd).trim()
+            });
+        } else {
+            setSelection(null);
+        }
+    };
+
+    const handleAiRhymeSearch = async (word: string) => {
+        if (!word) return;
+
         setIsAiRhymeLoading(true);
         try {
-            const rhymes = await getRhymesForWord(selection.text);
-            setAiRhymes(rhymes);
-            if (window.innerWidth < 1024) {
-                setIsSidebarOpen(true);
+            const rhymes = await getRhymesForWord(word);
+            if (rhymes.length > 0) {
+                setAiRhymes(rhymes);
             }
         } catch (e) {
             console.error(e);
         } finally {
             setIsAiRhymeLoading(false);
-            setSelection(null);
         }
     };
 
@@ -437,9 +497,7 @@ const NotesPage: React.FC = () => {
         }
     };
 
-    const handleSelectionChange = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
-        setCursorIndex(e.currentTarget.selectionStart);
-    };
+
 
     const handleAiSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
@@ -506,8 +564,14 @@ const NotesPage: React.FC = () => {
     ) => {
         try {
             const newNote = await createNote(initialTitle, initialContent, initialAudio);
-            setNotes([newNote, ...notes]);
-            setActiveNoteId(newNote.id);
+            if (!trashView) {
+                setNotes([newNote, ...notes]);
+                setActiveNoteId(newNote.id);
+            } else {
+                // If created while in trash view (shouldn't happen via UI but for safety), switch back?
+                setTrashView(false);
+                // The effect will trigger fetch
+            }
             setViewMode('editor');
             setIsSidebarOpen(false); // Close sidebar on mobile
         } catch (error) {
@@ -519,10 +583,16 @@ const NotesPage: React.FC = () => {
 
     const handleDeleteNote = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
-        if (!confirm('Are you sure you want to delete this note?')) return;
+
+        const isPermanent = trashView;
+        const confirmMsg = isPermanent
+            ? 'Are you sure you want to PERMANENTLY delete this note? This cannot be undone.'
+            : 'Move this note to the trash?';
+
+        if (!confirm(confirmMsg)) return;
 
         try {
-            await deleteNote(id);
+            await deleteNote(id, isPermanent);
             const updatedNotes = notes.filter(n => n.id !== id);
             setNotes(updatedNotes);
             if (id === activeNoteId) {
@@ -530,6 +600,20 @@ const NotesPage: React.FC = () => {
             }
         } catch (error) {
             console.error('Failed to delete note', error);
+        }
+    };
+
+    const handleRestoreNote = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        try {
+            await restoreNote(id);
+            const updatedNotes = notes.filter(n => n.id !== id);
+            setNotes(updatedNotes);
+            if (id === activeNoteId) {
+                setActiveNoteId(updatedNotes.length > 0 ? updatedNotes[0].id : null);
+            }
+        } catch (error) {
+            console.error('Failed to restore note', error);
         }
     };
 
@@ -577,7 +661,8 @@ const NotesPage: React.FC = () => {
     const currentWord = activeNote ? getWordUnderCursor(activeNote.content, cursorIndex) : '';
 
     const getRhymeSuggestions = (word: string) => {
-        if (aiRhymes.length > 0 && word === currentWord) return aiRhymes;
+        // Always return AI rhymes if available, regardless of current cursor word match
+        // This ensures that if a user selects a word, triggers AI, then moves cursor, the results stay until they select something else.
         if (aiRhymes.length > 0) return aiRhymes;
 
         if (!word || word.length < 2) return [];
@@ -805,11 +890,8 @@ const NotesPage: React.FC = () => {
                         {/* Header & Drag Handle (Terminal Style) */}
                         <div className="w-full flex items-center justify-between px-4 py-2 bg-neutral-900/80 backdrop-blur-xl border-b border-white/10 relative shrink-0">
                             {/* Terminal Dots (Decoration) */}
-                            <div className="flex gap-1.5">
-                                <div className="w-2 h-2 rounded-full bg-red-500/50"></div>
-                                <div className="w-2 h-2 rounded-full bg-yellow-500/50"></div>
-                                <div className="w-2 h-2 rounded-full bg-green-500/50"></div>
-                            </div>
+                            {/* Terminal Dots Removed */}
+
 
                             {/* Drag Handle (Technical) */}
                             <div
@@ -905,7 +987,7 @@ const NotesPage: React.FC = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="p-3 bg-black/40 border-t border-neutral-800">
+                                    <div className="p-3 bg-black/40 border-t border-neutral-800 pb-[calc(env(safe-area-inset-bottom)+4rem)]">
                                         <form onSubmit={handleAiSubmit} className="relative">
                                             <input
                                                 value={aiPrompt}
@@ -1179,11 +1261,18 @@ const NotesPage: React.FC = () => {
                             </button>
                         </div>
                     </div>
-                    <div className="px-4 mb-4 shrink-0">
-                        <div className="relative mt-4">
-                            <input className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-primary/50 pl-8" placeholder="Search notes..." />
+                    <div className="px-4 mb-4 shrink-0 flex gap-2">
+                        <div className="relative mt-4 flex-1">
+                            <input className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-primary/50 pl-8" placeholder={trashView ? "Search deleted..." : "Search notes..."} />
                             <FileText size={12} className="absolute left-2.5 top-2.5 text-neutral-500" />
                         </div>
+                        <button
+                            onClick={() => setTrashView(!trashView)}
+                            className={`mt-4 w-10 h-[34px] flex items-center justify-center rounded border transition-colors shrink-0 ${trashView ? 'bg-red-500/10 border-red-500/50 text-red-500' : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white'}`}
+                            title={trashView ? "View Active Notes" : "View Recycling Bin"}
+                        >
+                            {trashView ? <RotateCcw size={14} /> : <Trash size={14} />}
+                        </button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -1211,12 +1300,22 @@ const NotesPage: React.FC = () => {
                                 <p className="text-xs text-neutral-500 line-clamp-1 mb-2">{note.preview || 'No content'}</p>
                                 <span className="text-[9px] text-neutral-600 font-mono">{note.updated}</span>
 
-                                <button
-                                    onClick={(e) => handleDeleteNote(e, note.id)}
-                                    className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 text-neutral-600 hover:text-red-500"
-                                >
-                                    <Trash2 size={12} />
-                                </button>
+                                {trashView ? (
+                                    <button
+                                        onClick={(e) => handleRestoreNote(e, note.id)}
+                                        className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 text-neutral-600 hover:text-green-500"
+                                        title="Restore Note"
+                                    >
+                                        <RotateCcw size={12} />
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={(e) => handleDeleteNote(e, note.id)}
+                                        className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 text-neutral-600 hover:text-red-500"
+                                    >
+                                        <Trash2 size={12} />
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -1274,16 +1373,22 @@ const NotesPage: React.FC = () => {
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-neutral-600 p-8 text-center">
                             <div className="w-16 h-16 bg-neutral-900 rounded-2xl flex items-center justify-center mb-4">
-                                <FileText size={32} />
+                                {trashView ? <Trash2 size={32} /> : <FileText size={32} />}
                             </div>
-                            <h3 className="text-lg font-bold text-white mb-2">No Note Selected</h3>
-                            <p className="text-sm max-w-xs mb-6">Select a note from the sidebar or create a new one to start writing.</p>
-                            <button
-                                onClick={handleCreateNote}
-                                className="px-6 py-3 bg-white text-black font-bold rounded-xl hover:scale-105 transition-transform"
-                            >
-                                Create New Note
-                            </button>
+                            <h3 className="text-lg font-bold text-white mb-2">{trashView ? 'Recycling Bin' : 'No Note Selected'}</h3>
+                            <p className="text-sm max-w-xs mb-6">
+                                {trashView
+                                    ? 'Notes are permanently deleted after 30 days.'
+                                    : 'Select a note from the sidebar or create a new one to start writing.'}
+                            </p>
+                            {!trashView && (
+                                <button
+                                    onClick={handleCreateNote}
+                                    className="px-6 py-3 bg-white text-black font-bold rounded-xl hover:scale-105 transition-transform"
+                                >
+                                    Create New Note
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>

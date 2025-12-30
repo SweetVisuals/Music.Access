@@ -685,9 +685,9 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                         <div key={stage.id} className="flex flex-col group h-full">
                             {/* Card */}
                             <div className={`
-                    w - full h - [200px] flex flex - col relative
-                    rounded - xl border backdrop - blur - sm transition - all duration - 300
-                    hover: translate - y - [-4px] hover: shadow - xl
+                                w-full h-[220px] md:h-[200px] flex flex-col relative
+                                rounded-xl border backdrop-blur-sm transition-all duration-300
+                                hover:-translate-y-1 hover:shadow-xl
                                 ${status === 'completed'
                                     ? 'bg-green-500/10 border-green-500/30 hover:shadow-green-500/20'
                                     : isInProgress
@@ -696,19 +696,19 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                             ? 'bg-neutral-900/40 border-neutral-800/50 opacity-60'
                                             : 'bg-neutral-900/60 border-neutral-800 hover:border-primary/50 hover:shadow-primary/10'
                                 }
-                    `}>
+                            `}>
                                 {/* Header Image / Icon Area */}
                                 <div className={`
-                    h - 16 w - full border - b flex items - center justify - center relative overflow - hidden
+                                    h-16 w-full border-b flex items-center justify-center relative overflow-hidden
                                     ${status === 'completed' ? 'border-green-500/20 bg-green-500/5' : isInProgress ? 'border-primary/20 bg-primary/5' : 'border-neutral-800 bg-black/20'}
-                    `}>
+                                `}>
                                     <div className="absolute top-2 right-2 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
                                         Step {String(index + 1).padStart(2, '0')}
                                     </div>
 
                                     {/* Icon Circle */}
                                     <div className={`
-                    w - 10 h - 10 rounded - full flex items - center justify - center border - 2 shadow - lg z - 10 transition - all duration - 500
+                                        w-10 h-10 rounded-full flex items-center justify-center border-2 shadow-lg z-10 transition-all duration-500
                                         ${status === 'completed'
                                             ? 'bg-green-500 text-black border-green-400'
                                             : isInProgress
@@ -717,7 +717,7 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                                     ? 'bg-neutral-800 text-neutral-600 border-neutral-700'
                                                     : 'bg-neutral-900 text-primary border-primary/30 group-hover:scale-110'
                                         }
-                    `}>
+                                    `}>
                                         {status === 'completed' ? <CheckCircle size={18} /> : <div className="text-sm font-bold">{index + 1}</div>}
                                     </div>
 
@@ -732,7 +732,7 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
 
                                 {/* Content */}
                                 <div className="p-3 flex-1 flex flex-col">
-                                    <h3 className={`text - xs font - bold mb - 1 ${status === 'completed' ? 'text-green-400' : isInProgress ? 'text-primary' : 'text-white'} `}>
+                                    <h3 className={`text-xs font-bold mb-1 ${status === 'completed' ? 'text-green-400' : isInProgress ? 'text-primary' : 'text-white'} `}>
                                         {stage.title}
                                     </h3>
                                     <p className="text-[10px] text-neutral-400 leading-snug mb-2 flex-1 line-clamp-2">
@@ -745,7 +745,7 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                             onClick={() => onStartStage(stage.id)}
                                             disabled={isLocked}
                                             className={`
-                    w - full py - 2.5 rounded - lg font - bold text - xs tracking - wide transition - all flex items - center justify - center gap - 1.5
+                                                w-full py-2.5 rounded-lg font-bold text-xs tracking-wide transition-all flex items-center justify-center gap-1.5
                                                 ${status === 'completed'
                                                     ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/20'
                                                     : isInProgress
@@ -754,7 +754,7 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                                             ? 'bg-neutral-800 text-neutral-500 border border-neutral-700 cursor-not-allowed'
                                                             : 'bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/10'
                                                 }
-                    `}
+                                            `}
                                         >
                                             {status === 'completed' ? (
                                                 <>Edit <div className="w-1.5 h-1.5 rounded-full bg-green-500 ml-1"></div></>

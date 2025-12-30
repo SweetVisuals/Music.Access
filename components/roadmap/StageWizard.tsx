@@ -1009,7 +1009,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
     // --- MAIN RENDER ---
     return (
-        <div className="w-full max-w-6xl mx-auto h-[calc(100vh-140px)] md:h-[85vh] min-h-[500px] text-[#EDEDED] bg-[#0A0A0A] border border-neutral-800/60 rounded-xl md:rounded-3xl flex flex-col shadow-2xl shadow-black/50 overflow-hidden relative mb-24 animate-in fade-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[100] flex flex-col bg-[#0A0A0A] text-[#EDEDED] animate-in fade-in slide-in-from-bottom-5 duration-300 md:relative md:inset-auto md:z-auto md:max-w-6xl md:mx-auto md:h-[85vh] md:min-h-[500px] md:border md:border-neutral-800/60 md:rounded-3xl md:shadow-2xl md:mb-24 md:overflow-hidden">
 
             {/* Header */}
             {!isFocusedMode && (

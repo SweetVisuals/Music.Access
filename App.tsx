@@ -374,6 +374,7 @@ const App: React.FC = () => {
           profileLoading={profileLoading}
           isOpen={isMobileMenuOpen}
           onClose={() => setIsMobileMenuOpen(false)}
+          isPlaying={isPlaying}
         />
 
         {/* Main Layout Container - Adjusted padding for mobile and smaller sidebar */}
@@ -602,6 +603,7 @@ const App: React.FC = () => {
             setCurrentTrackId(null);
           }}
           onNavigate={handleNavigate}
+          isSidebarOpen={isMobileMenuOpen}
         />
 
         <BottomNav

@@ -16,9 +16,10 @@ interface MusicPlayerProps {
     currentView?: View;
     onClose: () => void;
     onNavigate: (view: View | string) => void;
+    isSidebarOpen?: boolean;
 }
 
-const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackId, isPlaying, togglePlay, currentView, onClose, onNavigate }) => {
+const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackId, isPlaying, togglePlay, currentView, onClose, onNavigate, isSidebarOpen = false }) => {
     const navigate = useNavigate();
     const [isMinimized, setIsMinimized] = useState(true);
 
@@ -132,9 +133,9 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
             {/* --- MOBILE EMBEDDED BOTTOM BAR --- */}
             <div
                 className={`lg:hidden fixed left-0 right-0 z-[119] bg-[#050505] border-t border-white/20 border-b-0 shadow-none transition-all duration-300 ${isMinimized
-                    ? (currentView === 'notes'
-                        ? 'bottom-[calc(8.5rem+env(safe-area-inset-bottom)-1px)] translate-y-0'
-                        : 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] translate-y-0')
+                    ? (currentView === 'notes' && !isSidebarOpen
+                        ? 'bottom-[calc(8.5rem+env(safe-area-inset-bottom)-4px)] translate-y-0 z-[47]'
+                        : 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] translate-y-0 z-[119]')
                     : 'bottom-0 translate-y-full opacity-0 pointer-events-none'
                     }`}
                 onClick={() => setIsMinimized(false)}

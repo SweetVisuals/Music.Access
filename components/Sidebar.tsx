@@ -40,9 +40,10 @@ interface SidebarProps {
     profileLoading?: boolean;
     isOpen?: boolean;
     onClose?: () => void;
+    isPlaying?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, onOpenAuth, userProfile, profileLoading = false, isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, onOpenAuth, userProfile, profileLoading = false, isOpen, onClose, isPlaying }) => {
     const isDashboard = currentView.startsWith('dashboard');
     const [following, setFollowing] = useState<TalentProfile[]>([]);
     const [loadingFollowing, setLoadingFollowing] = useState(false);
@@ -520,20 +521,22 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                     {isLoggedIn ? (
                         <>
                             {/* Storage Info */}
-                            <div className="mb-4 px-0.5">
-                                <div className="flex justify-between items-end mb-2">
-                                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Storage</span>
-                                    <span className="text-[9px] font-mono text-neutral-500 font-bold">{formatStorageSize(storageUsage.used)} / {formatStorageSize(storageUsage.limit)}</span>
+                            {!isPlaying && (
+                                <div className="mb-4 px-0.5">
+                                    <div className="flex justify-between items-end mb-2">
+                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Storage</span>
+                                        <span className="text-[9px] font-mono text-neutral-500 font-bold">{formatStorageSize(storageUsage.used)} / {formatStorageSize(storageUsage.limit)}</span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-primary rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(var(--primary),0.3)]"
+                                            style={{ width: `${Math.min((storageUsage.used / storageUsage.limit) * 100, 100)}%` }}
+                                        ></div>
+                                    </div>
                                 </div>
-                                <div className="h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-primary rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(var(--primary),0.3)]"
-                                        style={{ width: `${Math.min((storageUsage.used / storageUsage.limit) * 100, 100)}%` }}
-                                    ></div>
-                                </div>
-                            </div>
+                            )}
 
-                            <div className="h-px bg-neutral-800/50 mb-4"></div>
+                            {!isPlaying && <div className="h-px bg-neutral-800/50 mb-4"></div>}
 
                             {/* User Profile */}
                             {profileLoading || !userProfile ? (

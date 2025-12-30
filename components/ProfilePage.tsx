@@ -416,81 +416,144 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 onSave={handleSaveService}
             />
 
-            {/* EDIT PROFILE MODAL */}
+            {/* EDIT PROFILE MODAL - RESPONSIVE */}
             {isEditModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="w-full max-w-lg bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                        <div className="p-4 border-b border-white/5 flex justify-between items-center bg-neutral-900/50">
+                <div className="fixed inset-0 z-[100] flex flex-col lg:items-center lg:justify-center bg-black lg:bg-black/80 lg:backdrop-blur-sm lg:p-4 animate-in fade-in duration-200">
+                    <div className="flex-1 lg:flex-none w-full lg:max-w-lg bg-black lg:bg-[#0a0a0a] lg:border border-neutral-800 lg:rounded-xl lg:shadow-2xl overflow-hidden flex flex-col h-full lg:max-h-[90vh]">
+
+                        {/* HEADER */}
+                        <div className="p-4 border-b border-white/5 flex justify-between items-center bg-neutral-900/50 backdrop-blur-md shrink-0">
                             <h3 className="font-bold text-white text-lg flex items-center gap-2">
                                 <Edit3 size={18} className="text-primary" /> Edit Profile
                             </h3>
-                            <button onClick={() => setIsEditModalOpen(false)}><X size={20} className="text-neutral-500 hover:text-white" /></button>
+                            <button
+                                onClick={() => setIsEditModalOpen(false)}
+                                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
+                            >
+                                <X size={18} />
+                            </button>
                         </div>
 
-                        <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Display Name</label>
-                                <input
-                                    value={editForm.username}
-                                    onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                                    className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors"
-                                    placeholder="Your Artist Name"
-                                />
-                            </div>
+                        {/* BODY */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-0 lg:p-0">
+                            <div className="p-6 space-y-6">
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Handle (Username)</label>
-                                <div className="relative opacity-70">
-                                    <input
-                                        value={userProfile.handle}
-                                        disabled
-                                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-sm text-neutral-400 cursor-not-allowed"
-                                    />
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-neutral-600 font-mono">Read-only</div>
+                                {/* Image Uploads Section (Mobile Friendly) */}
+                                <div className="space-y-4 pb-4 border-b border-white/5">
+                                    <h4 className="text-xs font-black text-white uppercase tracking-widest mb-3">Profile Assets</h4>
+
+                                    {/* Banner Upload */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Banner Image</label>
+                                        <div
+                                            onClick={() => bannerInputRef.current?.click()}
+                                            className="h-28 w-full rounded-lg bg-neutral-900/50 border border-white/5 flex flex-col items-center justify-center text-neutral-500 hover:text-white hover:border-primary/30 hover:bg-white/5 transition-all cursor-pointer overflow-hidden relative group"
+                                        >
+                                            {userProfile.banner ? (
+                                                <img src={userProfile.banner} className="w-full h-full object-cover opacity-50 group-hover:opacity-30 transition-opacity" alt="Banner Preview" />
+                                            ) : (
+                                                <div className="absolute inset-0 bg-neutral-900 animate-pulse" />
+                                            )}
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 drop-shadow-md">
+                                                <Camera size={24} className="text-primary" />
+                                                <span className="text-[10px] uppercase font-bold bg-black/50 px-2 py-1 rounded backdrop-blur-sm">Tap to Change Banner</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Avatar Upload */}
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Profile Picture</label>
+                                        <div className="flex items-center gap-4">
+                                            <div
+                                                onClick={() => avatarInputRef.current?.click()}
+                                                className="h-20 w-20 rounded-full bg-neutral-900 border border-white/5 overflow-hidden shrink-0 relative group cursor-pointer"
+                                            >
+                                                <img src={userProfile.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'} className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" alt="Avatar Preview" />
+                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Camera size={20} className="text-white" />
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => avatarInputRef.current?.click()}
+                                                className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-white hover:bg-white/10 transition-colors flex items-center gap-2"
+                                            >
+                                                <Camera size={14} />
+                                                Change Avatar
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Location</label>
-                                <div className="relative">
-                                    <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                    <input
-                                        value={editForm.location}
-                                        onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors"
-                                        placeholder="City, Country"
-                                    />
-                                </div>
-                            </div>
+                                <div className="space-y-5">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Display Name</label>
+                                        <input
+                                            value={editForm.username}
+                                            onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                                            className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                            placeholder="Your Artist Name"
+                                        />
+                                    </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Bio</label>
-                                <textarea
-                                    value={editForm.bio}
-                                    onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                                    className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none resize-none h-32 transition-colors"
-                                    placeholder="Tell your story..."
-                                />
-                            </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Handle (Username)</label>
+                                        <div className="relative opacity-70">
+                                            <input
+                                                value={userProfile.handle}
+                                                disabled
+                                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-sm text-neutral-400 cursor-not-allowed"
+                                            />
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-neutral-600 font-mono">Read-only</div>
+                                        </div>
+                                    </div>
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Website</label>
-                                <div className="relative">
-                                    <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                    <input
-                                        value={editForm.website}
-                                        onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
-                                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors"
-                                        placeholder="https://your-site.com"
-                                    />
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Location</label>
+                                        <div className="relative">
+                                            <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+                                            <input
+                                                value={editForm.location}
+                                                onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                                                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                                placeholder="City, Country"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Bio</label>
+                                        <textarea
+                                            value={editForm.bio}
+                                            onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                                            className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none resize-none h-32 transition-colors focus:bg-neutral-900"
+                                            placeholder="Tell your story..."
+                                        />
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Website</label>
+                                        <div className="relative">
+                                            <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+                                            <input
+                                                value={editForm.website}
+                                                onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
+                                                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                                placeholder="https://your-site.com"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="p-4 border-t border-white/5 bg-neutral-900/30 flex justify-end gap-3">
-                            <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors">Cancel</button>
-                            <button onClick={handleSaveProfile} className="px-6 py-2 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(var(--primary),0.3)]">
-                                <Save size={14} /> Save Changes
+                        {/* FOOTER */}
+                        <div className="p-4 border-t border-white/5 bg-neutral-900/50 lg:bg-neutral-900/30 backdrop-blur-md flex justify-end gap-3 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:pb-4">
+                            <button onClick={() => setIsEditModalOpen(false)} className="px-6 py-3 lg:py-2 rounded-xl lg:rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors bg-white/5 border border-white/5 lg:bg-transparent lg:border-none">
+                                Cancel
+                            </button>
+                            <button onClick={handleSaveProfile} className="flex-1 lg:flex-none px-8 py-3 lg:py-2 bg-primary text-black rounded-xl lg:rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(var(--primary),0.2)]">
+                                <Save size={16} /> Save Changes
                             </button>
                         </div>
                     </div>

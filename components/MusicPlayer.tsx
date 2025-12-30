@@ -26,6 +26,9 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
     const [duration, setDuration] = useState(0);
     const [isScrubbing, setIsScrubbing] = useState(false);
     const [showQueue, setShowQueue] = useState(false);
+    const [imageLoaded, setImageLoaded] = useState(false);
+    const [isLiked, setIsLiked] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
 
     useEffect(() => {
         if (!audioRef.current || !currentTrack) return;
@@ -77,8 +80,23 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
     // Use producer avatar as requested for mobile
     const displayImage = currentProject.producerAvatar || currentProject.coverImage || MOCK_USER_PROFILE.avatar;
 
+    // Reset image loaded state when track changes
+    useEffect(() => {
+        setImageLoaded(false);
+    }, [displayImage]);
+
     return (
         <>
+            <style>{`
+                @keyframes marquee {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
+                }
+                .animate-marquee {
+                    animation: marquee 10s linear infinite;
+                    min-width: 200%;
+                }
+            `}</style>
             <audio
                 ref={audioRef}
                 crossOrigin="anonymous"
@@ -191,36 +209,63 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                 {/* Main Content */}
                 <div className="relative z-10 flex-1 flex flex-col px-8 justify-evenly pb-8" onClick={(e) => e.stopPropagation()}>
 
-                    {/* Artwork / Producer Avatar */}
-                    {/* AVANT-GARDE: Square with rounded corners */}
-                    <div className={`w-full max-w-[320px] aspect-square mx-auto rounded-[2rem] overflow-hidden border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative group mt-4 transform transition-all duration-1000 cubic-bezier(0.32, 0.72, 0, 1) ${isMinimized ? 'scale-90 opacity-0' : 'scale-100 opacity-100'}`}>
-                        <img
-                            src={displayImage}
-                            alt="Producer"
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        />
-                        {/* Subtle Overlay for depth */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-60"></div>
+                    {/* Artwork / Producer Avatar - SOLID Unified Order */}
+                    <div className="w-full max-w-[320px] aspect-square mx-auto mt-8 relative group">
+                        {/* Skeleton Loader */}
+                        <div className={`absolute inset-0 bg-white/10 rounded-[2rem] animate-pulse ${imageLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}></div>
+
+                        <div className={`w-full h-full rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 relative z-10 ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500`}>
+                            <img
+                                src={displayImage}
+                                alt="Producer"
+                                className="w-full h-full object-cover"
+                                onLoad={() => setImageLoaded(true)}
+                            />
+                            {/* Subtle Overlay for depth */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60"></div>
+                        </div>
                     </div>
 
-                    {/* Meta & Controls Wrapper */}
-                    <div className={`space-y-10 mt-2 transition-all duration-700 delay-150 ${isMinimized ? 'translate-y-10 opacity-0' : 'translate-y-0 opacity-100'}`}>
-                        {/* Meta */}
-                        <div className="w-full text-center space-y-2">
-                            <h2 className="text-xl font-bold text-white leading-tight line-clamp-2 tracking-tight">{currentTrack.title}</h2>
-                            <p className="text-xs text-primary font-mono tracking-widest uppercase opacity-90">{currentProject.producer}</p>
+                    {/* Meta & Controls Wrapper - Seamless, no internal delays */}
+                    <div className="flex flex-col justify-between mt-8 flex-1">
+
+                        {/* Meta with Scrolling Title */}
+                        <div className="w-full text-center space-y-1 mb-8">
+                            <div className="relative overflow-hidden h-8 w-64 mx-auto flex items-center justify-center">
+                                {/* Only animate if title is long enough? For now, simpler to center or static-scroll if overly long. 
+                                    Let's use a simpler approach: Just center, if too long, truncate. 
+                                    The user specifically asked for "scroll if too long". 
+                                    Implementing a conditional marquee is non-trivial without measuring. 
+                                    We will apply marquee if string length is > 25 chars for a rough heuristic. 
+                                */}
+                                {currentTrack.title.length > 25 ? (
+                                    <div className="flex animate-marquee whitespace-nowrap">
+                                        <h2 className="text-lg font-bold text-white tracking-tight mr-12">{currentTrack.title}</h2>
+                                        <h2 className="text-lg font-bold text-white tracking-tight mr-12">{currentTrack.title}</h2>
+                                    </div>
+                                ) : (
+                                    <h2 className="text-lg font-bold text-white tracking-tight truncate px-4">{currentTrack.title}</h2>
+                                )}
+                            </div>
+                            <p className="text-sm text-primary font-mono tracking-widest uppercase opacity-90">{currentProject.producer}</p>
                         </div>
 
-                        {/* Unified Command Deck */}
-                        <div className="w-full space-y-6">
-                            {/* Scrubber */}
-                            <div className="space-y-3 group px-2" onClick={(e) => e.stopPropagation()}>
-                                <div className="h-1.5 w-full bg-white/10 rounded-full relative overflow-visible">
+                        {/* Unified Command Deck - Clean, Performant Scrubber */}
+                        <div className="w-full space-y-4 px-2">
+                            {/* Scrubber - Simplified for performance */}
+                            <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
+                                <div className="relative h-6 flex items-center">
+                                    <div className="absolute left-0 right-0 h-1 bg-white/10 rounded-full">
+                                        <div
+                                            className="h-full bg-white rounded-full"
+                                            style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                                        />
+                                    </div>
                                     <input
                                         type="range"
                                         min="0"
                                         max={duration || 0}
-                                        step="0.1"
+                                        step="0.01"
                                         value={currentTime}
                                         onChange={handleSeek}
                                         onMouseDown={handleScrubbingStart}
@@ -229,50 +274,49 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                                         onTouchEnd={handleScrubbingEnd}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                     />
+                                    {/* Minimal thumb logic */}
                                     <div
-                                        className="h-full bg-white relative shadow-[0_0_15px_rgba(255,255,255,0.3)] rounded-full transition-all duration-150"
-                                        style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
-                                    >
-                                        <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-xl scale-0 group-hover:scale-100 transition-transform duration-300"></div>
-                                    </div>
+                                        className="absolute w-3 h-3 bg-white rounded-full pointer-events-none"
+                                        style={{ left: `${(currentTime / (duration || 1)) * 100}%`, transform: 'translateX(-50%)' }}
+                                    ></div>
                                 </div>
-                                <div className="flex justify-between text-[11px] font-mono font-bold text-neutral-400">
-                                    <span className="opacity-60">{formatTime(currentTime)}</span>
-                                    <span className="opacity-60">{formatTime(duration || currentTrack.duration || 0)}</span>
+                                <div className="flex justify-between text-[10px] font-mono text-neutral-500 px-1">
+                                    <span>{formatTime(currentTime)}</span>
+                                    <span>{formatTime(duration || currentTrack.duration || 0)}</span>
                                 </div>
                             </div>
 
-                            {/* Control Deck - Glassmorphism Pill */}
-                            <div className="flex items-center justify-between bg-white/5 backdrop-blur-xl rounded-[2rem] p-2 border border-white/5 shadow-2xl mx-2" onClick={(e) => e.stopPropagation()}>
+                            {/* Main Controls - Spaced & Centerea */}
+                            <div className="flex items-center justify-between pt-4 pb-4 px-4" onClick={(e) => e.stopPropagation()}>
                                 {/* Shuffle */}
-                                <button className="w-12 h-12 flex items-center justify-center text-neutral-500 hover:text-white transition-colors active:scale-95">
-                                    <Shuffle size={18} />
+                                <button className="text-neutral-500 hover:text-white transition-colors active:scale-95">
+                                    <Shuffle size={20} />
                                 </button>
 
-                                {/* Center Controls */}
-                                <div className="flex items-center gap-4">
-                                    <button className="text-white hover:text-primary transition-colors active:scale-90 p-2">
-                                        <SkipBack size={28} fill="currentColor" />
+                                {/* Center Cluster */}
+                                <div className="flex items-center gap-8">
+                                    <button className="text-white hover:text-white/80 transition-colors active:scale-95">
+                                        <SkipBack size={32} fill="currentColor" />
                                     </button>
 
                                     <button
                                         onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                                        className="w-16 h-16 flex items-center justify-center bg-white text-black rounded-full shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:scale-105 active:scale-95 transition-all"
+                                        className="w-20 h-20 flex items-center justify-center bg-white text-black rounded-full shadow-[0_0_40px_rgba(255,255,255,0.15)] hover:scale-105 active:scale-95 transition-all"
                                     >
                                         {isPlaying ?
-                                            <Pause fill="black" size={24} /> :
-                                            <Play fill="black" size={24} className="ml-1" />
+                                            <Pause fill="black" size={32} /> :
+                                            <Play fill="black" size={32} className="ml-1" />
                                         }
                                     </button>
 
-                                    <button className="text-white hover:text-primary transition-colors active:scale-90 p-2">
-                                        <SkipForward size={28} fill="currentColor" />
+                                    <button className="text-white hover:text-white/80 transition-colors active:scale-95">
+                                        <SkipForward size={32} fill="currentColor" />
                                     </button>
                                 </div>
 
                                 {/* Repeat */}
-                                <button className="w-12 h-12 flex items-center justify-center text-neutral-500 hover:text-white transition-colors active:scale-95">
-                                    <Repeat size={18} />
+                                <button className="text-neutral-500 hover:text-white transition-colors active:scale-95">
+                                    <Repeat size={20} />
                                 </button>
                             </div>
                         </div>
@@ -281,19 +325,33 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                     {/* Bottom Actions Row */}
                     <div className="relative z-10 flex justify-between items-center px-4 pb-12 w-full pt-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-6">
-                            <button className="text-neutral-400 hover:text-white transition-colors active:scale-95"><Share2 size={22} /></button>
-                            <button className="text-neutral-400 hover:text-white transition-colors active:scale-95"><Heart size={22} /></button>
+                            <button className="text-neutral-400 hover:text-white transition-colors active:scale-95">
+                                <Share2 size={22} />
+                            </button>
+                            <button
+                                onClick={() => setIsLiked(!isLiked)}
+                                className={`transition-colors active:scale-95 ${isLiked ? 'text-red-500' : 'text-neutral-400 hover:text-white'}`}
+                            >
+                                <Heart size={22} fill={isLiked ? "currentColor" : "none"} />
+                            </button>
                         </div>
 
                         <div className="flex items-center gap-6">
-                            <button className="text-neutral-400 hover:text-white transition-colors active:scale-95"><StickyNote size={22} /></button>
+                            <button className="text-neutral-400 hover:text-white transition-colors active:scale-95">
+                                <StickyNote size={22} />
+                            </button>
                             <button
                                 onClick={() => setShowQueue(!showQueue)}
                                 className={`transition-colors active:scale-95 ${showQueue ? 'text-primary' : 'text-neutral-400 hover:text-white'}`}
                             >
                                 <ListMusic size={22} />
                             </button>
-                            <button className="text-neutral-400 hover:text-white transition-colors active:scale-95"><BookmarkPlus size={22} /></button>
+                            <button
+                                onClick={() => setIsSaved(!isSaved)}
+                                className={`transition-colors active:scale-95 ${isSaved ? 'text-primary' : 'text-neutral-400 hover:text-white'}`}
+                            >
+                                <BookmarkPlus size={22} fill={isSaved ? "currentColor" : "none"} />
+                            </button>
                         </div>
                     </div>
                 </div>

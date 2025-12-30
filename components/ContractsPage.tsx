@@ -172,7 +172,7 @@ const ContractsPage: React.FC = () => {
                     <p className="text-neutral-500 text-xs lg:text-sm">Manage your service and audio contracts</p>
                 </div>
 
-                <div className="w-full md:w-auto -mx-4 px-4 md:mx-0 md:px-0">
+                <div className="w-auto md:w-auto -mx-4 px-4 md:mx-0 md:px-0">
                     {/* Mobile Tabs Layout (Grid) */}
                     <div className="lg:hidden relative pb-2">
                         <div className="grid grid-cols-3 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5">

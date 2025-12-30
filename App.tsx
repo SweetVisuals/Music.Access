@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -35,6 +35,7 @@ import { CartProvider } from './contexts/CartContext';
 const App: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -120,6 +121,11 @@ const App: React.FC = () => {
 
     setCurrentView(newView);
     setProfileUsername(newProfileUsername);
+
+    // Reset scroll position to top on every view change
+    if (mainRef.current) {
+      mainRef.current.scrollTo(0, 0);
+    }
   }, [location.pathname]);
 
   useEffect(() => {
@@ -387,7 +393,7 @@ const App: React.FC = () => {
             onMenuClick={() => setIsMobileMenuOpen(true)}
           />
 
-          <main className="flex-1 overflow-y-auto pt-20 lg:pt-28 pb-32 scroll-smooth">
+          <main ref={mainRef} className="flex-1 overflow-y-auto pt-20 lg:pt-28 pb-32 scroll-smooth">
 
             {currentView === 'home' && (
               <div className="max-w-[1800px] mx-auto px-3 lg:px-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

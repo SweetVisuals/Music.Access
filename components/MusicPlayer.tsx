@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Shuffle, Repeat, Maximize2, ListMusic, Minimize2, ChevronUp, Move, Heart, Share2, MoreHorizontal, ChevronDown } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Shuffle, Repeat, Maximize2, ListMusic, Minimize2, ChevronUp, Move, Heart, Share2, MoreHorizontal, ChevronDown, StickyNote, PlusCircle, BookmarkPlus } from 'lucide-react';
 import { Project, View } from '../types';
 import { MOCK_USER_PROFILE } from '../constants';
 
@@ -24,6 +24,8 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
     const audioRef = useRef<HTMLAudioElement>(null);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
+    const [isScrubbing, setIsScrubbing] = useState(false);
+    const [showQueue, setShowQueue] = useState(false);
 
     useEffect(() => {
         if (!audioRef.current || !currentTrack) return;
@@ -37,11 +39,31 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
     }, [currentTrack, isPlaying]);
 
     const handleTimeUpdate = () => {
-        if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
+        if (audioRef.current && !isScrubbing) {
+            setCurrentTime(audioRef.current.currentTime);
+        }
     };
 
     const handleLoadedMetadata = () => {
-        if (audioRef.current) setDuration(audioRef.current.duration);
+        if (audioRef.current) {
+            setDuration(audioRef.current.duration);
+        }
+    };
+
+    const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const time = parseFloat(e.target.value);
+        setCurrentTime(time);
+        if (audioRef.current) {
+            audioRef.current.currentTime = time;
+        }
+    };
+
+    const handleScrubbingStart = () => {
+        setIsScrubbing(true);
+    };
+
+    const handleScrubbingEnd = () => {
+        setIsScrubbing(false);
     };
 
     const formatTime = (time: number) => {
@@ -83,12 +105,30 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                     }`}
                 onClick={() => setIsMinimized(false)}
             >
-                {/* Progress Bar (Thin, Top) */}
-                <div className="absolute top-0 left-0 w-full h-[1px] bg-white/5">
-                    <div
-                        className="h-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.6)]"
-                        style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
-                    ></div>
+                {/* Progress Bar (Scrubbable, Top) */}
+                <div className="absolute top-0 left-0 w-full h-1 group">
+                    <input
+                        type="range"
+                        min="0"
+                        max={duration || 0}
+                        step="0.1"
+                        value={currentTime}
+                        onChange={handleSeek}
+                        onMouseDown={handleScrubbingStart}
+                        onMouseUp={handleScrubbingEnd}
+                        onTouchStart={handleScrubbingStart}
+                        onTouchEnd={handleScrubbingEnd}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                    <div className="absolute inset-0 bg-white/5">
+                        <div
+                            className="h-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.6)] relative"
+                            style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                        >
+                            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-primary rounded-full scale-0 group-hover:scale-100 transition-transform"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div className={`flex items-center justify-between px-4 h-14 box-content`}>
@@ -133,33 +173,38 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                 </div>
 
                 {/* Header */}
-                <div className="relative z-10 flex justify-between items-center px-6 pt-6 pb-2">
-                    <button onClick={() => setIsMinimized(true)} className="text-white/80 p-2 -ml-2 hover:bg-white/10 rounded-full transition-colors active:scale-95">
-                        <ChevronDown size={28} />
-                    </button>
-                    <span className="text-[10px] font-bold tracking-[0.2em] text-white/40 uppercase">Now Playing</span>
-                    <button onClick={onClose} className="text-white/80 p-2 -mr-2 hover:bg-white/10 rounded-full transition-colors active:scale-95">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
+                <div className="relative z-10 flex flex-col px-6 pt-2 pb-2">
+                    {/* Grabber Handle */}
+                    <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-4 mt-2"></div>
+
+                    <div className="flex justify-between items-center">
+                        <button onClick={() => setIsMinimized(true)} className="text-white/80 p-2 -ml-2 hover:bg-white/10 rounded-full transition-colors active:scale-95">
+                            <ChevronDown size={28} />
+                        </button>
+                        <span className="text-[10px] font-bold tracking-[0.2em] text-white/40 uppercase">Now Playing</span>
+                        <button onClick={onClose} className="text-white/80 p-2 -mr-2 hover:bg-white/10 rounded-full transition-colors active:scale-95">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Main Content */}
                 <div className="relative z-10 flex-1 flex flex-col px-8 justify-evenly pb-8" onClick={(e) => e.stopPropagation()}>
 
                     {/* Artwork / Producer Avatar */}
-                    {/* AVANT-GARDE: Large Static Circle with "Halo" effect */}
-                    <div className="w-full max-w-[280px] aspect-square mx-auto rounded-full border border-white/10 shadow-[0_0_50px_rgba(255,255,255,0.05)] p-2 relative group mt-4">
-                        <div className="absolute inset-0 rounded-full border border-white/5 animate-[spin_10s_linear_infinite] opacity-50"></div>
-                        <div className="absolute inset-0 rounded-full border-2 border-white/10 scale-105 opacity-20"></div>
+                    {/* AVANT-GARDE: Square with rounded corners */}
+                    <div className={`w-full max-w-[320px] aspect-square mx-auto rounded-[2rem] overflow-hidden border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative group mt-4 transform transition-all duration-1000 cubic-bezier(0.32, 0.72, 0, 1) ${isMinimized ? 'scale-90 opacity-0' : 'scale-100 opacity-100'}`}>
                         <img
                             src={displayImage}
                             alt="Producer"
-                            className="w-full h-full rounded-full object-cover shadow-2xl relative z-10"
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
+                        {/* Subtle Overlay for depth */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-60"></div>
                     </div>
 
                     {/* Meta & Controls Wrapper */}
-                    <div className="space-y-10 mt-2">
+                    <div className={`space-y-10 mt-2 transition-all duration-700 delay-150 ${isMinimized ? 'translate-y-10 opacity-0' : 'translate-y-0 opacity-100'}`}>
                         {/* Meta */}
                         <div className="w-full text-center space-y-2">
                             <h2 className="text-xl font-bold text-white leading-tight line-clamp-2 tracking-tight">{currentTrack.title}</h2>
@@ -169,27 +214,31 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                         {/* Unified Command Deck */}
                         <div className="w-full space-y-6">
                             {/* Scrubber */}
-                            <div className="space-y-2 group"
-                                onTouchEnd={(e) => {
-                                    // Simple touch seek logic could go here
-                                }}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    const p = (e.clientX - rect.left) / rect.width;
-                                    if (audioRef.current && Number.isFinite(duration) && duration > 0) {
-                                        audioRef.current.currentTime = p * duration;
-                                    }
-                                }}
-                            >
-                                <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden backdrop-blur-sm relative">
-                                    <div className="h-full bg-white relative shadow-[0_0_10px_rgba(255,255,255,0.5)]" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}>
-                                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg scale-0 group-hover:scale-125 transition-transform duration-200"></div>
+                            <div className="space-y-3 group px-2" onClick={(e) => e.stopPropagation()}>
+                                <div className="h-1.5 w-full bg-white/10 rounded-full relative overflow-visible">
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max={duration || 0}
+                                        step="0.1"
+                                        value={currentTime}
+                                        onChange={handleSeek}
+                                        onMouseDown={handleScrubbingStart}
+                                        onMouseUp={handleScrubbingEnd}
+                                        onTouchStart={handleScrubbingStart}
+                                        onTouchEnd={handleScrubbingEnd}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    />
+                                    <div
+                                        className="h-full bg-white relative shadow-[0_0_15px_rgba(255,255,255,0.3)] rounded-full transition-all duration-150"
+                                        style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                                    >
+                                        <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-xl scale-0 group-hover:scale-100 transition-transform duration-300"></div>
                                     </div>
                                 </div>
-                                <div className="flex justify-between text-[10px] font-mono font-bold text-neutral-500">
-                                    <span>{formatTime(currentTime)}</span>
-                                    <span>{formatTime(duration || currentTrack.duration || 0)}</span>
+                                <div className="flex justify-between text-[11px] font-mono font-bold text-neutral-400">
+                                    <span className="opacity-60">{formatTime(currentTime)}</span>
+                                    <span className="opacity-60">{formatTime(duration || currentTrack.duration || 0)}</span>
                                 </div>
                             </div>
 
@@ -230,10 +279,76 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                     </div>
 
                     {/* Bottom Actions Row */}
-                    <div className="relative z-10 flex justify-center gap-12 pb-12 w-full pt-2" onClick={(e) => e.stopPropagation()}>
-                        <button className="text-neutral-500 hover:text-white transition-colors active:scale-95"><Share2 size={20} /></button>
-                        <button className="text-neutral-500 hover:text-white transition-colors active:scale-95"><Heart size={20} /></button>
-                        <button className="text-neutral-500 hover:text-white transition-colors active:scale-95"><ListMusic size={20} /></button>
+                    <div className="relative z-10 flex justify-between items-center px-4 pb-12 w-full pt-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-6">
+                            <button className="text-neutral-400 hover:text-white transition-colors active:scale-95"><Share2 size={22} /></button>
+                            <button className="text-neutral-400 hover:text-white transition-colors active:scale-95"><Heart size={22} /></button>
+                        </div>
+
+                        <div className="flex items-center gap-6">
+                            <button className="text-neutral-400 hover:text-white transition-colors active:scale-95"><StickyNote size={22} /></button>
+                            <button
+                                onClick={() => setShowQueue(!showQueue)}
+                                className={`transition-colors active:scale-95 ${showQueue ? 'text-primary' : 'text-neutral-400 hover:text-white'}`}
+                            >
+                                <ListMusic size={22} />
+                            </button>
+                            <button className="text-neutral-400 hover:text-white transition-colors active:scale-95"><BookmarkPlus size={22} /></button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* --- QUEUE OVERLAY --- */}
+                <div
+                    className={`absolute inset-0 z-[110] bg-black/95 backdrop-blur-2xl transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1) ${showQueue ? 'translate-y-0' : 'translate-y-full'}`}
+                >
+                    <div className="flex flex-col h-full">
+                        <div className="flex justify-between items-center px-6 py-6 border-b border-white/5">
+                            <h3 className="text-lg font-bold text-white">Next Up</h3>
+                            <button onClick={() => setShowQueue(false)} className="text-white/60 p-1">
+                                <ChevronDown size={28} />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+                            {/* Current Playing */}
+                            <div className="flex items-center gap-4 p-3 bg-white/5 rounded-2xl border border-white/10">
+                                <img src={displayImage} className="w-12 h-12 rounded-lg object-cover" />
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm font-bold text-primary truncate">{currentTrack.title}</h4>
+                                    <p className="text-[10px] text-neutral-400 uppercase tracking-wider">{currentProject.producer}</p>
+                                </div>
+                                <div className="text-primary"><Pause size={16} fill="currentColor" /></div>
+                            </div>
+
+                            {/* Rest of the tracks in project (Simulated Queue) */}
+                            {currentProject.tracks.filter(t => t.id !== currentTrackId).map(track => (
+                                <div key={track.id} className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-2xl transition-colors group">
+                                    <img src={displayImage} className="w-12 h-12 rounded-lg object-cover opacity-60" />
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="text-sm font-bold text-white truncate">{track.title}</h4>
+                                        <p className="text-[10px] text-neutral-500 uppercase tracking-wider">{currentProject.producer}</p>
+                                    </div>
+                                    <button className="text-neutral-600 group-hover:text-white transition-colors">
+                                        <Play size={16} fill="currentColor" />
+                                    </button>
+                                </div>
+                            ))}
+
+                            {currentProject.tracks.length <= 1 && (
+                                <div className="py-20 text-center space-y-2">
+                                    <p className="text-neutral-500 text-sm italic">Queue is empty</p>
+                                    <p className="text-[10px] text-neutral-600">Add some fire to your session</p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-6 border-t border-white/5">
+                            <button className="w-full py-4 bg-white text-black rounded-2xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                                <PlusCircle size={20} />
+                                Add More Tracks
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

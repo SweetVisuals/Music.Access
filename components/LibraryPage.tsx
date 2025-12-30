@@ -51,24 +51,56 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 </div>
 
                 <div className="w-full md:w-auto -mx-4 px-4 md:mx-0 md:px-0">
-                    {/* Mobile: fit-row | Desktop: Segmented Control */}
-                    {/* Mobile: fit-row | Desktop: Segmented Control */}
-                    <div className="md:hidden relative w-full mb-1">
-                        <select
-                            value={activeTab}
-                            onChange={(e) => setActiveTab(e.target.value as any)}
-                            className="w-full appearance-none bg-neutral-900 border border-neutral-800 text-white text-xs font-bold rounded-lg px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors"
-                        >
-                            <option value="all">All Items</option>
-                            <option value="liked">Liked</option>
-                            <option value="purchased">Bought</option>
-                            <option value="playlists">Lists</option>
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-500">
-                            <ChevronDown size={14} />
+                    {/* Mobile Tabs Layout (Grid) */}
+                    <div className="md:hidden relative pb-2 overflow-x-auto no-scrollbar">
+                        <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5 min-w-[320px]">
+                            <button
+                                onClick={() => setActiveTab('all')}
+                                className={`
+                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                    ${activeTab === 'all' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                                `}
+                            >
+                                <LayoutGrid size={14} className={activeTab === 'all' ? 'text-primary' : ''} />
+                                <span className="text-[9px] font-bold uppercase tracking-tight">All</span>
+                            </button>
+
+                            <button
+                                onClick={() => setActiveTab('liked')}
+                                className={`
+                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                    ${activeTab === 'liked' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                                `}
+                            >
+                                <Heart size={14} className={activeTab === 'liked' ? 'text-primary' : ''} />
+                                <span className="text-[9px] font-bold uppercase tracking-tight">Liked</span>
+                            </button>
+
+                            <button
+                                onClick={() => setActiveTab('purchased')}
+                                className={`
+                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                    ${activeTab === 'purchased' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                                `}
+                            >
+                                <Disc size={14} className={activeTab === 'purchased' ? 'text-primary' : ''} />
+                                <span className="text-[9px] font-bold uppercase tracking-tight">Bought</span>
+                            </button>
+
+                            <button
+                                onClick={() => setActiveTab('playlists')}
+                                className={`
+                                    flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                    ${activeTab === 'playlists' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                                `}
+                            >
+                                <List size={14} className={activeTab === 'playlists' ? 'text-primary' : ''} />
+                                <span className="text-[9px] font-bold uppercase tracking-tight">Lists</span>
+                            </button>
                         </div>
                     </div>
 
+                    {/* Desktop Segmented Control */}
                     <div className="hidden md:flex md:flex-nowrap md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 gap-1 md:gap-0">
                         <TabButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} label="All" mobileCompact />
                         <TabButton active={activeTab === 'liked'} onClick={() => setActiveTab('liked')} label="Liked" icon={<Heart size={10} />} mobileCompact />

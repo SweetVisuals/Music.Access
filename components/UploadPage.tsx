@@ -115,7 +115,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                     id: f.id,
                     parentId: f.parentId || null,
                     name: f.name,
-                    type: (f.type === 'folder') ? 'folder' : (f.type && f.type.startsWith('audio')) ? 'audio' : 'text',
+                    type: (f.type === 'folder') ? 'folder' : (f.type && f.type.startsWith('audio')) ? 'audio' : (f.type && f.type.startsWith('image')) ? 'image' : 'text',
                     size: f.size,
                     created: new Date().toLocaleDateString(), // TODO: use f.created_at
                     format: f.name.split('.').pop()?.toUpperCase(),
@@ -807,12 +807,18 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                 if (file.type === 'image') openInfo(file);
                                             }}
                                         >
-                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${file.type === 'audio' ? (isPlayingFile ? 'bg-primary text-black animate-pulse' : 'bg-neutral-800/80 text-primary') :
+                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden ${file.type === 'audio' ? (isPlayingFile ? 'bg-primary text-black animate-pulse' : 'bg-neutral-800/80 text-primary') :
                                                 file.type === 'image' ? 'bg-purple-500/20 text-purple-400' :
                                                     'bg-blue-500/20 text-blue-400'
                                                 }`}>
                                                 {file.type === 'audio' ? (isPlayingFile ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />) :
-                                                    file.type === 'image' ? <LayoutGrid size={18} /> :
+                                                    file.type === 'image' ? (
+                                                        file.src ? (
+                                                            <img src={file.src} className="w-full h-full object-cover" alt="" onError={(e) => {
+                                                                (e.target as HTMLImageElement).src = ''; // Clear src on error to fallback to icon
+                                                            }} />
+                                                        ) : <LayoutGrid size={18} />
+                                                    ) :
                                                         <FileText size={18} />}
                                             </div>
 
@@ -844,7 +850,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
                         {viewMode === 'grid' && (
                             /* Grid View - Now Visible on Mobile too */
-                            <div className="p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                            <div className="p-3 md:p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
 
                                 {/* FOLDERS */}
                                 {currentItems.filter(i => i.type === 'folder').map(folder => {
@@ -933,7 +939,20 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                     <>
                                                         {file.type === 'audio' && <Music size={24} className={`transition-colors ${isSelected ? 'text-primary' : 'text-neutral-600 group-hover:text-neutral-400'}`} />}
                                                         {file.type === 'text' && <FileText size={24} className={`transition-colors ${isSelected ? 'text-white' : 'text-neutral-600 group-hover:text-neutral-400'}`} />}
-                                                        {file.type === 'image' && <div className="w-full h-full"><img src={file.src || URL.createObjectURL(new Blob([file.content || '']))} className="w-full h-full object-cover opacity-50" /></div>}
+                                                        {file.type === 'image' && (
+                                                            <div className="w-full h-full relative group/img">
+                                                                {file.src ? (
+                                                                    <img
+                                                                        src={file.src}
+                                                                        className={`w-full h-full object-cover transition-transform duration-500 ${isSelected ? 'scale-110' : 'group-hover:scale-110'}`}
+                                                                        alt={file.name}
+                                                                    />
+                                                                ) : (
+                                                                    <LayoutGrid size={24} className="text-neutral-600" />
+                                                                )}
+                                                                <div className="absolute inset-0 bg-black/20 group-hover/img:bg-black/0 transition-colors" />
+                                                            </div>
+                                                        )}
                                                     </>
                                                 )}
 
@@ -960,7 +979,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                     onClick={(e) => e.stopPropagation()}
                                                 />
                                             ) : (
-                                                <div className={`text-xs font-bold text-center truncate w-full ${isPlayingFile || isSelected ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-200'}`}>
+                                                <div className={`text-[11px] md:text-xs font-bold text-center truncate w-full px-1 ${isPlayingFile || isSelected ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-200'}`}>
                                                     {file.name}
                                                 </div>
                                             )}
@@ -1063,6 +1082,8 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                             <Music size={48} className="text-neutral-600" />
                                         ) : lastSelectedItem.type === 'folder' ? (
                                             <Folder size={48} className="text-neutral-600" />
+                                        ) : lastSelectedItem.type === 'image' && lastSelectedItem.src ? (
+                                            <img src={lastSelectedItem.src} className="w-full h-full object-cover" alt="" />
                                         ) : (
                                             <FileText size={48} className="text-neutral-600" />
                                         )}

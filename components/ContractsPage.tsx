@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Contract } from '../types';
-import { FileText, Plus, Download, Trash2, ExternalLink, Eye, Printer, MoreVertical, PenTool, Save, X, Check, PenLine, ArrowLeft, ChevronRight } from 'lucide-react';
+import { FileText, Plus, Download, Trash2, ExternalLink, Eye, Printer, MoreVertical, PenTool, Save, X, Check, PenLine, ArrowLeft, ChevronRight, Mic2, Music } from 'lucide-react';
 import { getContracts, createContract, updateContract, deleteContract } from '../services/supabaseService';
 
 const ContractsPage: React.FC = () => {
@@ -183,6 +183,7 @@ const ContractsPage: React.FC = () => {
                                     ${filter === 'all' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
                                 `}
                             >
+                                <FileText size={14} className={filter === 'all' ? 'text-primary' : ''} />
                                 <span className="text-[9px] font-bold uppercase tracking-tight">All</span>
                             </button>
                             <button
@@ -192,6 +193,7 @@ const ContractsPage: React.FC = () => {
                                     ${filter === 'service' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
                                 `}
                             >
+                                <Mic2 size={14} className={filter === 'service' ? 'text-primary' : ''} />
                                 <span className="text-[9px] font-bold uppercase tracking-tight">Service</span>
                             </button>
                             <button
@@ -201,6 +203,7 @@ const ContractsPage: React.FC = () => {
                                     ${filter === 'audio' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
                                 `}
                             >
+                                <Music size={14} className={filter === 'audio' ? 'text-primary' : ''} />
                                 <span className="text-[9px] font-bold uppercase tracking-tight">Audio</span>
                             </button>
                         </div>

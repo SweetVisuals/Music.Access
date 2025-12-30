@@ -114,13 +114,20 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:h-screen
       `}>
                 {/* Logo Area */}
-                <div className="relative h-16 flex items-center justify-start lg:justify-center px-4 border-b border-neutral-800 shrink-0 overflow-hidden">
-                    <div className="flex items-center group cursor-pointer" onClick={() => onNavigate('home')}>
+                <div className="relative h-16 flex items-center justify-between lg:justify-center px-4 border-b border-neutral-800 shrink-0 overflow-hidden">
+                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => onNavigate('home')}>
                         <img
                             src="/images/musicaccesslogowhite.png"
                             alt="Music Access"
                             className="h-7 lg:h-10 w-auto object-contain lg:scale-100 transition-transform lg:group-hover:scale-105 origin-left lg:origin-center"
                         />
+                        {/* Mobile Gem Count */}
+                        {isLoggedIn && userProfile && (
+                            <div className="lg:hidden flex items-center gap-1 px-1.5 py-0.5 bg-white/5 rounded-full border border-white/10">
+                                <span className="w-1 h-1 rounded-full bg-primary animate-pulse"></span>
+                                <span className="text-[9px] font-bold text-white font-mono">{userProfile.gems.toLocaleString()}</span>
+                            </div>
+                        )}
                     </div>
                     {/* Mobile Close Button - Absolute on Right */}
                     <button onClick={onClose} className="absolute right-4 lg:static lg:hidden text-neutral-500 hover:text-white p-2">
@@ -144,13 +151,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                     <span>Back to Marketplace</span>
                                 </button>
 
-                                <div className="space-y-2 mb-2">
-                                    <button onClick={() => onNavigate('upload')} className="w-full flex items-center justify-center space-x-2 px-2 py-3 lg:py-2 bg-primary text-black rounded-lg font-bold text-xs lg:text-[10px] hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(var(--primary),0.2)]">
-                                        <Upload size={16} className="lg:w-3.5 lg:h-3.5" />
+                                <div className="space-y-1 mb-2">
+                                    <button onClick={() => onNavigate('upload')} className="w-full flex items-center justify-center space-x-2 px-2 py-2 bg-primary text-black rounded-lg font-bold text-[10px] hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(var(--primary),0.2)]">
+                                        <Upload size={14} />
                                         <span>Upload Track</span>
                                     </button>
-                                    <button onClick={() => onNavigate('dashboard-studio')} className="w-full flex items-center justify-center space-x-2 px-2 py-3 lg:py-2 bg-white/5 text-white border border-white/10 rounded-lg font-bold text-xs lg:text-[10px] hover:bg-white/10 transition-colors">
-                                        <PlusCircle size={16} className="lg:w-3.5 lg:h-3.5" />
+                                    <button onClick={() => onNavigate('dashboard-studio')} className="w-full flex items-center justify-center space-x-2 px-2 py-2 bg-white/5 text-white border border-white/10 rounded-lg font-bold text-[10px] hover:bg-white/10 transition-colors">
+                                        <PlusCircle size={14} />
                                         <span>New Project</span>
                                     </button>
                                 </div>
@@ -282,13 +289,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                         <>
                             {/* QUICK ACTIONS (Logged In Only) */}
                             {isLoggedIn && (
-                                <div className="space-y-2 mb-6 mt-2">
-                                    <button onClick={() => onNavigate('upload')} className="w-full flex items-center justify-center space-x-2 px-2 py-3 lg:py-2 bg-primary text-black rounded-lg font-bold text-xs lg:text-[10px] hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(var(--primary),0.2)]">
-                                        <Upload size={16} className="lg:w-3.5 lg:h-3.5" />
+                                <div className="space-y-1 mb-6 mt-2">
+                                    <button onClick={() => onNavigate('upload')} className="w-full flex items-center justify-center space-x-2 px-2 py-2 bg-primary text-black rounded-lg font-bold text-[10px] hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(var(--primary),0.2)]">
+                                        <Upload size={14} />
                                         <span>Upload Track</span>
                                     </button>
-                                    <button onClick={() => onNavigate('dashboard-studio')} className="w-full flex items-center justify-center space-x-2 px-2 py-3 lg:py-2 bg-white/5 text-white border border-white/10 rounded-lg font-bold text-xs lg:text-[10px] hover:bg-white/10 transition-colors">
-                                        <PlusCircle size={16} className="lg:w-3.5 lg:h-3.5" />
+                                    <button onClick={() => onNavigate('dashboard-studio')} className="w-full flex items-center justify-center space-x-2 px-2 py-2 bg-white/5 text-white border border-white/10 rounded-lg font-bold text-[10px] hover:bg-white/10 transition-colors">
+                                        <PlusCircle size={14} />
                                         <span>New Project</span>
                                     </button>
                                 </div>
@@ -358,25 +365,25 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                                 className="w-full flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 rounded-lg group transition-all text-left cursor-pointer"
                                             >
                                                 <div className="relative shrink-0">
-                                                    <img src={talent.avatar} alt={talent.username} className="w-8 h-8 lg:w-6 lg:h-6 rounded-md object-cover border border-white/10 group-hover:border-white/30 transition-colors" />
+                                                    <img src={talent.avatar} alt={talent.username} className="w-6 h-6 rounded-md object-cover border border-white/10 group-hover:border-white/30 transition-colors" />
                                                     {talent.isVerified && (
                                                         <div className="absolute -bottom-1 -right-1 bg-[#050505] rounded-full p-[1px]">
-                                                            <div className="w-2 h-2 lg:w-1.5 lg:h-1.5 bg-primary rounded-full"></div>
+                                                            <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="flex-1 min-w-0 overflow-hidden ml-1">
-                                                    <div className="text-[11px] lg:text-[10px] font-bold text-neutral-400 group-hover:text-white truncate transition-colors">{talent.username}</div>
-                                                    <div className="text-[10px] lg:text-[9px] text-neutral-600 font-mono truncate group-hover:text-neutral-500 transition-colors">{talent.handle}</div>
+                                                <div className="flex-1 min-w-0 overflow-hidden">
+                                                    <div className="text-[10px] font-bold text-neutral-400 group-hover:text-white truncate transition-colors">{talent.username}</div>
+                                                    <div className="text-[9px] text-neutral-600 font-mono truncate group-hover:text-neutral-500 transition-colors">{talent.handle}</div>
                                                 </div>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         onNavigate('dashboard-messages');
                                                     }}
-                                                    className="p-2 lg:p-1 text-neutral-500 hover:text-white hover:bg-white/10 rounded-md transition-all"
+                                                    className="p-1 text-neutral-500 hover:text-white hover:bg-white/10 rounded-md transition-all"
                                                 >
-                                                    <MessageSquare size={16} className="lg:w-2.5 lg:h-2.5" />
+                                                    <MessageSquare size={10} />
                                                 </button>
                                             </div>
                                         )) : (
@@ -387,10 +394,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                         )}
                                         <button
                                             onClick={() => onNavigate('browse-talent')}
-                                            className="w-full flex items-center justify-between px-2 py-3 lg:py-1.5 text-xs lg:text-[9px] font-bold text-neutral-600 hover:text-white transition-colors group border-t border-white/5 mt-2"
+                                            className="w-full flex items-center justify-between px-2 py-1.5 text-[9px] font-bold text-neutral-600 hover:text-white transition-colors group border-t border-white/5 mt-2"
                                         >
                                             <span>View all creators</span>
-                                            <ChevronRight size={14} className="lg:w-2.5 lg:h-2.5 group-hover:translate-x-1 transition-transform" />
+                                            <ChevronRight size={10} className="group-hover:translate-x-1 transition-transform" />
                                         </button>
                                     </div>
                                 </div>
@@ -553,18 +560,16 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, onClick 
         <button
             onClick={onClick}
             className={`
-                w-full flex items-center space-x-3 lg:space-x-2 px-3 lg:px-2 py-3 lg:py-1.5 rounded-lg transition-all group
+                w-full flex items-center space-x-2 px-2 py-1.5 rounded-lg transition-all group
                 ${active
                     ? 'bg-primary/10 text-primary font-bold border border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.15)]'
                     : 'text-neutral-400 hover:text-white hover:bg-white/5 border border-transparent'
                 }
             `}
         >
-            <span className={`${active ? '' : 'group-hover:text-white transition-colors'} shrink-0`}>
-                {React.cloneElement(icon as React.ReactElement, { size: 18, className: 'lg:w-[14px] lg:h-[14px]' })}
-            </span>
-            <span className="text-xs lg:text-[10px] tracking-wide font-medium lg:font-normal">{label}</span>
-            {active && <div className="ml-auto w-1.5 lg:w-1 h-1.5 lg:h-1 rounded-full bg-primary shadow-[0_0_5px_rgb(var(--primary))]"></div>}
+            <span className={active ? '' : 'group-hover:text-white transition-colors'}>{icon}</span>
+            <span className="text-[10px] tracking-wide">{label}</span>
+            {active && <div className="ml-auto w-1 h-1 rounded-full bg-primary shadow-[0_0_5px_rgb(var(--primary))]"></div>}
         </button>
     )
 }

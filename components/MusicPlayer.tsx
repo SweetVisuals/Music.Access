@@ -118,7 +118,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
 
             {/* --- MOBILE EMBEDDED BOTTOM BAR --- */}
             <div
-                className={`lg:hidden fixed left-0 right-0 z-40 bg-[#050505] border-t border-white/20 shadow-[0_-4px_20px_rgba(0,0,0,0.8)] transition-all duration-300 ${isMinimized
+                className={`lg:hidden fixed left-0 right-0 z-[119] bg-[#050505] border-t border-white/20 shadow-[0_-4px_20px_rgba(0,0,0,0.8)] transition-all duration-300 ${isMinimized
                     ? (currentView === 'notes'
                         ? 'bottom-[calc(8.5rem+env(safe-area-inset-bottom)-1px)] translate-y-0 border-b-0'
                         : 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] translate-y-0')
@@ -185,7 +185,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
             </div>
 
             {/* --- IMMERSIVE MOBILE FULLSCREEN PLAYER --- */}
-            <div className={`lg:hidden fixed inset-0 z-[100] bg-black flex flex-col transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) ${isMinimized ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
+            <div className={`lg:hidden fixed inset-0 z-[130] bg-black flex flex-col transition-all duration-500 cubic-bezier(0.32, 0.72, 0, 1) ${isMinimized ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
 
                 {/* Background & Blur */}
                 <div className="absolute inset-0 z-0">
@@ -194,9 +194,9 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                 </div>
 
                 {/* Header */}
-                <div className="relative z-10 flex flex-col px-6 pt-2 pb-2">
+                <div className="relative z-10 flex flex-col px-6 pt-6 pb-0 shrink-0">
                     {/* Grabber Handle */}
-                    <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-4 mt-2"></div>
+                    <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-2"></div>
 
                     <div className="flex justify-between items-center">
                         <button onClick={() => setIsMinimized(true)} className="text-white/80 p-2 -ml-2 hover:bg-white/10 rounded-full transition-colors active:scale-95">
@@ -210,14 +210,14 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                 </div>
 
                 {/* Main Content */}
-                <div className="relative z-10 flex-1 flex flex-col px-8 justify-evenly pb-8" onClick={(e) => e.stopPropagation()}>
+                <div className="relative z-10 flex-1 flex flex-col px-6 pb-6 pt-2 overflow-hidden" onClick={(e) => e.stopPropagation()}>
 
                     {/* Artwork / Producer Avatar - SOLID Unified Order */}
-                    <div className="w-full max-w-[320px] aspect-square mx-auto mt-8 relative group">
+                    <div className="w-full max-w-[200px] aspect-square mx-auto relative group shrink-0">
                         {/* Skeleton Loader */}
-                        <div className={`absolute inset-0 bg-white/10 rounded-[2rem] animate-pulse ${imageLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}></div>
+                        <div className={`absolute inset-0 bg-white/10 rounded-[1.5rem] animate-pulse ${imageLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}></div>
 
-                        <div className={`w-full h-full rounded-[2rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 relative z-10 ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500`}>
+                        <div className={`w-full h-full rounded-[1.5rem] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-white/10 relative z-10 ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500`}>
                             <img
                                 src={displayImage}
                                 alt="Producer"
@@ -230,11 +230,11 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                     </div>
 
                     {/* Meta & Controls Wrapper - Seamless, no internal delays */}
-                    <div className="flex flex-col justify-between mt-8 flex-1">
+                    <div className="flex flex-col justify-end mt-2 flex-1 min-h-0">
 
                         {/* Meta with Scrolling Title */}
-                        <div className="w-full text-center space-y-1 mb-8">
-                            <div className="relative overflow-hidden h-8 w-64 mx-auto flex items-center justify-center">
+                        <div className="w-full text-center space-y-1 mb-2 shrink-0">
+                            <div className="relative overflow-hidden h-7 w-64 mx-auto flex items-center justify-center">
                                 {/* Only animate if title is long enough? For now, simpler to center or static-scroll if overly long. 
                                     Let's use a simpler approach: Just center, if too long, truncate. 
                                     The user specifically asked for "scroll if too long". 
@@ -243,14 +243,14 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                                 */}
                                 {currentTrack.title.length > 25 ? (
                                     <div className="flex animate-marquee whitespace-nowrap">
-                                        <h2 className="text-lg font-bold text-white tracking-tight mr-12">{currentTrack.title}</h2>
-                                        <h2 className="text-lg font-bold text-white tracking-tight mr-12">{currentTrack.title}</h2>
+                                        <h2 className="text-base font-bold text-white tracking-tight mr-12">{currentTrack.title}</h2>
+                                        <h2 className="text-base font-bold text-white tracking-tight mr-12">{currentTrack.title}</h2>
                                     </div>
                                 ) : (
-                                    <h2 className="text-lg font-bold text-white tracking-tight truncate px-4">{currentTrack.title}</h2>
+                                    <h2 className="text-base font-bold text-white tracking-tight truncate px-4">{currentTrack.title}</h2>
                                 )}
                             </div>
-                            <p className="text-sm text-primary font-mono tracking-widest uppercase opacity-90">{currentProject.producer}</p>
+                            <p className="text-xs text-primary font-mono tracking-widest uppercase opacity-90">{currentProject.producer}</p>
                         </div>
 
                         {/* Visualizer */}
@@ -302,23 +302,23 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                                 </button>
 
                                 {/* Center Cluster */}
-                                <div className="flex items-center gap-8">
+                                <div className="flex items-center gap-6 sm:gap-8">
                                     <button className="text-white hover:text-white/80 transition-colors active:scale-95">
-                                        <SkipBack size={32} fill="currentColor" />
+                                        <SkipBack size={24} fill="currentColor" />
                                     </button>
 
                                     <button
                                         onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                                        className="w-20 h-20 flex items-center justify-center bg-white text-black rounded-full shadow-[0_0_40px_rgba(255,255,255,0.15)] hover:scale-105 active:scale-95 transition-all"
+                                        className="w-14 h-14 flex items-center justify-center bg-white text-black rounded-full shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:scale-105 active:scale-95 transition-all"
                                     >
                                         {isPlaying ?
-                                            <Pause fill="black" size={32} /> :
-                                            <Play fill="black" size={32} className="ml-1" />
+                                            <Pause fill="black" size={24} /> :
+                                            <Play fill="black" size={24} className="ml-1" />
                                         }
                                     </button>
 
                                     <button className="text-white hover:text-white/80 transition-colors active:scale-95">
-                                        <SkipForward size={32} fill="currentColor" />
+                                        <SkipForward size={24} fill="currentColor" />
                                     </button>
                                 </div>
 
@@ -331,7 +331,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                     </div>
 
                     {/* Bottom Actions Row */}
-                    <div className="relative z-10 flex justify-between items-center px-4 pb-12 w-full pt-4" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative z-10 flex justify-between items-center px-4 w-full pt-2 shrink-0" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-6">
                             <button className="text-neutral-400 hover:text-white transition-colors active:scale-95">
                                 <Share2 size={22} />
@@ -380,7 +380,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
 
                 {/* --- QUEUE OVERLAY --- */}
                 <div
-                    className={`absolute inset-0 z-[110] bg-black/95 backdrop-blur-2xl transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1) ${showQueue ? 'translate-y-0' : 'translate-y-full'}`}
+                    className={`absolute inset-0 z-[140] bg-black/95 backdrop-blur-2xl transition-transform duration-500 cubic-bezier(0.32, 0.72, 0, 1) ${showQueue ? 'translate-y-0' : 'translate-y-full'}`}
                 >
                     <div className="flex flex-col h-full">
                         <div className="flex justify-between items-center px-6 py-6 border-b border-white/5">

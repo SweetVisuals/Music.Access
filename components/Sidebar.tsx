@@ -111,7 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
             )}
 
             <aside className={`
-        fixed inset-0 z-50 w-full lg:w-64 bg-black lg:bg-[#050505] lg:border-r border-neutral-800 flex flex-col font-sans transition-transform duration-300 ease-in-out transform
+        fixed inset-0 z-[100] w-full lg:w-64 bg-black lg:bg-[#050505] lg:border-r border-neutral-800 flex flex-col font-sans transition-transform duration-300 ease-in-out transform
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:h-screen
       `}>
                 {/* Logo Area */}

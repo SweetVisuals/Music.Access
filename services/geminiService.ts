@@ -45,31 +45,28 @@ const callDeepSeek = async (
         throw new Error('Proxy unreachable');
       }
     } catch (proxyError) {
-      // 2. OpenRouter / DeepSeek Fallback (Since local proxy is 404ing)
-      console.log('Falling back to OpenRouter (DeepSeek Model)...');
-      // User provided OpenRouter Key: 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
-      const OPENROUTER_KEY = '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';
-      const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+      // 2. Fallback to Direct DeepSeek API
+      // Key provided by user: sk-8729a00475e84922bc0c474a2b219c93
+      const DEEPSEEK_KEY = 'sk-8729a00475e84922bc0c474a2b219c93';
 
-      const response = await fetch(OPENROUTER_URL, {
+      console.log('Using Direct DeepSeek API...');
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENROUTER_KEY}`,
-          'HTTP-Referer': 'https://music-access-mobile.vercel.app', // App URL
-          'X-Title': 'Music Access'
+          'Authorization': `Bearer ${DEEPSEEK_KEY}`
         },
         body: JSON.stringify({
-          model: 'deepseek/deepseek-chat', // OpenRouter ID for DeepSeek V3
+          model: 'deepseek-chat',
           messages: messagesPayload,
-          response_format: jsonMode ? { type: "json_object" } : { type: "text" }
+          response_format: jsonMode ? { type: "json_object" } : { type: "text" },
+          stream: false
         })
       });
 
       if (!response.ok) {
-        // Check for 429 specifically if needed, otherwise throw text
-        const errorText = await response.text();
-        throw new Error(`OpenRouter/DeepSeek Error: ${response.status} - ${errorText}`);
+        const error = await response.text();
+        throw new Error(`Direct DeepSeek API Error: ${response.status} - ${error}`);
       }
 
       const data = await response.json();

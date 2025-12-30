@@ -325,18 +325,18 @@ const RightActions: React.FC<{
                                     <div className="text-[9px] text-neutral-500 truncate">{userProfile?.handle || '@user'}</div>
                                 </div>
                                 <div className="p-1.5">
-                                    <button onClick={(e) => { e.stopPropagation(); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
                                         <User size={12} /> My Profile
                                     </button>
-                                    <button onClick={(e) => { e.stopPropagation(); onNavigate('dashboard-overview'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('dashboard-overview'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
                                         <Terminal size={12} /> Overview
                                     </button>
-                                    <button onClick={(e) => { e.stopPropagation(); onNavigate('settings'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('settings'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
                                         <Settings size={12} /> Settings
                                     </button>
                                 </div>
                                 <div className="p-1.5 border-t border-white/5">
-                                    <button onClick={(e) => { e.stopPropagation(); onLogout(); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-red-400 hover:bg-red-500/10 transition-colors text-left">
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onLogout(); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-red-400 hover:bg-red-500/10 transition-colors text-left">
                                         <LogOut size={12} /> Sign Out
                                     </button>
                                 </div>
@@ -544,7 +544,7 @@ const TopBar: React.FC<TopBarProps> = ({
     }, [setIsCartOpen]);
 
     return (
-        <header className="h-16 fixed top-0 right-0 left-0 lg:left-64 z-40 bg-[#050505]/90 backdrop-blur-lg border-b border-white/5 flex items-center px-3 lg:px-6 justify-between gap-4">
+        <header className="h-16 fixed top-0 right-0 left-0 lg:left-64 z-[90] bg-[#050505]/90 backdrop-blur-lg border-b border-white/5 flex items-center px-3 lg:px-6 justify-between gap-4">
 
             {/* SPACER FOR CENTERING (Hidden on mobile) */}
             <div className="hidden lg:block shrink-0">

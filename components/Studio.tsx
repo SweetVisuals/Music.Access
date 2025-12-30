@@ -189,7 +189,6 @@ const Studio: React.FC<StudioProps> = ({
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-neutral-500 uppercase">Project Title</label>
                                 <input
-                                    autoFocus
                                     value={newProjectTitle}
                                     onChange={(e) => setNewProjectTitle(e.target.value)}
                                     placeholder="e.g. Summer Vibes Vol. 1"
@@ -197,13 +196,13 @@ const Studio: React.FC<StudioProps> = ({
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-neutral-500 uppercase">Format</label>
-                                <div className="grid grid-cols-3 gap-3">
+                                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Format</label>
+                                <div className="flex bg-neutral-900 p-1 rounded-lg">
                                     {(['Album', 'EP', 'Single'] as const).map(fmt => (
                                         <button
                                             key={fmt}
                                             onClick={() => setNewProjectFormat(fmt)}
-                                            className={`py-3 rounded-lg text-xs font-bold border transition-all ${newProjectFormat === fmt ? 'bg-white text-black border-white' : 'bg-neutral-900 text-neutral-500 border-neutral-800 hover:border-neutral-600'}`}
+                                            className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${newProjectFormat === fmt ? 'bg-white text-black shadow-sm' : 'text-neutral-500 hover:text-white'}`}
                                         >
                                             {fmt}
                                         </button>
@@ -971,9 +970,9 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
                 {/* RIGHT SIDEBAR (Library / Inspector) */}
                 <div className={`
-                    fixed inset-y-0 right-0 z-30 w-80 bg-[#080808] border-l border-neutral-800 flex flex-col transform transition-transform duration-300
-                    lg:relative lg:translate-x-0
-                    ${showMobileLib ? 'translate-x-0 shadow-2xl' : 'translate-x-full'}
+                    fixed bg-[#080808] border-l border-neutral-800 flex flex-col transform transition-transform duration-300
+                    lg:relative lg:translate-x-0 lg:w-80 lg:inset-auto lg:z-auto
+                    ${showMobileLib ? 'inset-0 z-50 translate-x-0' : 'inset-y-0 right-0 w-80 translate-x-full z-30'}
                 `}>
                     {/* Mobile Close Button for Lib */}
                     <div className="lg:hidden p-2 flex justify-start">

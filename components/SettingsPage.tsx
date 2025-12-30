@@ -92,39 +92,51 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
 
             <div className="space-y-8">
                 {/* Profile Settings */}
-                <section className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden">
-                    <div className="p-6 border-b border-neutral-800 bg-neutral-900/30 flex items-center gap-3">
+                <section className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden relative group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                    <div className="p-6 border-b border-neutral-800 bg-neutral-900/30 flex items-center gap-3 backdrop-blur-sm">
                         <User size={18} className="text-primary" />
-                        <h2 className="text-sm font-bold text-white uppercase tracking-wider">Profile Information</h2>
+                        <h2 className="text-xs font-black text-white uppercase tracking-[0.2em]">Profile Information</h2>
                     </div>
                     {displayProfile && (
-                        <div className="p-8 space-y-6">
-                            <div className="flex items-start gap-6">
-                                <div className="w-24 h-24 rounded-full bg-neutral-900 border border-neutral-800 relative group cursor-pointer overflow-hidden">
-                                    <img src={displayProfile.avatar || 'https://i.pravatar.cc/150?u=user'} alt="Avatar" className="w-full h-full object-cover" />
-                                    {/* Note: Avatar upload logic is in ProfilePage, maybe move here or duplicate? For now leaving as display only */}
+                        <div className="p-6 md:p-8 space-y-8 relative z-10">
+                            <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+                                {/* Avatar Section - Centered on Mobile */}
+                                <div className="flex flex-col items-center gap-4">
+                                    <div className="w-32 h-32 rounded-full bg-neutral-900 border-2 border-neutral-800 relative group cursor-pointer overflow-hidden shadow-2xl shadow-primary/10">
+                                        <img src={displayProfile.avatar || 'https://i.pravatar.cc/150?u=user'} alt="Avatar" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                            <span className="text-[10px] uppercase font-bold text-white tracking-widest">Change</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex-1 space-y-4">
+
+                                {/* Form Section */}
+                                <div className="flex-1 w-full space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-neutral-500 uppercase">Display Name</label>
+                                        <div className="space-y-2 group/input">
+                                            <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest group-focus-within/input:text-primary transition-colors">Display Name</label>
                                             <input
                                                 value={displayProfile.username}
                                                 onChange={(e) => setProfile({ ...displayProfile, username: e.target.value })}
-                                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
+                                                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-sm font-bold text-white focus:border-primary/50 focus:bg-neutral-900 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all duration-300 placeholder:text-neutral-700"
+                                                placeholder="Enter your name"
                                             />
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-bold text-neutral-500 uppercase">Handle</label>
-                                            <input
-                                                value={displayProfile.handle}
-                                                onChange={(e) => setProfile({ ...displayProfile, handle: e.target.value })}
-                                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
-                                            />
+                                        <div className="space-y-2 group/input">
+                                            <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest group-focus-within/input:text-primary transition-colors">Handle</label>
+                                            <div className="relative">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 text-sm font-bold">@</span>
+                                                <input
+                                                    value={displayProfile.handle}
+                                                    onChange={(e) => setProfile({ ...displayProfile, handle: e.target.value })}
+                                                    className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg pl-8 pr-4 py-3 text-sm font-bold text-white focus:border-primary/50 focus:bg-neutral-900 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all duration-300"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-neutral-500 uppercase">Bio</label>
+                                    <div className="space-y-2 group/input">
+                                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest group-focus-within/input:text-primary transition-colors">Bio</label>
                                         <textarea
                                             value={displayProfile.bio || ''}
                                             onChange={(e) => setProfile({ ...displayProfile, bio: e.target.value })}
@@ -150,7 +162,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                 <section className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden">
                     <div className="p-6 border-b border-neutral-800 bg-neutral-900/30 flex items-center gap-3">
                         <Lock size={18} className="text-purple-400" />
-                        <h2 className="text-sm font-bold text-white uppercase tracking-wider">Privacy & Visibility</h2>
+                        <h2 className="text-xs font-black text-white uppercase tracking-[0.2em]">Privacy & Visibility</h2>
                     </div>
                     <div className="p-8 space-y-6">
                         <div className="flex items-center justify-between">
@@ -175,7 +187,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                 <section className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden">
                     <div className="p-6 border-b border-neutral-800 bg-neutral-900/30 flex items-center gap-3">
                         <Palette size={18} className="text-blue-400" />
-                        <h2 className="text-sm font-bold text-white uppercase tracking-wider">Preferences</h2>
+                        <h2 className="text-xs font-black text-white uppercase tracking-[0.2em]">Preferences</h2>
                     </div>
                     <div className="p-8 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -228,7 +240,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                 <section className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden">
                     <div className="p-6 border-b border-neutral-800 bg-neutral-900/30 flex items-center gap-3">
                         <Shield size={18} className="text-green-400" />
-                        <h2 className="text-sm font-bold text-white uppercase tracking-wider">Security</h2>
+                        <h2 className="text-xs font-black text-white uppercase tracking-[0.2em]">Security</h2>
                     </div>
                     <div className="p-8 space-y-4">
                         <div className="flex items-center justify-between p-4 bg-neutral-900/30 border border-neutral-800 rounded-lg">
@@ -252,7 +264,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                 <section className="bg-red-500/5 border border-red-500/20 rounded-xl overflow-hidden">
                     <div className="p-6 border-b border-red-500/20 bg-red-500/10 flex items-center gap-3">
                         <Lock size={18} className="text-red-500" />
-                        <h2 className="text-sm font-bold text-red-500 uppercase tracking-wider">Danger Zone</h2>
+                        <h2 className="text-xs font-black text-red-500 uppercase tracking-[0.2em]">Danger Zone</h2>
                     </div>
                     <div className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
                         <div>

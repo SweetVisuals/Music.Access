@@ -125,7 +125,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                 {/* Logo Area */}
                 <div className="relative h-16 flex items-center justify-between lg:justify-center px-4 border-b border-neutral-800 shrink-0 overflow-hidden">
                     <div className="flex items-center gap-2 group cursor-pointer" onClick={() => onNavigate('home')}>
-                        <div className="relative h-7 lg:h-10 w-auto flex items-center lg:scale-100 transition-transform lg:group-hover:scale-105 origin-left lg:origin-center">
+                        <div className="relative h-7 lg:h-8 w-auto flex items-center lg:scale-100 transition-transform lg:group-hover:scale-105 origin-left lg:origin-center">
                             <img
                                 src="/images/musicaccesslogowhite.png"
                                 alt="Music Access"

@@ -244,8 +244,8 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                         <p className="text-xs text-primary font-mono tracking-widest uppercase opacity-90">{currentProject.producer}</p>
                     </div>
 
-                    {/* Meta & Controls Wrapper - Seamless, no internal delays */}
-                    <div className="flex flex-col justify-end mt-2 flex-1 min-h-0">
+                    {/* Meta & Controls Wrapper - Grouped closer to top */}
+                    <div className="flex flex-col mt-2">
 
                         {/* Visualizer */}
                         <div className="w-full mb-2 opacity-80">
@@ -324,8 +324,8 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                         </div>
                     </div>
 
-                    {/* Bottom Actions Row */}
-                    <div className="relative z-10 flex justify-between items-center px-4 w-full pt-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {/* Bottom Actions Row - Pinned to bottom */}
+                    <div className="relative z-10 flex justify-between items-center px-4 w-full pt-2 shrink-0 mt-auto" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-6">
                             <button className="text-neutral-400 hover:text-white transition-colors active:scale-95">
                                 <Share2 size={22} />

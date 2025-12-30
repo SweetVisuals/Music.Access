@@ -108,24 +108,7 @@ const RightActions: React.FC<{
                             </span>
                         </div>
 
-                        {/* Wallet Balance */}
-                        <div className="h-8 bg-neutral-900 border border-white/10 rounded-full hidden lg:flex items-center pl-3 pr-1 gap-2 hover:border-white/20 transition-colors group">
-                            <div
-                                onClick={isSpacer ? undefined : () => onNavigate('dashboard-wallet')}
-                                className="flex items-center gap-2 cursor-pointer"
-                            >
-                                <Wallet size={12} className="text-emerald-500" />
-                                <span className="text-[10px] font-bold text-white font-mono mt-0.5 min-w-[50px] text-right">
-                                    {showBalance ? `$${(userProfile?.balance !== undefined ? userProfile.balance : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '****'}
-                                </span>
-                            </div>
-                            <button
-                                onClick={isSpacer ? undefined : () => setShowBalance(!showBalance)}
-                                className="w-6 h-6 rounded-full hover:bg-white/10 flex items-center justify-center text-neutral-500 hover:text-white transition-colors"
-                            >
-                                {showBalance ? <EyeOff size={10} /> : <Eye size={10} />}
-                            </button>
-                        </div>
+
                     </div>
                 )}
 
@@ -322,7 +305,23 @@ const RightActions: React.FC<{
                             <div className="absolute right-0 top-full mt-3 w-52 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                                 <div className="p-3 border-b border-white/5">
                                     <div className="text-xs font-bold text-white">{userProfile?.username || 'User'}</div>
-                                    <div className="text-[9px] text-neutral-500 truncate">{userProfile?.handle || '@user'}</div>
+                                    <div className="text-[9px] text-neutral-500 truncate mb-2">{userProfile?.handle || '@user'}</div>
+
+                                    <div
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsProfileOpen(false);
+                                            onNavigate('dashboard-wallet');
+                                        }}
+                                        className="flex items-center justify-between bg-neutral-900/50 p-2 rounded-lg border border-white/5 cursor-pointer hover:bg-neutral-800 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <Wallet size={12} className="text-emerald-500" />
+                                            <span className="text-[10px] font-mono font-bold text-white">
+                                                ${(userProfile?.balance !== undefined ? userProfile.balance : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="p-1.5">
                                     <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
@@ -401,8 +400,8 @@ const TopBar: React.FC<TopBarProps> = ({
 
     // Derived
     const placeholderText = searchMode === 'ai'
-        ? "Ask me anything (e.g., 'Find me trap beats under $30')..."
-        : "Search for beats, producers, or kits...";
+        ? (mobileSearchOpen ? "Ask AI..." : "Ask me anything (e.g., 'Find me trap beats under $30')...")
+        : (mobileSearchOpen ? "Search..." : "Search for beats, producers, or kits...");
 
     // Fetch notifications
     useEffect(() => {

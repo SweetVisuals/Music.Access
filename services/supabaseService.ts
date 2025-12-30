@@ -290,7 +290,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance, last_gem_claim_date')
+    .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance, last_gem_claim_date, role')
     .eq('id', targetUserId)
     .single();
 
@@ -328,7 +328,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
       return {
         username: data.username,
         handle: data.handle,
-        role: (data as any).raw_user_meta_data?.role || 'Producer',
+        role: data.role || (data as any).raw_user_meta_data?.role || 'Producer',
         email: authEmail,
         location: data.location,
         avatar: data.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',

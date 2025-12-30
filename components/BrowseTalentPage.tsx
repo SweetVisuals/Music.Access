@@ -148,7 +148,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
 
                                     {/* Tags - Moved above stats for better flow */}
                                     <div className="flex flex-wrap gap-1.5 mb-3 content-start">
-                                        {talent.tags.map((tag, i) => (
+                                        {talent.tags.filter(tag => tag !== talent.role).map((tag, i) => (
                                             <span key={i} className="px-2 py-1 bg-neutral-900 rounded text-[9px] text-neutral-400 border border-neutral-800">
                                                 {tag}
                                             </span>

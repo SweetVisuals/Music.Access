@@ -73,6 +73,33 @@
       background: #555;
     }
 
+    /* Hide scrollbar on mobile */
+    @media (max-width: 768px) {
+
+      /* Target the root viewport scrollbar */
+      ::-webkit-scrollbar {
+        width: 0px;
+        height: 0px;
+        background: transparent;
+        display: none;
+      }
+
+      /* Target ALL element scrollbars */
+      *::-webkit-scrollbar {
+        width: 0px;
+        height: 0px;
+        background: transparent;
+        display: none;
+      }
+
+      * {
+        scrollbar-width: none !important;
+        /* Firefox */
+        -ms-overflow-style: none !important;
+        /* IE and Edge */
+      }
+    }
+
     /* --- TERMINAL (Default) --- */
     .bg-dot-grid {
       background-color: #050505;

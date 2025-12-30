@@ -4,92 +4,15 @@ import { Conversation } from '../types';
 import { Search, Send, Paperclip, MoreVertical, Phone, Video, ArrowLeft, Plus, Menu, X, MessageCircle } from 'lucide-react';
 import { getConversations } from '../services/supabaseService';
 
-const DraggableFab = ({ onClick }: { onClick: () => void }) => {
-    const [position, setPosition] = useState({ x: window.innerWidth - 80, y: window.innerHeight - 160 });
-    const [isDragging, setIsDragging] = useState(false);
-    const dragOffset = React.useRef({ x: 0, y: 0 });
-    const startTime = React.useRef(0);
-
-    const handleStart = (clientX: number, clientY: number) => {
-        setIsDragging(false);
-        dragOffset.current = {
-            x: clientX - position.x,
-            y: clientY - position.y
-        };
-        startTime.current = Date.now();
-    };
-
-    const handleMove = (clientX: number, clientY: number) => {
-        // Only classify as dragging if moved significantly or held for a bit, 
-        // but for simple drag logic, just updating position is enough.
-        // We'll use time threshold to distinquish click vs drag on release.
-        const newX = clientX - dragOffset.current.x;
-        const newY = clientY - dragOffset.current.y;
-
-        // Simple boundary check
-        const boundedX = Math.min(Math.max(0, newX), window.innerWidth - 60);
-        const boundedY = Math.min(Math.max(0, newY), window.innerHeight - 60);
-
-        setPosition({ x: boundedX, y: boundedY });
-        setIsDragging(true);
-    };
-
-    const handleEnd = () => {
-        const duration = Date.now() - startTime.current;
-        if (duration < 200 && !isDragging) {
-            onClick();
-        }
-        setTimeout(() => setIsDragging(false), 50);
-    };
-
-    // Touch handlers
-    const onTouchStart = (e: React.TouchEvent) => handleStart(e.touches[0].clientX, e.touches[0].clientY);
-    const onTouchMove = (e: React.TouchEvent) => {
-        // Prevent scrolling while dragging
-        e.preventDefault();
-        handleMove(e.touches[0].clientX, e.touches[0].clientY);
-    };
-    const onTouchEnd = handleEnd;
-
-    // Mouse handlers
-    const onMouseDown = (e: React.MouseEvent) => {
-        handleStart(e.clientX, e.clientY);
-
-        const onMouseMove = (moveEvent: MouseEvent) => {
-            handleMove(moveEvent.clientX, moveEvent.clientY);
-        };
-
-        const onMouseUp = () => {
-            handleEnd();
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-        };
-
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-    };
-
+const StaticFab = ({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) => {
     return createPortal(
-        <div
-            style={{
-                left: `${position.x}px`,
-                top: `${position.y}px`,
-                touchAction: 'none'
-            }}
-            className="fixed z-[100] cursor-move"
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-            onMouseDown={onMouseDown}
+        <button
+            onClick={onClick}
+            className="fixed z-[100] right-4 w-14 h-14 bg-primary text-black rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-200 lg:hidden"
+            style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom) + 10px)' }}
         >
-            <button
-                className="w-14 h-14 bg-primary text-black rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform duration-200"
-            >
-                <div className="relative">
-                    <MessageCircle size={24} fill="currentColor" />
-                </div>
-            </button>
-        </div>,
+            {isOpen ? <X size={24} /> : <MessageCircle size={24} fill="currentColor" />}
+        </button>,
         document.body
     );
 };
@@ -239,10 +162,8 @@ const MessagesPage: React.FC = () => {
             w-full max-w-[1600px] mx-auto animate-in fade-in duration-500 flex flex-col overflow-hidden
             fixed inset-x-0 bottom-0 top-16 ${isOverlayOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-[calc(100vh_-_8rem)] lg:pt-4 lg:px-8 lg:bg-transparent
         `}>
-            {/* Draggable FAB for Mobile */}
-            <div className="lg:hidden">
-                <DraggableFab onClick={() => setIsSidebarOpen(true)} />
-            </div>
+            {/* Static FAB for Mobile */}
+            <StaticFab isOpen={isSidebarOpen} onClick={() => setIsSidebarOpen(!isSidebarOpen)} />
 
             {/* Desktop Header */}
             <div className="hidden lg:flex items-end justify-between mb-6 shrink-0">

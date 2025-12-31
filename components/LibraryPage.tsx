@@ -793,7 +793,7 @@ const CreatePlaylistModalComponent: React.FC<{
                     onChange={(e) => setPlaylistName(e.target.value)}
                     placeholder="Give your playlist a name"
                     className="w-full bg-transparent border-none text-2xl font-bold text-white placeholder-neutral-600 focus:outline-none focus:ring-0 px-0"
-                // autoFocus removed to prevent keyboard opening on mobile default
+                    autoFocus={window.innerWidth >= 768}
                 />
                 <div className="h-[1px] w-full bg-neutral-800 mt-2"></div>
                 <p className="text-xs text-neutral-500 mt-3 font-medium">

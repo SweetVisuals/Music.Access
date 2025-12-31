@@ -596,7 +596,7 @@ const ContractsPage: React.FC = () => {
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Full Name</label>
                                 <input
-                                    autoFocus
+                                    autoFocus={window.innerWidth >= 768}
                                     type="text"
                                     value={signatureInput}
                                     onChange={(e) => setSignatureInput(e.target.value)}

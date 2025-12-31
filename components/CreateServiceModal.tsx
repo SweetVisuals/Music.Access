@@ -89,7 +89,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                                 onChange={(e) => setServiceData({ ...serviceData, title: e.target.value })}
                                 className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-2.5 md:py-4 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none focus:bg-neutral-900 transition-all font-medium placeholder:text-neutral-700"
                                 placeholder="e.g. Mixing & Mastering"
-                                autoFocus
+                                autoFocus={window.innerWidth >= 768}
                             />
                         </div>
 

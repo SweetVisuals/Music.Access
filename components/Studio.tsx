@@ -27,7 +27,8 @@ import {
     Filter,
     Eye,
     Briefcase,
-    Menu
+    Menu,
+    LayoutList
 } from 'lucide-react';
 import { MOCK_CONTRACTS, MOCK_NOTES } from '../constants';
 import {
@@ -207,7 +208,7 @@ const Studio: React.FC<StudioProps> = ({
                                     onChange={(e) => setNewProjectTitle(e.target.value)}
                                     placeholder="e.g. Summer Hitz Vol. 1"
                                     className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl px-4 py-4 text-lg text-white font-bold placeholder-neutral-700 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 focus:outline-none transition-all"
-                                    autoFocus
+                                    autoFocus={window.innerWidth >= 768}
                                 />
                             </div>
 
@@ -270,7 +271,7 @@ const Studio: React.FC<StudioProps> = ({
             )}
 
             {activeView === 'dashboard' ? (
-                <div className="w-full max-w-[1600px] mx-auto pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+                <div className="w-full max-w-[1600px] mx-auto pb-40 lg:pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
                         <div>
                             <h1 className="text-3xl font-black text-white tracking-tight mb-1">My Studio</h1>
@@ -377,6 +378,7 @@ const Studio: React.FC<StudioProps> = ({
                             setSelectedProject(updated);
                         }}
                         isPlaying={isPlaying}
+                        setProjects={setProjects}
                         currentTrackId={currentTrackId}
                         onPlayTrack={onPlayTrack}
                         onTogglePlay={onTogglePlay}
@@ -393,6 +395,7 @@ interface WorkspaceViewProps {
     project: StudioProject;
     onBack: () => void;
     onUpdate: (project: StudioProject) => void;
+    setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
     isPlaying: boolean;
     currentTrackId: string | null;
     onPlayTrack: (project: Project, trackId: string) => void;
@@ -403,6 +406,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     project,
     onBack,
     onUpdate,
+    setProjects,
     isPlaying,
     currentTrackId,
     onPlayTrack,
@@ -736,6 +740,23 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                             <span className={`uppercase font-bold ${project.status === 'ready' ? 'text-green-500' : 'text-primary'}`}>{project.status}</span>
                         </div>
                     </div>
+
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm('Are you sure you want to delete this entire workspace? This cannot be undone.')) {
+                                deleteProjectService(project.id).then(() => {
+                                    setProjects(prev => prev.filter(p => p.id !== project.id));
+                                    onBack();
+                                }).catch(err => console.error("Failed to delete workspace:", err));
+                            }
+                        }}
+                        className="ml-2 p-2 text-neutral-500 hover:text-red-500 transition-colors"
+                        title="Delete Workspace"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+
                     {/* Mobile Library Toggle */}
                     <button
                         className="ml-auto lg:hidden p-2 border border-neutral-700 rounded text-neutral-400"
@@ -745,11 +766,47 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                     </button>
                 </div>
 
-                <div className="flex overflow-x-auto w-full lg:w-auto bg-neutral-900 p-1 rounded-lg border border-neutral-800 no-scrollbar">
-                    <TabBtn active={tab === 'overview'} onClick={() => setTab('overview')} label="Overview" />
-                    <TabBtn active={tab === 'tracks'} onClick={() => setTab('tracks')} label="Tracks" icon={<Music size={14} />} />
-                    <TabBtn active={tab === 'contracts'} onClick={() => setTab('contracts')} label="Contracts" icon={<FileText size={14} />} />
-                    <TabBtn active={tab === 'files'} onClick={() => setTab('files')} label="Files" icon={<Folder size={14} />} />
+                {/* Tabs - Mobile (Grid) & Desktop (Pills/List) */}
+                <div className="w-full lg:w-auto">
+                    {/* Mobile Grid Layout */}
+                    <div className="lg:hidden grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5 w-full">
+                        <button
+                            onClick={() => setTab('overview')}
+                            className={`flex flex-col items-center justify-center gap-1 py-2 rounded transition-all ${tab === 'overview' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        >
+                            <LayoutList size={14} className={tab === 'overview' ? 'text-primary' : ''} />
+                            <span className="text-[9px] font-bold uppercase tracking-tight">Overview</span>
+                        </button>
+                        <button
+                            onClick={() => setTab('tracks')}
+                            className={`flex flex-col items-center justify-center gap-1 py-2 rounded transition-all ${tab === 'tracks' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        >
+                            <Music size={14} className={tab === 'tracks' ? 'text-primary' : ''} />
+                            <span className="text-[9px] font-bold uppercase tracking-tight">Tracks</span>
+                        </button>
+                        <button
+                            onClick={() => setTab('contracts')}
+                            className={`flex flex-col items-center justify-center gap-1 py-2 rounded transition-all ${tab === 'contracts' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        >
+                            <FileText size={14} className={tab === 'contracts' ? 'text-primary' : ''} />
+                            <span className="text-[9px] font-bold uppercase tracking-tight">Contracts</span>
+                        </button>
+                        <button
+                            onClick={() => setTab('files')}
+                            className={`flex flex-col items-center justify-center gap-1 py-2 rounded transition-all ${tab === 'files' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+                        >
+                            <Folder size={14} className={tab === 'files' ? 'text-primary' : ''} />
+                            <span className="text-[9px] font-bold uppercase tracking-tight">Files</span>
+                        </button>
+                    </div>
+
+                    {/* Desktop Flex Layout (Existing) */}
+                    <div className="hidden lg:flex overflow-x-auto bg-neutral-900 p-1 rounded-lg border border-neutral-800 no-scrollbar">
+                        <TabBtn active={tab === 'overview'} onClick={() => setTab('overview')} label="Overview" icon={<LayoutList size={14} />} />
+                        <TabBtn active={tab === 'tracks'} onClick={() => setTab('tracks')} label="Tracks" icon={<Music size={14} />} />
+                        <TabBtn active={tab === 'contracts'} onClick={() => setTab('contracts')} label="Contracts" icon={<FileText size={14} />} />
+                        <TabBtn active={tab === 'files'} onClick={() => setTab('files')} label="Files" icon={<Folder size={14} />} />
+                    </div>
                 </div>
 
                 <div className="hidden lg:flex items-center gap-2">
@@ -763,7 +820,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
 
                 {/* LEFT CONTENT (Dynamic based on Tab) */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6 pb-12">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6 pb-40 lg:pb-12">
 
                     {tab === 'overview' && (
                         <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-2">

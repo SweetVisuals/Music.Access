@@ -343,10 +343,18 @@ const NotesPage: React.FC = () => {
     const [isMobileAssistantOpen, setMobileAssistantOpen] = useState(false);
     const [mobileAssistantTab, setMobileAssistantTab] = useState<'rhymes' | 'tools'>('rhymes');
 
-    // Mobile Sheet Logic
     const [mobileSheetHeight, setMobileSheetHeight] = useState(40); // Initial height in vh
     const sheetDragStart = useRef<number>(0);
     const sheetStartHeight = useRef<number>(0);
+
+    // Sync sheet height to CSS variable for MusicPlayer positioning
+    useEffect(() => {
+        if (isToolkitOpen) {
+            document.documentElement.style.setProperty('--notes-toolkit-height', `${mobileSheetHeight}vh`);
+        } else {
+            document.documentElement.style.setProperty('--notes-toolkit-height', '0vh');
+        }
+    }, [isToolkitOpen, mobileSheetHeight]);
 
     const handleSheetDragStart = (e: React.TouchEvent) => {
         sheetDragStart.current = e.touches[0].clientY;

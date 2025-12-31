@@ -911,7 +911,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                             />
                                             {renamingId === folder.id ? (
                                                 <input
-                                                    autoFocus
+                                                    autoFocus={window.innerWidth >= 768}
                                                     value={renameValue}
                                                     onChange={(e) => setRenameValue(e.target.value)}
                                                     onBlur={handleFinishRename}
@@ -997,7 +997,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
                                             {renamingId === file.id ? (
                                                 <input
-                                                    autoFocus
+                                                    autoFocus={window.innerWidth >= 768}
                                                     value={renameValue}
                                                     onChange={(e) => setRenameValue(e.target.value)}
                                                     onBlur={handleFinishRename}
@@ -1078,7 +1078,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
                                             {renamingId === item.id ? (
                                                 <input
-                                                    autoFocus
+                                                    autoFocus={window.innerWidth >= 768}
                                                     value={renameValue}
                                                     onChange={(e) => setRenameValue(e.target.value)}
                                                     onBlur={handleFinishRename}

@@ -19,14 +19,17 @@ import {
     Briefcase,
     ArrowLeft,
     ShoppingBag,
+    Clock,
     LayoutGrid,
     Clipboard,
-    ChevronRight,
+    LogOut,
     LogIn,
     X,
+    CreditCard,
+    Gem,
+    ChevronRight,
     Target,
-    Map,
-    Gem
+    Map
 } from 'lucide-react';
 import { View, UserProfile, TalentProfile } from '../types';
 import { getStorageUsage, getFollowingProfilesForSidebar, supabase } from '../services/supabaseService';
@@ -350,6 +353,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                         onClick={() => onNavigate('dashboard-settings')}
                                     />
                                     <SidebarItem
+                                        icon={<CreditCard size={14} />}
+                                        label="Subscription"
+                                        active={currentView === 'subscription'}
+                                        onClick={() => onNavigate('subscription')}
+                                    />
+                                    <SidebarItem
                                         icon={<HelpCircle size={14} />}
                                         label="Get Help"
                                         active={currentView === 'dashboard-help' || currentView === 'help'}
@@ -503,6 +512,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                         onClick={() => onNavigate('settings')}
                                     />
                                     <SidebarItem
+                                        icon={<CreditCard size={14} />}
+                                        label="Subscription"
+                                        active={currentView === 'subscription'}
+                                        onClick={() => onNavigate('subscription')}
+                                    />
+                                    <SidebarItem
                                         icon={<HelpCircle size={14} />}
                                         label="Get Help"
                                         active={currentView === 'help'}
@@ -512,35 +527,30 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             </div>
                         </>
                     )}
-
                 </div>
 
                 {/* Footer - Storage & Profile or Guest */}
-                <div className="px-4 pt-4 pb-[calc(0.25rem+env(safe-area-inset-bottom))] border-t border-neutral-800 bg-[#080808] shrink-0">
+                <div className={`px-4 pt-4 border-t border-neutral-800 bg-[#080808] shrink-0 transition-all duration-300 ${isPlayerActive ? 'pb-[calc(8.5rem+env(safe-area-inset-bottom))]' : 'pb-[calc(5rem+env(safe-area-inset-bottom))]'} lg:pb-4`}>
+
+                    {/* Storage Info - Visible on Mobile & Desktop */}
+                    <div className="mb-4 px-0.5">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Storage</span>
+                            <span className="text-[9px] font-mono text-neutral-500 font-bold">{formatStorageSize(storageUsage.used)} / {formatStorageSize(storageUsage.limit)}</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-primary rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(var(--primary),0.3)]"
+                                style={{ width: `${Math.min((storageUsage.used / storageUsage.limit) * 100, 100)}%` }}
+                            ></div>
+                        </div>
+                    </div>
 
                     {isLoggedIn ? (
                         <>
-                            {/* Storage Info - Hide if player is active (playing or paused) */}
-                            {!isPlayerActive && (
-                                <div className="mb-4 px-0.5">
-                                    <div className="flex justify-between items-end mb-2">
-                                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Storage</span>
-                                        <span className="text-[9px] font-mono text-neutral-500 font-bold">{formatStorageSize(storageUsage.used)} / {formatStorageSize(storageUsage.limit)}</span>
-                                    </div>
-                                    <div className="h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-primary rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(var(--primary),0.3)]"
-                                            style={{ width: `${Math.min((storageUsage.used / storageUsage.limit) * 100, 100)}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {!isPlayerActive && <div className="h-px bg-neutral-800/50 mb-4"></div>}
-
-                            {/* User Profile */}
+                            {/* User Profile - Hidden on mobile */}
                             {profileLoading || !userProfile ? (
-                                <div className="flex items-center gap-3 p-1">
+                                <div className="hidden lg:flex items-center gap-3 p-1">
                                     {/* Avatar Skeleton */}
                                     <div className="h-9 w-9 rounded-lg bg-neutral-800 animate-pulse shrink-0"></div>
 
@@ -552,7 +562,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                     </div>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-3 group cursor-pointer hover:bg-white/5 p-1.5 -mx-1.5 rounded-xl transition-all" onClick={() => onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile')}>
+                                <div className="hidden lg:flex items-center gap-3 group cursor-pointer hover:bg-white/5 p-1.5 -mx-1.5 rounded-xl transition-all" onClick={() => onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile')}>
                                     {/* Avatar - Square */}
                                     <div className="h-9 w-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden relative shrink-0 group-hover:border-primary/40 transition-colors">
                                         <img src={userProfile?.avatar || 'https://i.pravatar.cc/150?u=user'} alt={userProfile?.username || 'User'} className="h-full w-full object-cover" />
@@ -571,7 +581,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                         </>
                     ) : (
                         /* GUEST FOOTER */
-                        <div className="p-1.5 bg-white/5 rounded-xl border border-white/5">
+                        <div className="hidden lg:block p-1.5 bg-white/5 rounded-xl border border-white/5">
                             <div className="flex items-center gap-2 mb-2">
                                 <div className="w-6 h-6 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-500 border border-neutral-700">
                                     <Users size={12} />

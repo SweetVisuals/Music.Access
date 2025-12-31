@@ -92,6 +92,8 @@ export interface UserProfile {
   streams?: number;
   gems: number;
   balance: number;
+  plan?: 'Basic' | 'Pro' | 'Studio+';
+  promo_credits?: number;
   lastGemClaimDate?: string;
   bio: string;
   website?: string;
@@ -143,10 +145,6 @@ export interface FilterState {
   searchQuery: string;
 }
 
-export interface AiMessage {
-  role: 'user' | 'model';
-  text: string;
-}
 
 export interface Message {
   id: string;
@@ -288,6 +286,7 @@ export type View =
   | 'dashboard-settings'
   | 'dashboard-roadmap'
   | 'dashboard-help'
+  | 'subscription'
   | 'settings'
   | 'help'
   | 'terms'
@@ -315,7 +314,6 @@ export interface StageField {
   placeholder?: string;
   options?: string[]; // For select/multiselect
   required?: boolean;
-  aiEnabled?: boolean; // Show AI brainstorming button
   allowCustom?: boolean; // Allow custom text input in select
   allowSecondary?: boolean; // Allow selecting a primary and secondary option
   maxSelections?: number; // Max number of ranked selections (default 1, if allowSecondary then default 2, can be set to 3)

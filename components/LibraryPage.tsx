@@ -375,7 +375,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
 
 
     return (
-        <div className="w-full max-w-[1600px] mx-auto pb-32 pt-4 lg:pt-6 px-4 lg:px-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-[1600px] mx-auto pb-12 pt-4 lg:pt-6 px-4 lg:px-8 animate-in fade-in duration-500">
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 lg:mb-8 gap-4">
                 <div>

@@ -637,7 +637,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
     return (
         <div
-            className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500 min-h-[80vh]"
+            className="w-full max-w-[1600px] mx-auto pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500 min-h-[80vh]"
             onContextMenu={(e) => handleContextMenu(e, 'background')}
         >
             {/* Header & Breadcrumb */}

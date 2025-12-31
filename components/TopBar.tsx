@@ -69,10 +69,15 @@ const RightActions: React.FC<{
     onOpenAuth, onLogout, isSpacer = false, onMobileSearchOpen
 }) => {
         // Spacer helper: makes content invisible and non-interactive
-        const spacerClass = isSpacer ? "opacity-0 pointer-events-none select-none" : "opacity-100";
+        // Spacer helper: makes content invisible and non-interactive
+        const visibilityClasses = (mobileSearchOpen || isSpacer)
+            ? 'opacity-0 pointer-events-none select-none'
+            : 'opacity-100';
+
+        const transformClasses = mobileSearchOpen ? 'translate-x-8' : 'translate-x-0';
 
         return (
-            <div className={`flex items-center justify-end gap-2 sm:gap-3 z-40 h-full shrink-0 transition-all duration-300 ${mobileSearchOpen ? 'opacity-0 translate-x-8 pointer-events-none' : 'opacity-100 translate-x-0'} ${spacerClass}`}>
+            <div className={`flex items-center justify-end gap-2 sm:gap-3 z-40 h-full shrink-0 transition-all duration-300 ${transformClasses} ${visibilityClasses}`}>
 
 
                 {/* Group 1: Balances */}
@@ -345,9 +350,7 @@ const RightActions: React.FC<{
                                     <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
                                         <User size={12} /> My Profile
                                     </button>
-                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('dashboard-overview'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
-                                        <Terminal size={12} /> Overview
-                                    </button>
+
                                     <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('settings'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
                                         <Settings size={12} /> Settings
                                     </button>
@@ -579,10 +582,10 @@ const TopBar: React.FC<TopBarProps> = ({
             {/* SEARCH BAR */}
             <div
                 className={`
-                transition-all duration-400 z-50
+                transition-all duration-400
                 ${mobileSearchOpen
-                        ? 'absolute inset-0 bg-[#050505] flex items-center px-4 opacity-100 pointer-events-auto translate-x-0'
-                        : 'opacity-0 pointer-events-none absolute inset-0 translate-x-4 lg:absolute lg:inset-x-0 lg:flex lg:justify-center lg:items-center lg:pointer-events-auto lg:opacity-100 lg:translate-x-0 mx-auto'
+                        ? 'absolute inset-0 bg-[#050505] flex items-center px-4 opacity-100 pointer-events-auto translate-x-0 z-[70]'
+                        : 'opacity-0 pointer-events-none absolute inset-0 translate-x-4 lg:absolute lg:inset-x-0 lg:flex lg:justify-center lg:items-center lg:pointer-events-auto lg:opacity-100 lg:translate-x-0 mx-auto z-50'
                     }
                 ${!mobileSearchOpen && isFocused ? 'lg:max-w-[35rem] xl:max-w-[45rem] w-full' : 'lg:max-w-[24rem] xl:max-w-[32rem] w-full'}
             `}

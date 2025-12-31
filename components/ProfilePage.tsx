@@ -253,7 +253,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
     if (!userProfile) {
         return (
-            <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+            <div className="w-full max-w-[1600px] mx-auto pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
                 <div className="flex flex-col items-center justify-center py-32 text-center">
                     <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center mb-4">
                         <UserPlus size={32} className="text-neutral-500" />
@@ -444,7 +444,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     };
 
     return (
-        <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-[1600px] mx-auto pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
 
             <CreateProjectModal
                 isOpen={isCreateModalOpen}
@@ -1182,7 +1182,7 @@ const TabButton: React.FC<TabButtonProps> = ({ active, onClick, icon, label, cou
 export default ProfilePage;
 
 const ProfileSkeleton = () => (
-    <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+    <div className="w-full max-w-[1600px] mx-auto pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
         <div className="relative rounded-3xl overflow-hidden bg-[#0a0a0a] border border-neutral-800 mb-8 shadow-2xl animate-pulse">
             <div className="h-72 w-full bg-neutral-900 border-b border-white/5"></div>
             <div className="relative px-8 pb-8 -mt-24 flex flex-col md:flex-row items-end gap-8">

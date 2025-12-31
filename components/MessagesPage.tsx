@@ -84,7 +84,7 @@ const SwipeableConversationItem = ({
                     setOffset(0);
                 }}
             >
-                <span className="text-white font-bold flex items-center gap-2">
+                <span className="text-white font-bold flex items-center gap-1.5">
                     <Trash size={20} />
                     <span className="text-xs font-semibold uppercase tracking-wider">Delete</span>
                 </span>

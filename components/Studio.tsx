@@ -179,7 +179,7 @@ const Studio: React.FC<StudioProps> = ({
         <div className="w-full h-full flex flex-col relative">
             {/* NEW PROJECT MODAL */}
             {isCreateModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md md:p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md md:p-4 animate-in fade-in duration-200">
                     <div className="w-full h-full md:h-auto md:max-w-md bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl shadow-2xl flex flex-col max-h-none md:max-h-[90vh] overflow-hidden relative">
 
                         {/* Header */}
@@ -247,7 +247,7 @@ const Studio: React.FC<StudioProps> = ({
                         </div>
 
                         {/* Footer (Mobile Bottom Bar Safe) */}
-                        <div className="p-6 pt-4 border-t border-white/5 bg-[#0a0a0a] pb-8 md:pb-6 shrink-0 mt-auto">
+                        <div className="p-6 pt-4 border-t border-white/5 bg-[#0a0a0a] pb-[calc(2rem+env(safe-area-inset-bottom))] md:pb-6 shrink-0 mt-auto">
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setIsCreateModalOpen(false)}
@@ -270,7 +270,7 @@ const Studio: React.FC<StudioProps> = ({
             )}
 
             {activeView === 'dashboard' ? (
-                <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+                <div className="w-full max-w-[1600px] mx-auto pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
                         <div>
                             <h1 className="text-3xl font-black text-white tracking-tight mb-1">My Studio</h1>
@@ -644,7 +644,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
             {/* ATTACH NOTE MODAL */}
             {attachNoteModalOpen && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm md:p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-sm md:p-4 animate-in fade-in duration-200">
                     <div className="w-full h-full md:h-auto md:max-w-lg bg-neutral-900 border-0 md:border border-neutral-800 rounded-none md:rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-none md:max-h-[85vh]">
                         <div className="flex items-center justify-between p-4 border-b border-white/5">
                             <h3 className="font-bold text-white flex items-center gap-2">
@@ -679,8 +679,9 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
             {/* CONTRACT VIEWER MODAL */}
             {activeContract && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm md:p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-sm md:p-4 animate-in fade-in duration-200">
                     <div className="w-full h-full md:h-auto md:max-w-2xl bg-white text-black rounded-none md:rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-none md:max-h-[85vh] animate-in slide-in-from-bottom-4 duration-300">
+
                         <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
                             <div>
                                 <h3 className="font-bold text-lg">{activeContract.title}</h3>
@@ -762,7 +763,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
 
                 {/* LEFT CONTENT (Dynamic based on Tab) */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6 pb-32">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6 pb-12">
 
                     {tab === 'overview' && (
                         <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-2">

@@ -8,8 +8,6 @@ import {
     Copy,
     Trash2,
     FileText,
-    Sparkles,
-    Brain,
     Send,
     Globe,
     Mic,
@@ -34,7 +32,6 @@ import {
     RotateCcw,
     Trash
 } from 'lucide-react';
-import { getWritingAssistance } from '../services/geminiService';
 import { getRhymesForWord } from '../services/geminiService';
 
 // ... (existing code)
@@ -222,8 +219,10 @@ const NotesPage: React.FC = () => {
     // View State
     const [viewMode, setViewMode] = useState<'editor' | 'browser'>('editor');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state
-    const [aiRhymes, setAiRhymes] = useState<string[]>([]);
-    const [isAiRhymeLoading, setIsAiRhymeLoading] = useState(false);
+    const [rhymes, setRhymes] = useState<string[]>([]);
+    const [isRhymeLoading, setIsRhymeLoading] = useState(false);
+    const [isToolkitOpen, setToolkitOpen] = useState(false);
+    const [toolkitTab, setToolkitTab] = useState<'rhymes' | 'tools'>('rhymes');
 
     // Hidden file input ref
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -334,12 +333,7 @@ const NotesPage: React.FC = () => {
     const [rhymeMode, setRhymeMode] = useState(false);
     const [accent, setAccent] = useState<'US' | 'UK'>('US');
     const [audioPlaying, setAudioPlaying] = useState(false);
-    const [assistantTab, setAssistantTab] = useState<'rhymes' | 'chat'>('rhymes');
-
-    // AI State
-    const [aiPrompt, setAiPrompt] = useState('');
-    const [aiResponse, setAiResponse] = useState<string | null>(null);
-    const [aiLoading, setAiLoading] = useState(false);
+    const [assistantTab, setAssistantTab] = useState<'rhymes' | 'tools'>('rhymes');
     const [cursorIndex, setCursorIndex] = useState(0);
     const [selection, setSelection] = useState<{ start: number, end: number, text: string } | null>(null);
     const [textSize, setTextSize] = useState<'xs' | 'sm' | 'base' | 'lg'>('xs'); // New text size state
@@ -347,7 +341,7 @@ const NotesPage: React.FC = () => {
 
     // Mobile Assistant State
     const [isMobileAssistantOpen, setMobileAssistantOpen] = useState(false);
-    const [mobileAssistantTab, setMobileAssistantTab] = useState<'rhymes' | 'chat'>('rhymes');
+    const [mobileAssistantTab, setMobileAssistantTab] = useState<'rhymes' | 'tools'>('rhymes');
 
     // Mobile Sheet Logic
     const [mobileSheetHeight, setMobileSheetHeight] = useState(40); // Initial height in vh
@@ -409,11 +403,10 @@ const NotesPage: React.FC = () => {
         const newTimer = setTimeout(() => {
             const word = getTargetWord(target.value, target.selectionStart);
             if (word && word.length > 2 && word !== lastRhymedWordRef.current) {
-                // Check for rate limiting or duplicate fetch
-                lastRhymedWordRef.current = word; // Optimistic lock
-                handleAiRhymeSearch(word);
+                lastRhymedWordRef.current = word;
+                handleRhymeSearch(word);
             }
-        }, 1000); // 1s debounce to avoid spamming while typing/moving
+        }, 1000);
 
         setDebouncedRhymeTrigger(newTimer);
     };
@@ -432,19 +425,16 @@ const NotesPage: React.FC = () => {
         }
     };
 
-    const handleAiRhymeSearch = async (word: string) => {
+    const handleRhymeSearch = async (word: string) => {
         if (!word) return;
-
-        setIsAiRhymeLoading(true);
+        setIsRhymeLoading(true);
         try {
-            const rhymes = await getRhymesForWord(word);
-            if (rhymes.length > 0) {
-                setAiRhymes(rhymes);
-            }
+            const results = await getRhymesForWord(word);
+            setRhymes(results);
         } catch (e) {
             console.error(e);
         } finally {
-            setIsAiRhymeLoading(false);
+            setIsRhymeLoading(false);
         }
     };
 
@@ -499,30 +489,8 @@ const NotesPage: React.FC = () => {
 
 
 
-    const handleAiSubmit = async (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        if (!aiPrompt.trim() || !activeNote) return;
-
-        setAiLoading(true);
-        setAiResponse(null);
-
-        try {
-            const response = await getWritingAssistance(aiPrompt, activeNote.content);
-            setAiResponse(response);
-            setAiPrompt('');
-        } catch (error) {
-            console.error('AI Request failed:', error);
-            // Optional: set an error state here to show to user
-        } finally {
-            setAiLoading(false);
-        }
-    };
-
-    const insertAiResponse = () => {
-        if (!aiResponse || !activeNote) return;
-        const newContent = activeNote.content + "\n\n" + aiResponse;
-        handleUpdateContent(newContent);
-        setAiResponse(null);
+    const handleExport = () => {
+        alert("Export feature coming soon to Studio+!");
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -630,11 +598,11 @@ const NotesPage: React.FC = () => {
             const lastWord = words[words.length - 1]?.replace(/[^a-zA-Z]/g, '');
 
             if (lastWord && lastWord.length > 2) {
-                setIsAiRhymeLoading(true);
-                getRhymesForWord(lastWord).then(rhymes => {
-                    setAiRhymes(rhymes);
-                    setIsAiRhymeLoading(false);
-                }).catch(() => setIsAiRhymeLoading(false));
+                setIsRhymeLoading(true);
+                getRhymesForWord(lastWord).then(results => {
+                    setRhymes(results);
+                    setIsRhymeLoading(false);
+                }).catch(() => setIsRhymeLoading(false));
             }
         }
     };
@@ -663,7 +631,7 @@ const NotesPage: React.FC = () => {
     const getRhymeSuggestions = (word: string) => {
         // Always return AI rhymes if available, regardless of current cursor word match
         // This ensures that if a user selects a word, triggers AI, then moves cursor, the results stay until they select something else.
-        if (aiRhymes.length > 0) return aiRhymes;
+        if (rhymes.length > 0) return rhymes;
 
         if (!word || word.length < 2) return [];
         const lowerWord = word.toLowerCase();
@@ -676,7 +644,7 @@ const NotesPage: React.FC = () => {
         return [];
     };
 
-    const suggestions = aiRhymes.length > 0 ? aiRhymes : getRhymeSuggestions(currentWord);
+    const suggestions = rhymes.length > 0 ? rhymes : getRhymeSuggestions(currentWord);
 
     // --- Highlighting Renderer ---
     const renderHighlightedText = (text: string) => {
@@ -753,10 +721,10 @@ const NotesPage: React.FC = () => {
                     {selection && (
                         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-2 w-max max-w-[90vw]">
                             <button
-                                onClick={handleAiRhymeSearch}
+                                onClick={() => handleRhymeSearch(selection.text)}
                                 className="flex items-center gap-2 bg-neutral-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-primary/30 active:scale-95 transition-all backdrop-blur-md"
                             >
-                                <Brain size={16} className="text-primary" />
+                                <Music size={16} className="text-primary" />
                                 <span className="text-xs font-bold">Rhyme "{selection.text}"</span>
                             </button>
                         </div>
@@ -857,15 +825,15 @@ const NotesPage: React.FC = () => {
 
                             <button
                                 onClick={() => {
-                                    setMobileAssistantOpen(!isMobileAssistantOpen);
+                                    setToolkitOpen(!isToolkitOpen);
                                     setIsSizeExpanded(false);
                                 }}
                                 className={`flex-1 group flex flex-col items-center gap-1 transition-all py-1`}
                             >
-                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${isMobileAssistantOpen ? 'bg-primary text-black border-primary' : 'bg-transparent text-neutral-400 border-transparent group-hover:text-white'}`}>
-                                    <Sparkles size={18} className="stroke-[2.5px]" />
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${isToolkitOpen ? 'bg-primary text-black border-primary' : 'bg-transparent text-neutral-400 border-transparent group-hover:text-white'}`}>
+                                    <Globe size={18} className="stroke-[2.5px]" />
                                 </div>
-                                <span className={`text-[9px] uppercase tracking-wider font-mono font-bold ${isMobileAssistantOpen ? 'text-primary' : 'text-neutral-500'}`}>AI</span>
+                                <span className={`text-[9px] uppercase tracking-wider font-mono font-bold ${isToolkitOpen ? 'text-primary' : 'text-neutral-500'}`}>Tools</span>
                             </button>
 
                             <button
@@ -881,8 +849,8 @@ const NotesPage: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Mobile Assistant Sheet */}
-                {isMobileAssistantOpen && (
+                {/* Technical Toolkit Sheet */}
+                {isToolkitOpen && (
                     <div
                         style={{ height: `${mobileSheetHeight}vh` }}
                         className="lg:hidden absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[50] bg-black border-t-2 border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] flex flex-col animate-in slide-in-from-bottom-full duration-300 transition-[height] ease-out will-change-[height]"
@@ -908,32 +876,31 @@ const NotesPage: React.FC = () => {
 
                             {/* Close Button */}
                             <button
-                                onClick={() => setMobileAssistantOpen(false)}
+                                onClick={() => setToolkitOpen(false)}
                                 className="w-6 h-6 flex items-center justify-center rounded bg-white/10 text-neutral-400 hover:text-white hover:bg-white/20 active:scale-95 transition-all"
                             >
                                 <ChevronDown size={14} />
                             </button>
                         </div>
 
-                        {/* Tabs (Terminal Style) */}
                         <div className="flex items-center border-b border-white/10 bg-black">
                             <button
-                                onClick={() => setMobileAssistantTab('rhymes')}
-                                className={`flex-1 py-3 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative border-r border-white/5 ${mobileAssistantTab === 'rhymes' ? 'text-black bg-primary' : 'text-neutral-500 hover:text-white'}`}
+                                onClick={() => setToolkitTab('rhymes')}
+                                className={`flex-1 py-3 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative border-r border-white/5 ${toolkitTab === 'rhymes' ? 'text-black bg-primary' : 'text-neutral-500 hover:text-white'}`}
                             >
-                                <Brain size={12} /> Rhyme_Engine
+                                <Music size={12} /> Rhyme_Engine
                             </button>
                             <button
-                                onClick={() => setMobileAssistantTab('chat')}
-                                className={`flex-1 py-3 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative ${mobileAssistantTab === 'chat' ? 'text-black bg-primary' : 'text-neutral-500 hover:text-white'}`}
+                                onClick={() => setToolkitTab('tools')}
+                                className={`flex-1 py-3 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative ${toolkitTab === 'tools' ? 'text-black bg-primary' : 'text-neutral-500 hover:text-white'}`}
                             >
-                                <Sparkles size={12} /> AI_Terminal
+                                <FolderOpen size={12} /> Extras
                             </button>
                         </div>
 
                         {/* Content */}
                         <div className="flex-1 overflow-hidden relative bg-[#0c0c0c]">
-                            {mobileAssistantTab === 'rhymes' && (
+                            {toolkitTab === 'rhymes' && (
                                 <div className="h-full flex flex-col">
                                     <div className="p-2 border-b border-white/5 flex justify-between items-center bg-white/5">
                                         <span className="text-[9px] uppercase font-bold text-neutral-500">Target Word: <span className="text-white">{currentWord || "..."}</span></span>
@@ -967,43 +934,14 @@ const NotesPage: React.FC = () => {
                                 </div>
                             )}
 
-                            {mobileAssistantTab === 'chat' && (
-                                <div className="h-full flex flex-col">
-                                    <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
-                                        {aiResponse ? (
-                                            <div className="space-y-3">
-                                                <div className="p-3 bg-neutral-800/50 rounded-xl border border-white/5">
-                                                    <p className="text-xs text-neutral-200 leading-relaxed whitespace-pre-wrap">{aiResponse}</p>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <button onClick={insertAiResponse} className="flex-1 py-2 bg-primary text-black text-[10px] font-bold rounded-xl uppercase tracking-wide">Insert</button>
-                                                    <button onClick={() => setAiResponse(null)} className="flex-1 py-2 bg-white/10 text-white text-[10px] font-bold rounded-xl uppercase tracking-wide">Clear</button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center h-full text-neutral-600 opacity-50">
-                                                <Sparkles size={32} className="mb-2" />
-                                                <p className="text-xs">Ask AI for suggestions...</p>
-                                            </div>
-                                        )}
+                            {toolkitTab === 'tools' && (
+                                <div className="h-full flex flex-col p-6 items-center justify-center text-center">
+                                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
+                                        <Plus size={32} />
                                     </div>
-                                    <div className="p-3 bg-black/40 border-t border-neutral-800 pb-[calc(env(safe-area-inset-bottom)+8rem)]">
-                                        <form onSubmit={handleAiSubmit} className="relative">
-                                            <input
-                                                value={aiPrompt}
-                                                onChange={(e) => setAiPrompt(e.target.value)}
-                                                className="w-full bg-neutral-800 border-none rounded-full pl-3 pr-8 py-2 text-xs text-white focus:ring-1 focus:ring-primary placeholder-neutral-500"
-                                                placeholder="Ask AI..."
-                                            />
-                                            <button
-                                                type="submit"
-                                                disabled={aiLoading || !aiPrompt.trim()}
-                                                className="absolute right-1 top-1/2 -translate-y-1/2 p-2 text-primary disabled:opacity-50"
-                                            >
-                                                {aiLoading ? <Sparkles size={14} className="animate-spin" /> : <ArrowRight size={18} />}
-                                            </button>
-                                        </form>
-                                    </div>
+                                    <h4 className="text-white font-bold mb-2">Advanced Workflow</h4>
+                                    <p className="text-xs text-neutral-500 mb-6">PDF Export, Custom Themes, and Voice-to-Lyrics coming soon to Studio+.</p>
+                                    <button onClick={handleExport} className="w-full py-3 bg-white text-black text-xs font-bold rounded-xl uppercase tracking-widest">Upgrade to Studio+</button>
                                 </div>
                             )}
                         </div>
@@ -1011,7 +949,7 @@ const NotesPage: React.FC = () => {
                 )}
 
                 {/* Restore Mobile FAB - Removed for Seamless Integration */}
-                {!isMobileAssistantOpen && !isSidebarOpen && !isSizeExpanded && (
+                {!isToolkitOpen && !isSidebarOpen && !isSizeExpanded && (
                     <div /> // Placeholder to cleaner diff, effectively removing FAB
                 )}
             </div>
@@ -1025,13 +963,13 @@ const NotesPage: React.FC = () => {
                         onClick={() => setAssistantTab('rhymes')}
                         className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${assistantTab === 'rhymes' ? 'text-primary bg-primary/5 border-b-2 border-primary' : 'text-neutral-500 hover:text-white'}`}
                     >
-                        <Brain size={14} /> Rhymes
+                        <Music size={14} /> Rhymes
                     </button>
                     <button
-                        onClick={() => setAssistantTab('chat')}
-                        className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${assistantTab === 'chat' ? 'text-primary bg-primary/5 border-b-2 border-primary' : 'text-neutral-500 hover:text-white'}`}
+                        onClick={() => setAssistantTab('tools')}
+                        className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${assistantTab === 'tools' ? 'text-primary bg-primary/5 border-b-2 border-primary' : 'text-neutral-500 hover:text-white'}`}
                     >
-                        <Sparkles size={14} /> AI Chat
+                        <FileText size={14} /> Extras
                     </button>
                 </div>
 
@@ -1078,14 +1016,14 @@ const NotesPage: React.FC = () => {
                                 ) : (
                                     <div className="flex flex-col items-center justify-center h-40 text-neutral-600 space-y-3 mt-10">
                                         <div className="w-12 h-12 rounded-full bg-neutral-900 flex items-center justify-center">
-                                            {isAiRhymeLoading ? (
-                                                <Sparkles size={20} className="animate-pulse text-primary" />
+                                            {isRhymeLoading ? (
+                                                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
                                             ) : (
                                                 <Mic size={20} className="opacity-50" />
                                             )}
                                         </div>
                                         <p className="text-xs text-center px-4 leading-relaxed">
-                                            {isAiRhymeLoading ? 'Analysing rhymes...' : 'Type or select a word to see rhymes.'}
+                                            {isRhymeLoading ? 'Analysing rhymes...' : 'Type or select a word to see rhymes.'}
                                         </p>
                                     </div>
                                 )}
@@ -1093,56 +1031,22 @@ const NotesPage: React.FC = () => {
                         </>
                     )}
 
-                    {/* CHAT TAB */}
-                    {assistantTab === 'chat' && (
-                        <div className="flex flex-col h-full">
-                            <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
-                                {aiResponse ? (
-                                    <div className="animate-in fade-in slide-in-from-bottom-2">
-                                        <div className="p-3 bg-neutral-900/50 border border-primary/20 rounded-xl mb-4">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <div className="p-1 bg-primary/10 rounded text-primary"><Sparkles size={12} /></div>
-                                                <span className="text-[10px] font-bold uppercase text-primary">Suggestion</span>
-                                            </div>
-                                            <p className="text-sm text-neutral-200 leading-relaxed whitespace-pre-wrap">{aiResponse}</p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button onClick={insertAiResponse} className="flex-1 py-2 bg-primary text-black text-xs font-bold rounded-lg hover:bg-primary/90">Insert</button>
-                                            <button onClick={() => setAiResponse(null)} className="flex-1 py-2 bg-white/5 text-white text-xs font-bold rounded-lg hover:bg-white/10">Discard</button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center h-full text-neutral-600 opacity-50">
-                                        <Brain size={32} className="mb-2" />
-                                        <p className="text-xs text-center">Ask for ideas, synonyms, or help with a block.</p>
-                                    </div>
-                                )}
+                    {/* TOOLS TAB */}
+                    {assistantTab === 'tools' && (
+                        <div className="flex flex-col h-full p-8 items-center justify-center text-center">
+                            <div className="w-20 h-20 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary mb-6">
+                                <Plus size={32} />
                             </div>
-
-                            <div className="p-4 border-t border-neutral-800 bg-neutral-900/10">
-                                <div className="relative">
-                                    <textarea
-                                        value={aiPrompt}
-                                        onChange={(e) => setAiPrompt(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                handleAiSubmit();
-                                            }
-                                        }}
-                                        className="w-full bg-neutral-900 border border-neutral-800 rounded-xl pl-3 pr-10 py-3 text-sm text-white focus:outline-none focus:border-primary/50 min-h-[50px] max-h-[120px] resize-none scrollbar-hide"
-                                        placeholder="Ask AI..."
-                                        disabled={aiLoading}
-                                    />
-                                    <button
-                                        onClick={handleAiSubmit}
-                                        disabled={aiLoading || !aiPrompt.trim()}
-                                        className="absolute right-2 bottom-2 p-1.5 bg-primary text-black rounded-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:scale-100"
-                                    >
-                                        {aiLoading ? <Sparkles size={14} className="animate-spin" /> : <Send size={14} />}
-                                    </button>
-                                </div>
-                            </div>
+                            <h3 className="text-lg font-bold text-white mb-2">Studio+ Workflow</h3>
+                            <p className="text-sm text-neutral-500 mb-8 leading-relaxed">
+                                Unlock PDF Export, Custom Notebook Themes, and Voice-to-Lyrics with the Studio+ plan.
+                            </p>
+                            <button
+                                onClick={handleExport}
+                                className="w-full py-3 bg-white text-black text-xs font-bold rounded-xl hover:bg-neutral-200 transition-all uppercase tracking-widest"
+                            >
+                                View Plans
+                            </button>
                         </div>
                     )}
                 </div>

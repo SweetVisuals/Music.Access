@@ -60,8 +60,8 @@ We are open to discussing structure, but here are example frameworks based on ou
 ## Revenue Model & Projections
 **Subscription Plans:**
 *   **Basic ($7.99/mo):** 5GB Cloud Storage & Mobile Studio Access.
-*   **Pro ($14.99/mo):** Includes 15GB Storage, Advanced AI Strategy, Collaboration features, 0% Marketplace fees.
-*   **Studio+ ($24.99/mo):** Includes 25GB Storage, Industry access, Contract automation, Distribution.
+*   **Pro ($14.99/mo):** Includes 15GB Storage, Advanced Collaboration features, and 0% Marketplace fees.
+*   **Studio+ ($24.99/mo):** Includes 25GB Storage, Enhanced Workflow Tools (Notes+, Contract Automation), and 100 Promotion Credits per month.
 
 **Blended ARPU Estimation:** ~$15.00/user/month (Conservative Estimate)
 

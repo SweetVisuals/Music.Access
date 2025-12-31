@@ -196,7 +196,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     trend="-2%"
                     positive={false}
                     color="text-orange-400"
-                    bgColor="bg-orange-400/10" />
+                    bgColor="bg-orange-400/10"
+                    className="hidden md:block" />
             </div>
             <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden">
                 <div className="p-6 border-b border-white/5">
@@ -294,7 +295,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         });
 
         return (
-            <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500 relative">
+            <div className="w-full max-w-[1600px] mx-auto pb-4 pt-6 px-6 lg:px-8 animate-in fade-in duration-500 relative">
                 {viewingReceipt && (
                     <ReceiptModal purchase={viewingReceipt} onClose={() => setViewingReceipt(null)} />
                 )}
@@ -490,7 +491,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     };
 
     return (
-        <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-[1600px] mx-auto pb-4 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
 
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
@@ -903,7 +904,7 @@ const CustomerOrderDetail = ({ purchase, onBack }: { purchase: Purchase, onBack:
     ];
 
     return (
-        <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-[1600px] mx-auto pb-4 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
             {/* Top Navigation */}
             <button onClick={onBack} className="flex items-center gap-2 text-neutral-500 hover:text-white mb-6 text-xs font-bold">
                 <ArrowLeft size={14} /> Back to Purchases

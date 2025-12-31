@@ -23,6 +23,7 @@ import AuthModal from './components/AuthModal';
 import { TermsPage, PrivacyPage } from './components/LegalPages';
 import InvoicesPage from './components/InvoicesPage';
 import RoadmapPage from './components/RoadmapPage';
+import SubscriptionPage from './components/SubscriptionPage';
 import MobileCart from './components/MobileCart';
 import NotLoggedInState from './components/NotLoggedInState';
 import { FloatingMessenger } from './components/FloatingMessenger';
@@ -69,6 +70,7 @@ const App: React.FC = () => {
     if (pathname === '/help') return 'help';
     if (pathname === '/terms') return 'terms';
     if (pathname === '/privacy') return 'privacy';
+    if (pathname === '/subscription') return 'subscription';
     if (pathname.startsWith('/dashboard')) {
       if (pathname === '/dashboard/messages') return 'dashboard-messages';
       if (pathname === '/dashboard/manage') return 'dashboard-manage';
@@ -300,6 +302,7 @@ const App: React.FC = () => {
         'contracts': '/contracts',
         'post-service': '/post-service',
         'notes': '/notes',
+        'subscription': '/subscription',
         'settings': '/settings',
         'help': '/help',
         'terms': '/terms',
@@ -332,6 +335,7 @@ const App: React.FC = () => {
         'contracts': '/contracts',
         'post-service': '/post-service',
         'notes': '/notes',
+        'subscription': '/subscription',
         'settings': '/settings',
         'help': '/help',
         'terms': '/terms',
@@ -394,7 +398,7 @@ const App: React.FC = () => {
             onMenuClick={() => setIsMobileMenuOpen(true)}
           />
 
-          <main ref={mainRef} className="flex-1 overflow-y-auto pt-20 lg:pt-28 pb-32 scroll-smooth">
+          <main ref={mainRef} className={`flex-1 overflow-y-auto pt-20 lg:pt-28 ${currentTrackId ? 'pb-40' : 'pb-24'} lg:pb-8 scroll-smooth`}>
 
             {currentView === 'home' && (
               <div className="max-w-[1800px] mx-auto px-3 lg:px-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -581,6 +585,10 @@ const App: React.FC = () => {
             {/* Invoices Page */}
             {currentView === 'dashboard-invoices' && (
               isLoggedIn ? <InvoicesPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+            )}
+            {/* Subscription Page */}
+            {currentView === 'subscription' && (
+              <SubscriptionPage onNavigate={handleNavigate} userProfile={userProfile} />
             )}
 
             {/* Roadmap & Planning Page */}

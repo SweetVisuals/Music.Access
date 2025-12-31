@@ -4,7 +4,7 @@ import WaveformVisualizer from './WaveformVisualizer';
 import { useNavigate } from 'react-router-dom';
 import { Project, View } from '../types';
 import { MOCK_USER_PROFILE } from '../constants';
-import { checkIsProjectSaved, saveProject, unsaveProject, convertAssetToProject } from '../services/supabaseService';
+import { checkIsProjectSaved, saveProject, unsaveProject, convertAssetToProject, getSavedProjectIdForAsset } from '../services/supabaseService';
 
 import BottomNav from './BottomNav';
 
@@ -51,8 +51,13 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
         // Check if project is saved
         const checkSavedStatus = async () => {
             if (currentProject?.id) {
-                const saved = await checkIsProjectSaved(currentProject.id);
-                setIsSaved(saved);
+                if (currentProject.id === 'upload_browser_proj' && currentTrack?.id) {
+                    const savedProjectId = await getSavedProjectIdForAsset(currentTrack.id);
+                    setIsSaved(!!savedProjectId);
+                } else {
+                    const saved = await checkIsProjectSaved(currentProject.id);
+                    setIsSaved(saved);
+                }
             }
         };
         checkSavedStatus();
@@ -376,13 +381,21 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                                     try {
                                         if (currentProject.id === 'upload_browser_proj') {
                                             // Handle converting local upload to saved project
-                                            if (currentTrack?.id && !isSaved) {
-                                                await convertAssetToProject(
-                                                    currentTrack.id,
-                                                    currentTrack.title,
-                                                    { username: currentProject.producer, avatar: currentProject.producerAvatar }
-                                                );
-                                                setIsSaved(true);
+                                            if (currentTrack?.id) {
+                                                if (isSaved) {
+                                                    const savedProjectId = await getSavedProjectIdForAsset(currentTrack.id);
+                                                    if (savedProjectId) {
+                                                        await unsaveProject(savedProjectId);
+                                                        setIsSaved(false);
+                                                    }
+                                                } else {
+                                                    await convertAssetToProject(
+                                                        currentTrack.id,
+                                                        currentTrack.title,
+                                                        { username: currentProject.producer, avatar: currentProject.producerAvatar }
+                                                    );
+                                                    setIsSaved(true);
+                                                }
                                             }
                                         } else {
                                             if (isSaved) {
@@ -490,13 +503,21 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                                 try {
                                     if (currentProject.id === 'upload_browser_proj') {
                                         // Handle converting local upload to saved project
-                                        if (currentTrack?.id && !isSaved) {
-                                            await convertAssetToProject(
-                                                currentTrack.id,
-                                                currentTrack.title,
-                                                { username: currentProject.producer, avatar: currentProject.producerAvatar }
-                                            );
-                                            setIsSaved(true);
+                                        if (currentTrack?.id) {
+                                            if (isSaved) {
+                                                const savedProjectId = await getSavedProjectIdForAsset(currentTrack.id);
+                                                if (savedProjectId) {
+                                                    await unsaveProject(savedProjectId);
+                                                    setIsSaved(false);
+                                                }
+                                            } else {
+                                                await convertAssetToProject(
+                                                    currentTrack.id,
+                                                    currentTrack.title,
+                                                    { username: currentProject.producer, avatar: currentProject.producerAvatar }
+                                                );
+                                                setIsSaved(true);
+                                            }
                                         }
                                     } else {
                                         if (isSaved) {

@@ -851,6 +851,31 @@ export const checkIsProjectSaved = async (projectId: string): Promise<boolean> =
   return !!data;
 };
 
+export const getSavedProjectIdForAsset = async (assetId: string): Promise<string | null> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser || !assetId) return null;
+
+  const { data: tracks, error } = await supabase
+    .from('tracks')
+    .select('project_id, project:projects!inner(user_id)')
+    .eq('assigned_file_id', assetId)
+    .eq('project.user_id', currentUser.id);
+
+  if (error || !tracks || tracks.length === 0) return null;
+
+  const projectIds = tracks.map((t: any) => t.project_id);
+
+  const { data: saved } = await supabase
+    .from('saved_projects')
+    .select('project_id')
+    .eq('user_id', currentUser.id)
+    .in('project_id', projectIds)
+    .limit(1);
+
+  if (!saved || saved.length === 0) return null;
+  return saved[0].project_id;
+};
+
 export const saveProject = async (projectId: string) => {
   const currentUser = await ensureUserExists();
   if (!currentUser) throw new Error('User not authenticated');
@@ -893,6 +918,27 @@ export const unsaveProject = async (projectId: string) => {
 };
 
 export const convertAssetToProject = async (assetId: string, trackTitle: string, userProfile: any): Promise<string> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  // Check for existing project with this asset owned by current user
+  const { data: existingTracks } = await supabase
+    .from('tracks')
+    .select('project_id, project:projects!inner(user_id)')
+    .eq('assigned_file_id', assetId)
+    .eq('project.user_id', currentUser.id)
+    .limit(1);
+
+  if (existingTracks && existingTracks.length > 0) {
+    const existingProjectId = existingTracks[0].project_id;
+    // Ensure it's saved
+    const isSaved = await checkIsProjectSaved(existingProjectId);
+    if (!isSaved) {
+      await saveProject(existingProjectId);
+    }
+    return existingProjectId;
+  }
+
   const projectTitle = trackTitle || 'Untitled Upload';
 
   // Use the established createProject function to ensure we satisfy all RLS/Constraints
@@ -1319,14 +1365,14 @@ export const getConversations = async (): Promise<Conversation[]> => {
     return {
       id: conversation.id,
       user: otherParticipant?.username || 'Unknown User',
-      avatar: otherParticipant?.avatar_url || 'https://i.pravatar.cc/150?u=user',
+      avatar: otherParticipant?.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
       lastMessage: lastMessage?.content || 'No messages yet',
       timestamp: formatTimeAgo(lastMessage?.created_at || conversation.updated_at),
       unread: 0,
       messages: conversation.messages?.map((msg: any) => ({
         id: msg.id,
         sender: msg.sender_id === currentUser.id ? 'Me' : otherParticipant?.username || 'Unknown',
-        avatar: msg.sender_id === currentUser.id ? (currentUser.user_metadata?.avatar_url || 'https://i.pravatar.cc/150?u=me') : (otherParticipant?.avatar_url || 'https://i.pravatar.cc/150?u=user'),
+        avatar: msg.sender_id === currentUser.id ? (currentUser.user_metadata?.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541') : (otherParticipant?.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'),
         text: msg.content,
         timestamp: new Date(msg.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }),
         isMe: msg.sender_id === currentUser.id
@@ -2166,7 +2212,16 @@ export const uploadFile = async (file: File): Promise<{ assetId: string; storage
 
 export const getStorageUsage = async (): Promise<{ used: number; limit: number }> => {
   const currentUser = await getCurrentUser();
-  if (!currentUser) return { used: 0, limit: 500 * 1024 * 1024 }; // 500MB default
+  if (!currentUser) return { used: 0, limit: 5 * 1024 * 1024 * 1024 }; // 5GB default for guests
+
+  // Fetch user profile to get their plan
+  const { data: userData } = await supabase
+    .from('users')
+    .select('plan')
+    .eq('id', currentUser.id)
+    .single();
+
+  const plan = userData?.plan || 'Basic';
 
   const { data, error } = await supabase
     .from('assets')
@@ -2176,7 +2231,11 @@ export const getStorageUsage = async (): Promise<{ used: number; limit: number }
   if (error) throw error;
 
   const used = data.reduce((total, asset) => total + (asset.size_bytes || 0), 0);
-  const limit = 500 * 1024 * 1024; // 500MB in bytes
+
+  // Set limit based on plan
+  let limit = 5 * 1024 * 1024 * 1024; // 5GB Basic
+  if (plan === 'Pro') limit = 15 * 1024 * 1024 * 1024; // 15GB Pro
+  if (plan === 'Studio+') limit = 25 * 1024 * 1024 * 1024; // 25GB Studio+
 
   return { used, limit };
 };

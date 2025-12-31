@@ -158,7 +158,7 @@ const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNaviga
 
   if (loading) {
     return (
-      <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+      <div className="w-full max-w-[1600px] mx-auto pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="relative w-16 h-16 mx-auto mb-6">
@@ -174,7 +174,7 @@ const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNaviga
   }
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+    <div className="w-full max-w-[1600px] mx-auto pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
       {/* Back Button */}
       <Link
         to="/dashboard"

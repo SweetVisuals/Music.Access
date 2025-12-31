@@ -90,7 +90,7 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
     const [showFullCalendar, setShowFullCalendar] = useState(false);
 
     return (
-        <div className="w-full max-w-[1800px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-[1800px] mx-auto pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
 
             {/* Header & Goals Section - Collapsible */}
             <div className={`transition-all duration-700 ease-in-out overflow-hidden ${openStrategyWizard ? 'max-h-0 opacity-0 mb-0' : 'max-h-[800px] opacity-100 mb-8'}`}>
@@ -490,7 +490,7 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-7 auto-rows-[140px] min-w-[700px] md:min-w-0 pb-32">
+                        <div className="grid grid-cols-7 auto-rows-[140px] min-w-[700px] md:min-w-0 pb-12">
                             {/* Empty slots for start of month */}
                             {[...Array(startDay)].map((_, i) => (
                                 <div key={`empty - ${i} `} className="border-r border-b border-neutral-800/50 bg-neutral-900/40"></div>

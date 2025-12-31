@@ -2649,6 +2649,8 @@ export const deleteProject = async (projectId: string) => {
   if (error) throw error;
 };
 
+
+
 // -- TASKS --
 
 export const createTask = async (projectId: string, text: string) => {

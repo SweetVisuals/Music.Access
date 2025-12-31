@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Pause, MoreVertical, Cpu, ShoppingCart, Bookmark, Sparkles, Clock, BookmarkPlus, Lock } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Pause, MoreVertical, Cpu, ShoppingCart, Bookmark, Sparkles, Clock, BookmarkPlus, Lock, Edit, Trash2 } from 'lucide-react';
 import { Project } from '../types';
 import { generateCreativeDescription } from '../services/geminiService';
 import PurchaseModal from './PurchaseModal';
@@ -15,16 +15,32 @@ interface ProjectCardProps {
     renderTrackAction?: (track: any) => React.ReactNode;
     isPurchased?: boolean;
     onEdit?: (project: Project) => void;
+    onDelete?: (project: Project) => void;
+    showStatusTags?: boolean;
 }
 
-// ... (keep interface)
-
-const ProjectCard: React.FC<ProjectCardProps> = ({ project, currentTrackId, isPlaying, onPlayTrack, onTogglePlay, renderTrackAction, isPurchased, onEdit }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({
+    project,
+    currentTrackId,
+    isPlaying,
+    onPlayTrack,
+    onTogglePlay,
+    renderTrackAction,
+    isPurchased,
+    onEdit,
+    onDelete,
+    showStatusTags = true
+}) => {
     const [description, setDescription] = useState<string | null>(null);
     const [loadingDesc, setLoadingDesc] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
+
+    // Menu State
+    const [showMenu, setShowMenu] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
     const { addToCart } = useCart();
 
     useEffect(() => {
@@ -36,6 +52,29 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, currentTrackId, isPl
         };
         checkSavedStatus();
     }, [project.id]);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setShowMenu(false);
+            }
+        };
+
+        if (showMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showMenu]);
+
+    const handleMenuAction = (action: 'edit' | 'delete', e: React.MouseEvent) => {
+        e.stopPropagation();
+        setShowMenu(false);
+        if (action === 'edit' && onEdit) onEdit(project);
+        if (action === 'delete' && onDelete) onDelete(project);
+    };
 
     const handleToggleSave = async (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -107,20 +146,50 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, currentTrackId, isPl
                             )}
                         </div>
                         <div className="flex items-center gap-2">
-                            {project.status && project.status !== 'published' && (
+                            {project.status && project.status !== 'published' && showStatusTags && (
                                 <div className="p-1 rounded bg-neutral-900 border border-white/5 text-neutral-500" title="Private Project">
                                     <Lock size={12} />
                                 </div>
                             )}
-                            <button
-                                className="text-neutral-600 hover:text-white transition-colors p-1"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (onEdit) onEdit(project);
-                                }}
-                            >
-                                <MoreVertical size={14} />
-                            </button>
+
+                            {/* More Menu */}
+                            <div className="relative" ref={menuRef}>
+                                <button
+                                    className="text-neutral-600 hover:text-white transition-colors p-1"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowMenu(!showMenu);
+                                    }}
+                                >
+                                    <MoreVertical size={14} />
+                                </button>
+
+                                {/* Dropdown Menu */}
+                                {showMenu && (
+                                    <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                                        <div className="p-1">
+                                            {onEdit && (
+                                                <button
+                                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-neutral-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-left"
+                                                    onClick={(e) => handleMenuAction('edit', e)}
+                                                >
+                                                    <Edit size={14} />
+                                                    <span>Edit Project</span>
+                                                </button>
+                                            )}
+                                            {onDelete && (
+                                                <button
+                                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors text-left"
+                                                    onClick={(e) => handleMenuAction('delete', e)}
+                                                >
+                                                    <Trash2 size={14} />
+                                                    <span>Delete Project</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -151,10 +220,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, currentTrackId, isPl
                 <div className="flex-1 bg-[#050505] overflow-y-auto custom-scrollbar relative">
                     <div className="p-2 space-y-0.5">
                         {project.tracks.map((track, idx) => {
-                            const isTrackPlaying = isPlaying && currentTrackId === track.id;
+                            const trackId = track.id || `track-${idx}`;
+                            const isTrackPlaying = isPlaying && currentTrackId === trackId;
                             return (
                                 <div
-                                    key={track.id}
+                                    key={trackId}
                                     className={`
                             flex items-center px-3 py-2 rounded-md transition-all duration-200 cursor-pointer group/track border border-transparent
                             ${isTrackPlaying
@@ -162,7 +232,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, currentTrackId, isPl
                                             : 'hover:bg-white/5 hover:border-white/5'
                                         }
                         `}
-                                    onClick={() => isTrackPlaying ? onTogglePlay() : onPlayTrack(track.id)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        isTrackPlaying ? onTogglePlay() : onPlayTrack(trackId);
+                                    }}
                                 >
                                     {/* Status Indicator */}
                                     <div className="w-6 flex items-center justify-center mr-1">

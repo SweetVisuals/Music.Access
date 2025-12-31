@@ -26,7 +26,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
     // --- Audio Logic ---
     const currentTrack = useMemo(() => {
         if (!currentProject || !currentTrackId) return null;
-        return currentProject.tracks.find(t => t.id === currentTrackId);
+        return currentProject.tracks.find((t, i) => (t.id || `track-${i}`) === currentTrackId);
     }, [currentProject, currentTrackId]);
 
     const audioRef = useRef<HTMLAudioElement>(null);

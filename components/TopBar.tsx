@@ -563,22 +563,7 @@ const TopBar: React.FC<TopBarProps> = ({
     return (
         <header className="h-16 fixed top-0 right-0 left-0 lg:left-64 z-[90] bg-[#050505]/90 backdrop-blur-lg border-b border-white/5 flex items-center px-3 lg:px-6 justify-between gap-4">
 
-            {/* SPACER FOR CENTERING (Hidden on mobile) */}
-            <div className="hidden lg:block shrink-0">
-                <RightActions
-                    isLoggedIn={isLoggedIn} isFocused={isFocused} mobileSearchOpen={mobileSearchOpen}
-                    currentView={currentView} userProfile={userProfile} gemsClaimedToday={gemsClaimedToday}
-                    profileLoading={profileLoading} onClaimGems={onClaimGems} onNavigate={onNavigate}
-                    showBalance={showBalance} setShowBalance={setShowBalance} isThemeOpen={false}
-                    setIsThemeOpen={setIsThemeOpen} handleThemeChange={handleThemeChange} themeRef={themeRef}
-                    notifRef={notifRef} isNotificationsOpen={false} setIsNotificationsOpen={setIsNotificationsOpen}
-                    notifications={notifications} handleMarkAllRead={handleMarkAllRead} handleMarkRead={handleMarkRead}
-                    cartRef={cartRef} isCartOpen={false} setIsCartOpen={setIsCartOpen} cartItems={cartItems}
-                    cartTotal={cartTotal} removeFromCart={removeFromCart} dropdownRef={dropdownRef}
-                    isProfileOpen={false} setIsProfileOpen={setIsProfileOpen} onOpenAuth={onOpenAuth}
-                    onLogout={onLogout} isSpacer={true} onMobileSearchOpen={() => setMobileSearchOpen(true)}
-                />
-            </div>
+
 
             {/* Hamburger Menu (Mobile) - Hide if search open */}
             <button
@@ -597,7 +582,7 @@ const TopBar: React.FC<TopBarProps> = ({
                 transition-all duration-400 z-50
                 ${mobileSearchOpen
                         ? 'absolute inset-0 bg-[#050505] flex items-center px-4 opacity-100 pointer-events-auto translate-x-0'
-                        : 'opacity-0 pointer-events-none absolute inset-0 translate-x-4 lg:relative lg:flex lg:opacity-100 lg:pointer-events-auto flex-1 justify-center px-4 lg:bg-transparent lg:translate-x-0'
+                        : 'opacity-0 pointer-events-none absolute inset-0 translate-x-4 lg:absolute lg:inset-x-0 lg:flex lg:justify-center lg:items-center lg:pointer-events-auto lg:opacity-100 lg:translate-x-0 mx-auto'
                     }
                 ${!mobileSearchOpen && isFocused ? 'lg:max-w-[35rem] xl:max-w-[45rem] w-full' : 'lg:max-w-[24rem] xl:max-w-[32rem] w-full'}
             `}
@@ -708,19 +693,21 @@ const TopBar: React.FC<TopBarProps> = ({
             </div>
 
             {/* RIGHT SIDE ACTIONS */}
-            <RightActions
-                isLoggedIn={isLoggedIn} isFocused={isFocused} mobileSearchOpen={mobileSearchOpen}
-                currentView={currentView} userProfile={userProfile} gemsClaimedToday={gemsClaimedToday}
-                profileLoading={profileLoading} onClaimGems={onClaimGems} onNavigate={onNavigate}
-                showBalance={showBalance} setShowBalance={setShowBalance} isThemeOpen={isThemeOpen}
-                setIsThemeOpen={setIsThemeOpen} handleThemeChange={handleThemeChange} themeRef={themeRef}
-                notifRef={notifRef} isNotificationsOpen={isNotificationsOpen} setIsNotificationsOpen={setIsNotificationsOpen}
-                notifications={notifications} handleMarkAllRead={handleMarkAllRead} handleMarkRead={handleMarkRead}
-                cartRef={cartRef} isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} cartItems={cartItems}
-                cartTotal={cartTotal} removeFromCart={removeFromCart} dropdownRef={dropdownRef}
-                isProfileOpen={isProfileOpen} setIsProfileOpen={setIsProfileOpen} onOpenAuth={onOpenAuth}
-                onLogout={onLogout} isSpacer={false} onMobileSearchOpen={() => setMobileSearchOpen(true)}
-            />
+            <div className="ml-auto relative z-[60]">
+                <RightActions
+                    isLoggedIn={isLoggedIn} isFocused={isFocused} mobileSearchOpen={mobileSearchOpen}
+                    currentView={currentView} userProfile={userProfile} gemsClaimedToday={gemsClaimedToday}
+                    profileLoading={profileLoading} onClaimGems={onClaimGems} onNavigate={onNavigate}
+                    showBalance={showBalance} setShowBalance={setShowBalance} isThemeOpen={isThemeOpen}
+                    setIsThemeOpen={setIsThemeOpen} handleThemeChange={handleThemeChange} themeRef={themeRef}
+                    notifRef={notifRef} isNotificationsOpen={isNotificationsOpen} setIsNotificationsOpen={setIsNotificationsOpen}
+                    notifications={notifications} handleMarkAllRead={handleMarkAllRead} handleMarkRead={handleMarkRead}
+                    cartRef={cartRef} isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} cartItems={cartItems}
+                    cartTotal={cartTotal} removeFromCart={removeFromCart} dropdownRef={dropdownRef}
+                    isProfileOpen={isProfileOpen} setIsProfileOpen={setIsProfileOpen} onOpenAuth={onOpenAuth}
+                    onLogout={onLogout} isSpacer={false} onMobileSearchOpen={() => setMobileSearchOpen(true)}
+                />
+            </div>
             {/* Mobile Notifications Portal - Rendered outside transformed containers */}
             <MobileNotifications
                 isOpen={isNotificationsOpen}

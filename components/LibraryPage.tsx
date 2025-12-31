@@ -1,9 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Project } from '../types';
 import { LayoutGrid, List, Disc, Play, Pause, Search, Plus, BookmarkPlus, Clock, ChevronDown, ChevronUp, X, Check, Music, Upload, ShoppingBag, MoreVertical } from 'lucide-react';
 import ProjectCard from './ProjectCard';
-import { getUserProfile, getSavedProjects, getUserAssets, getPlaylists, createPlaylist, updateProject, Playlist, Asset } from '../services/supabaseService';
+import CreateProjectModal from './CreateProjectModal'; // Imported
+import EditProjectModal from './EditProjectModal';     // Imported
+import { getUserProfile, getSavedProjects, getUserAssets, getPlaylists, createPlaylist, updateProject, deleteProject, Playlist, Asset } from '../services/supabaseService';
 
 interface LibraryPageProps {
     currentTrackId: string | null;
@@ -47,7 +48,10 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     const [loadingTracks, setLoadingTracks] = useState(false);
     const [creatingPlaylist, setCreatingPlaylist] = useState(false);
     const [trackSourceTab, setTrackSourceTab] = useState<'uploads' | 'purchased'>('uploads');
+
+    // Editing state
     const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [isEditingPublic, setIsEditingPublic] = useState(false); // Track if full editor needed
 
     const loading = loadingProfile || loadingSaved;
 
@@ -189,17 +193,34 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
         }
     };
 
-    const handleSaveProject = async (updates: Partial<Project>) => {
+    const handleDeleteProject = async (project: Project) => {
+        try {
+            await deleteProject(project.id);
+            // Update UI
+            setSavedProjects(prev => prev.filter(p => p.id !== project.id));
+            if (activeTab === 'playlists') fetchPlaylists(); // Refresh if needed
+        } catch (error) {
+            console.error("Failed to delete project:", error);
+            alert("Failed to delete project");
+        }
+    };
+
+    const handleEditProject = (project: Project) => {
+        setEditingProject(project);
+        setIsEditingPublic(project.status === 'published' || project.status === undefined); // Default to public if undefined? Or check requirements.
+        // User logic: "public project cards... creation window", "library and draft / private... limited options"
+        // Let's assume 'published' is the key.
+    };
+
+    const handleSaveProjectUpdates = async (updates: Partial<Project>) => {
         if (!editingProject) return;
         try {
             await updateProject(editingProject.id, updates);
-            // Refresh profiles to see changes
-            const profile = await getUserProfile();
-            setUserProfile(profile);
-            const saved = await getSavedProjects();
-            setSavedProjects(saved);
+            // Update local state to reflect changes
+            setSavedProjects(prev => prev.map(p => p.id === editingProject.id ? { ...p, ...updates } : p));
+            setEditingProject(null);
         } catch (error) {
-            console.error('Failed to update project:', error);
+            console.error("Failed to update project:", error);
         }
     };
 
@@ -278,7 +299,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        setEditingProject(project);
+                                        handleEditProject(project);
                                     }}
                                     className="p-2 text-neutral-500 hover:text-white transition-colors"
                                 >
@@ -294,16 +315,17 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                         {isExpanded && project.tracks && project.tracks.length > 0 && (
                             <div className="border-t border-neutral-800/50 bg-[#050505]">
                                 {project.tracks.map((track, idx) => {
-                                    const isTrackPlaying = isPlaying && currentTrackId === track.id;
+                                    const isTrackPlaying = isPlaying && currentTrackId === (track.id || `track-${idx}`);
+                                    const trackId = track.id || `track-${idx}`;
 
                                     return (
                                         <div
-                                            key={track.id}
+                                            key={trackId}
                                             className={`
                                                 flex items-center px-4 py-2.5 cursor-pointer transition-all border-b border-neutral-900/50 last:border-b-0
                                                 ${isTrackPlaying ? 'bg-primary/5' : 'hover:bg-white/5'}
                                             `}
-                                            onClick={() => isTrackPlaying ? onTogglePlay() : onPlayTrack(project, track.id)}
+                                            onClick={() => isTrackPlaying ? onTogglePlay() : onPlayTrack(project, trackId)}
                                         >
                                             {/* Track Number / Play State */}
                                             <div className="w-8 flex items-center justify-center mr-2">
@@ -526,7 +548,8 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                 isPlaying={currentProject?.id === project.id && isPlaying}
                                 onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
                                 onTogglePlay={onTogglePlay}
-                                onEdit={(p) => setEditingProject(p)}
+                                onEdit={handleEditProject}
+                                onDelete={handleDeleteProject}
                             />
                         </div>
                     )) : (
@@ -554,13 +577,23 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 />
             )}
 
-            {/* Edit Project Modal */}
+            {/* Edit Project Modals */}
             {editingProject && (
-                <EditProjectModal
-                    project={editingProject}
-                    onClose={() => setEditingProject(null)}
-                    onSave={handleSaveProject}
-                />
+                isEditingPublic ? (
+                    <CreateProjectModal
+                        isOpen={!!editingProject}
+                        onClose={() => setEditingProject(null)}
+                        onSave={(updated) => { /* Optional: refresh list */ setEditingProject(null); }}
+                        initialData={editingProject}
+                    />
+                ) : (
+                    <EditProjectModal
+                        project={editingProject}
+                        onClose={() => setEditingProject(null)}
+                        onSave={handleSaveProjectUpdates}
+                        onDelete={handleDeleteProject}
+                    />
+                )
             )}
 
         </div>
@@ -584,118 +617,7 @@ const TabButton = ({ active, onClick, label, icon, mobileCompact }: any) => (
     </button>
 );
 
-const EditProjectModal = ({ project, onClose, onSave }: { project: Project; onClose: () => void; onSave: (updates: Partial<Project>) => Promise<void> }) => {
-    const [title, setTitle] = useState(project.title);
-    const [description, setDescription] = useState(project.description || '');
-    const [genre, setGenre] = useState(project.genre || '');
-    const [subGenre, setSubGenre] = useState(project.subGenre || '');
-    const [saving, setSaving] = useState(false);
-    const [isVisible, setIsVisible] = useState(false);
 
-    useEffect(() => {
-        const timer = setTimeout(() => setIsVisible(true), 10);
-        return () => clearTimeout(timer);
-    }, []);
-
-    const handleClose = () => {
-        setIsVisible(false);
-        setTimeout(onClose, 300);
-    };
-
-    const handleSave = async () => {
-        setSaving(true);
-        try {
-            await onSave({
-                title,
-                description,
-                genre,
-                subGenre
-            });
-            handleClose();
-        } catch (e) {
-            console.error(e);
-            setSaving(false);
-        }
-    };
-
-    return (
-        <div className={`fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col transition-transform duration-300 ease-out will-change-transform ${isVisible ? 'translate-y-0' : 'translate-y-full'}`}>
-            {/* iOS-style Header Actions */}
-            <div className="flex items-center justify-between px-4 py-4 border-b border-white/5 bg-black/50 safe-area-top">
-                <button
-                    onClick={handleClose}
-                    className="text-neutral-400 hover:text-white px-2 py-2 text-sm font-medium transition-colors"
-                >
-                    Cancel
-                </button>
-                <span className="font-bold text-white text-sm">Edit Project</span>
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="text-primary font-bold px-2 py-2 text-sm disabled:opacity-50 transition-colors"
-                >
-                    {saving ? 'Saving...' : 'Save'}
-                </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 pb-40">
-                <div className="space-y-6 max-w-md mx-auto">
-
-                    {/* Title Input */}
-                    <div className="space-y-2">
-                        <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Project Title</label>
-                        <input
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Untitled Project"
-                            className="w-full bg-neutral-900/50 rounded-xl px-4 py-4 text-lg font-bold text-white border border-white/5 focus:border-primary/50 focus:bg-neutral-900 focus:ring-1 focus:ring-primary/50 outline-none transition-all placeholder-neutral-700"
-                        />
-                    </div>
-
-                    {/* Description Input */}
-                    <div className="space-y-2">
-                        <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Description</label>
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Add a description..."
-                            className="w-full bg-neutral-900/50 rounded-xl px-4 py-4 text-sm text-neutral-200 border border-white/5 focus:border-primary/50 focus:bg-neutral-900 focus:ring-1 focus:ring-primary/50 outline-none transition-all h-28 resize-none placeholder-neutral-700 leading-relaxed"
-                        />
-                    </div>
-
-                    {/* Metadata Row */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Genre</label>
-                            <div className="bg-neutral-900/50 rounded-xl px-3 py-3 border border-white/5 focus-within:border-primary/50 focus-within:bg-neutral-900 focus-within:ring-1 focus-within:ring-primary/50 transition-all flex items-center">
-                                <Music size={14} className="text-neutral-500 mr-2 shrink-0" />
-                                <input
-                                    value={genre}
-                                    onChange={(e) => setGenre(e.target.value)}
-                                    className="bg-transparent w-full text-sm font-medium outline-none text-white placeholder-neutral-700"
-                                    placeholder="Unspecified"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-xs text-neutral-500 font-bold uppercase tracking-wider ml-1">Sub-Genre</label>
-                            <div className="bg-neutral-900/50 rounded-xl px-3 py-3 border border-white/5 focus-within:border-primary/50 focus-within:bg-neutral-900 focus-within:ring-1 focus-within:ring-primary/50 transition-all flex items-center">
-                                <Disc size={14} className="text-neutral-500 mr-2 shrink-0" />
-                                <input
-                                    value={subGenre}
-                                    onChange={(e) => setSubGenre(e.target.value)}
-                                    className="bg-transparent w-full text-sm font-medium outline-none text-white placeholder-neutral-700"
-                                    placeholder="Unspecified"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const PlaylistListView = ({ playlists, loadingPlaylists, setShowCreatePlaylist, onPlayTrack, currentProject, isPlaying, onTogglePlay }: any) => {
     const [expandedPlaylists, setExpandedPlaylists] = useState<Set<string>>(new Set());

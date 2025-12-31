@@ -3,12 +3,13 @@ import React, { useState } from 'react';
 import { X, Upload, Music, Plus, Trash2, FileText, DollarSign, Check, FileAudio, Folder } from 'lucide-react';
 import { Project, Track, LicenseInfo } from '../types';
 import { MOCK_CONTRACTS } from '../constants';
-import { createProject } from '../services/supabaseService';
+import { createProject, updateProject } from '../services/supabaseService';
 
 interface CreateProjectModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSave: (project: Partial<Project>) => void;
+    initialData?: Project; // Support editing
 }
 
 const GENRE_LIST = [
@@ -30,32 +31,46 @@ const MOCK_USER_FILES = [
     { id: 'f5', name: 'drum_loop.wav', type: 'WAV', size: '5MB' },
 ];
 
-const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose, onSave }) => {
+const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose, onSave, initialData }) => {
     const [step, setStep] = useState(1);
 
-    const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-    const [selectedSubGenres, setSelectedSubGenres] = useState<string[]>([]);
+    const [selectedGenres, setSelectedGenres] = useState<string[]>(
+        initialData ? (initialData.genre ? [initialData.genre] : []) : []
+    );
+    const [selectedSubGenres, setSelectedSubGenres] = useState<string[]>(
+        initialData ? (initialData.subGenre ? [initialData.subGenre] : []) : []
+    );
     const [showAllGenres, setShowAllGenres] = useState(false);
     const [showAllSubGenres, setShowAllSubGenres] = useState(false);
 
     const [projectData, setProjectData] = useState<Partial<Project>>({
-        title: '',
-        description: '',
-        type: 'beat_tape',
-        tags: [],
-        genre: '',
-        subGenre: '',
-        tracks: [],
-        licenses: [
-            { id: 'l1', type: 'MP3', name: 'Basic Lease', price: 29.99, features: ['MP3 File', '2,000 Streams', 'Non-Profit Use'], fileTypesIncluded: ['MP3'] },
-            { id: 'l2', type: 'WAV', name: 'Premium Lease', price: 49.99, features: ['WAV + MP3', '50,000 Streams', 'Commercial Use'], fileTypesIncluded: ['WAV', 'MP3'] },
-            { id: 'l3', type: 'STEMS', name: 'Exclusive Rights', price: 499.99, features: ['All Stems', 'Unlimited Streams', 'Full Ownership Transfer'], fileTypesIncluded: ['STEMS', 'WAV', 'MP3'] }
-        ]
+        title: initialData?.title || '',
+        description: initialData?.description || '',
+        type: initialData?.type || 'beat_tape',
+        tags: initialData?.tags || [],
+        genre: initialData?.genre || '',
+        subGenre: initialData?.subGenre || '',
+        tracks: initialData?.tracks || [],
+        licenses: initialData?.licenses?.map(l => ({
+            ...l,
+            fileTypesIncluded: l.fileTypesIncluded || [],
+            features: l.features || []
+        })) || [
+                { id: 'l1', type: 'MP3', name: 'Basic Lease', price: 29.99, features: ['MP3 File', '2,000 Streams', 'Non-Profit Use'], fileTypesIncluded: ['MP3'] },
+                { id: 'l2', type: 'WAV', name: 'Premium Lease', price: 49.99, features: ['WAV + MP3', '50,000 Streams', 'Commercial Use'], fileTypesIncluded: ['WAV', 'MP3'] },
+                { id: 'l3', type: 'STEMS', name: 'Exclusive Rights', price: 499.99, features: ['All Stems', 'Unlimited Streams', 'Full Ownership Transfer'], fileTypesIncluded: ['STEMS', 'WAV', 'MP3'] }
+            ]
     });
 
-    const [tracks, setTracks] = useState<Partial<Track>[]>([]);
+    const [tracks, setTracks] = useState<Partial<Track>[]>(
+        initialData?.tracks?.map(t => ({
+            ...t,
+            files: t.files || {} // Maintain existing file structure
+        })) || []
+    );
     const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
     const [fileSelectorOpen, setFileSelectorOpen] = useState<'mp3' | 'wav' | 'stems' | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && e.currentTarget.value) {
@@ -132,6 +147,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     };
 
     const handleFinalSave = async () => {
+        setIsSaving(true);
         const finalTags = Array.from(new Set([
             ...(projectData.tags || []),
             ...selectedGenres,
@@ -147,12 +163,17 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
         };
 
         try {
-            await createProject(finalProject);
+            if (initialData && initialData.id) {
+                await updateProject(initialData.id, finalProject);
+            } else {
+                await createProject(finalProject);
+            }
             onSave(finalProject);
             onClose();
         } catch (error) {
-            console.error("Failed to create project:", error);
+            console.error(initialData ? "Failed to update project" : "Failed to create project:", error);
             // Ideally show an error message to the user
+            setIsSaving(false);
         }
     };
 

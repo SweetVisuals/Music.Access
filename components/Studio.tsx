@@ -179,45 +179,91 @@ const Studio: React.FC<StudioProps> = ({
         <div className="w-full h-full flex flex-col relative">
             {/* NEW PROJECT MODAL */}
             {isCreateModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm md:p-4 animate-in fade-in duration-200">
-                    <div className="w-full h-full md:h-auto md:max-w-md bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl shadow-2xl flex flex-col max-h-none md:max-h-[90vh] overflow-y-auto custom-scrollbar">
-                        <div className="p-6 border-b border-white/5 flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-white">New Release</h3>
-                            <button onClick={() => setIsCreateModalOpen(false)}><X size={20} className="text-neutral-500 hover:text-white" /></button>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md md:p-4 animate-in fade-in duration-200">
+                    <div className="w-full h-full md:h-auto md:max-w-md bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl shadow-2xl flex flex-col max-h-none md:max-h-[90vh] overflow-hidden relative">
+
+                        {/* Header */}
+                        <div className="p-6 border-b border-white/5 flex justify-between items-center shrink-0">
+                            <div>
+                                <h3 className="text-xl font-bold text-white tracking-tight">New Release</h3>
+                                <p className="text-xs text-neutral-500 mt-1">Start a new musical project</p>
+                            </div>
+                            <button
+                                onClick={() => setIsCreateModalOpen(false)}
+                                className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900 text-neutral-500 hover:text-white hover:bg-white/10 transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
                         </div>
-                        <div className="p-6 space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-neutral-500 uppercase">Project Title</label>
+
+                        {/* Content */}
+                        <div className="p-6 space-y-8 flex-1 overflow-y-auto custom-scrollbar">
+                            <div className="space-y-3">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
+                                    <Edit size={12} /> Project Title
+                                </label>
                                 <input
                                     value={newProjectTitle}
                                     onChange={(e) => setNewProjectTitle(e.target.value)}
-                                    placeholder="e.g. Summer Vibes Vol. 1"
-                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none"
+                                    placeholder="e.g. Summer Hitz Vol. 1"
+                                    className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl px-4 py-4 text-lg text-white font-bold placeholder-neutral-700 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 focus:outline-none transition-all"
+                                    autoFocus
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Format</label>
-                                <div className="flex bg-neutral-900 p-1 rounded-lg">
+
+                            <div className="space-y-3">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
+                                    <Disc size={12} /> Release Format
+                                </label>
+                                <div className="grid grid-cols-3 gap-3">
                                     {(['Album', 'EP', 'Single'] as const).map(fmt => (
                                         <button
                                             key={fmt}
                                             onClick={() => setNewProjectFormat(fmt)}
-                                            className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${newProjectFormat === fmt ? 'bg-white text-black shadow-sm' : 'text-neutral-500 hover:text-white'}`}
+                                            className={`
+                                                relative overflow-hidden py-3 rounded-xl text-sm font-bold transition-all border
+                                                ${newProjectFormat === fmt
+                                                    ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]'
+                                                    : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:border-neutral-600 hover:text-white'
+                                                }
+                                            `}
                                         >
                                             {fmt}
                                         </button>
                                     ))}
                                 </div>
                             </div>
+
+                            {/* Visual Decor Element */}
+                            <div className="p-4 rounded-xl bg-gradient-to-br from-neutral-900 to-black border border-neutral-800/50 flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                                    <Music size={20} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-white">Ready to create?</p>
+                                    <p className="text-xs text-neutral-500">This will create a new workspace for your tracks.</p>
+                                </div>
+                            </div>
                         </div>
-                        <div className="p-6 pt-0 flex justify-end">
-                            <button
-                                onClick={handleCreateProject}
-                                disabled={!newProjectTitle.trim()}
-                                className="w-full py-3 bg-primary text-black font-bold rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Create Workspace
-                            </button>
+
+                        {/* Footer (Mobile Bottom Bar Safe) */}
+                        <div className="p-6 pt-4 border-t border-white/5 bg-[#0a0a0a] pb-8 md:pb-6 shrink-0 mt-auto">
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setIsCreateModalOpen(false)}
+                                    className="flex-1 py-3.5 bg-neutral-900 border border-neutral-800 text-neutral-400 font-bold rounded-xl hover:bg-neutral-800 hover:text-white transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleCreateProject}
+                                    disabled={!newProjectTitle.trim()}
+                                    className="flex-[2] py-3.5 bg-primary text-black font-black tracking-wide rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgb(var(--primary)/0.2)] transition-all flex items-center justify-center gap-2"
+                                >
+                                    <span>Create Workspace</span>
+                                    <ArrowLeft size={16} className="rotate-180" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

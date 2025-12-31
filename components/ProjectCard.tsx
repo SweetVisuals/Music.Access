@@ -152,44 +152,46 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                 </div>
                             )}
 
-                            {/* More Menu */}
-                            <div className="relative" ref={menuRef}>
-                                <button
-                                    className="text-neutral-600 hover:text-white transition-colors p-1"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setShowMenu(!showMenu);
-                                    }}
-                                >
-                                    <MoreVertical size={14} />
-                                </button>
+                            {/* More Menu - Only show if actions exist */}
+                            {(onEdit || onDelete) && (
+                                <div className="relative" ref={menuRef}>
+                                    <button
+                                        className="text-neutral-600 hover:text-white transition-colors p-1"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowMenu(!showMenu);
+                                        }}
+                                    >
+                                        <MoreVertical size={14} />
+                                    </button>
 
-                                {/* Dropdown Menu */}
-                                {showMenu && (
-                                    <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
-                                        <div className="p-1">
-                                            {onEdit && (
-                                                <button
-                                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-neutral-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-left"
-                                                    onClick={(e) => handleMenuAction('edit', e)}
-                                                >
-                                                    <Edit size={14} />
-                                                    <span>Edit Project</span>
-                                                </button>
-                                            )}
-                                            {onDelete && (
-                                                <button
-                                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors text-left"
-                                                    onClick={(e) => handleMenuAction('delete', e)}
-                                                >
-                                                    <Trash2 size={14} />
-                                                    <span>Delete Project</span>
-                                                </button>
-                                            )}
+                                    {/* Dropdown Menu */}
+                                    {showMenu && (
+                                        <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                                            <div className="p-1">
+                                                {onEdit && (
+                                                    <button
+                                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-neutral-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-left"
+                                                        onClick={(e) => handleMenuAction('edit', e)}
+                                                    >
+                                                        <Edit size={14} />
+                                                        <span>Edit Project</span>
+                                                    </button>
+                                                )}
+                                                {onDelete && (
+                                                    <button
+                                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors text-left"
+                                                        onClick={(e) => handleMenuAction('delete', e)}
+                                                    >
+                                                        <Trash2 size={14} />
+                                                        <span>Delete Project</span>
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 

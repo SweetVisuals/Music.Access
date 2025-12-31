@@ -131,7 +131,7 @@ const SwipeableConversationItem = ({
 
 const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }) => {
     // Default open on desktop, closed on mobile
-    const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
     const [activeId, setActiveId] = useState<string | null>(null);
@@ -176,7 +176,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
 
     // On desktop, select first convo by default if none selected
     React.useEffect(() => {
-        if (!activeId && filteredConversations.length > 0) {
+        if (window.innerWidth >= 1024 && !activeId && filteredConversations.length > 0) {
             setActiveId(filteredConversations[0].id);
         }
     }, [filteredConversations]);

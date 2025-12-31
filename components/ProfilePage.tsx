@@ -31,7 +31,8 @@ import ProjectCard from './ProjectCard';
 import CreateProjectModal from './CreateProjectModal';
 import CreateSoundpackModal from './CreateSoundpackModal';
 import CreateServiceModal from './CreateServiceModal';
-import { getUserProfile, getUserProfileByHandle, updateUserProfile, getCurrentUser, uploadFile, followUser, unfollowUser, checkIsFollowing } from '../services/supabaseService';
+import EditProjectModal from './EditProjectModal';
+import { getUserProfile, getUserProfileByHandle, updateUserProfile, getCurrentUser, uploadFile, followUser, unfollowUser, checkIsFollowing, deleteProject, updateProject } from '../services/supabaseService';
 
 interface ProfilePageProps {
     profile: UserProfile | null;
@@ -62,6 +63,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     const [userProfile, setUserProfile] = useState<UserProfile | null>(profile);
     const [isViewerMode, setIsViewerMode] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(false);
     const [isOwnProfile, setIsOwnProfile] = useState(false);
 
@@ -403,6 +405,44 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         setIsEditModalOpen(true);
     };
 
+    const handleEditProject = (project: Project) => {
+        setEditingProject(project);
+    };
+
+    const handleDeleteProject = async (project: Project) => {
+        if (!isOwnProfile || isViewerMode) return;
+
+        // Optimistic update
+        setLocalProjects(prev => prev.filter(p => p.id !== project.id));
+
+        try {
+            await deleteProject(project.id);
+            // Refresh profile to ensure sync?
+            // setUserProfile(...) 
+        } catch (error) {
+            console.error("Failed to delete project:", error);
+            // Revert could be hard without fetching, potentially refresh profile here
+            const refreshedProfile = await getUserProfile();
+            if (refreshedProfile) {
+                setUserProfile(refreshedProfile);
+            }
+        }
+    };
+
+    const handleSaveProjectEdit = async (updates: Partial<Project>) => {
+        if (!editingProject) return;
+
+        // Optimistic
+        setLocalProjects(prev => prev.map(p => p.id === editingProject.id ? { ...p, ...updates } as Project : p));
+        setEditingProject(null);
+
+        try {
+            await updateProject(editingProject.id, updates);
+        } catch (error) {
+            console.error("Failed to update project:", error);
+        }
+    };
+
     return (
         <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
 
@@ -423,6 +463,25 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 onClose={() => setIsCreateServiceModalOpen(false)}
                 onSave={handleSaveService}
             />
+
+            {/* PROJECT EDIT MODALS */}
+            {editingProject && (
+                editingProject.status === 'published' ? (
+                    <CreateProjectModal
+                        isOpen={!!editingProject}
+                        onClose={() => setEditingProject(null)}
+                        onSave={handleSaveProjectEdit} // Wrapper to match signatures if needed
+                        initialData={editingProject}
+                    />
+                ) : (
+                    <EditProjectModal
+                        project={editingProject}
+                        onClose={() => setEditingProject(null)}
+                        onSave={handleSaveProjectEdit}
+                        onDelete={(id) => handleDeleteProject(editingProject)}
+                    />
+                )
+            )}
 
             {/* EDIT PROFILE MODAL - RESPONSIVE */}
             {isEditModalOpen && (
@@ -880,6 +939,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             isPlaying={currentProject?.id === project.id && isPlaying}
                                             onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
                                             onTogglePlay={onTogglePlay}
+                                            onEdit={!isViewerMode && isOwnProfile ? handleEditProject : undefined}
+                                            onDelete={!isViewerMode && isOwnProfile ? handleDeleteProject : undefined}
                                         />
                                     </div>
                                 ))}

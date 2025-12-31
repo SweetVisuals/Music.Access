@@ -77,8 +77,8 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
 
             <div
                 className={`
-                    relative w-full md:max-w-md bg-[#0a0a0a] md:rounded-2xl border-t md:border border-white/10 
-                    shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-transform duration-300 ease-out will-change-transform
+                    relative w-full h-full md:h-auto md:max-w-md bg-[#0a0a0a] md:rounded-2xl border-t md:border border-white/10 
+                    shadow-2xl overflow-hidden flex flex-col md:max-h-[90vh] transition-transform duration-300 ease-out will-change-transform
                     ${isVisible ? 'translate-y-0' : 'translate-y-full'}
                 `}
                 onClick={e => e.stopPropagation()}

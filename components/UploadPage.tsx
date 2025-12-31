@@ -79,6 +79,13 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
     const [selectedPath, setSelectedPath] = useState<string[]>([]); // For Column View: IDs of selected items in order
 
+    // Set default view to list on mobile
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            setViewMode('list');
+        }
+    }, []);
+
     // Interaction State
     const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
     const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
@@ -168,21 +175,38 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
     // --- Actions ---
 
+    // Helper to rebuild path from a folder ID upwards
+    const getPathToRoot = (folderId: string | null): string[] => {
+        if (!folderId) return [];
+        const path: string[] = [];
+        let current = items.find(i => i.id === folderId);
+        // Safety break to prevent infinite loops in case of cycles (though shouldn't happen)
+        let depth = 0;
+        while (current && depth < 50) {
+            path.unshift(current.id);
+            if (!current.parentId) break;
+            current = items.find(i => i.id === current.parentId);
+            depth++;
+        }
+        return path;
+    };
+
     const handleNavigate = (folderId: string | null) => {
         setCurrentFolderId(folderId);
         setContextMenu(null);
-        setSelectedIds(new Set()); // Clear selection on navigate
+        setSelectedIds(new Set());
         setAnchorSelectedId(null);
-        if (folderId === null) {
-            setSelectedPath([]);
-        }
+        // Sync selectedPath for Column View consistency
+        setSelectedPath(getPathToRoot(folderId));
     };
 
     const handleNavigateUp = () => {
         if (currentFolder) {
-            setCurrentFolderId(currentFolder.parentId);
+            const newParentId = currentFolder.parentId;
+            setCurrentFolderId(newParentId);
             setSelectedIds(new Set());
             setAnchorSelectedId(null);
+            setSelectedPath(getPathToRoot(newParentId));
         }
     };
 
@@ -567,30 +591,25 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
     // --- Column View Logic ---
     const getColumns = () => {
-        // Enforce 4 fixed columns for navigation + 1 info column (handled in render)
         const cols: { items: FileSystemItem[], selectedId: string | null }[] = [];
 
-        // Column 1: Root
+        // 1. Root Column
         cols.push({
             items: items.filter(i => i.parentId === null),
             selectedId: selectedPath[0] || null
         });
 
-        // Columns 2, 3, 4
-        for (let i = 0; i < 3; i++) {
-            if (selectedPath.length >= (i + 1)) {
-                const parentId = selectedPath[i];
-                const parent = items.find(item => item.id === parentId);
-                if (parent && parent.type === 'folder') {
-                    cols.push({
-                        items: items.filter(item => item.parentId === parentId),
-                        selectedId: selectedPath[i + 1] || null
-                    });
-                } else {
-                    cols.push({ items: [], selectedId: null });
-                }
-            } else {
-                cols.push({ items: [], selectedId: null });
+        // 2. Dynamic Columns based on Path
+        for (let i = 0; i < selectedPath.length; i++) {
+            const id = selectedPath[i];
+            const item = items.find(x => x.id === id);
+
+            // If selected item is a FOLDER, show its content in the next column
+            if (item && item.type === 'folder') {
+                cols.push({
+                    items: items.filter(child => child.parentId === id),
+                    selectedId: selectedPath[i + 1] || null
+                });
             }
         }
 
@@ -602,6 +621,14 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         const newPath = selectedPath.slice(0, depth);
         newPath.push(item.id);
         setSelectedPath(newPath);
+
+        // Sync with currentFolderId for consistency actions (Create, Upload, etc.)
+        if (item.type === 'folder') {
+            setCurrentFolderId(item.id);
+        } else {
+            // If file, the context remains the parent of this file
+            setCurrentFolderId(item.parentId);
+        }
     };
 
     // Get selected file for info column
@@ -850,7 +877,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
                         {viewMode === 'grid' && (
                             /* Grid View - Now Visible on Mobile too */
-                            <div className="p-3 md:p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
+                            <div className="p-3 md:p-6 grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
 
                                 {/* FOLDERS */}
                                 {currentItems.filter(i => i.type === 'folder').map(folder => {
@@ -1002,9 +1029,9 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
                 {viewMode === 'column' && (
                     // --- COLUMN VIEW ---
-                    <div className="grid grid-cols-5 h-[600px] divide-x divide-white/5">
+                    <div className="flex h-[600px] overflow-x-auto custom-scrollbar divide-x divide-white/5">
                         {getColumns().map((col, colIndex) => (
-                            <div key={colIndex} className="overflow-y-auto custom-scrollbar bg-neutral-900/20 relative">
+                            <div key={colIndex} className="w-64 flex-shrink-0 overflow-y-auto custom-scrollbar bg-neutral-900/20 relative">
                                 {col.items.length === 0 && (
                                     <div className="absolute inset-0 flex items-center justify-center text-neutral-700 pointer-events-none">
                                         <span className="text-xs">Empty</span>
@@ -1073,8 +1100,8 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                             </div>
                         ))}
 
-                        {/* Preview Column (Always Visible) */}
-                        <div className="bg-[#080808] p-8 flex flex-col items-center text-center overflow-y-auto custom-scrollbar">
+                        {/* Preview Column (Always Visible - Last in Flex) */}
+                        <div className="w-80 flex-shrink-0 bg-[#080808] p-8 flex flex-col items-center text-center overflow-y-auto custom-scrollbar border-l border-white/10">
                             {lastSelectedItem ? (
                                 <>
                                     <div className="w-32 h-32 bg-neutral-900 rounded-2xl border border-white/10 flex items-center justify-center mb-6 shadow-2xl relative">

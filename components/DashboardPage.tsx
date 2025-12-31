@@ -572,6 +572,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     borderColor="border-purple-400/20"
                     isActive={selectedStat === 'gems'}
                     onClick={() => setSelectedStat('gems')}
+                    className="hidden md:block" // Hide on mobile as requested
                 />
             </div>
 
@@ -625,7 +626,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 -mr-2 space-y-6 relative">
-                        <div className="absolute left-[11px] top-2 bottom-2 w-px bg-neutral-800"></div>
+                        <div className={`absolute left-[11px] top-2 bottom-2 w-px bg-neutral-800 ${!dashboardAnalytics?.recentActivity?.length ? 'hidden md:block' : ''}`}></div>
 
                         {(dashboardAnalytics?.recentActivity || []).map((activity, idx) => (
                             <ActivityItem
@@ -802,12 +803,13 @@ const getActivityColor = (colorName: string) => {
     return colorMap[colorName as keyof typeof colorMap] || 'bg-green-500';
 };
 
-const StatCard = ({ title, value, icon, trend, positive, live, subtext, color, bgColor, borderColor, isActive, onClick }: any) => (
+const StatCard = ({ title, value, icon, trend, positive, live, subtext, color, bgColor, borderColor, isActive, onClick, className }: any) => (
     <div
         onClick={onClick}
         className={`
             bg-[#0a0a0a] border rounded-xl p-4 md:p-5 transition-all duration-300 hover:shadow-lg group relative overflow-hidden cursor-pointer
             ${isActive ? 'border-primary ring-1 ring-primary/50' : 'border-neutral-800 hover:border-white/20'}
+            ${className || ''}
         `}
     >
         <div className={`absolute top-0 right-0 p-20 rounded-full blur-3xl opacity-5 transition-opacity group-hover:opacity-10 ${color ? color.replace('text-', 'bg-') : 'bg-white'}`}></div>

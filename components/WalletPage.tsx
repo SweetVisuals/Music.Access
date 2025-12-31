@@ -56,7 +56,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
     };
 
     return (
-        <div className="w-full max-w-5xl mx-auto pb-32 pt-6 px-4 lg:px-8 animate-in fade-in duration-500 relative">
+        <div className="w-full max-w-5xl mx-auto pb-4 lg:pb-32 pt-6 px-4 lg:px-8 animate-in fade-in duration-500 relative">
 
             {/* Header / Title */}
             <div className="flex items-center justify-between mb-6">

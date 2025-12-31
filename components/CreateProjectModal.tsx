@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { X, Upload, Music, Plus, Trash2, FileText, DollarSign, Check, FileAudio, Folder } from 'lucide-react';
 import { Project, Track, LicenseInfo } from '../types';
 import { MOCK_CONTRACTS } from '../constants';
-import { createProject, updateProject } from '../services/supabaseService';
+import { createProject, updateProject, getUserFiles } from '../services/supabaseService';
 
 interface CreateProjectModalProps {
     isOpen: boolean;
@@ -22,14 +22,14 @@ const SUB_GENRES = [
     "Cinematic", "Soulful", "Aggressive", "Upbeat", "Sad", "Romantic", "Groovy", "Minimal"
 ];
 
-// Mock user files for selection
-const MOCK_USER_FILES = [
-    { id: 'f1', name: 'beat_final_mix.mp3', type: 'MP3', size: '4.2MB' },
-    { id: 'f2', name: 'beat_final_master.wav', type: 'WAV', size: '42MB' },
-    { id: 'f3', name: 'stems_zip_archive.zip', type: 'ZIP', size: '150MB' },
-    { id: 'f4', name: 'melody_loop_1.wav', type: 'WAV', size: '12MB' },
-    { id: 'f5', name: 'drum_loop.wav', type: 'WAV', size: '5MB' },
-];
+// Helper to format file size
+const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+};
 
 const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose, onSave, initialData }) => {
     const [step, setStep] = useState(1);
@@ -71,6 +71,36 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
     const [fileSelectorOpen, setFileSelectorOpen] = useState<'mp3' | 'wav' | 'stems' | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+
+    // File Selection State
+    const [userFiles, setUserFiles] = useState<any[]>([]);
+    const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+
+    // Fetch files when selector opens
+    React.useEffect(() => {
+        if (fileSelectorOpen) {
+            const fetchFiles = async () => {
+                setIsLoadingFiles(true);
+                try {
+                    const dbFiles = await getUserFiles();
+                    // map to format needed
+                    const mapped = dbFiles.map((f: any) => ({
+                        id: f.id,
+                        name: f.name,
+                        type: (f.type?.includes('audio') || f.name.endsWith('.mp3') || f.name.endsWith('.wav')) ? (f.name.endsWith('.wav') ? 'WAV' : 'MP3') : (f.name.endsWith('.zip') ? 'ZIP' : 'FILE'),
+                        size: f.size ? f.size : 'Unknown', // formatFileSize(f.size) if size is number
+                        original: f
+                    }));
+                    setUserFiles(mapped);
+                } catch (e) {
+                    console.error("Failed to fetch user files", e);
+                } finally {
+                    setIsLoadingFiles(false);
+                }
+            };
+            fetchFiles();
+        }
+    }, [fileSelectorOpen]);
 
     const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && e.currentTarget.value) {
@@ -130,7 +160,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
             track.files[fileSelectorOpen] = fileId;
 
             if (Object.keys(track.files).length === 1) {
-                track.title = MOCK_USER_FILES.find(f => f.id === fileId)?.name.split('.')[0] || track.title;
+                track.title = userFiles.find(f => f.id === fileId)?.name.split('.')[0] || track.title;
                 track.duration = 180;
             }
 
@@ -367,7 +397,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                             </div>
                                                             {track.files?.[type as 'mp3' | 'wav' | 'stems'] && (
                                                                 <span className="text-[9px] font-mono text-neutral-500 truncate max-w-[80px]">
-                                                                    {MOCK_USER_FILES.find(f => f.id === track.files?.[type as 'mp3' | 'wav' | 'stems'])?.name}
+                                                                    {userFiles.find(f => f.id === track.files?.[type as 'mp3' | 'wav' | 'stems'])?.name || 'Unknown File'}
                                                                 </span>
                                                             )}
                                                         </div>
@@ -494,21 +524,40 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                 <button onClick={() => setFileSelectorOpen(null)}><X size={16} className="text-neutral-500 hover:text-white" /></button>
                             </div>
                             <div className="flex-1 overflow-y-auto p-2">
-                                {MOCK_USER_FILES.map(file => (
-                                    <div
-                                        key={file.id}
-                                        onClick={() => selectFile(file.id)}
-                                        className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-lg cursor-pointer border border-transparent hover:border-white/10 group"
-                                    >
-                                        <div className="w-8 h-8 bg-neutral-900 rounded flex items-center justify-center text-neutral-500 group-hover:text-primary">
-                                            {file.type === 'ZIP' ? <Folder size={16} /> : <FileAudio size={16} />}
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="text-sm font-bold text-neutral-300 group-hover:text-white">{file.name}</div>
-                                            <div className="text-[10px] text-neutral-500">{file.size} • {file.type}</div>
-                                        </div>
+                                {isLoadingFiles ? (
+                                    <div className="flex items-center justify-center h-40 text-neutral-500">
+                                        <div className="animate-spin mr-2 h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+                                        Loading files...
                                     </div>
-                                ))}
+                                ) : userFiles.length === 0 ? (
+                                    <div className="text-center py-8 text-neutral-500">
+                                        <p>No files found.</p>
+                                        <p className="text-xs mt-1">Upload files in the "Uploads" page first.</p>
+                                    </div>
+                                ) : (
+                                    userFiles
+                                        .filter(f => {
+                                            if (fileSelectorOpen === 'mp3') return f.type === 'MP3' || f.name.toLowerCase().endsWith('.mp3');
+                                            if (fileSelectorOpen === 'wav') return f.type === 'WAV' || f.name.toLowerCase().endsWith('.wav');
+                                            if (fileSelectorOpen === 'stems') return f.type === 'ZIP' || f.name.toLowerCase().endsWith('.zip');
+                                            return true;
+                                        })
+                                        .map(file => (
+                                            <div
+                                                key={file.id}
+                                                onClick={() => selectFile(file.id)}
+                                                className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-lg cursor-pointer border border-transparent hover:border-white/10 group"
+                                            >
+                                                <div className="w-8 h-8 bg-neutral-900 rounded flex items-center justify-center text-neutral-500 group-hover:text-primary">
+                                                    {file.type === 'ZIP' ? <Folder size={16} /> : <FileAudio size={16} />}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-bold text-neutral-300 group-hover:text-white">{file.name}</div>
+                                                    <div className="text-[10px] text-neutral-500">{file.size} • {file.type}</div>
+                                                </div>
+                                            </div>
+                                        ))
+                                )}
                             </div>
                         </div>
                     </div>

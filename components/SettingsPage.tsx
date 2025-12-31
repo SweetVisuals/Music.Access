@@ -68,7 +68,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
 
     if (!profile && !userProfile) {
         return (
-            <div className="w-full max-w-4xl mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+            <div className="w-full max-w-4xl mx-auto pb-4 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
                 <div className="text-white">Loading profile settings...</div>
             </div>
         );
@@ -78,7 +78,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
     const displayProfile = profile || userProfile;
 
     return (
-        <div className="w-full max-w-4xl mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-4xl mx-auto pb-4 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
             <div className="mb-10">
                 <h1 className="text-3xl font-black text-white mb-2">Settings</h1>
                 <p className="text-neutral-500 text-sm">Manage your profile, preferences, and account security.</p>

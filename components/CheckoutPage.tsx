@@ -73,7 +73,7 @@ const CheckoutPage: React.FC = () => {
     }
 
     return (
-        <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-[1600px] mx-auto pb-4 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
             <h1 className="text-3xl font-black text-white mb-8">Secure Checkout</h1>
 
             {error && (

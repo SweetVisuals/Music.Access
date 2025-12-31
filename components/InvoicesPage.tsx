@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  FileText, 
-  Download, 
-  Send, 
-  Eye, 
-  Plus, 
-  Search, 
-  Filter, 
+import {
+  FileText,
+  Download,
+  Send,
+  Eye,
+  Plus,
+  Search,
+  Filter,
   Calendar,
   DollarSign,
   User,
@@ -57,7 +57,7 @@ const InvoicesPage: React.FC = () => {
         setLoading(true);
         const purchasesData = await getPurchases();
         setPurchases(purchasesData);
-        
+
         // Convert purchases to invoices for demo purposes
         const mockInvoices: Invoice[] = purchasesData.slice(0, 5).map((purchase, index) => ({
           id: `inv-${index + 1}`,
@@ -80,7 +80,7 @@ const InvoicesPage: React.FC = () => {
           status: purchase.status === 'Completed' ? 'paid' : 'sent',
           notes: `Payment for ${purchase.item}`
         }));
-        
+
         setInvoices(mockInvoices);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -94,7 +94,7 @@ const InvoicesPage: React.FC = () => {
 
   const filteredInvoices = invoices.filter(invoice => {
     const matchesSearch = invoice.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         invoice.clientName.toLowerCase().includes(searchQuery.toLowerCase());
+      invoice.clientName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -140,7 +140,7 @@ Total: $${invoice.total.toFixed(2)}
 
 Status: ${invoice.status.toUpperCase()}
     `;
-    
+
     const blob = new Blob([invoiceData], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -152,7 +152,7 @@ Status: ${invoice.status.toUpperCase()}
 
   if (loading) {
     return (
-      <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+      <div className="w-full max-w-[1600px] mx-auto pb-4 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="relative w-16 h-16 mx-auto mb-6">
@@ -168,7 +168,7 @@ Status: ${invoice.status.toUpperCase()}
   }
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+    <div className="w-full max-w-[1600px] mx-auto pb-4 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
@@ -177,7 +177,7 @@ Status: ${invoice.status.toUpperCase()}
         </div>
 
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-white text-black font-bold rounded-lg hover:bg-neutral-200 transition-colors text-xs"
           >
@@ -250,14 +250,14 @@ Status: ${invoice.status.toUpperCase()}
 
             {/* Actions */}
             <div className="flex gap-2">
-              <button 
+              <button
                 onClick={() => setSelectedInvoice(invoice)}
                 className="flex-1 py-2 px-3 bg-white/5 text-white font-bold rounded-lg text-xs hover:bg-white/10 transition-colors flex items-center justify-center gap-1"
               >
                 <Eye size={12} />
                 View
               </button>
-              <button 
+              <button
                 onClick={() => handleDownloadInvoice(invoice)}
                 className="flex-1 py-2 px-3 bg-primary text-black font-bold rounded-lg text-xs hover:bg-primary/90 transition-colors flex items-center justify-center gap-1"
               >
@@ -272,7 +272,7 @@ Status: ${invoice.status.toUpperCase()}
           <div className="col-span-full py-16 text-center border border-dashed border-neutral-800 rounded-xl bg-white/5">
             <FileText size={48} className="mx-auto mb-4 text-neutral-600" />
             <p className="text-neutral-500 font-mono mb-4">No invoices found.</p>
-            <button 
+            <button
               onClick={() => setShowCreateModal(true)}
               className="px-4 py-2 bg-primary/10 text-primary border border-primary/50 rounded hover:bg-primary hover:text-black transition-colors font-mono text-xs uppercase tracking-wider"
             >
@@ -346,7 +346,7 @@ Status: ${invoice.status.toUpperCase()}
             </div>
 
             <div className="p-6 border-t border-white/10 flex gap-3">
-              <button 
+              <button
                 onClick={() => handleDownloadInvoice(selectedInvoice)}
                 className="flex-1 py-2 px-4 bg-primary text-black font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
               >
@@ -376,8 +376,8 @@ Status: ${invoice.status.toUpperCase()}
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-neutral-400 uppercase mb-2 block">Client Name</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Enter client name"
                   className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
                 />
@@ -385,7 +385,7 @@ Status: ${invoice.status.toUpperCase()}
 
               <div>
                 <label className="text-xs font-bold text-neutral-400 uppercase mb-2 block">Service Description</label>
-                <textarea 
+                <textarea
                   placeholder="Describe the service or product"
                   className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none h-20 resize-none"
                 />
@@ -393,8 +393,8 @@ Status: ${invoice.status.toUpperCase()}
 
               <div>
                 <label className="text-xs font-bold text-neutral-400 uppercase mb-2 block">Amount ($)</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   placeholder="0.00"
                   className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
                 />
@@ -402,13 +402,13 @@ Status: ${invoice.status.toUpperCase()}
             </div>
 
             <div className="flex gap-3 mt-6">
-              <button 
+              <button
                 onClick={() => setShowCreateModal(false)}
                 className="flex-1 py-2 px-4 bg-white/5 text-white font-bold rounded-lg hover:bg-white/10 transition-colors"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={() => {
                   // Mock create invoice
                   setShowCreateModal(false);

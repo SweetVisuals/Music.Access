@@ -1744,7 +1744,13 @@ export const deleteContract = async (contractId: string): Promise<void> => {
 
 
 export const getTalentProfiles = async (): Promise<TalentProfile[]> => {
-  const currentUser = await getCurrentUser();
+  let currentUser = null;
+  try {
+    currentUser = await getCurrentUser();
+  } catch (e) {
+    // User not logged in, proceed as guest
+    console.log('Fetching talent profiles as guest');
+  }
 
   const { data, error } = await supabase
     .from('users')

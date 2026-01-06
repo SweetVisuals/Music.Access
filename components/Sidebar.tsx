@@ -500,31 +500,33 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             )}
 
                             {/* RESOURCES */}
-                            <div className="hidden lg:block">
-                                <div className="text-[9px] font-bold text-neutral-500 px-3 mb-2 uppercase tracking-widest">
-                                    Resources
+                            {isLoggedIn && (
+                                <div className="hidden lg:block">
+                                    <div className="text-[9px] font-bold text-neutral-500 px-3 mb-2 uppercase tracking-widest">
+                                        Resources
+                                    </div>
+                                    <nav className="space-y-0">
+                                        <SidebarItem
+                                            icon={<Settings size={14} />}
+                                            label="Settings"
+                                            active={currentView === 'settings'}
+                                            onClick={() => onNavigate('settings')}
+                                        />
+                                        <SidebarItem
+                                            icon={<CreditCard size={14} />}
+                                            label="Subscription"
+                                            active={currentView === 'subscription'}
+                                            onClick={() => onNavigate('subscription')}
+                                        />
+                                        <SidebarItem
+                                            icon={<HelpCircle size={14} />}
+                                            label="Get Help"
+                                            active={currentView === 'help'}
+                                            onClick={() => onNavigate('help')}
+                                        />
+                                    </nav>
                                 </div>
-                                <nav className="space-y-0">
-                                    <SidebarItem
-                                        icon={<Settings size={14} />}
-                                        label="Settings"
-                                        active={currentView === 'settings'}
-                                        onClick={() => onNavigate('settings')}
-                                    />
-                                    <SidebarItem
-                                        icon={<CreditCard size={14} />}
-                                        label="Subscription"
-                                        active={currentView === 'subscription'}
-                                        onClick={() => onNavigate('subscription')}
-                                    />
-                                    <SidebarItem
-                                        icon={<HelpCircle size={14} />}
-                                        label="Get Help"
-                                        active={currentView === 'help'}
-                                        onClick={() => onNavigate('help')}
-                                    />
-                                </nav>
-                            </div>
+                            )}
                         </>
                     )}
                 </div>
@@ -533,18 +535,20 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                 <div className={`px-4 pt-4 border-t border-neutral-800 bg-[#080808] shrink-0 transition-all duration-300 ${isPlayerActive ? 'pb-[calc(8.5rem+env(safe-area-inset-bottom))]' : 'pb-[calc(5rem+env(safe-area-inset-bottom))]'} lg:pb-4`}>
 
                     {/* Storage Info - Visible on Mobile & Desktop */}
-                    <div className="mb-4 px-0.5">
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Storage</span>
-                            <span className="text-[9px] font-mono text-neutral-500 font-bold">{formatStorageSize(storageUsage.used)} / {formatStorageSize(storageUsage.limit)}</span>
+                    {isLoggedIn && (
+                        <div className="mb-4 px-0.5">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Storage</span>
+                                <span className="text-[9px] font-mono text-neutral-500 font-bold">{formatStorageSize(storageUsage.used)} / {formatStorageSize(storageUsage.limit)}</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-primary rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(var(--primary),0.3)]"
+                                    style={{ width: `${Math.min((storageUsage.used / storageUsage.limit) * 100, 100)}%` }}
+                                ></div>
+                            </div>
                         </div>
-                        <div className="h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-primary rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(var(--primary),0.3)]"
-                                style={{ width: `${Math.min((storageUsage.used / storageUsage.limit) * 100, 100)}%` }}
-                            ></div>
-                        </div>
-                    </div>
+                    )}
 
                     {isLoggedIn ? (
                         <>

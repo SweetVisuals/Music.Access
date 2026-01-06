@@ -41,8 +41,8 @@ export interface Project {
   producerAvatar?: string;
   coverImage?: string; // Optional now
   price: number; // Display price (usually lowest license)
-  bpm: number;
-  key: string;
+  bpm: number | string;
+  key?: string;
   genre: string;
   subGenre?: string;
   type: 'beat_tape' | 'sound_pack'; // Distinguished type

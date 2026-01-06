@@ -436,18 +436,18 @@ const App: React.FC = () => {
                 )}
 
                 {loading ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mt-3 pb-20">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mt-3 pb-20">
                     {[...Array(12)].map((_, i) => (
-                      <div key={i} className="h-[320px]">
+                      <div key={i} className="h-[340px]">
                         <ProjectSkeleton />
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-4 mt-3 pb-20">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mt-3 pb-20">
                     {filteredProjects.length > 0 ? (
                       filteredProjects.map(project => (
-                        <div key={project.id} className="h-[320px]">
+                        <div key={project.id} className="h-[340px]">
                           <ProjectCard
                             project={project}
                             currentTrackId={currentTrackId}

@@ -803,41 +803,70 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                             /* Mobile List View */
                             <div className="p-4 flex flex-col gap-2">
                                 {/* FOLDERS */}
-                                {currentItems.filter(i => i.type === 'folder').map(folder => (
-                                    <div
-                                        key={folder.id}
-                                        onClick={() => handleNavigate(folder.id)}
-                                        className="flex items-center gap-4 p-4 bg-neutral-900/50 border border-white/5 rounded-xl active:scale-[0.98] transition-transform"
-                                    >
-                                        <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center text-primary">
-                                            <Folder size={20} />
+                                {currentItems.filter(i => i.type === 'folder').map(folder => {
+                                    const isSelected = selectedIds.has(folder.id);
+                                    return (
+                                        <div
+                                            key={folder.id}
+                                            onClick={(e) => handleItemClick(folder, e)}
+                                            onDoubleClick={() => handleNavigate(folder.id)}
+                                            className={`
+                                                flex items-center gap-4 p-4 rounded-xl active:scale-[0.98] transition-all border
+                                                ${isSelected
+                                                    ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.1)]'
+                                                    : 'bg-neutral-900/50 border-white/5 hover:bg-neutral-900'
+                                                }
+                                            `}
+                                        >
+                                            <div
+                                                className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center text-primary"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleNavigate(folder.id);
+                                                }}
+                                            >
+                                                <Folder size={20} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className={`font-bold text-sm truncate ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
+                                                    {folder.name}
+                                                </div>
+                                                <div className="text-xs text-neutral-500 font-mono">{folder.size} items</div>
+                                            </div>
+                                            <ChevronRight size={16} className="text-neutral-600" />
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="font-bold text-white text-sm truncate">{folder.name}</div>
-                                            <div className="text-xs text-neutral-500 font-mono">{folder.size} items</div>
-                                        </div>
-                                        <ChevronRight size={16} className="text-neutral-600" />
-                                    </div>
-                                ))}
+                                    );
+                                })}
 
                                 {/* FILES */}
                                 {currentItems.filter(i => i.type !== 'folder').map(file => {
                                     const isPlayingFile = currentProject?.id === 'upload_browser_proj' && currentTrackId === file.id && isPlaying;
+                                    const isSelected = selectedIds.has(file.id);
 
                                     return (
                                         <div
                                             key={file.id}
-                                            className="flex items-center gap-4 p-3 bg-neutral-900/30 border border-white/5 rounded-xl"
-                                            onClick={() => {
-                                                if (file.type === 'audio') handlePlay(file);
-                                                if (file.type === 'text') openTextEditor(file);
-                                                if (file.type === 'image') openInfo(file);
-                                            }}
+                                            className={`
+                                                flex items-center gap-4 p-3 border rounded-xl transition-all
+                                                ${isSelected
+                                                    ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.1)]'
+                                                    : 'bg-neutral-900/30 border-white/5'
+                                                }
+                                            `}
+                                            onClick={(e) => handleItemClick(file, e)}
                                         >
-                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden ${file.type === 'audio' ? (isPlayingFile ? 'bg-primary text-black animate-pulse' : 'bg-neutral-800/80 text-primary') :
-                                                file.type === 'image' ? 'bg-purple-500/20 text-purple-400' :
-                                                    'bg-blue-500/20 text-blue-400'
-                                                }`}>
+                                            <div
+                                                className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden cursor-pointer active:scale-95 transition-transform ${file.type === 'audio' ? (isPlayingFile ? 'bg-primary text-black animate-pulse' : 'bg-neutral-800/80 text-primary') :
+                                                    file.type === 'image' ? 'bg-purple-500/20 text-purple-400' :
+                                                        'bg-blue-500/20 text-blue-400'
+                                                    }`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (file.type === 'audio') handlePlay(file);
+                                                    if (file.type === 'text') openTextEditor(file);
+                                                    if (file.type === 'image') openInfo(file);
+                                                }}
+                                            >
                                                 {file.type === 'audio' ? (isPlayingFile ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />) :
                                                     file.type === 'image' ? (
                                                         file.src ? (
@@ -850,7 +879,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                             </div>
 
                                             <div className="flex-1 min-w-0">
-                                                <div className={`font-bold text-sm truncate ${isPlayingFile ? 'text-primary' : 'text-zinc-200'}`}>
+                                                <div className={`font-bold text-sm truncate ${isPlayingFile || isSelected ? 'text-white' : 'text-zinc-200'}`}>
                                                     {file.name}
                                                 </div>
                                                 <div className="flex items-center gap-3 mt-1">
@@ -1358,7 +1387,15 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 <div
                     ref={menuRef}
                     className="fixed z-[100] w-48 bg-[#0a0a0a] border border-neutral-700 shadow-[0_10px_40px_rgba(0,0,0,0.8)] rounded-lg py-1.5 text-xs font-medium backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100 origin-top-left"
-                    style={{ top: contextMenu.y, left: contextMenu.x }}
+                    style={{
+                        top: Math.min(contextMenu.y, (typeof window !== 'undefined' ? window.innerHeight : 0) - 220), // Prevent bottom overflow
+                        left: contextMenu.x > (typeof window !== 'undefined' ? window.innerWidth : 0) - 200
+                            ? 'auto'
+                            : contextMenu.x,
+                        right: contextMenu.x > (typeof window !== 'undefined' ? window.innerWidth : 0) - 200
+                            ? (typeof window !== 'undefined' ? window.innerWidth : 0) - contextMenu.x
+                            : 'auto'
+                    }}
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* FILE CONTEXT MENU */}

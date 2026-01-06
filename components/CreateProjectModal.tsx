@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Upload, Music, Plus, Trash2, FileText, DollarSign, Check, FileAudio, Folder } from 'lucide-react';
 import { Project, Track, LicenseInfo } from '../types';
 import { MOCK_CONTRACTS } from '../constants';
@@ -51,6 +51,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
         genre: initialData?.genre || '',
         subGenre: initialData?.subGenre || '',
         tracks: initialData?.tracks || [],
+        bpm: initialData?.bpm || '',
         licenses: initialData?.licenses?.map(l => ({
             ...l,
             fileTypesIncluded: l.fileTypesIncluded || [],
@@ -61,6 +62,25 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                 { id: 'l3', type: 'STEMS', name: 'Exclusive Rights', price: 499.99, features: ['All Stems', 'Unlimited Streams', 'Full Ownership Transfer'], fileTypesIncluded: ['STEMS', 'WAV', 'MP3'] }
             ]
     });
+
+    // BPM Range State
+    const [minBpm, setMinBpm] = useState<string>('');
+    const [maxBpm, setMaxBpm] = useState<string>('');
+
+    // Initialize BPM state from string (e.g. "120-140") or number
+    useEffect(() => {
+        if (initialData?.bpm) {
+            const bpmStr = String(initialData.bpm);
+            if (bpmStr.includes('-')) {
+                const [min, max] = bpmStr.split('-');
+                setMinBpm(min.trim());
+                setMaxBpm(max.trim());
+            } else {
+                setMinBpm(bpmStr);
+                setMaxBpm(bpmStr);
+            }
+        }
+    }, [initialData]);
 
     const [tracks, setTracks] = useState<Partial<Track>[]>(
         initialData?.tracks?.map(t => ({
@@ -103,10 +123,10 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     }, [fileSelectorOpen]);
 
     const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && e.currentTarget.value) {
+        if ((e.key === 'Enter' || e.key === ',') && e.currentTarget.value) {
             e.preventDefault();
-            const newTag = e.currentTarget.value.trim();
-            if (projectData.tags && projectData.tags.length < 5 && !projectData.tags.includes(newTag)) {
+            const newTag = e.currentTarget.value.replace(/,/g, '').trim();
+            if (newTag && projectData.tags && projectData.tags.length < 5 && !projectData.tags.includes(newTag)) {
                 setProjectData(prev => ({ ...prev, tags: [...(prev.tags || []), newTag] }));
                 e.currentTarget.value = '';
             }
@@ -184,12 +204,24 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
             ...selectedSubGenres
         ]));
 
+        // Format BPM
+        let finalBpm = '0';
+        if (minBpm && maxBpm) {
+            finalBpm = minBpm === maxBpm ? minBpm : `${minBpm}-${maxBpm}`;
+        } else if (minBpm) {
+            finalBpm = minBpm;
+        } else if (maxBpm) {
+            finalBpm = maxBpm;
+        }
+
         const finalProject = {
             ...projectData,
             tracks: tracks as Track[],
             genre: selectedGenres[0] || 'Unknown',
             subGenre: selectedSubGenres[0] || '',
-            tags: finalTags
+            tags: finalTags,
+            bpm: finalBpm,
+            key: '' // Key removed per request, sending empty string or could be removed if API allows
         };
 
         try {
@@ -210,8 +242,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full h-full md:h-[85vh] md:max-w-5xl bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl flex flex-col shadow-2xl overflow-hidden relative">
+        <div className="fixed inset-0 z-[150] flex items-center justify-end bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="w-full h-full lg:w-[calc(100%-16rem)] bg-[#0a0a0a] border-l border-neutral-800 flex flex-col shadow-2xl overflow-hidden relative">
 
                 <div className="h-14 md:h-16 border-b border-neutral-800 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
                     <h2 className="text-base md:text-lg font-bold text-white">Create New Project</h2>
@@ -261,10 +293,23 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                         </select>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-neutral-400 uppercase">Key & BPM</label>
-                                        <div className="flex gap-2">
-                                            <input className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2.5 md:py-3 text-white text-center" placeholder="Am" />
-                                            <input type="number" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2.5 md:py-3 text-white text-center" placeholder="140" />
+                                        <label className="text-xs font-bold text-neutral-400 uppercase">BPM Range</label>
+                                        <div className="flex gap-2 items-center">
+                                            <input
+                                                type="number"
+                                                value={minBpm}
+                                                onChange={(e) => setMinBpm(e.target.value)}
+                                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2.5 md:py-3 text-white text-center focus:border-primary/50 focus:outline-none"
+                                                placeholder="Min"
+                                            />
+                                            <span className="text-neutral-600 font-bold">-</span>
+                                            <input
+                                                type="number"
+                                                value={maxBpm}
+                                                onChange={(e) => setMaxBpm(e.target.value)}
+                                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2.5 md:py-3 text-white text-center focus:border-primary/50 focus:outline-none"
+                                                placeholder="Max"
+                                            />
                                         </div>
                                     </div>
                                 </div>

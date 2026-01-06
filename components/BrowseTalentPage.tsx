@@ -43,8 +43,8 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                 setTalents(talentData.length > 0 ? talentData : []);
             } catch (error) {
                 console.error('Error fetching talent profiles:', error);
-                // Fallback to mock only on error to keep UI usable
-                setTalents(MOCK_TALENT);
+                // Fallback to empty array on error, avoid Showing mock data which confuses users
+                setTalents([]);
             }
 
             // 2. Fetch Services

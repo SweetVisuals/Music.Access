@@ -113,7 +113,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             />
             <div
                 // ... (rest of the file as is)
-                className="group h-full flex flex-col bg-neutral-950/50 border border-neutral-800/60 rounded-xl overflow-hidden hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.05)] relative backdrop-blur-sm"
+                className="group h-full flex flex-col bg-neutral-950/50 border border-neutral-800/60 rounded-xl hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.05)] relative backdrop-blur-sm"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
             >
@@ -121,7 +121,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/0 to-transparent group-hover:via-primary/50 transition-all duration-700"></div>
 
                 {/* Header Section */}
-                <div className="p-4 pb-2 flex flex-col relative z-10 bg-gradient-to-b from-white/[0.02] to-transparent">
+                <div className="p-4 pb-2 flex flex-col relative z-10 bg-gradient-to-b from-white/[0.02] to-transparent rounded-t-xl">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-1.5">
                             {project.genre && project.genre !== 'Uploads' && (
@@ -129,7 +129,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                     {project.genre}
                                 </span>
                             )}
-                            {project.bpm > 0 && project.genre !== 'Uploads' && (
+                            {(typeof project.bpm === 'string' ? project.bpm.length > 0 : project.bpm > 0) && project.genre !== 'Uploads' && (
                                 <span className="px-1.5 py-0.5 rounded-[3px] bg-neutral-900 border border-white/10 text-[9px] font-mono text-neutral-500">
                                     {project.bpm} BPM
                                 </span>
@@ -281,7 +281,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 </div>
 
                 {/* Footer */}
-                <div className="px-3 py-2.5 bg-neutral-900/90 border-t border-white/5 flex items-center justify-between z-20">
+                <div className="rounded-b-xl px-3 py-2.5 bg-neutral-900/90 border-t border-white/5 flex items-center justify-between z-20">
                     <div className="flex items-center gap-2.5 overflow-hidden">
                         <div className="h-5 w-5 rounded bg-neutral-800 text-neutral-400 border border-white/5 flex items-center justify-center text-[9px] font-bold uppercase shrink-0">
                             {project.producer.charAt(0)}

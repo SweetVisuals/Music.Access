@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserProfile, Project } from '../types';
 import {
     Verified,
@@ -55,6 +56,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     onPlayTrack,
     onTogglePlay
 }) => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<Tab>('beat_tapes');
     const [isFollowing, setIsFollowing] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -234,16 +236,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         }
     };
 
-    const handleMessage = async () => {
+    const handleMessage = () => {
         if (!userProfile?.id) return;
-        try {
-            const conversationId = await import('../services/supabaseService').then(m => m.createConversation(userProfile.id!));
-            // Navigate to messages
-            window.location.href = `/messages?cid=${conversationId}`;
-        } catch (error) {
-            console.error("Failed to start conversation:", error);
-        }
+        navigate(`/dashboard/messages?uid=${userProfile.id}`);
     };
+    // I want `/dashboard/messages?uid=${userProfile.id}`
+
 
     if (loading) {
         return (

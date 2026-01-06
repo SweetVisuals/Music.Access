@@ -291,37 +291,42 @@ const App: React.FC = () => {
     if (typeof view === 'string' && view.startsWith('@')) {
       navigate(`/${view}`); // Navigate to /@username
     } else if (typeof view === 'string') {
-      // Handle other string routes
-      const pathMap: Record<string, string> = {
-        'home': '/',
-        'upload': '/upload',
-        'browse-talent': '/browse-talent',
-        'collaborate': '/collaborate',
-        'library': '/library',
-        'checkout': '/checkout',
-        'contracts': '/contracts',
-        'post-service': '/post-service',
-        'notes': '/notes',
-        'subscription': '/subscription',
-        'settings': '/settings',
-        'help': '/help',
-        'terms': '/terms',
-        'privacy': '/privacy',
-        'dashboard-overview': '/dashboard',
-        'dashboard-studio': '/dashboard/studio',
-        'dashboard-sales': '/dashboard/sales',
-        'dashboard-manage': '/dashboard/manage',
-        'dashboard-orders': '/dashboard/orders',
-        'dashboard-invoices': '/dashboard/invoices',
-        'dashboard-messages': '/dashboard/messages',
-        'dashboard-analytics': '/dashboard/analytics',
-        'dashboard-wallet': '/dashboard/wallet',
-        'dashboard-settings': '/dashboard/settings',
-        'dashboard-roadmap': '/dashboard/roadmap',
-        'dashboard-help': '/dashboard/help'
-      };
-      const path = pathMap[view] || '/';
-      navigate(path);
+      // Handle strings with query params or known paths
+      // If it contains '?', simply navigate to it as a raw path
+      if (view.includes('?')) {
+        navigate(view);
+      } else {
+        const pathMap: Record<string, string> = {
+          'home': '/',
+          'upload': '/upload',
+          'browse-talent': '/browse-talent',
+          'collaborate': '/collaborate',
+          'library': '/library',
+          'checkout': '/checkout',
+          'contracts': '/contracts',
+          'post-service': '/post-service',
+          'notes': '/notes',
+          'subscription': '/subscription',
+          'settings': '/settings',
+          'help': '/help',
+          'terms': '/terms',
+          'privacy': '/privacy',
+          'dashboard-overview': '/dashboard',
+          'dashboard-studio': '/dashboard/studio',
+          'dashboard-sales': '/dashboard/sales',
+          'dashboard-manage': '/dashboard/manage',
+          'dashboard-orders': '/dashboard/orders',
+          'dashboard-invoices': '/dashboard/invoices',
+          'dashboard-messages': '/dashboard/messages',
+          'dashboard-analytics': '/dashboard/analytics',
+          'dashboard-wallet': '/dashboard/wallet',
+          'dashboard-settings': '/dashboard/settings',
+          'dashboard-roadmap': '/dashboard/roadmap',
+          'dashboard-help': '/dashboard/help'
+        };
+        const path = pathMap[view] || '/';
+        navigate(path);
+      }
     } else {
       // Handle View enum values
       const pathMap: Record<View, string> = {

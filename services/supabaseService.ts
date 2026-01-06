@@ -157,10 +157,7 @@ export const getProjects = async (): Promise<Project[]> => {
         track_number,
         note_id,
         status_tags,
-      assigned_file_id,
-        assigned_file:assets!tracks_mp3_asset_id_fkey (
-          storage_path
-        )
+        assigned_file_id
       ),
       project_licenses (
         license:licenses (
@@ -177,7 +174,6 @@ export const getProjects = async (): Promise<Project[]> => {
         tag:tags (
           name
         )
-      )
       ),
       tasks (
         id,
@@ -192,8 +188,35 @@ export const getProjects = async (): Promise<Project[]> => {
 
   if (error) throw error;
 
+  // Manual Asset Fetching (Workaround for missing FK)
+  const projectsData = data as any[];
+  const assetIds = new Set<string>();
+
+  projectsData.forEach(p => {
+    p.tracks?.forEach((t: any) => {
+      if (t.assigned_file_id) assetIds.add(t.assigned_file_id);
+    });
+  });
+
+  const assetMap = new Map<string, string>();
+  if (assetIds.size > 0) {
+    const { data: assets, error: assetsError } = await supabase
+      .from('assets')
+      .select('id, storage_path')
+      .in('id', Array.from(assetIds));
+
+    if (!assetsError && assets) {
+      assets.forEach((a: any) => {
+        if (a.storage_path) {
+          const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(a.storage_path);
+          assetMap.set(a.id, publicUrl);
+        }
+      });
+    }
+  }
+
   // Transform data to match Project interface
-  return (data as any[]).map(project => ({
+  return projectsData.map(project => ({
     id: project.id,
     title: project.title,
     producer: project.user?.username || 'Unknown',
@@ -207,13 +230,8 @@ export const getProjects = async (): Promise<Project[]> => {
     type: project.type,
     tags: project.project_tags?.map((pt: any) => pt.tag?.name).filter(Boolean) || [],
     tracks: project.tracks?.map((track: any) => {
-      // Generate Public URL if asset exists
-      let mp3Url = '';
-      const asset = track.assets || (track as any).assigned_file; // Fallback just in case
-      if (asset?.storage_path) {
-        const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(asset.storage_path);
-        mp3Url = publicUrl;
-      }
+      // Use manually fetched URL (prioritize) or fallback logic if we kept the join (we removed it)
+      const mp3Url = track.assigned_file_id ? (assetMap.get(track.assigned_file_id) || '') : '';
 
       return {
         id: track.id,
@@ -551,13 +569,18 @@ export const createProject = async (project: Partial<Project>) => {
 
   // 2. Create Tracks
   if (project.tracks && project.tracks.length > 0) {
-    const tracksToInsert = project.tracks.map((track, index) => ({
-      project_id: projectId,
-      title: track.title,
-      duration_seconds: track.duration || 180, // Default duration
-      track_number: index + 1
-      // Note: Asset linking would happen here if we had real file uploads
-    }));
+    const tracksToInsert = project.tracks.map((track, index) => {
+      // Extract assigned file ID (prefer MP3 for now as primary playback)
+      const assignedFileId = track.files?.mp3 || track.files?.wav || null;
+
+      return {
+        project_id: projectId,
+        title: track.title,
+        duration_seconds: track.duration || 180, // Default duration
+        track_number: index + 1,
+        assigned_file_id: assignedFileId
+      };
+    });
 
     const { error: tracksError } = await supabase
       .from('tracks')

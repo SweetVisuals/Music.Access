@@ -448,7 +448,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        onNavigate('dashboard-messages');
+                                                        onNavigate(`/dashboard/messages?uid=${talent.id}`);
                                                     }}
                                                     className="p-1 text-neutral-500 hover:text-white hover:bg-white/10 rounded-md transition-all"
                                                 >

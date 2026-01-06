@@ -44,6 +44,13 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
         if (url && audioRef.current.src !== url) {
             audioRef.current.src = url;
             audioRef.current.load();
+        } else if (!url && audioRef.current) {
+            // Handle missing URL - console warning and maybe pause?
+            console.warn("Audio URL is missing for track:", currentTrack.title);
+            // Optionally, you might want to stop playback or set a specific state,
+            // but strictly sticking to not breaking:
+            if (isPlaying) togglePlay(); // Pause if we were trying to play
+            return;
         }
         if (isPlaying) audioRef.current.play().catch(console.error);
         else audioRef.current.pause();
@@ -452,14 +459,17 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                             </div>
 
                             {/* Rest of the tracks in project (Simulated Queue) */}
-                            {currentProject.tracks.filter(t => t.id !== currentTrackId).map(track => (
-                                <div key={track.id} className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-2xl transition-colors group">
+                            {currentProject.tracks.filter(t => t.id !== currentTrackId).map((track, idx) => (
+                                <div key={track.id || `queue-${idx}`} className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-2xl transition-colors group">
                                     <img src={displayImage} className="w-12 h-12 rounded-lg object-cover opacity-60" />
                                     <div className="flex-1 min-w-0">
                                         <h4 className="text-sm font-bold text-white truncate">{track.title}</h4>
                                         <p className="text-[10px] text-neutral-500 uppercase tracking-wider">{currentProject.producer}</p>
                                     </div>
-                                    <button className="text-neutral-600 group-hover:text-white transition-colors">
+                                    <button
+                                        onClick={() => togglePlay()}
+                                        className="text-neutral-600 group-hover:text-white transition-colors"
+                                    >
                                         <Play size={16} fill="currentColor" />
                                     </button>
                                 </div>

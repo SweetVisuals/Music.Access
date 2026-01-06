@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Conversation } from '../types';
 import { Search, Send, Paperclip, MoreVertical, Phone, Video, ArrowLeft, Plus, Menu, X, MessageCircle, Trash } from 'lucide-react';
@@ -138,6 +139,8 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchParams] = useSearchParams();
+    const uidParam = searchParams.get('uid');
 
     // New Conversation State
     const [isCreatingNew, setIsCreatingNew] = useState(false);
@@ -160,6 +163,52 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
         };
         fetchConversations();
     }, []);
+
+    // Handle uid param to auto-select or suggest conversation
+    useEffect(() => {
+        if (!uidParam || loading) return;
+
+        const findAndSelect = async () => {
+            // 1. Check if we already have a conversation for this user in the loaded list
+            // Note: conversations objects have `user` (username), NOT `userId`. 
+            // We might need to fetch detailed conversation info or rely on searching if backend didn't provide userId.
+            // Assuming we don't have easy userId match in `conversations` list based on current type definition shown in previous file view?
+            // Wait, previous file view of MessagesPage showed `conversations` state.
+            // SwipeableConversationItem uses `conv.id`. Is that conversation ID or User ID? usually Conversation ID.
+            // If I want to find by USER ID, I need to know which conversation belongs to that user.
+
+            // If the `uid` param is passed, we might need to "Resolve" it to a conversation ID.
+            try {
+                // We'll define a helper to find or create conversation by user ID
+                // Ideally `getConversations` returns user_id, but if not we might need a specific call.
+                // Or, we can try to "Start Conversation" which usually returns existing one if exists.
+
+                // Let's optimize: First see if we can find it.
+                // Since we don't easily know which conv is for which user ID without more data, 
+                // the safest bet is to call `createConversation` (or similar "get or create") logic.
+
+                setIsStartingConversation(true);
+                const { createConversation } = await import('../services/supabaseService');
+                const convId = await createConversation(uidParam);
+
+                // Now reload conversations to ensure it's there
+                const { getConversations } = await import('../services/supabaseService');
+                const data = await getConversations();
+                setConversations(data);
+                setFilteredConversations(data);
+                setActiveId(convId);
+                setIsCreatingNew(false);
+                setIsSidebarOpen(false); // Close sidebar on mobile to show chat
+
+            } catch (e) {
+                console.error("Failed to handle uid param:", e);
+            } finally {
+                setIsStartingConversation(false);
+            }
+        };
+
+        findAndSelect();
+    }, [uidParam, loading]); // Depend on loading to wait for initial fetch? Actually we might want independent check.
 
     // Filter conversations
     useEffect(() => {

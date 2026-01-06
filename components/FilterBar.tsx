@@ -1,5 +1,7 @@
 import React from 'react';
-import { ChevronDown, Activity } from 'lucide-react';
+import { ChevronDown, Activity, Music2, Key, Hash } from 'lucide-react';
+import CustomDropdown from './CustomDropdown';
+import CustomInput from './CustomInput';
 import { GENRES, KEYS } from '../constants';
 import { FilterState } from '../types';
 
@@ -37,50 +39,45 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
         {/* Filters Container */}
 
         {/* Genre */}
-        <div className="relative group w-full lg:w-auto">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-            <span className="text-[10px] font-mono text-neutral-500 uppercase">Genre</span>
-          </div>
-          <select
-            className="w-full lg:w-auto appearance-none bg-black/40 border border-transparent text-white py-2 pl-16 pr-8 rounded-lg text-sm focus:outline-none focus:border-neutral-600 focus:bg-black hover:bg-white/5 transition-colors cursor-pointer font-medium"
-            value={filters.genre}
-            onChange={handleGenreChange}
-          >
-            {GENRES.map(g => <option key={g} value={g} className="bg-neutral-900">{g}</option>)}
-          </select>
-          <ChevronDown size={14} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 pointer-events-none" />
-        </div>
+        <CustomDropdown
+          value={filters.genre}
+          onChange={(val) => onFilterChange({ ...filters, genre: val })}
+          options={GENRES}
+          placeholder="Genre"
+          className="w-full lg:w-48"
+          searchable
+        />
 
         {/* Key */}
-        <div className="relative group w-full lg:w-auto">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-            <span className="text-[10px] font-mono text-neutral-500 uppercase">Key</span>
-          </div>
-          <select
-            className="w-full lg:w-auto appearance-none bg-black/40 border border-transparent text-white py-2 pl-12 pr-8 rounded-lg text-sm focus:outline-none focus:border-neutral-600 focus:bg-black hover:bg-white/5 transition-colors cursor-pointer font-medium"
-            value={filters.key}
-            onChange={handleKeyChange}
-          >
-            {KEYS.map(k => <option key={k} value={k} className="bg-neutral-900">{k}</option>)}
-          </select>
-          <ChevronDown size={14} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-neutral-500 pointer-events-none" />
-        </div>
+        <CustomDropdown
+          value={filters.key}
+          onChange={(val) => onFilterChange({ ...filters, key: val })}
+          options={KEYS}
+          placeholder="Key"
+          className="w-full lg:w-32"
+          searchable
+        />
 
         <div className="h-px w-full bg-white/10 lg:h-6 lg:w-px lg:mx-2"></div>
 
         {/* BPM Range */}
-        <div className="flex items-center space-x-0.5 bg-black/40 rounded-lg px-3 py-2 border border-transparent hover:border-neutral-800 transition-colors w-full lg:w-auto justify-center lg:justify-start">
-          <span className="text-[10px] text-neutral-500 font-mono mr-2">BPM</span>
-          <input
+        <div className="flex items-center gap-2">
+          <CustomInput
             type="number"
-            placeholder="0"
-            className="w-12 lg:w-8 bg-transparent text-sm text-white focus:outline-none text-center font-mono border-b border-transparent focus:border-white/20 transition-colors"
+            value={filters.minBpm}
+            onChange={(e) => onFilterChange({ ...filters, minBpm: e.target.value })}
+            placeholder="Min"
+            className="w-20 !py-2 !px-3 font-mono text-center"
+            noLabel
           />
-          <span className="text-neutral-600 text-xs">-</span>
-          <input
+          <span className="text-neutral-700">-</span>
+          <CustomInput
             type="number"
-            placeholder="999"
-            className="w-12 lg:w-8 bg-transparent text-sm text-white focus:outline-none text-center font-mono border-b border-transparent focus:border-white/20 transition-colors"
+            value={filters.maxBpm}
+            onChange={(e) => onFilterChange({ ...filters, maxBpm: e.target.value })}
+            placeholder="Max"
+            className="w-20 !py-2 !px-3 font-mono text-center"
+            noLabel
           />
         </div>
 

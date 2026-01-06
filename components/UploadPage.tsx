@@ -79,10 +79,10 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
     const [selectedPath, setSelectedPath] = useState<string[]>([]); // For Column View: IDs of selected items in order
 
-    // Set default view to list on mobile
+    // Set default view to grid on mobile
     useEffect(() => {
         if (typeof window !== 'undefined' && window.innerWidth < 768) {
-            setViewMode('list');
+            setViewMode('grid');
         }
     }, []);
 
@@ -109,9 +109,26 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
     const [noteSuccess, setNoteSuccess] = useState(false);
+    const [isRenamingReady, setIsRenamingReady] = useState(false);
 
     const menuRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const renameInputRef = useRef<HTMLInputElement>(null);
+
+    // Focus rename input when active - with grace period
+    useEffect(() => {
+        if (renamingId) {
+            setIsRenamingReady(false);
+            if (renameInputRef.current) {
+                const timer = setTimeout(() => {
+                    renameInputRef.current?.focus();
+                    renameInputRef.current?.select();
+                    setIsRenamingReady(true);
+                }, 100);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [renamingId]);
 
     // --- Load Files on Mount ---
     useEffect(() => {
@@ -980,13 +997,19 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                          ${draggedItemId === file.id ? 'opacity-50 border-dashed' : ''}
                                          ${isSelected
                                                     ? 'border-primary/50 bg-primary/10 shadow-[0_0_15px_rgba(var(--primary),0.1)]'
-                                                    : 'border-transparent hover:bg-white/5 hover:scale-[1.02] hover:shadow-lg'
+                                                    : 'border-transparent'
                                                 }
                                      `}
                                         >
                                             <div className="w-full aspect-square rounded-lg bg-neutral-900 flex items-center justify-center mb-3 relative overflow-hidden border border-white/5">
                                                 {isPlayingFile ? (
-                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                                                    <div
+                                                        className="absolute inset-0 flex items-center justify-center bg-black/50 cursor-pointer"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handlePlay(file);
+                                                        }}
+                                                    >
                                                         <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black animate-pulse">
                                                             <Pause size={16} fill="black" />
                                                         </div>
@@ -1000,7 +1023,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                                 {file.src ? (
                                                                     <img
                                                                         src={file.src}
-                                                                        className={`w-full h-full object-cover transition-transform duration-500 ${isSelected ? 'scale-110' : 'group-hover:scale-110'}`}
+                                                                        className={`w-full h-full object-cover transition-transform duration-500 ${isSelected ? 'scale-110' : ''}`}
                                                                         alt={file.name}
                                                                     />
                                                                 ) : (
@@ -1059,75 +1082,92 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 {viewMode === 'column' && (
                     // --- COLUMN VIEW ---
                     <div className="flex h-[600px] overflow-x-auto custom-scrollbar divide-x divide-white/5">
-                        {getColumns().map((col, colIndex) => (
-                            <div key={colIndex} className="w-64 flex-shrink-0 overflow-y-auto custom-scrollbar bg-neutral-900/20 relative">
-                                {col.items.length === 0 && (
-                                    <div className="absolute inset-0 flex items-center justify-center text-neutral-700 pointer-events-none">
-                                        <span className="text-xs">Empty</span>
-                                    </div>
-                                )}
-                                {col.items.map(item => {
-                                    const isSelected = col.selectedId === item.id;
-                                    const isPlayingFile = currentProject?.id === 'upload_browser_proj' && currentTrackId === item.id && isPlaying;
-                                    const isDropTarget = dragOverFolderId === item.id;
+                        {(() => {
+                            const allColumns = getColumns();
+                            const MAX_NAV_COLS = 4;
+                            const startIndex = Math.max(0, allColumns.length - MAX_NAV_COLS);
+                            const visibleColsLines = allColumns.slice(startIndex);
 
-                                    return (
-                                        <div
-                                            key={item.id}
-                                            draggable
-                                            onDragStart={() => setDraggedItemId(item.id)}
-                                            onDragOver={(e) => {
-                                                if (item.type === 'folder') {
-                                                    e.preventDefault();
-                                                    setDragOverFolderId(item.id);
-                                                }
-                                            }}
-                                            onDragLeave={() => setDragOverFolderId(null)}
-                                            onDrop={(e) => {
-                                                if (item.type === 'folder') {
-                                                    handleDrop(e, item.id);
-                                                }
-                                            }}
-                                            onClick={() => handleColumnItemClick(item, colIndex)}
-                                            onContextMenu={(e) => handleContextMenu(e, item.type === 'folder' ? 'folder' : 'file', item.id)}
-                                            className={`
-                                            flex items-center gap-2 px-4 py-2 text-sm cursor-pointer whitespace-nowrap border-b border-white/5
-                                            ${isSelected ? 'bg-primary text-black font-bold' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}
-                                            ${isPlayingFile && !isSelected ? 'text-primary' : ''}
-                                            ${isDropTarget ? 'bg-primary/20 ring-2 ring-inset ring-primary' : ''}
-                                        `}
-                                        >
-                                            {item.type === 'folder' ? (
-                                                <Folder size={14} className={isSelected ? 'text-black' : 'text-neutral-500'} />
-                                            ) : item.type === 'audio' ? (
-                                                <Music size={14} className={isSelected ? 'text-black' : 'text-neutral-500'} />
-                                            ) : (
-                                                <FileText size={14} className={isSelected ? 'text-black' : 'text-neutral-500'} />
-                                            )}
+                            // Pad with empty columns if needed
+                            const displayCols = [...visibleColsLines];
+                            while (displayCols.length < MAX_NAV_COLS) {
+                                displayCols.push({ items: [], selectedId: null });
+                            }
 
-                                            {renamingId === item.id ? (
-                                                <input
-                                                    autoFocus={window.innerWidth >= 768}
-                                                    value={renameValue}
-                                                    onChange={(e) => setRenameValue(e.target.value)}
-                                                    onBlur={handleFinishRename}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
+                            return displayCols.map((col, i) => {
+                                const realIndex = startIndex + i;
+
+                                return (
+                                    <div key={i} className="flex-1 min-w-[200px] overflow-y-auto custom-scrollbar bg-neutral-900/20 relative border-r border-white/5 last:border-r-0">
+                                        {col.items.length === 0 && (
+                                            <div className="absolute inset-0 flex items-center justify-center text-neutral-800 pointer-events-none">
+                                                <span className="text-xs font-mono opacity-20">Column {i + 1}</span>
+                                            </div>
+                                        )}
+                                        {col.items.map(item => {
+                                            const isSelected = col.selectedId === item.id;
+                                            const isPlayingFile = currentProject?.id === 'upload_browser_proj' && currentTrackId === item.id && isPlaying;
+                                            const isDropTarget = dragOverFolderId === item.id;
+
+                                            return (
+                                                <div
+                                                    key={item.id}
+                                                    draggable
+                                                    onDragStart={() => setDraggedItemId(item.id)}
+                                                    onDragOver={(e) => {
+                                                        if (item.type === 'folder') {
+                                                            e.preventDefault();
+                                                            setDragOverFolderId(item.id);
+                                                        }
+                                                    }}
+                                                    onDragLeave={() => setDragOverFolderId(null)}
+                                                    onDrop={(e) => {
+                                                        if (item.type === 'folder') {
+                                                            handleDrop(e, item.id);
+                                                        }
+                                                    }}
+                                                    onClick={() => handleColumnItemClick(item, realIndex)}
+                                                    onContextMenu={(e) => handleContextMenu(e, item.type === 'folder' ? 'folder' : 'file', item.id)}
                                                     className={`
-                                                        flex-1 bg-transparent border-none outline-none text-sm px-0 py-0
-                                                        ${isSelected ? 'text-black placeholder:text-black/50 selection:bg-neutral-900 selection:text-white' : 'text-white placeholder:text-neutral-500 selection:bg-primary selection:text-black'}
-                                                    `}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                />
-                                            ) : (
-                                                <span className="truncate flex-1">{item.name}</span>
-                                            )}
+                                                    flex items-center gap-2 px-4 py-2 text-sm cursor-pointer whitespace-nowrap border-b border-white/5
+                                                    ${isSelected ? 'bg-primary text-black font-bold' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}
+                                                    ${isPlayingFile && !isSelected ? 'text-primary' : ''}
+                                                    ${isDropTarget ? 'bg-primary/20 ring-2 ring-inset ring-primary' : ''}
+                                                `}
+                                                >
+                                                    {item.type === 'folder' ? (
+                                                        <Folder size={14} className={isSelected ? 'text-black' : 'text-neutral-500'} />
+                                                    ) : item.type === 'audio' ? (
+                                                        <Music size={14} className={isSelected ? 'text-black' : 'text-neutral-500'} />
+                                                    ) : (
+                                                        <FileText size={14} className={isSelected ? 'text-black' : 'text-neutral-500'} />
+                                                    )}
 
-                                            {item.type === 'folder' && <ChevronRight size={12} className={isSelected ? 'text-black' : 'text-neutral-600'} />}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        ))}
+                                                    {renamingId === item.id ? (
+                                                        <input
+                                                            autoFocus={window.innerWidth >= 768}
+                                                            value={renameValue}
+                                                            onChange={(e) => setRenameValue(e.target.value)}
+                                                            onBlur={handleFinishRename}
+                                                            onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
+                                                            className={`
+                                                                flex-1 bg-transparent border-none outline-none text-sm px-0 py-0
+                                                                ${isSelected ? 'text-black placeholder:text-black/50 selection:bg-neutral-900 selection:text-white' : 'text-white placeholder:text-neutral-500 selection:bg-primary selection:text-black'}
+                                                            `}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        />
+                                                    ) : (
+                                                        <span className="truncate flex-1">{item.name}</span>
+                                                    )}
+
+                                                    {item.type === 'folder' && <ChevronRight size={12} className={isSelected ? 'text-black' : 'text-neutral-600'} />}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            });
+                        })()}
 
                         {/* Preview Column (Always Visible - Last in Flex) */}
                         <div className="w-80 flex-shrink-0 bg-[#080808] p-8 flex flex-col items-center text-center overflow-y-auto custom-scrollbar border-l border-white/10">
@@ -1157,7 +1197,29 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                         )}
                                     </div>
 
-                                    <h3 className="text-xl font-bold text-white mb-2 break-all">{lastSelectedItem.name}</h3>
+                                    {renamingId === lastSelectedItem.id ? (
+                                        <input
+                                            ref={renameInputRef}
+                                            value={renameValue}
+                                            onChange={(e) => setRenameValue(e.target.value)}
+                                            onBlur={() => isRenamingReady && handleFinishRename()}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
+                                            className="w-full bg-black border border-primary text-xl font-bold text-white mb-2 text-center rounded px-2 focus:outline-none"
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    ) : (
+                                        <h3
+                                            className="text-xl font-bold text-white mb-2 break-all cursor-text hover:text-gray-300 transition-colors select-none"
+                                            onDoubleClick={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                handleStartRename(lastSelectedItem);
+                                            }}
+                                            title="Double click to rename"
+                                        >
+                                            {lastSelectedItem.name}
+                                        </h3>
+                                    )}
                                     <p className="text-sm text-neutral-500 font-mono mb-6">{lastSelectedItem.size} • {lastSelectedItem.format || lastSelectedItem.type.toUpperCase()}</p>
 
                                     <div className="w-full space-y-4">

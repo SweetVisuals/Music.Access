@@ -3744,3 +3744,16 @@ export const markStageStarted = async (stageId: string) => {
   }
 };
 
+export const emptyTrashNotes = async () => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  const { error } = await supabase
+    .from('notes')
+    .delete()
+    .eq('user_id', currentUser.id)
+    .eq('deleted', true);
+
+  if (error) throw error;
+};
+

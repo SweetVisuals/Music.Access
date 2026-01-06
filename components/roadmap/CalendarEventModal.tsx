@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CalendarEvent, Strategy } from '../../types';
-import { X, Calendar, Type, Link, AlignLeft, Layers, Smartphone } from 'lucide-react';
+import { X, Calendar, Type, Link, AlignLeft, Layers, Smartphone, CheckCircle2, Clock, XCircle, Instagram, Youtube, Music2, Share2, Users, Award } from 'lucide-react';
+import CustomDropdown from '../CustomDropdown';
 
 interface CalendarEventModalProps {
     isOpen: boolean;
@@ -142,38 +143,29 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                         />
                     </div>
 
-                    {/* Type & Status */}
                     <div className="grid grid-cols-2 gap-4 md:gap-3">
-                        <div>
-                            <label className="text-[10px] font-bold text-neutral-400 uppercase mb-2 md:mb-1 flex items-center gap-1.5">
-                                <Layers size={12} className="md:w-3 md:h-3" /> Type
-                            </label>
-                            <select
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:border-primary/50 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23666666%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px] bg-[right_12px_center] bg-no-repeat"
-                                value={formData.type}
-                                onChange={e => setFormData({ ...formData, type: e.target.value as any })}
-                            >
-                                <option value="content">Content</option>
-                                <option value="campaign">Campaign</option>
-                                <option value="meeting">Meeting</option>
-                                <option value="milestone">Milestone</option>
-                                <option value="task">Task</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-[10px] font-bold text-neutral-400 uppercase mb-2 md:mb-1 flex items-center gap-1.5">
-                                Status
-                            </label>
-                            <select
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:border-primary/50 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23666666%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px] bg-[right_12px_center] bg-no-repeat"
-                                value={formData.status}
-                                onChange={e => setFormData({ ...formData, status: e.target.value as any })}
-                            >
-                                <option value="pending">Pending</option>
-                                <option value="completed">Completed</option>
-                                <option value="cancelled">Cancelled</option>
-                            </select>
-                        </div>
+                        <CustomDropdown
+                            label="Type"
+                            value={formData.type}
+                            onChange={(val) => setFormData({ ...formData, type: val as any })}
+                            options={[
+                                { value: 'content', label: 'Content', icon: <Smartphone size={14} /> },
+                                { value: 'campaign', label: 'Campaign', icon: <Layers size={14} /> },
+                                { value: 'meeting', label: 'Meeting', icon: <Users size={14} /> },
+                                { value: 'milestone', label: 'Milestone', icon: <Award size={14} /> },
+                                { value: 'task', label: 'Task', icon: <CheckCircle2 size={14} /> }
+                            ]}
+                        />
+                        <CustomDropdown
+                            label="Status"
+                            value={formData.status}
+                            onChange={(val) => setFormData({ ...formData, status: val as any })}
+                            options={[
+                                { value: 'pending', label: 'Pending', icon: <Clock size={14} /> },
+                                { value: 'completed', label: 'Completed', icon: <CheckCircle2 size={14} className="text-green-500" /> },
+                                { value: 'cancelled', label: 'Cancelled', icon: <XCircle size={14} className="text-red-500" /> }
+                            ]}
+                        />
                     </div>
 
                     {/* Dates */}
@@ -205,20 +197,18 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                     {/* Platform (If Content) */}
                     {formData.type === 'content' && (
                         <div>
-                            <label className="text-[10px] font-bold text-neutral-400 uppercase mb-2 md:mb-1 flex items-center gap-1.5">
-                                <Smartphone size={12} className="md:w-3 md:h-3" /> Platform
-                            </label>
-                            <select
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:border-primary/50 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23666666%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px] bg-[right_12px_center] bg-no-repeat"
+                            <CustomDropdown
+                                label="Platform"
                                 value={formData.platform}
-                                onChange={e => setFormData({ ...formData, platform: e.target.value as any })}
-                            >
-                                <option value="instagram">Instagram</option>
-                                <option value="tiktok">TikTok</option>
-                                <option value="youtube">YouTube</option>
-                                <option value="spotify">Spotify</option>
-                                <option value="other">Other</option>
-                            </select>
+                                onChange={(val) => setFormData({ ...formData, platform: val as any })}
+                                options={[
+                                    { value: 'instagram', label: 'Instagram', icon: <Instagram size={14} /> },
+                                    { value: 'tiktok', label: 'TikTok', icon: <Share2 size={14} /> },
+                                    { value: 'youtube', label: 'YouTube', icon: <Youtube size={14} /> },
+                                    { value: 'spotify', label: 'Spotify', icon: <Music2 size={14} /> },
+                                    { value: 'other', label: 'Other' }
+                                ]}
+                            />
                         </div>
                     )}
 
@@ -226,28 +216,20 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                     <div className="border-t border-neutral-800 pt-6 md:pt-3 mt-2 md:mt-1">
                         <h4 className="text-[10px] font-black text-white mb-4 md:mb-2 uppercase tracking-widest text-primary">Context & Strategy Link</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-3">
-                            <div>
-                                <label className="text-[8px] font-bold text-neutral-500 uppercase mb-2 md:mb-1 block">Linked Campaign</label>
-                                <select
-                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-[10px] text-white focus:outline-none focus:border-primary/50 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23666666%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px] bg-[right_12px_center] bg-no-repeat"
-                                    value={formData.linkedCampaign}
-                                    onChange={e => setFormData({ ...formData, linkedCampaign: e.target.value })}
-                                >
-                                    <option value="">None</option>
-                                    {campaigns.map((c, i) => <option key={i} value={c}>{c}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-[8px] font-bold text-neutral-500 uppercase mb-2 md:mb-1 block">Content Bucket</label>
-                                <select
-                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-[10px] text-white focus:outline-none focus:border-primary/50 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%23666666%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E')] bg-[length:20px] bg-[right_12px_center] bg-no-repeat"
-                                    value={formData.contentBucket}
-                                    onChange={e => setFormData({ ...formData, contentBucket: e.target.value })}
-                                >
-                                    <option value="">None</option>
-                                    {contentBuckets.map((b, i) => <option key={i} value={b}>{b}</option>)}
-                                </select>
-                            </div>
+                            <CustomDropdown
+                                label="Linked Campaign"
+                                value={formData.linkedCampaign}
+                                onChange={(val) => setFormData({ ...formData, linkedCampaign: val })}
+                                options={['None', ...campaigns]}
+                                searchable
+                            />
+                            <CustomDropdown
+                                label="Content Bucket"
+                                value={formData.contentBucket}
+                                onChange={(val) => setFormData({ ...formData, contentBucket: val })}
+                                options={['None', ...contentBuckets]}
+                                searchable
+                            />
                         </div>
                     </div>
 

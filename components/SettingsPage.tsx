@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, Bell, Shield, Palette, Trash2, Save, Globe, Lock } from 'lucide-react';
 import { UserProfile } from '../types';
 import { updateUserProfile, getCurrentUser } from '../services/supabaseService';
+import CustomDropdown from './CustomDropdown';
 
 interface SettingsPageProps {
     userProfile?: UserProfile | null;
@@ -215,21 +216,19 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                                     <Globe size={14} /> Region & Language
                                 </h3>
                                 <div className="space-y-3">
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-bold text-neutral-500 uppercase">Language</label>
-                                        <select
-                                            value={language}
-                                            onChange={(e) => setLanguage(e.target.value)}
-                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
-                                        >
-                                            <option>English (US)</option>
-                                            <option>English (UK)</option>
-                                            <option>Spanish</option>
-                                            <option>French</option>
-                                            <option>German</option>
-                                            <option>Japanese</option>
-                                        </select>
-                                    </div>
+                                    <CustomDropdown
+                                        label="Language"
+                                        value={language}
+                                        onChange={setLanguage}
+                                        options={[
+                                            'English (US)',
+                                            'English (UK)',
+                                            'Spanish',
+                                            'French',
+                                            'German',
+                                            'Japanese'
+                                        ]}
+                                    />
                                 </div>
                             </div>
                         </div>

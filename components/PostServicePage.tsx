@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
-import { DollarSign, Clock, List, Plus, X, Sparkles } from 'lucide-react';
+import { DollarSign, Clock, List, Plus, X, Sparkles, Type } from 'lucide-react';
 import { createService } from '../services/supabaseService';
 import { useNavigate } from 'react-router-dom'; // Assuming react-router is used, or we need a way to navigate back
+import CustomInput from './CustomInput';
 
 const PostServicePage: React.FC = () => {
     const [features, setFeatures] = useState<string[]>(['']);
@@ -54,23 +54,20 @@ const PostServicePage: React.FC = () => {
             <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-4 md:p-8 shadow-2xl mb-20">
                 <form className="space-y-6 md:space-y-8" onSubmit={handlePublish}>
                     {/* Title */}
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-white uppercase tracking-wider">Service Title</label>
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-white focus:border-primary/50 focus:outline-none"
-                            placeholder="e.g. I will mix and master your track"
-                            required
-                        />
-                    </div>
+                    <CustomInput
+                        label="Service Title"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="e.g. I will mix and master your track"
+                        icon={<Type size={16} />}
+                        required
+                    />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Price */}
                         <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                                <label className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2"><DollarSign size={14} /> Price</label>
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1">Price</label>
                                 <div className="flex bg-neutral-900 p-0.5 rounded border border-neutral-800">
                                     <button
                                         type="button"
@@ -88,26 +85,22 @@ const PostServicePage: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500">$</span>
-                                <input
-                                    type="number"
-                                    value={price}
-                                    onChange={(e) => setPrice(e.target.value)}
-                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-3 pl-8 text-white focus:border-primary/50 focus:outline-none font-mono"
-                                    placeholder={priceType === 'fixed' ? "150.00" : "50.00"}
-                                    required
-                                />
-                                {priceType === 'hourly' && (
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 text-xs font-mono">/hr</span>
-                                )}
-                            </div>
+                            <CustomInput
+                                type="number"
+                                value={price}
+                                onChange={(e) => setPrice(e.target.value)}
+                                icon={<DollarSign size={16} />}
+                                placeholder={priceType === 'fixed' ? "150.00" : "50.00"}
+                                required
+                            />
                         </div>
                         {/* Delivery */}
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2"><Clock size={14} /> Delivery Time (Days)</label>
-                            <input type="number" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-white focus:border-primary/50 focus:outline-none font-mono" placeholder="2" />
-                        </div>
+                        <CustomInput
+                            label="Delivery Time (Days)"
+                            type="number"
+                            icon={<Clock size={16} />}
+                            placeholder="2"
+                        />
                     </div>
 
                     {/* Description */}
@@ -127,14 +120,13 @@ const PostServicePage: React.FC = () => {
                         <label className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2"><List size={14} /> Included Features</label>
                         {features.map((feat, i) => (
                             <div key={i} className="flex gap-2">
-                                <input
+                                <CustomInput
                                     value={feat}
                                     onChange={(e) => updateFeature(i, e.target.value)}
-                                    type="text"
-                                    className="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg p-2 text-sm text-white focus:border-primary/50 focus:outline-none"
                                     placeholder="e.g. HQ Audio File"
+                                    fullWidth
                                 />
-                                <button type="button" onClick={() => removeFeature(i)} className="p-2 text-neutral-500 hover:text-white hover:bg-white/5 rounded"><X size={16} /></button>
+                                <button type="button" onClick={() => removeFeature(i)} className="p-2 text-neutral-500 hover:text-white hover:bg-white/5 rounded mt-auto h-[46px] transition-colors"><X size={16} /></button>
                             </div>
                         ))}
                         <button type="button" onClick={addFeature} className="text-xs font-bold text-primary flex items-center gap-1 hover:underline">

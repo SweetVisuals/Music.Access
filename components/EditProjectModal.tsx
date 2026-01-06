@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Project } from '../types';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Music2, Tag } from 'lucide-react';
+import CustomDropdown from './CustomDropdown';
 import { deleteProject } from '../services/supabaseService';
 
 interface EditProjectModalProps {
@@ -125,28 +126,22 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-neutral-500 uppercase">Genre</label>
-                                <select
-                                    value={genre}
-                                    onChange={e => setGenre(e.target.value)}
-                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-3 text-white text-sm focus:border-primary/50 focus:outline-none appearance-none"
-                                >
-                                    <option value="">Select Genre</option>
-                                    {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-bold text-neutral-500 uppercase">Sub-Genre</label>
-                                <select
-                                    value={subGenre}
-                                    onChange={e => setSubGenre(e.target.value)}
-                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-3 text-white text-sm focus:border-primary/50 focus:outline-none appearance-none"
-                                >
-                                    <option value="">Select Sub-Genre</option>
-                                    {SUB_GENRES.map(g => <option key={g} value={g}>{g}</option>)}
-                                </select>
-                            </div>
+                            <CustomDropdown
+                                label="Genre"
+                                value={genre}
+                                onChange={setGenre}
+                                options={GENRES}
+                                placeholder="Select Genre"
+                                searchable
+                            />
+                            <CustomDropdown
+                                label="Sub-Genre"
+                                value={subGenre}
+                                onChange={setSubGenre}
+                                options={SUB_GENRES}
+                                placeholder="Select Sub-Genre"
+                                searchable
+                            />
                         </div>
                     </div>
 

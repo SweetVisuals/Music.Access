@@ -363,12 +363,14 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setIsMinimized(true);
+                                    const audioUrl = currentTrack.files?.mp3 || currentTrack.files?.wav || currentTrack.files?.main;
                                     navigate('/notes', {
                                         state: {
                                             createNewNote: true,
                                             trackTitle: currentTrack.title,
                                             trackId: currentTrack.id,
-                                            fileName: `${currentTrack.title}.mp3`
+                                            fileName: `${currentTrack.title}.mp3`,
+                                            trackUrl: audioUrl
                                         }
                                     });
                                 }}
@@ -493,110 +495,145 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                 </div>
             </div>
 
-            {/* --- DESKTOP BOTTOM BAR --- */}
-            <div className={`hidden lg:block fixed bottom-0 left-64 right-0 z-50 transition-transform duration-500 ${isMinimized ? 'translate-y-0' : 'translate-y-0'}`}>
-                <div className="bg-[#050505]/95 border-t border-white/5 backdrop-blur-xl p-4 flex items-center justify-between h-24">
+            {/* --- DESKTOP FLOATING CARD --- */}
+            <div className={`hidden lg:flex fixed bottom-6 right-6 z-[100] w-[22rem] transition-all duration-500 transform ${isMinimized ? 'translate-y-0 opacity-100' : 'translate-y-0 opacity-100'}`}>
+                <div className="w-full bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.6)] backdrop-blur-xl p-4 flex flex-col gap-4">
 
-                    {/* Track Info */}
-                    <div className="flex items-center w-1/4 min-w-[200px] gap-4">
-                        <div className="h-14 w-14 rounded-lg overflow-hidden relative group cursor-pointer shadow-lg border border-white/10" onClick={() => { setIsMinimized(false) /* Should open expanded? Or separate desktop expand? Left as is for now */ }}>
-                            <img src={currentProject.coverImage || MOCK_USER_PROFILE.avatar} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
+                    {/* Top Row: Track & Actions */}
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className="h-10 w-10 rounded-lg overflow-hidden shrink-0 relative group cursor-pointer border border-white/5 bg-neutral-800">
+                                <img src={currentProject.coverImage || MOCK_USER_PROFILE.avatar} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <h4 className="text-sm font-bold text-white truncate leading-tight mb-0.5">{currentTrack.title}</h4>
+                                <p className="text-[11px] text-neutral-400 truncate hover:text-primary cursor-pointer transition-colors">{currentProject.producer}</p>
+                            </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-bold text-white truncate mb-0.5">{currentTrack.title}</h4>
-                            <p className="text-xs text-neutral-500 truncate hover:text-primary cursor-pointer transition-colors">{currentProject.producer}</p>
-                        </div>
-                        <button
-                            onClick={async () => {
-                                if (!currentProject?.id) return;
-                                try {
-                                    if (currentProject.id === 'upload_browser_proj') {
-                                        // Handle converting local upload to saved project
-                                        if (currentTrack?.id) {
-                                            if (isSaved) {
-                                                const savedProjectId = await getSavedProjectIdForAsset(currentTrack.id);
-                                                if (savedProjectId) {
-                                                    await unsaveProject(savedProjectId);
-                                                    setIsSaved(false);
+
+                        <div className="flex items-center gap-1 shrink-0">
+                            <button
+                                onClick={async () => {
+                                    if (!currentProject?.id) return;
+                                    try {
+                                        if (currentProject.id === 'upload_browser_proj') {
+                                            if (currentTrack?.id) {
+                                                if (isSaved) {
+                                                    const savedProjectId = await getSavedProjectIdForAsset(currentTrack.id);
+                                                    if (savedProjectId) {
+                                                        await unsaveProject(savedProjectId);
+                                                        setIsSaved(false);
+                                                    }
+                                                } else {
+                                                    await convertAssetToProject(
+                                                        currentTrack.id,
+                                                        currentTrack.title,
+                                                        { username: currentProject.producer, avatar: currentProject.producerAvatar }
+                                                    );
+                                                    setIsSaved(true);
                                                 }
+                                            }
+                                        } else {
+                                            if (isSaved) {
+                                                await unsaveProject(currentProject.id);
+                                                setIsSaved(false);
                                             } else {
-                                                await convertAssetToProject(
-                                                    currentTrack.id,
-                                                    currentTrack.title,
-                                                    { username: currentProject.producer, avatar: currentProject.producerAvatar }
-                                                );
+                                                await saveProject(currentProject.id);
                                                 setIsSaved(true);
                                             }
                                         }
-                                    } else {
-                                        if (isSaved) {
-                                            await unsaveProject(currentProject.id);
-                                            setIsSaved(false);
-                                        } else {
-                                            await saveProject(currentProject.id);
-                                            setIsSaved(true);
-                                        }
+                                    } catch (error) {
+                                        console.error('Failed to toggle save:', error);
                                     }
-                                } catch (error) {
-                                    console.error('Failed to toggle save:', error);
-                                }
-                            }}
-                            className={`transition-all duration-300 active:scale-75 ${isSaved ? 'text-primary' : 'text-neutral-600 hover:text-primary'}`}
-                            title={isSaved ? "Unsave Project" : "Save Project"}
-                        >
-                            <BookmarkPlus size={18} fill={isSaved ? "currentColor" : "none"} />
-                        </button>
+                                }}
+                                className={`p-1.5 transition-colors rounded-full hover:bg-white/5 active:scale-95 ${isSaved ? 'text-primary' : 'text-neutral-500 hover:text-white'}`}
+                                title={isSaved ? "Unsave Project" : "Save Project"}
+                            >
+                                <BookmarkPlus size={16} fill={isSaved ? "currentColor" : "none"} />
+                            </button>
+                            <button onClick={onClose} className="p-1.5 text-neutral-500 hover:text-white hover:bg-white/5 rounded-full transition-colors active:scale-95">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Main Controls */}
-                    <div className="flex-1 flex flex-col items-center max-w-xl px-8">
-                        <div className="flex items-center gap-6 mb-2">
-                            <button className="text-neutral-500 hover:text-white transition-colors text-[10px]"><Shuffle size={14} /></button>
-                            <button className="text-neutral-300 hover:text-white transition-colors"><SkipBack fill="currentColor" size={18} /></button>
+                    {/* Middle: Scrubber */}
+                    <div className="space-y-1.5 -mt-1">
+                        <div
+                            className="relative h-2.5 flex items-center cursor-pointer group"
+                            onClick={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const pct = (e.clientX - rect.left) / rect.width;
+                                if (audioRef.current) audioRef.current.currentTime = pct * (audioRef.current.duration || 1);
+                            }}
+                        >
+                            <div className="absolute left-0 right-0 h-1 bg-white/10 rounded-full overflow-hidden pointer-events-none">
+                                <div className="h-full bg-white/50 group-hover:bg-primary transition-colors" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}></div>
+                            </div>
+                            <div className="absolute h-2 w-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style={{ left: `${(currentTime / (duration || 1)) * 100}%`, transform: 'translateX(-50%)' }}></div>
+                        </div>
+                        <div className="flex justify-between text-[10px] font-mono text-neutral-500 select-none">
+                            <span>{formatTime(currentTime)}</span>
+                            <span>{formatTime(duration || currentTrack.duration || 0)}</span>
+                        </div>
+                    </div>
+
+                    {/* Bottom: Controls */}
+                    <div className="flex items-center justify-between">
+                        {/* Play Buttons */}
+                        <div className="flex items-center gap-3">
+                            <button className="text-neutral-400 hover:text-white transition-colors active:scale-95"><SkipBack size={18} fill="currentColor" /></button>
                             <button
                                 onClick={togglePlay}
-                                className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 hover:bg-primary transition-all shadow-lg"
+                                className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 hover:bg-primary transition-all shadow-lg active:scale-95"
                             >
-                                {isPlaying ? <Pause fill="black" size={16} /> : <Play fill="black" size={16} className="ml-0.5" />}
+                                {isPlaying ? <Pause fill="black" size={14} /> : <Play fill="black" size={14} className="ml-0.5" />}
                             </button>
-                            <button className="text-neutral-300 hover:text-white transition-colors"><SkipForward fill="currentColor" size={18} /></button>
-                            <button className="text-neutral-500 hover:text-white transition-colors text-[10px]"><Repeat size={14} /></button>
+                            <button className="text-neutral-400 hover:text-white transition-colors active:scale-95"><SkipForward size={18} fill="currentColor" /></button>
                         </div>
 
-                        {/* Scrubber */}
-                        <div className="w-full flex items-center gap-3 text-[10px] font-mono font-medium text-neutral-500">
-                            <span className="w-8 text-right">{formatTime(currentTime)}</span>
-                            <div
-                                className="flex-1 h-1 bg-white/10 rounded-full relative group cursor-pointer overflow-hidden"
+                        {/* Additional Actions */}
+                        <div className="flex items-center gap-2">
+                            <button
                                 onClick={(e) => {
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    const pct = (e.clientX - rect.left) / rect.width;
-                                    if (audioRef.current) audioRef.current.currentTime = pct * (audioRef.current.duration || 1);
+                                    e.stopPropagation();
+                                    const audioUrl = currentTrack.files?.mp3 || currentTrack.files?.wav || currentTrack.files?.main;
+                                    onNavigate('notes');
+                                    navigate('/notes', {
+                                        state: {
+                                            createNewNote: true,
+                                            trackTitle: currentTrack.title,
+                                            trackId: currentTrack.id,
+                                            fileName: `${currentTrack.title}.mp3`,
+                                            trackUrl: audioUrl
+                                        }
+                                    });
                                 }}
+                                className="text-neutral-500 hover:text-white transition-colors active:scale-95 p-1.5"
+                                title="Add to Note"
                             >
-                                <div className="absolute top-0 left-0 h-full bg-primary/80 group-hover:bg-primary transition-all" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}></div>
-                            </div>
-                            <span className="w-8">{formatTime(duration || currentTrack.duration || 0)}</span>
+                                <StickyNote size={14} />
+                            </button>
                         </div>
-                    </div>
 
-                    {/* Volume & Aux */}
-                    <div className="w-1/4 flex items-center justify-end gap-4 min-w-[200px]">
-                        <button className="text-neutral-500 hover:text-white transition-colors p-2"><ListMusic size={18} /></button>
-                        <div className="flex items-center gap-2 group w-24">
-                            <Volume2 size={18} className="text-neutral-500 group-hover:text-white transition-colors" />
+                        {/* Volume */}
+                        <div className="flex items-center gap-2 group w-20 justify-center">
+                            <Volume2 size={14} className="text-neutral-500 group-hover:text-white transition-colors" />
                             <div className="flex-1 h-1 bg-white/10 rounded-full relative cursor-pointer overflow-hidden">
-                                <div className="absolute top-0 left-0 h-full w-2/3 bg-neutral-500 group-hover:bg-primary transition-colors"></div>
+                                <div className="absolute top-0 left-0 h-full w-2/3 bg-neutral-600 group-hover:bg-white transition-colors"></div>
                             </div>
                         </div>
-                        <button onClick={onClose} className="text-neutral-500 hover:text-white transition-colors p-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        </button>
-                    </div>
 
+                        {/* Extra */}
+                        <div className="flex items-center gap-2 justify-end">
+                            <button className="text-neutral-500 hover:text-white transition-colors active:scale-95"><Shuffle size={14} /></button>
+                            <button className="text-neutral-500 hover:text-white transition-colors active:scale-95"><Repeat size={14} /></button>
+                        </div>
+                    </div>
                 </div>
-            </div>
+
+            </div >
         </>
     );
 };

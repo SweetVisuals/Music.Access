@@ -113,13 +113,13 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
     const targetPlan = plans.find(p => p.name === selectedPlan);
 
     return (
-        <div className="w-full max-w-7xl mx-auto px-4 py-8 lg:px-6 lg:py-20 animate-in fade-in duration-700 relative">
+        <div className="w-full max-w-7xl mx-auto px-4 pt-0 pb-8 lg:px-6 lg:pt-0 lg:pb-20 animate-in fade-in duration-700 relative lg:[zoom:0.85] origin-top">
             {/* Header */}
             <div className="text-center mb-12 lg:mb-16">
                 <h1 className="text-4xl lg:text-6xl font-black text-white tracking-tight mb-4">
                     Elevate Your <span className="text-primary">Sound</span>
                 </h1>
-                <p className="text-neutral-500 text-base lg:text-lg max-w-2xl mx-auto">
+                <p className="text-neutral-500 text-base lg:text-lg max-w-2xl lg:max-w-none mx-auto">
                     Choose the plan that fits your workflow. From recording sketches to managing a professional studio.
                 </p>
 

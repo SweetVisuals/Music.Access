@@ -1,24 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Target,
+  FileText,
   Plus,
-  TrendingUp,
+  Trash2,
+  ExternalLink,
+  Eye,
+  Check,
+  X,
+  Target,
+  Calendar,
+  DollarSign,
   Users,
   Music,
-  DollarSign,
+  TrendingUp,
+  BarChart3,
+  Search,
+  ArrowRight,
+  Type,
   CheckCircle,
   Clock,
   Edit,
-  Trash2,
-  X,
   Award,
-  BarChart3,
   Zap,
   ArrowLeft
 } from 'lucide-react';
 import { Goal } from '../types';
 import { getGoals, createGoal, updateGoal, deleteGoal } from '../services/supabaseService';
+import CustomDropdown from './CustomDropdown';
+import CustomInput from './CustomInput';
 
 const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavigate }) => {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -459,62 +469,53 @@ const CreateGoalModal: React.FC<{ onClose: () => void; onGoalCreated: (goal: Omi
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="text-xs font-bold text-neutral-400 uppercase mb-2 block">Goal Title</label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Enter goal title"
-              className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
-              required
+          <CustomInput
+            label="Goal Title"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            placeholder="Enter goal title"
+            icon={<Type size={16} />}
+            required
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <CustomDropdown
+              label="Type"
+              value={formData.type}
+              onChange={(val) => setFormData({ ...formData, type: val as Goal['type'] })}
+              options={[
+                { value: 'revenue', label: 'Revenue', icon: <DollarSign size={14} /> },
+                { value: 'followers', label: 'Followers', icon: <Users size={14} /> },
+                { value: 'uploads', label: 'Uploads', icon: <Music size={14} /> },
+                { value: 'plays', label: 'Plays', icon: <TrendingUp size={14} /> },
+                { value: 'sales', label: 'Sales', icon: <BarChart3 size={14} /> },
+                { value: 'custom', label: 'Custom', icon: <Target size={14} /> }
+              ]}
+            />
+
+            <CustomDropdown
+              label="Category"
+              value={formData.category}
+              onChange={(val) => setFormData({ ...formData, category: val as Goal['category'] })}
+              options={[
+                { value: 'monthly', label: 'Monthly' },
+                { value: 'quarterly', label: 'Quarterly' },
+                { value: 'yearly', label: 'Yearly' },
+                { value: 'custom', label: 'Custom' }
+              ]}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-bold text-neutral-400 uppercase mb-2 block">Type</label>
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as Goal['type'] })}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
-              >
-                <option value="revenue">Revenue</option>
-                <option value="followers">Followers</option>
-                <option value="uploads">Uploads</option>
-                <option value="plays">Plays</option>
-                <option value="sales">Sales</option>
-                <option value="custom">Custom</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold text-neutral-400 uppercase mb-2 block">Category</label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value as Goal['category'] })}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
-              >
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="yearly">Yearly</option>
-                <option value="custom">Custom</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-bold text-neutral-400 uppercase mb-2 block">Target Value</label>
-              <input
-                type="number"
-                value={formData.target}
-                onChange={(e) => setFormData({ ...formData, target: e.target.value })}
-                placeholder="0"
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
-                required
-              />
-            </div>
+            <CustomInput
+              label="Target Value"
+              type="number"
+              value={formData.target}
+              onChange={(e) => setFormData({ ...formData, target: e.target.value })}
+              placeholder="0"
+              icon={<Target size={16} />}
+              required
+            />
 
             <div>
               <label className="text-xs font-bold text-neutral-400 uppercase mb-2 block">Deadline</label>

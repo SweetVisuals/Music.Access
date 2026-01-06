@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Note } from '../types';
-import { getNotes, createNote, updateNote, deleteNote, getUserFiles, uploadFile, getDeletedNotes, restoreNote, cleanupOldNotes } from '../services/supabaseService';
+import { Note, Project, UserProfile } from '../types';
+import { getNotes, createNote, updateNote, deleteNote, getUserFiles, uploadFile, getDeletedNotes, restoreNote, cleanupOldNotes, emptyTrashNotes } from '../services/supabaseService';
+import ConfirmationModal from './ConfirmationModal';
 import {
     Plus,
     Copy,
@@ -33,10 +34,6 @@ import {
     Trash
 } from 'lucide-react';
 import { getRhymesForWord } from '../services/geminiService';
-
-// ... (existing code)
-
-
 
 // Mock rhyme database helper for suggestions sidebar
 const MOCK_RHYMES: Record<string, string[]> = {
@@ -163,10 +160,7 @@ const analyzeRhymeScheme = (text: string, accent: 'US' | 'UK' = 'US') => {
     });
 
     return { wordToGroup, groupToColor };
-    return { wordToGroup, groupToColor };
 };
-
-// DraggableFab removed for cleaner UI integration
 
 // Standalone Component to prevent re-renders
 const MobileTitlePortal = ({
@@ -205,11 +199,27 @@ const MobileTitlePortal = ({
     );
 };
 
-const NotesPage: React.FC = () => {
+interface NotesPageProps {
+    userProfile: UserProfile | null;
+    currentProject: Project | null;
+    currentTrackId: string | null;
+    isPlaying: boolean;
+    onPlayTrack: (project: Project, trackId: string) => void;
+    onTogglePlay: () => void;
+}
+
+const NotesPage: React.FC<NotesPageProps> = ({
+    userProfile,
+    currentProject,
+    currentTrackId,
+    isPlaying,
+    onPlayTrack,
+    onTogglePlay
+}) => {
     const [notes, setNotes] = useState<Note[]>([]);
     const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-    const [audioFiles, setAudioFiles] = useState<any[]>([]); // Real files state
+    const [audioFiles, setAudioFiles] = useState<any[]>([]);
 
     // Navigation handling
     const location = useLocation();
@@ -218,7 +228,7 @@ const NotesPage: React.FC = () => {
 
     // View State
     const [viewMode, setViewMode] = useState<'editor' | 'browser'>('editor');
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [rhymes, setRhymes] = useState<string[]>([]);
     const [isRhymeLoading, setIsRhymeLoading] = useState(false);
     const [isToolkitOpen, setToolkitOpen] = useState(false);
@@ -232,6 +242,50 @@ const NotesPage: React.FC = () => {
 
     // Trash State
     const [trashView, setTrashView] = useState(false);
+
+    // Confirmation Modal State
+    const [confirmationModal, setConfirmationModal] = useState<{
+        isOpen: boolean;
+        type: 'delete' | 'emptyTrash';
+        noteId?: string;
+        title?: string;
+        message?: string;
+    }>({ isOpen: false, type: 'delete' });
+
+    const handleConfirmAction = async () => {
+        if (confirmationModal.type === 'delete' && confirmationModal.noteId) {
+            const id = confirmationModal.noteId;
+            const isPermanent = trashView;
+            try {
+                await deleteNote(id, isPermanent);
+                const updatedNotes = notes.filter(n => n.id !== id);
+                setNotes(updatedNotes);
+                if (id === activeNoteId) {
+                    setActiveNoteId(updatedNotes.length > 0 ? updatedNotes[0].id : null);
+                }
+            } catch (error) {
+                console.error('Failed to delete note', error);
+            }
+        } else if (confirmationModal.type === 'emptyTrash') {
+            try {
+                await emptyTrashNotes();
+                setNotes([]);
+                setActiveNoteId(null);
+            } catch (error) {
+                console.error('Failed to empty trash', error);
+            }
+        }
+        setConfirmationModal(prev => ({ ...prev, isOpen: false }));
+    };
+
+    const handleEmptyTrash = () => {
+        setConfirmationModal({
+            isOpen: true,
+            type: 'emptyTrash',
+            title: 'Empty Recycling Bin',
+            message: 'Are you sure you want to permanently delete all notes in the trash? This action cannot be undone.'
+        });
+    };
 
     // Initial Load & Cleanup
     useEffect(() => {
@@ -249,9 +303,7 @@ const NotesPage: React.FC = () => {
             const data = trashView ? await getDeletedNotes() : await getNotes();
             setNotes(data);
 
-            // If active note is not in the new list, clear it or set to first
             if (data.length > 0) {
-                // Try to keep current if valid, else first
                 if (!activeNoteId || !data.find(n => n.id === activeNoteId)) {
                     setActiveNoteId(data[0].id);
                 }
@@ -265,44 +317,29 @@ const NotesPage: React.FC = () => {
         }
     }, [trashView, activeNoteId]);
 
-    // Re-fetch when view changes
     useEffect(() => {
         fetchNotes();
     }, [fetchNotes]);
 
-
-    // Legacy Load Notes (replaced by init above, but keeping for safety if I missed something, 
-    // actually the above init replaces the original useEffect completely so I will target the original useEffect block)
-
-
-
-    // Handle incoming navigation (e.g. from Music Player to create new note)
+    // Handle incoming navigation
     useEffect(() => {
         const checkNavigationState = async () => {
             if (hasHandledNavigation.current) return;
 
-            // Check if we have state to create a new note
             const state = location.state as {
                 createNewNote?: boolean;
                 trackTitle?: string;
                 trackId?: string;
                 fileName?: string;
+                trackUrl?: string; // Add trackUrl support
             } | null;
 
             if (state?.createNewNote && !loading) {
-                console.log('Detected navigation state to create note:', state);
                 hasHandledNavigation.current = true;
-
-                // Construct note details
                 const noteTitle = 'Untitled Note';
                 const noteContent = '';
-
-                // Create the note
-                await handleCreateNote(noteTitle, noteContent, state.fileName);
-
-                // Clear the state so we don't duplicate on refresh (requires replace: true on next nav, 
-                // but react-router doesn't let us easily clear state in place without full navigation. 
-                // The ref handles the duplicate prevention for this mount.)
+                // Prefer trackUrl if available, otherwise fallback to fileName
+                await handleCreateNote(noteTitle, noteContent, state.trackUrl || state.fileName);
                 navigate(location.pathname, { replace: true, state: {} });
             }
         };
@@ -322,12 +359,11 @@ const NotesPage: React.FC = () => {
                 console.error('Failed to load audio files', error);
             }
         };
-        if (viewMode === 'browser') {
+
+        if (viewMode === 'browser' || (activeNoteId && notes.find(n => n.id === activeNoteId)?.attachedAudio)) {
             fetchFiles();
         }
-    }, [viewMode]);
-
-
+    }, [viewMode, activeNoteId, notes]);
 
     // Feature State
     const [rhymeMode, setRhymeMode] = useState(false);
@@ -336,18 +372,15 @@ const NotesPage: React.FC = () => {
     const [assistantTab, setAssistantTab] = useState<'rhymes' | 'tools'>('rhymes');
     const [cursorIndex, setCursorIndex] = useState(0);
     const [selection, setSelection] = useState<{ start: number, end: number, text: string } | null>(null);
-    const [textSize, setTextSize] = useState<'xs' | 'sm' | 'base' | 'lg'>('xs'); // New text size state
+    const [textSize, setTextSize] = useState<'xs' | 'sm' | 'base' | 'lg'>('xs');
     const [isSizeExpanded, setIsSizeExpanded] = useState(false);
 
     // Mobile Assistant State
     const [isMobileAssistantOpen, setMobileAssistantOpen] = useState(false);
-    const [mobileAssistantTab, setMobileAssistantTab] = useState<'rhymes' | 'tools'>('rhymes');
-
-    const [mobileSheetHeight, setMobileSheetHeight] = useState(40); // Initial height in vh
+    const [mobileSheetHeight, setMobileSheetHeight] = useState(40);
     const sheetDragStart = useRef<number>(0);
     const sheetStartHeight = useRef<number>(0);
 
-    // Sync sheet height to CSS variable for MusicPlayer positioning
     useEffect(() => {
         if (isToolkitOpen) {
             document.documentElement.style.setProperty('--notes-toolkit-height', `${mobileSheetHeight}vh`);
@@ -363,31 +396,18 @@ const NotesPage: React.FC = () => {
 
     const handleSheetDragMove = (e: React.TouchEvent) => {
         const deltaY = e.touches[0].clientY - sheetDragStart.current;
-        // Convert delta pixels to vh (approximate based on window height)
         const vhDelta = (deltaY / window.innerHeight) * 100;
-        // Dragging down reduces height (since it's bottom-up), dragging up increases? 
-        // Actually: Dragging DOWN (positive delta) moves top edge DOWN -> DECREASES height.
-        // Dragging UP (negative delta) moves top edge UP -> INCREASES height.
         const newHeight = sheetStartHeight.current - vhDelta;
-
-        // Clamp between 25vh and 90vh
         if (newHeight >= 25 && newHeight <= 90) {
             setMobileSheetHeight(newHeight);
         }
     };
 
-
-
-    // --- Rhyme Trigger Logic ---
     const [debouncedRhymeTrigger, setDebouncedRhymeTrigger] = useState<NodeJS.Timeout | null>(null);
     const lastRhymedWordRef = useRef<string | null>(null);
 
-    // Helper to get word at specific index
-    // Note: getWordUnderCursor is defined later in file, moving it here or ensuring scope
-    // We'll define a robust one here for the trigger
     const getTargetWord = (text: string, index: number) => {
         if (!text) return '';
-        // Find boundaries
         let start = index;
         while (start > 0 && /[a-zA-Z']/.test(text[start - 1])) {
             start--;
@@ -403,9 +423,6 @@ const NotesPage: React.FC = () => {
         const target = e.currentTarget;
         setCursorIndex(target.selectionStart);
 
-        // Mobile Selection Bug Fix: Don't rely on 'selection' state for rhymes.
-        // Instead, find word under cursor dynamically.
-
         if (debouncedRhymeTrigger) clearTimeout(debouncedRhymeTrigger);
 
         const newTimer = setTimeout(() => {
@@ -419,7 +436,6 @@ const NotesPage: React.FC = () => {
         setDebouncedRhymeTrigger(newTimer);
     };
 
-    // Keep checkSelection for manual highlighting if needed, but remove auto-trigger from it
     const checkSelection = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
         const target = e.currentTarget;
         if (target.selectionStart !== target.selectionEnd) {
@@ -446,18 +462,15 @@ const NotesPage: React.FC = () => {
         }
     };
 
-    // Refs for syncing scroll
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const backdropRef = useRef<HTMLDivElement>(null);
 
     const activeNote = notes.find(n => n.id === activeNoteId);
 
-    // Memoize analysis for performance
     const { wordToGroup, groupToColor } = useMemo(() =>
         activeNote ? analyzeRhymeScheme(activeNote.content, accent) : { wordToGroup: {}, groupToColor: {} },
         [activeNote?.content, accent]);
 
-    // Debounced save function
     const debouncedSave = useCallback((id: string, updates: Partial<Note>) => {
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
@@ -466,20 +479,15 @@ const NotesPage: React.FC = () => {
         saveTimeoutRef.current = setTimeout(async () => {
             try {
                 await updateNote(id, updates);
-                console.log('Note saved:', id);
             } catch (error) {
                 console.error('Error saving note:', error);
             }
-        }, 1000); // 1.0s debounce
+        }, 1000);
     }, []);
 
     const handleUpdateContent = (val: string) => {
         if (!activeNote) return;
-
-        // Update local state immediately
         setNotes(prev => prev.map(n => n.id === activeNoteId ? { ...n, content: val } : n));
-
-        // Trigger background save
         debouncedSave(activeNote.id, { content: val });
     };
 
@@ -495,8 +503,6 @@ const NotesPage: React.FC = () => {
         }
     };
 
-
-
     const handleExport = () => {
         alert("Export feature coming soon to Studio+!");
     };
@@ -507,12 +513,10 @@ const NotesPage: React.FC = () => {
 
         try {
             await uploadFile(file);
-            // Refresh list
             const files = await getUserFiles();
             setAudioFiles(files.filter(f => f.type === 'audio'));
         } catch (error) {
             console.error('Upload failed', error);
-            alert('Upload failed: ' + (error as any).message);
         }
     };
 
@@ -520,7 +524,7 @@ const NotesPage: React.FC = () => {
         if (activeNoteId) {
             setNotes(prev => prev.map(n => n.id === activeNoteId ? { ...n, attachedAudio: fileName } : n));
             setViewMode('editor');
-            setAudioPlaying(true); // Auto play on attach/return
+            setAudioPlaying(true);
             debouncedSave(activeNoteId, { attachedAudio: fileName });
         }
     };
@@ -544,39 +548,29 @@ const NotesPage: React.FC = () => {
                 setNotes([newNote, ...notes]);
                 setActiveNoteId(newNote.id);
             } else {
-                // If created while in trash view (shouldn't happen via UI but for safety), switch back?
                 setTrashView(false);
-                // The effect will trigger fetch
             }
             setViewMode('editor');
-            setIsSidebarOpen(false); // Close sidebar on mobile
+            setIsSidebarOpen(false);
         } catch (error) {
             console.error('Failed to create note', error);
         }
     };
 
-
-
     const handleDeleteNote = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
-
         const isPermanent = trashView;
         const confirmMsg = isPermanent
-            ? 'Are you sure you want to PERMANENTLY delete this note? This cannot be undone.'
+            ? 'Are you sure you want to PERMANENTLY delete this note?'
             : 'Move this note to the trash?';
 
-        if (!confirm(confirmMsg)) return;
-
-        try {
-            await deleteNote(id, isPermanent);
-            const updatedNotes = notes.filter(n => n.id !== id);
-            setNotes(updatedNotes);
-            if (id === activeNoteId) {
-                setActiveNoteId(updatedNotes.length > 0 ? updatedNotes[0].id : null);
-            }
-        } catch (error) {
-            console.error('Failed to delete note', error);
-        }
+        setConfirmationModal({
+            isOpen: true,
+            type: 'delete',
+            noteId: id,
+            title: isPermanent ? 'Delete Note Permanently' : 'Delete Note',
+            message: confirmMsg
+        });
     };
 
     const handleRestoreNote = async (e: React.MouseEvent, id: string) => {
@@ -593,11 +587,8 @@ const NotesPage: React.FC = () => {
         }
     };
 
-    // --- Content Handler Wrapper ---
     const handleUpdateContentWrapper = (newContent: string) => {
         handleUpdateContent(newContent);
-
-        // Check for "Enter" or end of sentence triggers to fetch AI rhymes
         const lastChar = newContent.slice(-1);
         const prevLastChar = activeNote?.content.slice(-1) || '';
 
@@ -615,46 +606,29 @@ const NotesPage: React.FC = () => {
         }
     };
 
-    // --- Manual Sidebar Suggestion Logic (Legacy/Fallback) ---
     const getWordUnderCursor = (text: string, index: number) => {
         if (!text) return '';
-
         let start = index;
-        // Look back
-        while (start > 0 && /[a-zA-Z']/.test(text[start - 1])) {
-            start--;
-        }
-
+        while (start > 0 && /[a-zA-Z']/.test(text[start - 1])) start--;
         let end = index;
-        // Look forward
-        while (end < text.length && /[a-zA-Z']/.test(text[end])) {
-            end++;
-        }
-
+        while (end < text.length && /[a-zA-Z']/.test(text[end])) end++;
         return text.slice(start, end);
     };
 
     const currentWord = activeNote ? getWordUnderCursor(activeNote.content, cursorIndex) : '';
 
     const getRhymeSuggestions = (word: string) => {
-        // Always return AI rhymes if available, regardless of current cursor word match
-        // This ensures that if a user selects a word, triggers AI, then moves cursor, the results stay until they select something else.
         if (rhymes.length > 0) return rhymes;
-
         if (!word || word.length < 2) return [];
         const lowerWord = word.toLowerCase();
-
         for (const suffix in MOCK_RHYMES) {
-            if (lowerWord.endsWith(suffix)) {
-                return MOCK_RHYMES[suffix];
-            }
+            if (lowerWord.endsWith(suffix)) return MOCK_RHYMES[suffix];
         }
         return [];
     };
 
     const suggestions = rhymes.length > 0 ? rhymes : getRhymeSuggestions(currentWord);
 
-    // --- Highlighting Renderer ---
     const renderHighlightedText = (text: string) => {
         if (!text) return null;
         const tokens = text.split(/([^a-zA-Z0-9_']+)/);
@@ -668,7 +642,6 @@ const NotesPage: React.FC = () => {
                 if (group && groupToColor[group]) {
                     colorClass = groupToColor[group];
                 } else {
-                    // FIX: Visible text for non-rhymes in active mode
                     colorClass = 'text-neutral-500';
                 }
             }
@@ -676,29 +649,16 @@ const NotesPage: React.FC = () => {
         });
     };
 
-    // --- Sub-Components / Renderers ---
-
     const renderEditorView = () => (
         <div className="flex-1 flex flex-col relative w-full h-full overflow-hidden">
-            {/* Portal for Mobile Title */}
             <MobileTitlePortal
                 activeNote={activeNote}
                 onUpdateTitle={handleUpdateTitle}
                 onOpenSidebar={() => setIsSidebarOpen(true)}
             />
 
-            {/* Embedded Audio Player */}
             {activeNote && activeNote.attachedAudio && (
                 <div className="h-12 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-3 lg:px-6 shrink-0 z-20">
-                    {audioPlaying && (
-                        <audio
-                            src={audioFiles.find(f => f.name === activeNote.attachedAudio)?.url}
-                            autoPlay
-                            onEnded={() => setAudioPlaying(false)}
-                            onError={(e) => console.log('Audio error', e)}
-                        />
-                    )}
-
                     <div className="flex items-center gap-3 min-w-0">
                         <div className="w-6 h-6 bg-primary/20 rounded flex items-center justify-center text-primary shrink-0">
                             <Music size={12} />
@@ -709,10 +669,62 @@ const NotesPage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                         <button
-                            onClick={() => setAudioPlaying(!audioPlaying)}
+                            onClick={() => {
+                                // Find audio file url
+                                let audioUrl = '';
+                                const isUrl = activeNote.attachedAudio?.startsWith('http') || activeNote.attachedAudio?.startsWith('blob:');
+
+                                if (isUrl && activeNote.attachedAudio) {
+                                    audioUrl = activeNote.attachedAudio;
+                                } else {
+                                    const audioFile = audioFiles.find(f => f.name === activeNote.attachedAudio);
+                                    if (audioFile) {
+                                        audioUrl = audioFile.url;
+                                    }
+                                }
+
+                                if (!audioUrl) {
+                                    console.error('Audio file not found');
+                                    return;
+                                }
+
+                                // Construct temporary project for global player
+                                const noteTrackId = `note-audio-${activeNote.id}`;
+                                const noteProjectId = `note-project-${activeNote.id}`;
+
+                                // Check if currently playing this track
+                                const isCurrentTrack = currentTrackId === noteTrackId && currentProject?.id === noteProjectId;
+
+                                if (isCurrentTrack) {
+                                    onTogglePlay();
+                                } else {
+                                    const noteProject: Project = {
+                                        id: noteProjectId,
+                                        title: 'My Notes',
+                                        producer: userProfile?.username || 'Me',
+                                        producerAvatar: userProfile?.avatar || '',
+                                        coverImage: userProfile?.avatar || '',
+                                        price: 0,
+                                        bpm: 0,
+                                        genre: 'Notes',
+                                        type: 'track', // using 'track' or similar as per types
+                                        tags: [],
+                                        tracks: [
+                                            {
+                                                id: noteTrackId,
+                                                title: activeNote.attachedAudio?.split('/').pop() || 'Audio Note',
+                                                duration: 0,
+                                                files: { mp3: audioUrl }
+                                            }
+                                        ]
+                                    } as any; // Cast to avoid missing optional fields if strict
+
+                                    onPlayTrack(noteProject, noteTrackId);
+                                }
+                            }}
                             className="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-transform"
                         >
-                            {audioPlaying ? <Pause size={12} fill="black" /> : <Play size={12} fill="black" className="ml-0.5" />}
+                            {(currentTrackId === `note-audio-${activeNote.id}` && isPlaying) ? <Pause size={12} fill="black" /> : <Play size={12} fill="black" className="ml-0.5" />}
                         </button>
                         <button onClick={handleDetachFile} className="text-neutral-500 hover:text-red-500">
                             <X size={14} />
@@ -721,351 +733,320 @@ const NotesPage: React.FC = () => {
                 </div>
             )}
 
-            {/* Text Editor Wrap - Handles scrolling and sticky bar */}
-            <div className="flex-1 flex flex-col relative overflow-hidden">
-                <div className="flex-1 relative font-mono leading-relaxed overflow-y-auto custom-scrollbar bg-[#050505] scrollbar-hide-mobile">
-
-                    {/* Selection Popup */}
-                    {selection && (
-                        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-2 w-max max-w-[90vw]">
-                            <button
-                                onClick={() => handleRhymeSearch(selection.text)}
-                                className="flex items-center gap-2 bg-neutral-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-primary/30 active:scale-95 transition-all backdrop-blur-md"
-                            >
-                                <Music size={16} className="text-primary" />
-                                <span className="text-xs font-bold">Rhyme "{selection.text}"</span>
-                            </button>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-1 grid-rows-1 min-h-full">
-                        <div className="grid grid-cols-1 grid-rows-1 w-full h-full relative">
-                            {/* Layer 1: Backdrop - Using textSize state */}
-                            <div
-                                ref={backdropRef}
-                                className={`
-                                col-start-1 row-start-1 p-5 lg:p-8 whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono leading-relaxed text-transparent
-                                ${textSize === 'xs' ? 'text-xs' : textSize === 'sm' ? 'text-sm' : textSize === 'base' ? 'text-base' : 'text-lg'}
-                            `}
-                            >
-                                {activeNote && renderHighlightedText(activeNote.content + ' ')}
-                            </div>
-
-                            {/* Layer 2: Input - Using textSize state */}
-                            <textarea
-                                ref={textareaRef}
-                                className={`
-                                col-start-1 row-start-1 w-full h-full bg-transparent p-5 lg:p-8 resize-none overflow-hidden focus:outline-none z-10 font-mono leading-relaxed whitespace-pre-wrap break-words
-                                ${textSize === 'xs' ? 'text-xs' : textSize === 'sm' ? 'text-sm' : textSize === 'base' ? 'text-base' : 'text-lg'}
-                                ${rhymeMode ? 'text-transparent caret-white' : 'text-neutral-300 caret-white'}
-                            `}
-                                value={activeNote ? activeNote.content : ''}
-                                onChange={(e) => {
-                                    handleUpdateContentWrapper(e.target.value);
-                                    handleSelectionChange(e);
-                                }}
-                                onSelect={(e) => {
-                                    handleSelectionChange(e);
-                                    checkSelection(e);
-                                }}
-                                onBlur={() => setTimeout(() => setSelection(null), 200)}
-                                placeholder="Start writing lyrics..."
-                                spellCheck={false}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Spacer to prevent content from being hidden behind fixed bottom bar */}
-                <div className="h-32 lg:hidden shrink-0" />
-
-                <div className="lg:hidden fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-0 right-0 z-[48] bg-[#050505] border-t border-white/20 pb-0">
-                    <div className="flex flex-col">
-                        {/* Font Size Row (Expanded) */}
-                        {isSizeExpanded && (
-                            <div className="absolute bottom-[calc(100%+1px)] left-0 right-0 bg-[#0A0A0A] border-t border-white/10 p-4 z-[60] animate-in slide-in-from-bottom-2 fade-in duration-200 flex justify-center shadow-2xl">
-                                <div className="flex items-center gap-6 bg-white/5 rounded-full px-4 py-2 border border-white/10">
-                                    <button
-                                        onClick={() => setTextSize(prev => prev === 'xs' ? 'xs' : prev === 'sm' ? 'xs' : prev === 'base' ? 'sm' : 'base')}
-                                        className={`p-2 rounded-full transition-colors ${textSize === 'xs' ? 'text-neutral-600 cursor-not-allowed' : 'text-white hover:bg-white/10 active:bg-white/20'}`}
-                                        disabled={textSize === 'xs'}
-                                    >
-                                        <Minus size={18} />
-                                    </button>
-                                    <span className="text-xs font-mono font-bold text-primary w-16 text-center uppercase tracking-wider">
-                                        {textSize === 'xs' && 'Small'}
-                                        {textSize === 'sm' && 'Medium'}
-                                        {textSize === 'base' && 'Large'}
-                                        {textSize === 'lg' && 'Huge'}
-                                    </span>
-                                    <button
-                                        onClick={() => setTextSize(prev => prev === 'xs' ? 'sm' : prev === 'sm' ? 'base' : prev === 'base' ? 'lg' : 'lg')}
-                                        className={`p-2 rounded-full transition-colors ${textSize === 'lg' ? 'text-neutral-600 cursor-not-allowed' : 'text-white hover:bg-white/10 active:bg-white/20'}`}
-                                        disabled={textSize === 'lg'}
-                                    >
-                                        <Plus size={18} />
-                                    </button>
-                                </div>
+            <div className="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
+                <div className="flex-1 flex flex-col relative overflow-hidden">
+                    <div className="flex-1 relative font-mono leading-relaxed overflow-y-auto custom-scrollbar bg-[#050505] scrollbar-hide-mobile" onScroll={handleScroll}>
+                        {selection && (
+                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-2 w-max max-w-[90vw]">
+                                <button
+                                    onClick={() => handleRhymeSearch(selection.text)}
+                                    className="flex items-center gap-2 bg-neutral-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-primary/30 active:scale-95 transition-all backdrop-blur-md"
+                                >
+                                    <Music size={16} className="text-primary" />
+                                    <span className="text-xs font-bold">Rhyme "{selection.text}"</span>
+                                </button>
                             </div>
                         )}
 
-                        <div className="h-16 flex items-center justify-between px-2 w-full max-w-sm mx-auto">
-                            {/* NEW: Integrated Create Note Button */}
-                            <button
-                                onClick={handleCreateNote}
-                                className="flex-1 group flex flex-col items-center gap-1 transition-all py-1"
-                            >
-                                <div className="w-9 h-9 rounded-lg flex items-center justify-center transition-all bg-white/5 border border-white/5 group-active:bg-primary group-active:text-black group-active:border-primary group-active:scale-95">
-                                    <Plus size={18} className="stroke-[2.5px]" />
+                        <div className="grid grid-cols-1 grid-rows-1 min-h-full">
+                            <div className="grid grid-cols-1 grid-rows-1 w-full h-full relative">
+                                <div
+                                    ref={backdropRef}
+                                    className={`
+                                        col-start-1 row-start-1 p-5 lg:p-12 whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono leading-relaxed text-transparent
+                                        ${textSize === 'xs' ? 'text-xs' : textSize === 'sm' ? 'text-sm' : textSize === 'base' ? 'text-base' : 'text-lg'}
+                                    `}
+                                >
+                                    {activeNote && renderHighlightedText(activeNote.content + ' ')}
                                 </div>
-                                <span className="text-[9px] uppercase tracking-wider font-mono font-bold text-neutral-400 group-active:text-primary">New</span>
-                            </button>
 
-                            <button
-                                onClick={() => { setIsSizeExpanded(!isSizeExpanded); setMobileAssistantOpen(false); }}
-                                className={`flex-1 group flex flex-col items-center gap-1 transition-all py-1`}
-                            >
-                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${isSizeExpanded ? 'bg-primary text-black border-primary' : 'bg-transparent text-neutral-400 border-transparent group-hover:text-white'}`}>
-                                    <Type size={18} className="stroke-[2.5px]" />
-                                </div>
-                                <span className={`text-[9px] uppercase tracking-wider font-mono font-bold ${isSizeExpanded ? 'text-primary' : 'text-neutral-500'}`}>Size</span>
-                            </button>
-
-                            <button
-                                onClick={() => {
-                                    setToolkitOpen(!isToolkitOpen);
-                                    setIsSizeExpanded(false);
-                                }}
-                                className={`flex-1 group flex flex-col items-center gap-1 transition-all py-1`}
-                            >
-                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${isToolkitOpen ? 'bg-primary text-black border-primary' : 'bg-transparent text-neutral-400 border-transparent group-hover:text-white'}`}>
-                                    <Globe size={18} className="stroke-[2.5px]" />
-                                </div>
-                                <span className={`text-[9px] uppercase tracking-wider font-mono font-bold ${isToolkitOpen ? 'text-primary' : 'text-neutral-500'}`}>Tools</span>
-                            </button>
-
-                            <button
-                                onClick={() => setRhymeMode(!rhymeMode)}
-                                className={`flex-1 group flex flex-col items-center gap-1 transition-all py-1`}
-                            >
-                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${rhymeMode ? 'bg-primary text-black border-primary' : 'bg-transparent text-neutral-400 border-transparent group-hover:text-white'}`}>
-                                    <Highlighter size={18} className="stroke-[2.5px]" />
-                                </div>
-                                <span className={`text-[9px] uppercase tracking-wider font-mono font-bold ${rhymeMode ? 'text-primary' : 'text-neutral-500'}`}>Rhyme</span>
-                            </button>
+                                <textarea
+                                    ref={textareaRef}
+                                    className={`
+                                        col-start-1 row-start-1 w-full h-full bg-transparent p-5 lg:p-12 resize-none overflow-hidden focus:outline-none z-10 font-mono leading-relaxed whitespace-pre-wrap break-words
+                                        ${textSize === 'xs' ? 'text-xs' : textSize === 'sm' ? 'text-sm' : textSize === 'base' ? 'text-base' : 'text-lg'}
+                                        ${rhymeMode ? 'text-transparent caret-white' : 'text-neutral-300 caret-white'}
+                                    `}
+                                    value={activeNote ? activeNote.content : ''}
+                                    onChange={(e) => {
+                                        handleUpdateContentWrapper(e.target.value);
+                                        handleSelectionChange(e);
+                                    }}
+                                    onSelect={(e) => {
+                                        handleSelectionChange(e);
+                                        checkSelection(e);
+                                    }}
+                                    onBlur={() => setTimeout(() => setSelection(null), 200)}
+                                    placeholder="Start writing lyrics..."
+                                    spellCheck={false}
+                                />
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Technical Toolkit Sheet */}
-                {isToolkitOpen && (
-                    <div
-                        style={{ height: `${mobileSheetHeight}vh` }}
-                        className="lg:hidden absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[50] bg-black border-t-2 border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] flex flex-col animate-in slide-in-from-bottom-full duration-300 transition-[height] ease-out will-change-[height]"
-                    >
-                        {/* Header & Drag Handle (Terminal Style) */}
-                        <div className="w-full flex items-center justify-between px-4 py-2 bg-neutral-900/80 backdrop-blur-xl border-b border-white/10 relative shrink-0">
-                            {/* Terminal Dots (Decoration) */}
-                            {/* Terminal Dots Removed */}
+                    <div className="h-32 lg:hidden shrink-0" />
 
-
-                            {/* Drag Handle (Technical) */}
-                            <div
-                                className="absolute left-1/2 -translate-x-1/2 w-32 h-6 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100"
-                                onTouchStart={handleSheetDragStart}
-                                onTouchMove={handleSheetDragMove}
-                            >
-                                <div className="flex gap-0.5">
-                                    <div className="w-8 h-[2px] bg-white/40"></div>
-                                    <div className="w-8 h-[2px] bg-white/40"></div>
-                                    <div className="w-8 h-[2px] bg-white/40"></div>
-                                </div>
-                            </div>
-
-                            {/* Close Button */}
-                            <button
-                                onClick={() => setToolkitOpen(false)}
-                                className="w-6 h-6 flex items-center justify-center rounded bg-white/10 text-neutral-400 hover:text-white hover:bg-white/20 active:scale-95 transition-all"
-                            >
-                                <ChevronDown size={14} />
-                            </button>
-                        </div>
-
-                        <div className="flex items-center border-b border-white/10 bg-black">
-                            <button
-                                onClick={() => setToolkitTab('rhymes')}
-                                className={`flex-1 py-3 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative border-r border-white/5 ${toolkitTab === 'rhymes' ? 'text-black bg-primary' : 'text-neutral-500 hover:text-white'}`}
-                            >
-                                <Music size={12} /> Rhyme_Engine
-                            </button>
-                            <button
-                                onClick={() => setToolkitTab('tools')}
-                                className={`flex-1 py-3 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative ${toolkitTab === 'tools' ? 'text-black bg-primary' : 'text-neutral-500 hover:text-white'}`}
-                            >
-                                <FolderOpen size={12} /> Extras
-                            </button>
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 overflow-hidden relative bg-[#0c0c0c]">
-                            {toolkitTab === 'rhymes' && (
-                                <div className="h-full flex flex-col">
-                                    <div className="p-2 border-b border-white/5 flex justify-between items-center bg-white/5">
-                                        <span className="text-[9px] uppercase font-bold text-neutral-500">Target Word: <span className="text-white">{currentWord || "..."}</span></span>
-                                        <button onClick={() => setAccent(accent === 'US' ? 'UK' : 'US')} className="text-[10px] font-bold text-neutral-400 border border-white/10 px-2 py-0.5 rounded-full bg-black/20">{accent}</button>
-                                    </div>
-                                    <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
-                                        {currentWord && suggestions.length > 0 ? (
-                                            <div className="flex flex-wrap gap-2">
-                                                {suggestions.map((word, i) => (
-                                                    <button
-                                                        key={i}
-                                                        className="px-2.5 py-1.5 bg-neutral-800 border border-neutral-700 rounded-lg text-xs text-neutral-300 active:bg-primary active:text-black transition-colors"
-                                                        onClick={() => {
-                                                            if (activeNote) {
-                                                                const newContent = activeNote.content + " " + word;
-                                                                handleUpdateContent(newContent);
-                                                            }
-                                                        }}
-                                                    >
-                                                        {word}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center h-40 text-neutral-600 opacity-50 space-y-2">
-                                                <Mic size={24} />
-                                                <p className="text-xs">Tap a word to see rhymes.</p>
-                                            </div>
-                                        )}
+                    <div className="lg:hidden fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-0 right-0 z-[48] bg-[#050505] border-t border-white/20 pb-0">
+                        <div className="flex flex-col">
+                            {isSizeExpanded && (
+                                <div className="absolute bottom-[calc(100%+1px)] left-0 right-0 bg-[#0A0A0A] border-t border-white/10 p-4 z-[60] animate-in slide-in-from-bottom-2 fade-in duration-200 flex justify-center shadow-2xl">
+                                    <div className="flex items-center gap-6 bg-white/5 rounded-full px-4 py-2 border border-white/10">
+                                        <button
+                                            onClick={() => setTextSize(prev => prev === 'xs' ? 'xs' : prev === 'sm' ? 'xs' : prev === 'base' ? 'sm' : 'base')}
+                                            className={`p-2 rounded-full transition-colors ${textSize === 'xs' ? 'text-neutral-600 cursor-not-allowed' : 'text-white hover:bg-white/10 active:bg-white/20'}`}
+                                            disabled={textSize === 'xs'}
+                                        >
+                                            <Minus size={18} />
+                                        </button>
+                                        <span className="text-xs font-mono font-bold text-primary w-16 text-center uppercase tracking-wider">
+                                            {textSize === 'xs' && 'Small'}
+                                            {textSize === 'sm' && 'Medium'}
+                                            {textSize === 'base' && 'Large'}
+                                            {textSize === 'lg' && 'Huge'}
+                                        </span>
+                                        <button
+                                            onClick={() => setTextSize(prev => prev === 'xs' ? 'sm' : prev === 'sm' ? 'base' : prev === 'base' ? 'lg' : 'lg')}
+                                            className={`p-2 rounded-full transition-colors ${textSize === 'lg' ? 'text-neutral-600 cursor-not-allowed' : 'text-white hover:bg-white/10 active:bg-white/20'}`}
+                                            disabled={textSize === 'lg'}
+                                        >
+                                            <Plus size={18} />
+                                        </button>
                                     </div>
                                 </div>
                             )}
 
-                            {toolkitTab === 'tools' && (
-                                <div className="h-full flex flex-col p-6 items-center justify-center text-center">
-                                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
-                                        <Plus size={32} />
+                            <div className="h-16 flex items-center justify-between px-2 w-full max-sm MX-auto">
+                                <button
+                                    onClick={handleCreateNote}
+                                    className="flex-1 group flex flex-col items-center gap-1 transition-all py-1"
+                                >
+                                    <div className="w-9 h-9 rounded-lg flex items-center justify-center transition-all bg-white/5 border border-white/5 group-active:bg-primary group-active:text-black group-active:border-primary group-active:scale-95">
+                                        <Plus size={18} className="stroke-[2.5px]" />
                                     </div>
-                                    <h4 className="text-white font-bold mb-2">Advanced Workflow</h4>
-                                    <p className="text-xs text-neutral-500 mb-6">PDF Export, Custom Themes, and Voice-to-Lyrics coming soon to Studio+.</p>
-                                    <button onClick={handleExport} className="w-full py-3 bg-white text-black text-xs font-bold rounded-xl uppercase tracking-widest">Upgrade to Studio+</button>
-                                </div>
-                            )}
+                                    <span className="text-[9px] uppercase tracking-wider font-mono font-bold text-neutral-400 group-active:text-primary">New</span>
+                                </button>
+
+                                <button
+                                    onClick={() => { setIsSizeExpanded(!isSizeExpanded); setMobileAssistantOpen(false); }}
+                                    className={`flex-1 group flex flex-col items-center gap-1 transition-all py-1`}
+                                >
+                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${isSizeExpanded ? 'bg-primary text-black border-primary' : 'bg-transparent text-neutral-400 border-transparent group-hover:text-white'}`}>
+                                        <Type size={18} className="stroke-[2.5px]" />
+                                    </div>
+                                    <span className={`text-[9px] uppercase tracking-wider font-mono font-bold ${isSizeExpanded ? 'text-primary' : 'text-neutral-500'}`}>Size</span>
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        setToolkitOpen(!isToolkitOpen);
+                                        setIsSizeExpanded(false);
+                                    }}
+                                    className={`flex-1 group flex flex-col items-center gap-1 transition-all py-1`}
+                                >
+                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${isToolkitOpen ? 'bg-primary text-black border-primary' : 'bg-transparent text-neutral-400 border-transparent group-hover:text-white'}`}>
+                                        <Globe size={18} className="stroke-[2.5px]" />
+                                    </div>
+                                    <span className={`text-[9px] uppercase tracking-wider font-mono font-bold ${isToolkitOpen ? 'text-primary' : 'text-neutral-500'}`}>Tools</span>
+                                </button>
+
+                                <button
+                                    onClick={() => setRhymeMode(!rhymeMode)}
+                                    className={`flex-1 group flex flex-col items-center gap-1 transition-all py-1`}
+                                >
+                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${rhymeMode ? 'bg-primary text-black border-primary' : 'bg-transparent text-neutral-400 border-transparent group-hover:text-white'}`}>
+                                        <Highlighter size={18} className="stroke-[2.5px]" />
+                                    </div>
+                                    <span className={`text-[9px] uppercase tracking-wider font-mono font-bold ${rhymeMode ? 'text-primary' : 'text-neutral-500'}`}>Rhyme</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                )}
 
-                {/* Restore Mobile FAB - Removed for Seamless Integration */}
-                {!isToolkitOpen && !isSidebarOpen && !isSizeExpanded && (
-                    <div /> // Placeholder to cleaner diff, effectively removing FAB
-                )}
-            </div>
-
-            {/* Creative Assistant Sidebar (Desktop Only) */}
-            <div className="hidden lg:flex w-80 bg-[#080808] border-l border-neutral-800 flex-col shrink-0 transition-all duration-300">
-
-                {/* Tabs */}
-                <div className="flex items-center border-b border-neutral-800">
-                    <button
-                        onClick={() => setAssistantTab('rhymes')}
-                        className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${assistantTab === 'rhymes' ? 'text-primary bg-primary/5 border-b-2 border-primary' : 'text-neutral-500 hover:text-white'}`}
-                    >
-                        <Music size={14} /> Rhymes
-                    </button>
-                    <button
-                        onClick={() => setAssistantTab('tools')}
-                        className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${assistantTab === 'tools' ? 'text-primary bg-primary/5 border-b-2 border-primary' : 'text-neutral-500 hover:text-white'}`}
-                    >
-                        <FileText size={14} /> Extras
-                    </button>
-                </div>
-
-                {/* Content Area */}
-                <div className="flex-1 overflow-hidden relative flex flex-col">
-
-                    {/* RHYMES TAB */}
-                    {assistantTab === 'rhymes' && (
-                        <>
-                            <div className="p-4 border-b border-neutral-800 bg-neutral-900/20 shrink-0">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] uppercase font-bold text-neutral-500">Target Word</span>
-                                    <button
-                                        onClick={() => setAccent(accent === 'US' ? 'UK' : 'US')}
-                                        className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-neutral-800 bg-neutral-900 text-[9px] font-bold text-neutral-400 hover:text-white"
-                                        title="Toggle Accent"
-                                    >
-                                        <Globe size={10} /> {accent}
-                                    </button>
+                    {isToolkitOpen && (
+                        <div
+                            style={{ height: `${mobileSheetHeight}vh` }}
+                            className="lg:hidden absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[50] bg-black border-t-2 border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] flex flex-col animate-in slide-in-from-bottom-full duration-300 transition-[height] ease-out"
+                        >
+                            <div className="w-full flex items-center justify-between px-4 py-2 bg-neutral-900/80 backdrop-blur-xl border-b border-white/10 relative shrink-0">
+                                <div
+                                    className="absolute left-1/2 -translate-x-1/2 w-32 h-6 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100"
+                                    onTouchStart={handleSheetDragStart}
+                                    onTouchMove={handleSheetDragMove}
+                                >
+                                    <div className="flex gap-0.5">
+                                        <div className="w-8 h-[2px] bg-white/40"></div>
+                                        <div className="w-8 h-[2px] bg-white/40"></div>
+                                        <div className="w-8 h-[2px] bg-white/40"></div>
+                                    </div>
                                 </div>
-                                <div className="text-xl font-black text-white truncate break-all">
-                                    {currentWord || <span className="text-neutral-600 italic text-sm font-normal">Select a word...</span>}
-                                </div>
+
+                                <button
+                                    onClick={() => setToolkitOpen(false)}
+                                    className="w-6 h-6 flex items-center justify-center rounded bg-white/10 text-neutral-400 hover:text-white hover:bg-white/20 active:scale-95 transition-all"
+                                >
+                                    <ChevronDown size={14} />
+                                </button>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                                {currentWord && suggestions.length > 0 ? (
-                                    <div className="flex flex-wrap gap-2">
-                                        {suggestions.map((word, i) => (
-                                            <button
-                                                key={i}
-                                                className="px-3 py-1.5 bg-neutral-900 border border-neutral-800 rounded-lg text-xs text-neutral-300 hover:text-white hover:border-primary/50 hover:bg-white/5 cursor-pointer transition-all active:scale-95"
-                                                onClick={() => {
-                                                    if (activeNote) {
-                                                        const newContent = activeNote.content + " " + word;
-                                                        handleUpdateContent(newContent);
-                                                    }
-                                                }}
-                                            >
-                                                {word}
-                                            </button>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center h-40 text-neutral-600 space-y-3 mt-10">
-                                        <div className="w-12 h-12 rounded-full bg-neutral-900 flex items-center justify-center">
-                                            {isRhymeLoading ? (
-                                                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                            <div className="flex items-center border-b border-white/10 bg-black">
+                                <button
+                                    onClick={() => setToolkitTab('rhymes')}
+                                    className={`flex-1 py-3 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative border-r border-white/5 ${toolkitTab === 'rhymes' ? 'text-black bg-primary' : 'text-neutral-500 hover:text-white'}`}
+                                >
+                                    <Music size={12} /> Rhyme_Engine
+                                </button>
+                                <button
+                                    onClick={() => setToolkitTab('tools')}
+                                    className={`flex-1 py-3 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative ${toolkitTab === 'tools' ? 'text-black bg-primary' : 'text-neutral-500 hover:text-white'}`}
+                                >
+                                    <FolderOpen size={12} /> Extras
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-hidden relative bg-[#0c0c0c]">
+                                {toolkitTab === 'rhymes' && (
+                                    <div className="h-full flex flex-col">
+                                        <div className="p-2 border-b border-white/5 flex justify-between items-center bg-white/5">
+                                            <span className="text-[9px] uppercase font-bold text-neutral-500">Target Word: <span className="text-white">{currentWord || "..."}</span></span>
+                                            <button onClick={() => setAccent(accent === 'US' ? 'UK' : 'US')} className="text-[10px] font-bold text-neutral-400 border border-white/10 px-2 py-0.5 rounded-full bg-black/20">{accent}</button>
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
+                                            {currentWord && suggestions.length > 0 ? (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {suggestions.map((word, i) => (
+                                                        <button
+                                                            key={i}
+                                                            className="px-2.5 py-1.5 bg-neutral-800 border border-neutral-700 rounded-lg text-xs text-neutral-300 active:bg-primary active:text-black transition-colors"
+                                                            onClick={() => {
+                                                                if (activeNote) {
+                                                                    const newContent = activeNote.content + " " + word;
+                                                                    handleUpdateContent(newContent);
+                                                                }
+                                                            }}
+                                                        >
+                                                            {word}
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             ) : (
-                                                <Mic size={20} className="opacity-50" />
+                                                <div className="flex flex-col items-center justify-center h-40 text-neutral-600 opacity-50 space-y-2">
+                                                    <Mic size={24} />
+                                                    <p className="text-xs">Tap a word to see rhymes.</p>
+                                                </div>
                                             )}
                                         </div>
-                                        <p className="text-xs text-center px-4 leading-relaxed">
-                                            {isRhymeLoading ? 'Analysing rhymes...' : 'Type or select a word to see rhymes.'}
-                                        </p>
+                                    </div>
+                                )}
+
+                                {toolkitTab === 'tools' && (
+                                    <div className="h-full flex flex-col p-6 items-center justify-center text-center">
+                                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
+                                            <Plus size={32} />
+                                        </div>
+                                        <h4 className="text-white font-bold mb-2">Advanced Workflow</h4>
+                                        <p className="text-xs text-neutral-500 mb-6">PDF Export, Custom Themes, and Voice-to-Lyrics coming soon to Studio+.</p>
+                                        <button onClick={handleExport} className="w-full py-3 bg-white text-black text-xs font-bold rounded-xl uppercase tracking-widest">Upgrade to Studio+</button>
                                     </div>
                                 )}
                             </div>
-                        </>
-                    )}
-
-                    {/* TOOLS TAB */}
-                    {assistantTab === 'tools' && (
-                        <div className="flex flex-col h-full p-8 items-center justify-center text-center">
-                            <div className="w-20 h-20 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary mb-6">
-                                <Plus size={32} />
-                            </div>
-                            <h3 className="text-lg font-bold text-white mb-2">Studio+ Workflow</h3>
-                            <p className="text-sm text-neutral-500 mb-8 leading-relaxed">
-                                Unlock PDF Export, Custom Notebook Themes, and Voice-to-Lyrics with the Studio+ plan.
-                            </p>
-                            <button
-                                onClick={handleExport}
-                                className="w-full py-3 bg-white text-black text-xs font-bold rounded-xl hover:bg-neutral-200 transition-all uppercase tracking-widest"
-                            >
-                                View Plans
-                            </button>
                         </div>
                     )}
+                </div>
+
+                {/* Creative Assistant Sidebar (Desktop Only) */}
+                <div className="hidden lg:flex w-80 h-full bg-[#080808] border-l border-neutral-800 flex-col shrink-0 transition-all duration-300">
+                    <div className="flex items-center border-b border-neutral-800">
+                        <button
+                            onClick={() => setAssistantTab('rhymes')}
+                            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${assistantTab === 'rhymes' ? 'text-primary bg-primary/5 border-b-2 border-primary' : 'text-neutral-500 hover:text-white'}`}
+                        >
+                            <Music size={14} /> Rhymes
+                        </button>
+                        <button
+                            onClick={() => setAssistantTab('tools')}
+                            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${assistantTab === 'tools' ? 'text-primary bg-primary/5 border-b-2 border-primary' : 'text-neutral-500 hover:text-white'}`}
+                        >
+                            <FileText size={14} /> Extras
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-hidden relative flex flex-col">
+                        {assistantTab === 'rhymes' && (
+                            <>
+                                <div className="p-4 border-b border-neutral-800 bg-neutral-900/20 shrink-0">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-[10px] uppercase font-bold text-neutral-500">Target Word</span>
+                                        <button
+                                            onClick={() => setAccent(accent === 'US' ? 'UK' : 'US')}
+                                            className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-neutral-800 bg-neutral-900 text-[9px] font-bold text-neutral-400 hover:text-white"
+                                            title="Toggle Accent"
+                                        >
+                                            <Globe size={10} /> {accent}
+                                        </button>
+                                    </div>
+                                    <div className="text-xl font-black text-white truncate break-all">
+                                        {currentWord || <span className="text-neutral-600 italic text-sm font-normal">Select a word...</span>}
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                                    {currentWord && suggestions.length > 0 ? (
+                                        <div className="flex flex-wrap gap-2">
+                                            {suggestions.map((word, i) => (
+                                                <button
+                                                    key={i}
+                                                    className="px-3 py-1.5 bg-neutral-900 border border-neutral-800 rounded-lg text-xs text-neutral-300 hover:text-white hover:border-primary/50 hover:bg-white/5 cursor-pointer transition-all active:scale-95"
+                                                    onClick={() => {
+                                                        if (activeNote) {
+                                                            const newContent = activeNote.content + " " + word;
+                                                            handleUpdateContent(newContent);
+                                                        }
+                                                    }}
+                                                >
+                                                    {word}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-40 text-neutral-600 space-y-3 mt-10">
+                                            <div className="w-12 h-12 rounded-full bg-neutral-900 flex items-center justify-center">
+                                                {isRhymeLoading ? (
+                                                    <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                                                ) : (
+                                                    <Mic size={20} className="opacity-50" />
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-center px-4 leading-relaxed">
+                                                {isRhymeLoading ? 'Analysing rhymes...' : 'Type or select a word to see rhymes.'}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
+
+                        {assistantTab === 'tools' && (
+                            <div className="flex flex-col h-full p-8 items-center justify-center text-center">
+                                <div className="w-20 h-20 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary mb-6">
+                                    <Plus size={32} />
+                                </div>
+                                <h3 className="text-lg font-bold text-white mb-2">Studio+ Workflow</h3>
+                                <p className="text-sm text-neutral-500 mb-8 leading-relaxed">
+                                    Unlock PDF Export, Custom Notebook Themes, and Voice-to-Lyrics with the Studio+ plan.
+                                </p>
+                                <button
+                                    onClick={handleExport}
+                                    className="w-full py-3 bg-white text-black text-xs font-bold rounded-xl hover:bg-neutral-200 transition-all uppercase tracking-widest"
+                                >
+                                    View Plans
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
     );
-
-
-
-
-
 
     const renderBrowserView = () => (
         <div className="flex-1 p-4 lg:p-8 overflow-y-auto">
@@ -1081,12 +1062,12 @@ const NotesPage: React.FC = () => {
                             key={file.id}
                             onClick={() => handleAttachFile(file.name)}
                             className={`
-                            p-4 rounded-xl border bg-neutral-900/50 cursor-pointer transition-all group
-                            ${activeNote && activeNote.attachedAudio === file.name
+                                p-4 rounded-xl border bg-neutral-900/50 cursor-pointer transition-all group
+                                ${activeNote && activeNote.attachedAudio === file.name
                                     ? 'border-primary bg-primary/10 shadow-[0_0_20px_rgba(var(--primary),0.15)]'
                                     : 'border-white/5 hover:border-white/20 hover:bg-white/5'
                                 }
-                        `}
+                            `}
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <div className="p-3 bg-black/50 rounded-lg text-neutral-400 group-hover:text-white">
@@ -1127,34 +1108,15 @@ const NotesPage: React.FC = () => {
 
     return (
         <div className={`
-            w-full max-w-[1600px] mx-auto animate-in fade-in duration-500 flex flex-col overflow-hidden
-            fixed inset-x-0 bottom-0 top-16 ${isOverlayOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-[calc(100vh_-_8rem)] lg:pt-4 lg:px-8 lg:bg-transparent
+            w-full animate-in fade-in duration-500 flex flex-col overflow-hidden
+            fixed inset-x-0 bottom-0 top-16 ${isOverlayOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-full lg:bg-transparent
         `}>
-            {/* Header - Desktop Only */}
-            <div className={`
-                hidden lg:flex items-end justify-between transition-all duration-500 ease-in-out shrink-0
-                ${activeNote ? 'lg:max-h-40 lg:opacity-100 lg:mb-6 lg:pointer-events-auto' : 'max-h-40 opacity-100 mb-6'}
-            `}>
-                <div>
-                    <h1 className="text-3xl font-black text-white mb-1">Notes & Lyrics</h1>
-                    <p className="text-neutral-500 text-sm">Write lyrics, capture ideas, and organize your musical thoughts.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={handleCreateNote}
-                        className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold text-white transition-colors flex items-center gap-2"
-                    >
-                        <Plus size={14} /> <span className="hidden sm:inline">Write Note</span>
-                    </button>
-                </div>
-            </div>
+            <div className="flex-1 flex bg-[#0a0a0a] overflow-hidden relative">
 
-            <div className="flex-1 flex bg-[#0a0a0a] lg:border border-neutral-800 lg:rounded-xl overflow-hidden shadow-none lg:shadow-2xl relative">
-                {/* Sidebar */}
+                {/* Sidebar (Left Side) */}
                 <div className={`
-                    absolute inset-0 z-[60] w-full lg:w-64 lg:static lg:border-r border-neutral-800 flex flex-col bg-black lg:bg-[#080808] transition-transform duration-300
-                    ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                    lg:translate-x-0
+                    absolute lg:static inset-y-0 left-0 z-[60] w-full lg:w-72 lg:border-r border-neutral-800 flex flex-col bg-black lg:bg-[#080808] transition-transform duration-300
+                    ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
                 `}>
                     <div className="p-4 border-b border-neutral-800 flex items-center justify-between shrink-0">
                         <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
@@ -1173,6 +1135,7 @@ const NotesPage: React.FC = () => {
                             </button>
                         </div>
                     </div>
+
                     <div className="px-4 mb-4 shrink-0 flex gap-2">
                         <div className="relative mt-4 flex-1">
                             <input className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-primary/50 pl-8" placeholder={trashView ? "Search deleted..." : "Search notes..."} />
@@ -1185,9 +1148,18 @@ const NotesPage: React.FC = () => {
                         >
                             {trashView ? <RotateCcw size={14} /> : <Trash size={14} />}
                         </button>
+                        {trashView && notes.length > 0 && (
+                            <button
+                                onClick={handleEmptyTrash}
+                                className="mt-4 w-10 h-[34px] flex items-center justify-center rounded border bg-red-500/10 border-red-500/50 text-red-500 hover:bg-red-500/20 transition-colors shrink-0"
+                                title="Empty Trash"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        )}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                    <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
                         {notes.map(note => (
                             <div
                                 key={note.id}
@@ -1196,12 +1168,12 @@ const NotesPage: React.FC = () => {
                                     setIsSidebarOpen(false);
                                 }}
                                 className={`
-                                p-3 rounded-lg border cursor-pointer transition-all group relative
-                                ${activeNoteId === note.id
+                                    p-3 rounded-lg border cursor-pointer transition-all group relative
+                                    ${activeNoteId === note.id
                                         ? 'bg-primary/10 border-primary/20'
                                         : 'border-transparent hover:bg-white/5'
                                     }
-                            `}
+                                `}
                             >
                                 <div className="flex justify-between items-start mb-1">
                                     <h4 className={`text-sm font-bold truncate pr-4 ${activeNoteId === note.id ? 'text-primary' : 'text-neutral-300'}`}>{note.title}</h4>
@@ -1237,11 +1209,11 @@ const NotesPage: React.FC = () => {
                 <div className="flex-1 flex flex-col bg-[#050505] relative w-full overflow-hidden">
                     {activeNote ? (
                         <div className="flex-1 flex flex-col overflow-hidden">
-                            {/* Desktop Controls (Hidden on Mobile) */}
+                            {/* Desktop Controls */}
                             <div className="hidden lg:flex h-14 border-b border-neutral-800 items-center justify-between px-6 bg-neutral-900/30 z-20 shrink-0">
                                 <div className="flex items-center gap-4">
                                     {viewMode === 'browser' && (
-                                        <button onClick={() => setViewMode('editor')} className="p-1.5 hover:bg-white/5 rounded"><ChevronLeft size={16} /></button>
+                                        <button onClick={() => setViewMode('editor')} className="p-1.5 hover:bg-white/5 rounded text-neutral-400 hover:text-white"><ChevronLeft size={16} /></button>
                                     )}
                                     <input
                                         value={activeNote.title}
@@ -1255,15 +1227,15 @@ const NotesPage: React.FC = () => {
                                         <button
                                             onClick={() => setRhymeMode(!rhymeMode)}
                                             className={`
-                                                    flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wide transition-all
-                                                    ${rhymeMode
+                                                flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wide transition-all
+                                                ${rhymeMode
                                                     ? 'bg-primary text-black shadow-[0_0_15px_rgba(var(--primary),0.3)]'
                                                     : 'text-neutral-500 hover:text-white hover:bg-white/5 border border-white/5'
                                                 }
-                                                `}
+                                            `}
                                         >
                                             <Highlighter size={12} />
-                                            <span className="hidden sm:inline">Rhymes</span>
+                                            <span>Rhymes</span>
                                         </button>
                                     )}
                                     <div className="w-px h-4 bg-neutral-800 hidden sm:block"></div>
@@ -1279,8 +1251,6 @@ const NotesPage: React.FC = () => {
 
                             {/* Main Content Switcher */}
                             {viewMode === 'editor' ? renderEditorView() : renderBrowserView()}
-
-                            {/* Desktop AI Assistant Panel Removed (Moved to Sidebar) */}
                         </div>
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-neutral-600 p-8 text-center">
@@ -1305,13 +1275,24 @@ const NotesPage: React.FC = () => {
                     )}
                 </div>
 
+                {/* Overlay for mobile */}
                 {isSidebarOpen && (
                     <div
-                        className="absolute inset-0 bg-black/80 z-[48] lg:hidden"
+                        className="absolute inset-0 bg-black/80 z-[58] lg:hidden"
                         onClick={() => setIsSidebarOpen(false)}
                     ></div>
                 )}
             </div>
+
+            <ConfirmationModal
+                isOpen={confirmationModal.isOpen}
+                onClose={() => setConfirmationModal(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={handleConfirmAction}
+                title={confirmationModal.title || 'Confirm Action'}
+                message={confirmationModal.message || 'Are you sure?'}
+                confirmLabel={confirmationModal.type === 'delete' ? 'Delete Note' : 'Empty Trash'}
+                isDestructive={true}
+            />
         </div>
     );
 };

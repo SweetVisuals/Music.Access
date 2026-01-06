@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Mail, Lock, ArrowRight, Music, Mic2, Settings, CheckCircle, Terminal, Briefcase, Headphones, User } from 'lucide-react';
+import { X, Mail, Lock, ArrowRight, Music, Mic2, Settings, CheckCircle, Briefcase, Headphones, User } from 'lucide-react';
 import { signUp, signIn } from '../services/supabaseService';
 
 interface AuthModalProps {
@@ -91,7 +91,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
             <div className="w-full max-w-[480px] bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl flex flex-col relative max-h-[90vh] overflow-hidden">
 
                 <button
@@ -103,8 +103,27 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
 
                 {/* Header */}
                 <div className="pt-8 px-8 pb-6 flex flex-col items-center">
-                    <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 text-primary mb-4 shadow-[0_0_15px_rgba(var(--primary),0.2)]">
-                        <Terminal size={24} />
+                    <div className="relative h-8 w-auto flex items-center mb-8">
+                        <img
+                            src="/images/musicaccesslogowhite.png"
+                            alt="Music Access"
+                            className="h-full w-auto"
+                        />
+                        <div
+                            className="absolute inset-0 bg-primary"
+                            style={{
+                                clipPath: 'inset(0 calc(100% - 27px) 0 0)',
+                                WebkitClipPath: 'inset(0 calc(100% - 27px) 0 0)',
+                                maskImage: 'url("/images/musicaccesslogowhite.png")',
+                                WebkitMaskImage: 'url("/images/musicaccesslogowhite.png")',
+                                maskSize: 'contain',
+                                WebkitMaskSize: 'contain',
+                                maskRepeat: 'no-repeat',
+                                WebkitMaskRepeat: 'no-repeat',
+                                maskPosition: 'center',
+                                WebkitMaskPosition: 'center'
+                            }}
+                        />
                     </div>
 
                     {/* Tabs */}

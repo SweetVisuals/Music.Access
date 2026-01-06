@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
     Search, Bell, Menu, User, LogOut, Settings, Terminal, ShoppingBag,
     ArrowRight, ArrowLeft, Clock, Gem, Wallet, Eye, EyeOff, Palette,
-    Command, Sparkles, Music, Package, Mic, Info, X, ChevronDown, Trash2, Check
+    Command, Sparkles, Music, Package, Mic, Info, X, ChevronDown, Trash2, Check, LayoutDashboard
 } from 'lucide-react';
 import { Project, UserProfile, Notification, View } from '../types';
 import MobileNotifications from './MobileNotifications';
@@ -347,6 +347,10 @@ const RightActions: React.FC<{
                                     </div>
                                 </div>
                                 <div className="p-1.5">
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('dashboard-overview'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
+                                        <LayoutDashboard size={12} /> Dashboard
+                                    </button>
+
                                     <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
                                         <User size={12} /> My Profile
                                     </button>

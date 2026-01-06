@@ -1,6 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
-import { X, Upload, Music, Plus, Trash2, FileText, DollarSign, Check, FileAudio, Folder } from 'lucide-react';
+import { X, Upload, Music, Plus, Trash2, FileText, DollarSign, Check, FileAudio, Folder, LayoutTemplate, Box, FileSignature, Type } from 'lucide-react';
+import CustomDropdown from './CustomDropdown';
+import CustomInput from './CustomInput';
 import { Project, Track, LicenseInfo } from '../types';
 import { MOCK_CONTRACTS } from '../constants';
 import { createProject, updateProject, getUserFiles } from '../services/supabaseService';
@@ -158,7 +159,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     };
 
     const addTrack = () => {
-        setTracks([...tracks, { id: `new_${Date.now()}`, title: 'Untitled Track', duration: 0, files: {} }]);
+        setTracks([...tracks, { id: `new_${Date.now()} `, title: 'Untitled Track', duration: 0, files: {} }]);
     };
 
     const updateTrack = (index: number, field: string, value: any) => {
@@ -207,7 +208,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
         // Format BPM
         let finalBpm = '0';
         if (minBpm && maxBpm) {
-            finalBpm = minBpm === maxBpm ? minBpm : `${minBpm}-${maxBpm}`;
+            finalBpm = minBpm === maxBpm ? minBpm : `${minBpm} -${maxBpm} `;
         } else if (minBpm) {
             finalBpm = minBpm;
         } else if (maxBpm) {
@@ -239,15 +240,40 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
         }
     };
 
-    if (!isOpen) return null;
+    const [isClosing, setIsClosing] = useState(false);
+    const [shouldRender, setShouldRender] = useState(isOpen);
+
+    useEffect(() => {
+        if (isOpen) {
+            setShouldRender(true);
+            setIsClosing(false);
+        } else if (shouldRender) {
+            setIsClosing(true);
+            const timer = setTimeout(() => {
+                setShouldRender(false);
+                setIsClosing(false);
+            }, 450);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, shouldRender]);
+
+    const handleInternalClose = () => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 450);
+    };
+
+    if (!shouldRender) return null;
 
     return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-end bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full h-full lg:w-[calc(100%-16rem)] bg-[#0a0a0a] border-l border-neutral-800 flex flex-col shadow-2xl overflow-hidden relative">
+        <div className={`fixed top-16 bottom-0 right-0 left-0 lg:left-64 z-[150] transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}>
+            <div className="absolute inset-0 bg-black/40 -z-10" />
+            <div className={`w-full h-full bg-[#0a0a0a] border-0 flex flex-col shadow-2xl overflow-hidden relative ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
 
                 <div className="h-14 md:h-16 border-b border-neutral-800 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
                     <h2 className="text-base md:text-lg font-bold text-white">Create New Project</h2>
-                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white">
+                    <button onClick={handleInternalClose} className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white">
                         <X size={20} />
                     </button>
                 </div>
@@ -271,44 +297,41 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                     {step === 1 && (
                         <div className="space-y-5 md:space-y-8 max-w-3xl mx-auto">
                             <div className="space-y-4">
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-neutral-400 uppercase">Title</label>
-                                    <input
-                                        value={projectData.title}
-                                        onChange={(e) => setProjectData({ ...projectData, title: e.target.value })}
-                                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
-                                        placeholder="Project Title"
+                                <CustomInput
+                                    label="Title"
+                                    value={projectData.title}
+                                    onChange={(e) => setProjectData({ ...projectData, title: e.target.value })}
+                                    placeholder="Project Title"
+                                    icon={<Type size={16} />}
+                                />
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <CustomDropdown
+                                        label="Type"
+                                        value={projectData.type || ''}
+                                        onChange={(val) => setProjectData({ ...projectData, type: val as any })}
+                                        options={[
+                                            { value: 'beat_tape', label: 'Beat Tape / Project', icon: <LayoutTemplate size={14} />, description: 'A collection of beats or songs' },
+                                            { value: 'sound_pack', label: 'Sound Pack / Kit', icon: <Box size={14} />, description: 'Drums, loops, or presets' }
+                                        ]}
                                     />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-neutral-400 uppercase">Type</label>
-                                        <select
-                                            value={projectData.type}
-                                            onChange={(e) => setProjectData({ ...projectData, type: e.target.value as any })}
-                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
-                                        >
-                                            <option value="beat_tape">Beat Tape / Project</option>
-                                            <option value="sound_pack">Sound Pack / Kit</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-neutral-400 uppercase">BPM Range</label>
-                                        <div className="flex gap-2 items-center">
-                                            <input
+
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1">BPM Range</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <CustomInput
                                                 type="number"
                                                 value={minBpm}
                                                 onChange={(e) => setMinBpm(e.target.value)}
-                                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2.5 md:py-3 text-white text-center focus:border-primary/50 focus:outline-none"
                                                 placeholder="Min"
+                                                className="text-center"
                                             />
-                                            <span className="text-neutral-600 font-bold">-</span>
-                                            <input
+                                            <CustomInput
                                                 type="number"
                                                 value={maxBpm}
                                                 onChange={(e) => setMaxBpm(e.target.value)}
-                                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2.5 md:py-3 text-white text-center focus:border-primary/50 focus:outline-none"
                                                 placeholder="Max"
+                                                className="text-center"
                                             />
                                         </div>
                                     </div>
@@ -378,7 +401,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                     <div className="flex flex-wrap items-center gap-2 p-2 bg-neutral-900 border border-neutral-800 rounded-lg min-h-[50px]">
                                         {projectData.tags?.map(tag => (
                                             <span key={tag} className="px-2 py-1 bg-neutral-800 rounded flex items-center gap-1 text-xs text-white border border-neutral-700">
-                                                #{tag} <button onClick={() => removeTag(tag)} className="hover:text-red-500"><X size={10} /></button>
+                                                #tag <button onClick={() => removeTag(tag)} className="hover:text-red-500"><X size={10} /></button>
                                             </span>
                                         ))}
                                         {(!projectData.tags || projectData.tags.length < 5) && (
@@ -434,7 +457,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                                     ? 'border-green-500/30 bg-green-500/5'
                                                                     : 'border-neutral-700 hover:border-neutral-500 hover:bg-white/5'
                                                                 }
-                                                            `}
+`}
                                                         >
                                                             <div className="flex items-center gap-2">
                                                                 {track.files?.[type as 'mp3' | 'wav' | 'stems'] ? <Check size={14} className="text-green-500" /> : <Upload size={14} className="text-neutral-500" />}
@@ -475,7 +498,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                             <div className="grid grid-cols-1 gap-6">
                                 {projectData.licenses?.map((license, idx) => (
                                     <div key={license.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden flex flex-col">
-                                        <div className="p-4 border-b border-neutral-800 bg-neutral-900/50 flex justify-between items-center">
+                                        <div className="p-4 md:p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-between items-center shrink-0">
                                             <span className="text-xs font-bold uppercase text-neutral-400">{license.type} Lease</span>
                                             <div className="w-2 h-2 rounded-full bg-primary"></div>
                                         </div>
@@ -500,17 +523,18 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-bold text-neutral-500 uppercase">Contract Template</label>
-                                                <select
-                                                    className="w-full bg-black border border-neutral-800 rounded px-2 py-2 text-xs text-white focus:border-primary/50 focus:outline-none"
-                                                    onChange={(e) => updateLicense(idx, 'contractId', e.target.value)}
-                                                    value={license.contractId}
-                                                >
-                                                    <option value="">Select Contract...</option>
-                                                    {MOCK_CONTRACTS.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                                                </select>
-                                            </div>
+                                            <CustomDropdown
+                                                label="Contract Template"
+                                                value={license.contractId || ''}
+                                                onChange={(val) => updateLicense(idx, 'contractId', val)}
+                                                placeholder="Select Contract..."
+                                                options={MOCK_CONTRACTS.map(c => ({
+                                                    value: c.id,
+                                                    label: c.title,
+                                                    icon: <FileSignature size={14} className="text-primary" />
+                                                }))}
+                                                searchable
+                                            />
                                             <div className="pt-2 border-t border-neutral-800">
                                                 <div className="text-[10px] font-bold text-neutral-500 uppercase mb-2">Included Files</div>
                                                 <div className="flex flex-wrap gap-1">
@@ -533,7 +557,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                     </div>
                     <div className="flex flex-col-reverse md:flex-row w-full md:w-auto gap-4">
                         <button
-                            onClick={onClose}
+                            onClick={handleInternalClose}
                             className="flex-1 md:flex-none px-6 py-3 md:py-2 rounded-lg font-bold text-xs text-neutral-500 hover:text-white bg-transparent justify-center md:justify-start"
                         >
                             Cancel

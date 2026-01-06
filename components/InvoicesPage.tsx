@@ -15,10 +15,16 @@ import {
   AlertCircle,
   X,
   Edit,
-  Trash2
+  Trash2,
+  Users,
+  TrendingUp,
+  BarChart3,
+  Target
 } from 'lucide-react';
 import { getPurchases } from '../services/supabaseService';
-import { Purchase } from '../types';
+import { Purchase, Goal } from '../types';
+import CustomDropdown from './CustomDropdown';
+import CustomInput from './CustomInput';
 
 interface Invoice {
   id: string;
@@ -50,6 +56,11 @@ const InvoicesPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [formData, setFormData] = useState({
+    clientName: '',
+    description: '',
+    amount: ''
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -201,18 +212,19 @@ Status: ${invoice.status.toUpperCase()}
         </div>
 
         <div className="flex items-center gap-3">
-          <select
+          <CustomDropdown
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
-          >
-            <option value="all">All Status</option>
-            <option value="draft">Draft</option>
-            <option value="sent">Sent</option>
-            <option value="paid">Paid</option>
-            <option value="overdue">Overdue</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+            onChange={setStatusFilter}
+            options={[
+              { value: 'all', label: 'All Status' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'sent', label: 'Sent' },
+              { value: 'paid', label: 'Paid' },
+              { value: 'overdue', label: 'Overdue' },
+              { value: 'cancelled', label: 'Cancelled' }
+            ]}
+            className="w-full md:w-48"
+          />
         </div>
       </div>
 
@@ -391,14 +403,14 @@ Status: ${invoice.status.toUpperCase()}
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-neutral-400 uppercase mb-2 block">Amount ($)</label>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
-                />
-              </div>
+              <CustomInput
+                label="Amount ($)"
+                type="number"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                placeholder="0.00"
+                icon={<DollarSign size={16} />}
+              />
             </div>
 
             <div className="flex gap-3 mt-6">

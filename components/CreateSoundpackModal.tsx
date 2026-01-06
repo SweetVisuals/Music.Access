@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { X, Upload, Music, Plus, Trash2, FileText, DollarSign, Check, FileAudio, Folder, Box } from 'lucide-react';
+import { X, Upload, Music, Plus, Trash2, FileText, DollarSign, Check, FileAudio, Folder, Box, FileSignature, Drum, Repeat, Cpu, LayoutTemplate, Type, Hash } from 'lucide-react';
+import CustomDropdown from './CustomDropdown';
+import CustomInput from './CustomInput';
 import { Project, Track, LicenseInfo } from '../types';
 import { MOCK_CONTRACTS } from '../constants';
 import { createProject } from '../services/supabaseService';
@@ -11,9 +13,9 @@ interface CreateSoundpackModalProps {
 }
 
 const SOUND_PACK_TYPES = [
-    { value: 'Drum Kit', label: 'Drum Kit', description: 'Collection of drum sounds and samples' },
-    { value: 'Loop Kit', label: 'Loop Kit', description: 'Pre-made loops and melodies' },
-    { value: 'Preset Bank', label: 'Preset Bank', description: 'Instrument presets and patches' }
+    { value: 'Drum Kit', label: 'Drum Kit', description: 'Collection of drum sounds and samples', icon: <Drum size={14} /> },
+    { value: 'Loop Kit', label: 'Loop Kit', description: 'Pre-made loops and melodies', icon: <Repeat size={14} /> },
+    { value: 'Preset Bank', label: 'Preset Bank', description: 'Instrument presets and patches', icon: <Cpu size={14} /> }
 ];
 
 const GENRE_LIST = [
@@ -100,7 +102,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
     };
 
     const addTrack = () => {
-        setTracks([...tracks, { id: `new_${Date.now()}`, title: 'Untitled Sample', duration: 0, files: {} }]);
+        setTracks([...tracks, { id: `new_${Date.now()} `, title: 'Untitled Sample', duration: 0, files: {} }]);
     };
 
     const updateTrack = (index: number, field: string, value: any) => {
@@ -165,18 +167,43 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
         }
     };
 
-    if (!isOpen) return null;
+    const [isClosing, setIsClosing] = useState(false);
+    const [shouldRender, setShouldRender] = useState(isOpen);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            setShouldRender(true);
+            setIsClosing(false);
+        } else if (shouldRender) {
+            setIsClosing(true);
+            const timer = setTimeout(() => {
+                setShouldRender(false);
+                setIsClosing(false);
+            }, 450);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, shouldRender]);
+
+    const handleInternalClose = () => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 450);
+    };
+
+    if (!shouldRender) return null;
 
     return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full h-full md:h-[85vh] md:max-w-5xl bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl flex flex-col shadow-2xl overflow-hidden relative">
+        <div className={`fixed top-16 bottom-0 right-0 left-0 lg:left-64 z-[150] transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}>
+            <div className="absolute inset-0 bg-black/40 -z-10" />
+            <div className={`w-full h-full bg-[#0a0a0a] border-0 flex flex-col shadow-2xl overflow-hidden relative ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
 
                 <div className="h-14 md:h-16 border-b border-neutral-800 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
                     <h2 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
                         <Box size={18} className="text-primary" />
                         Create New Sound Pack
                     </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white">
+                    <button onClick={handleInternalClose} className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white">
                         <X size={20} />
                     </button>
                 </div>
@@ -200,36 +227,35 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                     {step === 1 && (
                         <div className="space-y-5 md:space-y-8 max-w-3xl mx-auto">
                             <div className="space-y-4">
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-neutral-400 uppercase">Pack Title</label>
-                                    <input
-                                        value={projectData.title}
-                                        onChange={(e) => setProjectData({ ...projectData, title: e.target.value })}
-                                        className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
-                                        placeholder="e.g., Dark Trap Drum Kit Vol. 1"
-                                    />
-                                </div>
+                                <CustomInput
+                                    label="Pack Title"
+                                    value={projectData.title}
+                                    onChange={(e) => setProjectData({ ...projectData, title: e.target.value })}
+                                    placeholder="e.g., Dark Trap Drum Kit Vol. 1"
+                                    icon={<Type size={16} />}
+                                />
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-neutral-400 uppercase">Pack Type</label>
-                                        <select
-                                            value={selectedPackType}
-                                            onChange={(e) => setSelectedPackType(e.target.value)}
-                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
-                                        >
-                                            {SOUND_PACK_TYPES.map(type => (
-                                                <option key={type.value} value={type.value}>
-                                                    {type.label} - {type.description}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-neutral-400 uppercase">Key & BPM</label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <CustomDropdown
+                                        label="Pack Type"
+                                        value={selectedPackType}
+                                        onChange={setSelectedPackType}
+                                        options={SOUND_PACK_TYPES}
+                                    />
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1">Key & BPM</label>
                                         <div className="flex gap-2">
-                                            <input className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2.5 md:py-3 text-white text-center" placeholder="Am" />
-                                            <input type="number" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2.5 md:py-3 text-white text-center" placeholder="140" />
+                                            <CustomInput
+                                                className="text-center"
+                                                placeholder="Am"
+                                                icon={<Music size={14} />}
+                                            />
+                                            <CustomInput
+                                                type="number"
+                                                className="text-center"
+                                                placeholder="140"
+                                                icon={<Hash size={14} />}
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -354,7 +380,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                                                     ? 'border-green-500/30 bg-green-500/5'
                                                                     : 'border-neutral-700 hover:border-neutral-500 hover:bg-white/5'
                                                                 }
-                                                            `}
+`}
                                                         >
                                                             <div className="flex items-center gap-2">
                                                                 {track.files?.[type as 'wav' | 'zip'] ? <Check size={14} className="text-green-500" /> : <Upload size={14} className="text-neutral-500" />}
@@ -400,37 +426,32 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                             <div className="w-2 h-2 rounded-full bg-primary"></div>
                                         </div>
                                         <div className="p-6 space-y-4 flex-1">
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-bold text-neutral-500 uppercase">License Name</label>
-                                                <input
-                                                    value={license.name}
-                                                    onChange={(e) => updateLicense(idx, 'name', e.target.value)}
-                                                    className="w-full bg-black border border-neutral-800 rounded px-2 py-2 text-sm text-white focus:border-primary/50 focus:outline-none"
-                                                />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-bold text-neutral-500 uppercase">Price</label>
-                                                <div className="relative">
-                                                    <DollarSign size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                                    <input
-                                                        type="number"
-                                                        value={license.price}
-                                                        onChange={(e) => updateLicense(idx, 'price', parseFloat(e.target.value))}
-                                                        className="w-full bg-black border border-neutral-800 rounded px-2 py-2 pl-8 text-lg font-mono font-bold text-white focus:border-primary/50 focus:outline-none"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-bold text-neutral-500 uppercase">Contract Template</label>
-                                                <select
-                                                    className="w-full bg-black border border-neutral-800 rounded px-2 py-2 text-xs text-white focus:border-primary/50 focus:outline-none"
-                                                    onChange={(e) => updateLicense(idx, 'contractId', e.target.value)}
-                                                    value={license.contractId}
-                                                >
-                                                    <option value="">Select Contract...</option>
-                                                    {MOCK_CONTRACTS.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                                                </select>
-                                            </div>
+                                            <CustomInput
+                                                label="License Name"
+                                                value={license.name}
+                                                onChange={(e) => updateLicense(idx, 'name', e.target.value)}
+                                                placeholder="e.g. Basic Lease"
+                                            />
+                                            <CustomInput
+                                                label="Price"
+                                                type="number"
+                                                value={license.price}
+                                                onChange={(e) => updateLicense(idx, 'price', parseFloat(e.target.value))}
+                                                icon={<DollarSign size={14} />}
+                                                className="text-lg font-mono font-bold"
+                                            />
+                                            <CustomDropdown
+                                                label="Contract Template"
+                                                value={license.contractId || ''}
+                                                onChange={(val) => updateLicense(idx, 'contractId', val)}
+                                                placeholder="Select Contract..."
+                                                options={MOCK_CONTRACTS.map(c => ({
+                                                    value: c.id,
+                                                    label: c.title,
+                                                    icon: <FileSignature size={14} className="text-primary" />
+                                                }))}
+                                                searchable
+                                            />
                                             <div className="pt-2 border-t border-neutral-800">
                                                 <div className="text-[10px] font-bold text-neutral-500 uppercase mb-2">Included Files</div>
                                                 <div className="flex flex-wrap gap-1">
@@ -453,7 +474,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                     </div>
                     <div className="flex flex-col-reverse md:flex-row w-full md:w-auto gap-4">
                         <button
-                            onClick={onClose}
+                            onClick={handleInternalClose}
                             className="flex-1 md:flex-none px-6 py-3 md:py-2 rounded-lg font-bold text-xs text-neutral-500 hover:text-white bg-transparent justify-center md:justify-start"
                         >
                             Cancel

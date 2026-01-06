@@ -212,6 +212,14 @@ const App: React.FC = () => {
     fetchUserProfile();
   }, [isLoggedIn]);
 
+  // Auth Guard for protected routes
+  useEffect(() => {
+    // Specifically redirect /upload if not logged in as requested
+    if (!profileLoading && !isLoggedIn && currentView === 'upload') {
+      navigate('/');
+    }
+  }, [isLoggedIn, profileLoading, currentView, navigate]);
+
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
       const matchesGenre = filters.genre === "All Genres" || p.genre === filters.genre;
@@ -403,7 +411,7 @@ const App: React.FC = () => {
             onMenuClick={() => setIsMobileMenuOpen(true)}
           />
 
-          <main ref={mainRef} className={`flex-1 overflow-y-auto pt-20 lg:pt-28 ${currentTrackId ? 'pb-40' : 'pb-24'} lg:pb-8 scroll-smooth`}>
+          <main ref={mainRef} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-4rem)] overflow-hidden pt-16' : 'overflow-y-auto pt-20 lg:pt-28 pb-24 lg:pb-8'} ${currentTrackId && currentView !== 'notes' ? 'pb-40' : ''} scroll-smooth`}>
 
             {currentView === 'home' && (
               <div className="max-w-[1800px] mx-auto px-3 lg:px-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -512,14 +520,20 @@ const App: React.FC = () => {
             )}
 
             {currentView === 'upload' && (
-              <UploadPage
-                currentProject={currentProject}
-                currentTrackId={currentTrackId}
-                isPlaying={isPlaying}
-                onPlayTrack={handlePlayTrack}
-                onTogglePlay={handleTogglePlay}
-                userProfile={userProfile}
-              />
+              isLoggedIn ? (
+                <UploadPage
+                  currentProject={currentProject}
+                  currentTrackId={currentTrackId}
+                  isPlaying={isPlaying}
+                  onPlayTrack={handlePlayTrack}
+                  onTogglePlay={handleTogglePlay}
+                  userProfile={userProfile}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-[60vh]">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              )
             )}
 
             {currentView === 'contracts' && (
@@ -531,7 +545,16 @@ const App: React.FC = () => {
             )}
 
             {currentView === 'notes' && (
-              isLoggedIn ? <NotesPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+              isLoggedIn ? (
+                <NotesPage
+                  userProfile={userProfile}
+                  currentProject={currentProject}
+                  currentTrackId={currentTrackId}
+                  isPlaying={isPlaying}
+                  onPlayTrack={handlePlayTrack}
+                  onTogglePlay={handleTogglePlay}
+                />
+              ) : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
             )}
 
             {currentView === 'checkout' && (

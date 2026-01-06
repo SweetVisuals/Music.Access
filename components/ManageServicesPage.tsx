@@ -44,15 +44,11 @@ const ManageServicesPage: React.FC = () => {
     const filteredOrders = orders.filter(o => filter === 'all' || o.status === filter);
 
     if (loading) {
-        return (
-            <div className="w-full h-full flex items-center justify-center">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-            </div>
-        );
+        return <OrdersSkeleton />;
     }
 
     return (
-        <div className="w-full h-full max-w-[1600px] mx-auto pb-4 pt-6 px-4 lg:px-8 animate-in fade-in duration-500 flex flex-col relative">
+        <div className="w-full h-full max-w-[1600px] mx-auto pb-4 pt-6 px-4 lg:px-8 flex flex-col relative">
 
             {/* Header - Hidden on mobile if order selected to maximize space */}
             <div className={`flex flex-col md:flex-row justify-between items-start md:items-center mb-6 shrink-0 gap-4 ${selectedOrder ? 'hidden lg:flex' : 'flex'}`}>
@@ -353,6 +349,73 @@ const ManageServicesPage: React.FC = () => {
         </div>
     );
 };
+
+const OrdersSkeleton = () => (
+    <div className="w-full h-full max-w-[1600px] mx-auto pb-4 pt-6 px-4 lg:px-8 flex flex-col relative animate-pulse">
+        {/* Header Skeleton */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 shrink-0 gap-4">
+            <div className="space-y-2">
+                <div className="h-8 w-40 bg-neutral-800 rounded-lg"></div>
+                <div className="h-4 w-60 bg-neutral-900 rounded-lg"></div>
+            </div>
+            <div className="hidden md:flex gap-1">
+                {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="h-8 w-20 bg-neutral-800 rounded-md"></div>
+                ))}
+            </div>
+        </div>
+
+        <div className="flex-1 flex gap-8 overflow-hidden flex-col lg:flex-row relative">
+            {/* List Skeleton */}
+            <div className="flex flex-col gap-4 w-full lg:w-96 shrink-0">
+                {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="h-32 bg-neutral-900/50 border border-neutral-800/60 rounded-xl p-4">
+                        <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-neutral-800"></div>
+                                <div className="space-y-1.5">
+                                    <div className="h-3 w-24 bg-neutral-800 rounded"></div>
+                                    <div className="h-2 w-12 bg-neutral-800 rounded"></div>
+                                </div>
+                            </div>
+                            <div className="h-5 w-16 bg-neutral-800 rounded"></div>
+                        </div>
+                        <div className="h-4 w-3/4 bg-neutral-800 rounded mb-4"></div>
+                        <div className="border-t border-neutral-800 pt-3 flex justify-between items-center">
+                            <div className="h-3 w-20 bg-neutral-800 rounded"></div>
+                            <div className="h-5 w-12 bg-neutral-800 rounded"></div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Detail Skeleton */}
+            <div className="hidden lg:flex flex-1 bg-neutral-900/20 border border-neutral-800 rounded-xl overflow-hidden flex-col">
+                <div className="h-16 border-b border-neutral-800 bg-neutral-900/50 flex items-center px-6 justify-between">
+                    <div className="flex gap-4">
+                        <div className="h-6 w-32 bg-neutral-800 rounded"></div>
+                        <div className="h-6 w-20 bg-neutral-800 rounded"></div>
+                    </div>
+                    <div className="h-8 w-24 bg-neutral-800 rounded"></div>
+                </div>
+                <div className="flex-1 p-8 flex gap-8">
+                    <div className="flex-1 space-y-6">
+                        <div className="space-y-2">
+                            <div className="h-8 w-3/4 bg-neutral-800 rounded"></div>
+                            <div className="h-4 w-1/2 bg-neutral-800 rounded"></div>
+                        </div>
+                        <div className="h-40 bg-neutral-800/30 rounded-xl border border-neutral-800"></div>
+                        <div className="h-40 bg-neutral-800/30 rounded-xl border border-neutral-800"></div>
+                    </div>
+                    <div className="w-80 space-y-4">
+                        <div className="h-20 bg-neutral-800/30 rounded-xl border border-neutral-800"></div>
+                        <div className="h-full bg-neutral-800/30 rounded-xl border border-neutral-800 flex-1"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
 
 const ChatMessage = ({ text, time, isMe, isClient, avatar }: any) => (
     <div className={`flex gap-3 ${isMe ? 'justify-end' : 'justify-start'}`}>

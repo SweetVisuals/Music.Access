@@ -176,7 +176,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                 {/* Logo Area */}
                 <div className="relative h-16 flex items-center justify-between lg:justify-center px-4 border-b border-neutral-800 shrink-0 overflow-hidden">
                     <div className="flex items-center gap-2 group cursor-pointer" onClick={() => onNavigate('home')}>
-                        <div className="relative h-7 lg:h-8 w-auto flex items-center lg:scale-100 transition-transform lg:group-hover:scale-105 origin-left lg:origin-center">
+                        <div className="relative h-7 lg:h-[27px] w-auto flex items-center lg:scale-100 transition-transform lg:group-hover:scale-105 origin-left lg:origin-center">
                             <img
                                 src="/images/musicaccesslogowhite.png"
                                 alt="Music Access"
@@ -185,8 +185,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             <div
                                 className="absolute inset-0 bg-primary"
                                 style={{
-                                    clipPath: 'inset(0 calc(100% - 27px) 0 0)',
-                                    WebkitClipPath: 'inset(0 calc(100% - 27px) 0 0)',
+                                    clipPath: 'inset(0 calc(100% - 23px) 0 0)',
+                                    WebkitClipPath: 'inset(0 calc(100% - 23px) 0 0)',
                                     maskImage: 'url("/images/musicaccesslogowhite.png")',
                                     WebkitMaskImage: 'url("/images/musicaccesslogowhite.png")',
                                     maskSize: 'contain',

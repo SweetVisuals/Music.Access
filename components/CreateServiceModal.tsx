@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Check, Plus, Trash2, DollarSign, Mic2, Clock, Hash, LayoutTemplate, Sparkles, ArrowRight } from 'lucide-react';
+import { X, Check, Plus, Trash2, DollarSign, Mic2, Clock, Hash, LayoutTemplate, Sparkles, ArrowRight, Type } from 'lucide-react';
 import { Service } from '../types';
 import { createService } from '../services/supabaseService';
+import CustomInput from './CustomInput';
 
 interface CreateServiceModalProps {
     isOpen: boolean;
@@ -60,11 +61,36 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
         }
     };
 
-    if (!isOpen) return null;
+    const [isClosing, setIsClosing] = useState(false);
+    const [shouldRender, setShouldRender] = useState(isOpen);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            setShouldRender(true);
+            setIsClosing(false);
+        } else if (shouldRender) {
+            setIsClosing(true);
+            const timer = setTimeout(() => {
+                setShouldRender(false);
+                setIsClosing(false);
+            }, 450);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen, shouldRender]);
+
+    const handleInternalClose = () => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 450);
+    };
+
+    if (!shouldRender) return null;
 
     return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="w-full h-full md:max-w-5xl md:h-auto md:max-h-[90vh] bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-3xl flex shadow-2xl overflow-hidden relative mx-0 md:mx-4">
+        <div className={`fixed top-16 bottom-0 right-0 left-0 lg:left-64 z-[150] transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}>
+            <div className="absolute inset-0 bg-black/40 -z-10" />
+            <div className={`w-full h-full bg-[#0a0a0a] border-0 flex flex-col lg:flex-row shadow-2xl overflow-hidden relative ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
 
                 {/* LEFT SIDE - FORM */}
                 <div className="flex-1 flex flex-col border-r border-neutral-800 min-w-0 md:min-w-[50%]">
@@ -82,16 +108,14 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
 
                     <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar space-y-6 md:space-y-8">
 
-                        <div className="space-y-2 group">
-                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider group-focus-within:text-primary transition-colors">Service Title</label>
-                            <input
-                                value={serviceData.title}
-                                onChange={(e) => setServiceData({ ...serviceData, title: e.target.value })}
-                                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-2.5 md:py-4 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none focus:bg-neutral-900 transition-all font-medium placeholder:text-neutral-700"
-                                placeholder="e.g. Mixing & Mastering"
-                                autoFocus={window.innerWidth >= 768}
-                            />
-                        </div>
+                        <CustomInput
+                            label="Service Title"
+                            value={serviceData.title}
+                            onChange={(e) => setServiceData({ ...serviceData, title: e.target.value })}
+                            placeholder="e.g. Mixing & Mastering"
+                            icon={<Type size={16} />}
+                            autoFocus={window.innerWidth >= 768}
+                        />
 
                         <div className="space-y-2 group">
                             <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider group-focus-within:text-primary transition-colors">Description</label>
@@ -122,37 +146,31 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                                 </div>
                             </div>
 
-                            <div className="space-y-2 group">
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider group-focus-within:text-primary transition-colors">
-                                    {serviceData.rateType === 'hourly' ? 'Hourly Rate' : 'Total Price'}
-                                </label>
-                                <div className="relative group-focus-within:transform group-focus-within:-translate-y-0.5 transition-transform duration-300">
-                                    <DollarSign size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-white transition-colors" />
-                                    <input
-                                        type="number"
-                                        value={serviceData.price}
-                                        onChange={(e) => setServiceData({ ...serviceData, price: parseFloat(e.target.value) })}
-                                        className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 md:py-3.5 text-lg md:text-xl font-mono font-bold text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 transition-all placeholder:text-neutral-800"
-                                        placeholder="0.00"
-                                    />
-                                </div>
-                            </div>
+                            <CustomInput
+                                label={serviceData.rateType === 'hourly' ? 'Hourly Rate' : 'Total Price'}
+                                type="number"
+                                value={serviceData.price}
+                                onChange={(e) => setServiceData({ ...serviceData, price: parseFloat(e.target.value) })}
+                                icon={<DollarSign size={18} />}
+                                className="text-lg md:text-xl font-mono font-bold"
+                                placeholder="0.00"
+                            />
                         </div>
 
                         <div className="space-y-4">
                             <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block">Features Included</label>
 
                             <div className="flex gap-3">
-                                <input
+                                <CustomInput
                                     value={newFeature}
                                     onChange={(e) => setNewFeature(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddFeature()}
-                                    className="flex-1 bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-2.5 md:py-3 text-base md:text-sm text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 transition-all placeholder:text-neutral-700"
                                     placeholder="Add a feature (e.g. '2 Revisions')"
+                                    fullWidth
                                 />
                                 <button
                                     onClick={() => handleAddFeature()}
-                                    className="px-4 bg-white text-black rounded-xl hover:bg-neutral-200 transition-colors shadow-lg shadow-white/5"
+                                    className="px-4 h-[46px] md:h-[52px] bg-white text-black rounded-xl hover:bg-neutral-200 transition-colors shadow-lg shadow-white/5 flex items-center justify-center shrink-0 mt-[1.5px]"
                                 >
                                     <Plus size={20} />
                                 </button>
@@ -186,7 +204,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                     </div>
 
                     <div className="p-4 md:p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-between items-center shrink-0">
-                        <button onClick={onClose} className="px-6 py-3 rounded-xl text-xs font-bold text-neutral-500 hover:text-white transition-colors uppercase tracking-wider">Cancel</button>
+                        <button onClick={handleInternalClose} className="px-6 py-3 rounded-xl text-xs font-bold text-neutral-500 hover:text-white transition-colors uppercase tracking-wider">Cancel</button>
                         <button
                             onClick={handleSave}
                             disabled={isLoading}
@@ -271,7 +289,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                 </div>
 
                 <button
-                    onClick={onClose}
+                    onClick={handleInternalClose}
                     className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-full transition-all backdrop-blur-sm z-50 border border-transparent hover:border-neutral-700"
                 >
                     <X size={20} />

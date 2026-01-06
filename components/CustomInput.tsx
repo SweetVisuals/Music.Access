@@ -8,6 +8,7 @@ interface CustomInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     icon?: React.ReactNode;
     containerClassName?: string;
     noLabel?: boolean;
+    hideControls?: boolean;
 }
 
 const CustomInput: React.FC<CustomInputProps> = ({
@@ -15,6 +16,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
     error,
     fullWidth = true,
     noLabel = false,
+    hideControls = false,
     className = "",
     containerClassName = "",
     type,
@@ -84,14 +86,14 @@ const CustomInput: React.FC<CustomInputProps> = ({
                         hover:border-neutral-700 hover:bg-[#0c0c0c]
                         focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20
                         ${icon ? 'pl-11' : ''}
-                        ${type === 'number' ? 'pr-20' : ''}
+                        ${type === 'number' && !hideControls ? 'pr-20' : ''}
                         ${error ? 'border-red-500/50' : ''}
                         ${className}
                     `}
                     {...props}
                 />
 
-                {type === 'number' && (
+                {type === 'number' && !hideControls && (
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-black/40 rounded-lg p-1 border border-white/5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                         <button
                             type="button"

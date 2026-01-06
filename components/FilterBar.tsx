@@ -69,6 +69,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
             placeholder="Min"
             className="w-20 !py-2 !px-3 font-mono text-center"
             noLabel
+            hideControls
           />
           <span className="text-neutral-700">-</span>
           <CustomInput
@@ -78,6 +79,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
             placeholder="Max"
             className="w-20 !py-2 !px-3 font-mono text-center"
             noLabel
+            hideControls
           />
         </div>
 

@@ -817,7 +817,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
 
                             <div className="h-16 flex items-center justify-between px-2 w-full max-sm MX-auto">
                                 <button
-                                    onClick={handleCreateNote}
+                                    onClick={() => handleCreateNote()}
                                     className="flex-1 group flex flex-col items-center gap-1 transition-all py-1"
                                 >
                                     <div className="w-9 h-9 rounded-lg flex items-center justify-center transition-all bg-white/5 border border-white/5 group-active:bg-primary group-active:text-black group-active:border-primary group-active:scale-95">
@@ -1125,7 +1125,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
                         </h3>
                         <div className="flex items-center gap-3">
                             <button
-                                onClick={handleCreateNote}
+                                onClick={() => handleCreateNote()}
                                 className="lg:hidden text-neutral-400 hover:text-white transition-colors"
                             >
                                 <Plus size={16} />
@@ -1265,7 +1265,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
                             </p>
                             {!trashView && (
                                 <button
-                                    onClick={handleCreateNote}
+                                    onClick={() => handleCreateNote()}
                                     className="px-6 py-3 bg-white text-black font-bold rounded-xl hover:scale-105 transition-transform"
                                 >
                                     Create New Note

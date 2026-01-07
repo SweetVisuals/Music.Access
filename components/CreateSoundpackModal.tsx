@@ -420,7 +420,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
 
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 {projectData.licenses?.map((license, idx) => (
-                                    <div key={license.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden flex flex-col">
+                                    <div key={license.id} className="bg-neutral-900/40 border border-neutral-800 rounded-xl overflow-hidden flex flex-col">
                                         <div className="p-4 border-b border-neutral-800 bg-neutral-900/50 flex justify-between items-center">
                                             <span className="text-xs font-bold uppercase text-neutral-400">{license.type} License</span>
                                             <div className="w-2 h-2 rounded-full bg-primary"></div>

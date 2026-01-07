@@ -228,3 +228,32 @@ export const getRhymesForWord = async (word: string): Promise<string[]> => {
     return [];
   }
 };
+
+export const chatWithGeneralAi = async (
+  messages: { role: string, text: string }[],
+  currentNoteContent?: string
+): Promise<string> => {
+  try {
+    const recentMessages = messages.slice(-6); // Last 6 messages
+
+    const formattedMessages = recentMessages.map(msg => ({
+      role: msg.role === 'model' ? 'assistant' : 'user',
+      content: msg.text
+    }));
+
+    let systemPrompt = `You are a creative collaborative assistant in a music production/songwriting app. Current Note Context: ${currentNoteContent ? currentNoteContent.slice(0, 500) : 'None'}`;
+
+    // Construct the full payload for callDeepSeek which accepts an array
+    const payload = [
+      { role: "system", content: systemPrompt },
+      ...formattedMessages
+    ];
+
+    const response = await callDeepSeek(payload);
+    return response || "I'm listening...";
+
+  } catch (error) {
+    console.error("Error in general chat:", error);
+    return "System error: Chat unavailable.";
+  }
+};

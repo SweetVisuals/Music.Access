@@ -33,7 +33,7 @@ import {
     RotateCcw,
     Trash
 } from 'lucide-react';
-import { getRhymesForWord } from '../services/geminiService';
+import { getRhymesForWord, chatWithGeneralAi } from '../services/geminiService';
 
 // Mock rhyme database helper for suggestions sidebar
 const MOCK_RHYMES: Record<string, string[]> = {
@@ -374,6 +374,32 @@ const NotesPage: React.FC<NotesPageProps> = ({
     const [selection, setSelection] = useState<{ start: number, end: number, text: string } | null>(null);
     const [textSize, setTextSize] = useState<'xs' | 'sm' | 'base' | 'lg'>('xs');
     const [isSizeExpanded, setIsSizeExpanded] = useState(false);
+
+    // AI Chat State
+    const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'model', text: string }[]>([]);
+    const [chatInput, setChatInput] = useState('');
+    const [chatLoading, setChatLoading] = useState(false);
+    const chatScrollRef = useRef<HTMLDivElement>(null);
+
+    const handleSendChat = async () => {
+        if (!chatInput.trim() || chatLoading) return;
+        const userMsg = { role: 'user' as const, text: chatInput };
+        setChatMessages(prev => [...prev, userMsg]);
+        setChatInput('');
+        setChatLoading(true);
+
+        setTimeout(() => chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' }), 10);
+
+        try {
+            const response = await chatWithGeneralAi([...chatMessages, userMsg], activeNote?.content);
+            setChatMessages(prev => [...prev, { role: 'model', text: response }]);
+            setTimeout(() => chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' }), 10);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setChatLoading(false);
+        }
+    };
 
     // Mobile Assistant State
     const [isMobileAssistantOpen, setMobileAssistantOpen] = useState(false);
@@ -939,13 +965,52 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                 )}
 
                                 {toolkitTab === 'tools' && (
-                                    <div className="h-full flex flex-col p-6 items-center justify-center text-center">
-                                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
-                                            <Plus size={32} />
+                                    <div className="h-full flex flex-col bg-black">
+                                        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar" ref={chatScrollRef}>
+                                            {chatMessages.length === 0 && (
+                                                <div className="flex flex-col items-center justify-center h-48 text-neutral-600 opacity-50 space-y-2">
+                                                    <MessageSquare size={32} />
+                                                    <p className="text-xs text-center max-w-[200px]">Ask me anything about your lyrics, ideas, or music theory.</p>
+                                                </div>
+                                            )}
+                                            {chatMessages.map((msg, i) => (
+                                                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                    <div className={`max-w-[85%] p-3 rounded-2xl text-xs leading-relaxed ${msg.role === 'user'
+                                                        ? 'bg-primary text-black rounded-tr-sm'
+                                                        : 'bg-neutral-800 text-neutral-200 rounded-tl-sm border border-neutral-700'
+                                                        }`}>
+                                                        {msg.text}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {chatLoading && (
+                                                <div className="flex justify-start">
+                                                    <div className="bg-neutral-800 p-3 rounded-2xl rounded-tl-sm border border-neutral-700 flex gap-1 items-center">
+                                                        <div className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                        <div className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                                        <div className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                        <h4 className="text-white font-bold mb-2">Advanced Workflow</h4>
-                                        <p className="text-xs text-neutral-500 mb-6">PDF Export, Custom Themes, and Voice-to-Lyrics coming soon to Studio+.</p>
-                                        <button onClick={handleExport} className="w-full py-3 bg-white text-black text-xs font-bold rounded-xl uppercase tracking-widest">Upgrade to Studio+</button>
+                                        <div className="p-3 border-t border-white/10 bg-black shrink-0 pb-[calc(env(safe-area-inset-bottom)+12px)]">
+                                            <div className="relative flex items-center">
+                                                <input
+                                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-full pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-neutral-700 placeholder-neutral-600"
+                                                    placeholder="Message AI..."
+                                                    value={chatInput}
+                                                    onChange={e => setChatInput(e.target.value)}
+                                                    onKeyDown={e => e.key === 'Enter' && handleSendChat()}
+                                                />
+                                                <button
+                                                    onClick={handleSendChat}
+                                                    disabled={!chatInput.trim() || chatLoading}
+                                                    className="absolute right-1 w-9 h-9 flex items-center justify-center bg-primary text-black rounded-full hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all"
+                                                >
+                                                    {chatLoading ? <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" /> : <ArrowRight size={16} />}
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -1026,20 +1091,60 @@ const NotesPage: React.FC<NotesPageProps> = ({
                         )}
 
                         {assistantTab === 'tools' && (
-                            <div className="flex flex-col h-full p-8 items-center justify-center text-center">
-                                <div className="w-20 h-20 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary mb-6">
-                                    <Plus size={32} />
+                            <div className="flex flex-col h-full bg-[#080808]">
+                                <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar" ref={chatScrollRef}>
+                                    {chatMessages.length === 0 && (
+                                        <div className="flex flex-col items-center justify-center h-64 text-neutral-600 opacity-30 space-y-3">
+                                            <div className="w-16 h-16 rounded-full bg-neutral-900 flex items-center justify-center">
+                                                <MessageSquare size={24} />
+                                            </div>
+                                            <p className="text-sm font-medium text-center px-4">Ask about rhymes, lyrics, or feedback.</p>
+                                        </div>
+                                    )}
+                                    {chatMessages.map((msg, i) => (
+                                        <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[90%] p-3 rounded-2xl text-xs leading-relaxed break-words ${msg.role === 'user'
+                                                ? 'bg-primary text-black rounded-tr-sm font-medium'
+                                                : 'bg-neutral-800 text-neutral-200 rounded-tl-sm border border-neutral-700'
+                                                }`}>
+                                                {msg.text}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {chatLoading && (
+                                        <div className="flex justify-start">
+                                            <div className="bg-neutral-800 p-3 rounded-2xl rounded-tl-sm border border-neutral-700 flex gap-1 items-center">
+                                                <div className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                <div className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                                <div className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                <h3 className="text-lg font-bold text-white mb-2">Studio+ Workflow</h3>
-                                <p className="text-sm text-neutral-500 mb-8 leading-relaxed">
-                                    Unlock PDF Export, Custom Notebook Themes, and Voice-to-Lyrics with the Studio+ plan.
-                                </p>
-                                <button
-                                    onClick={handleExport}
-                                    className="w-full py-3 bg-white text-black text-xs font-bold rounded-xl hover:bg-neutral-200 transition-all uppercase tracking-widest"
-                                >
-                                    View Plans
-                                </button>
+                                <div className="p-4 border-t border-neutral-800 bg-[#080808]">
+                                    <div className="relative flex items-center">
+                                        <textarea
+                                            rows={1}
+                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-xl pl-4 pr-10 py-3 text-xs text-white focus:outline-none focus:border-neutral-700 placeholder-neutral-600 resize-none custom-scrollbar"
+                                            placeholder="Ask AI..."
+                                            value={chatInput}
+                                            onChange={e => setChatInput(e.target.value)}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    handleSendChat();
+                                                }
+                                            }}
+                                        />
+                                        <button
+                                            onClick={handleSendChat}
+                                            disabled={!chatInput.trim() || chatLoading}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center bg-primary text-black rounded-lg hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all"
+                                        >
+                                            {chatLoading ? <div className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin" /> : <ArrowRight size={14} />}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>

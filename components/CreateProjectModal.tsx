@@ -208,7 +208,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
         // Format BPM
         let finalBpm = '0';
         if (minBpm && maxBpm) {
-            finalBpm = minBpm === maxBpm ? minBpm : `${minBpm} -${maxBpm} `;
+            finalBpm = minBpm === maxBpm ? minBpm : `${minBpm}-${maxBpm}`;
         } else if (minBpm) {
             finalBpm = minBpm;
         } else if (maxBpm) {
@@ -495,10 +495,10 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 {projectData.licenses?.map((license, idx) => (
-                                    <div key={license.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden flex flex-col">
-                                        <div className="p-4 md:p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-between items-center shrink-0">
+                                    <div key={license.id} className="bg-neutral-900/40 border border-neutral-800 rounded-xl flex flex-col">
+                                        <div className="p-4 md:p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-between items-center shrink-0 rounded-t-xl">
                                             <span className="text-xs font-bold uppercase text-neutral-400">{license.type} Lease</span>
                                             <div className="w-2 h-2 rounded-full bg-primary"></div>
                                         </div>

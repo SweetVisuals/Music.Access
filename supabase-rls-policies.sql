@@ -93,14 +93,18 @@ DROP POLICY IF EXISTS "Users can update tracks of their projects" ON tracks;
 DROP POLICY IF EXISTS "Users can delete tracks of their projects" ON tracks;
 
 -- Create RLS policies for tracks table
--- Allow users to view tracks of their own projects
+-- Allow users to view tracks of their own projects OR published projects
 CREATE POLICY "Users can view tracks of their projects"
 ON tracks FOR SELECT
 USING (
     EXISTS (
         SELECT 1 FROM projects p
         WHERE p.id = tracks.project_id
-        AND p.user_id = auth.uid()
+        AND (
+            p.user_id = auth.uid()
+            OR
+            p.status = 'published'
+        )
     )
 );
 
@@ -177,14 +181,18 @@ DROP POLICY IF EXISTS "Users can update licenses of their projects" ON project_l
 DROP POLICY IF EXISTS "Users can delete licenses of their projects" ON project_licenses;
 
 -- Create RLS policies for project_licenses table
--- Allow users to view licenses of their own projects
+-- Allow users to view licenses of their own projects OR published projects
 CREATE POLICY "Users can view licenses of their projects"
 ON project_licenses FOR SELECT
 USING (
     EXISTS (
         SELECT 1 FROM projects p
         WHERE p.id = project_licenses.project_id
-        AND p.user_id = auth.uid()
+        AND (
+            p.user_id = auth.uid() 
+            OR 
+            p.status = 'published'
+        )
     )
 );
 
@@ -248,14 +256,18 @@ DROP POLICY IF EXISTS "Users can insert tags to their projects" ON project_tags;
 DROP POLICY IF EXISTS "Users can delete tags from their projects" ON project_tags;
 
 -- Create RLS policies for project_tags table
--- Allow users to view tags of their own projects
+-- Allow users to view tags of their own projects OR published projects
 CREATE POLICY "Users can view tags of their projects"
 ON project_tags FOR SELECT
 USING (
     EXISTS (
         SELECT 1 FROM projects p
         WHERE p.id = project_tags.project_id
-        AND p.user_id = auth.uid()
+        AND (
+            p.user_id = auth.uid()
+            OR 
+            p.status = 'published'
+        )
     )
 );
 

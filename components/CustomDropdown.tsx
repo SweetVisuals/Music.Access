@@ -69,7 +69,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     };
 
     return (
-        <div className={`relative ${fullWidth ? 'w-full' : ''} ${className}`} ref={dropdownRef}>
+        <div className={`relative ${fullWidth ? 'w-full' : ''} ${className} ${isOpen ? 'z-[100]' : 'z-0'}`} ref={dropdownRef}>
             {label && (
                 <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">
                     {label}
@@ -101,7 +101,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
             </button>
 
             {isOpen && (
-                <div className="absolute z-[200] mt-2 w-full glass-panel rounded-xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute z-[9999] mt-2 w-full glass-panel rounded-xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                     {searchable && (
                         <div className="p-2 border-b border-white/5">
                             <div className="relative">

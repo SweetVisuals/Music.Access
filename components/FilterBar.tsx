@@ -35,7 +35,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
         </div>
       </div>
 
-      <div className="w-full glass-panel p-4 lg:p-1.5 rounded-xl flex flex-col lg:flex-row items-stretch lg:items-center gap-4 lg:gap-2 lg:space-x-2">
+      <div className="w-full glass-panel p-4 lg:p-1.5 rounded-xl flex flex-col lg:flex-row items-stretch lg:items-center gap-4 lg:gap-2 lg:space-x-2 relative z-30">
         {/* Filters Container */}
 
         {/* Genre */}

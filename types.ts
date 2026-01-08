@@ -57,6 +57,7 @@ export interface Project {
   releaseDate?: string;
   format?: 'Album' | 'EP' | 'Single';
   progress?: number;
+  gems?: number;
   tasks?: Task[];
 }
 

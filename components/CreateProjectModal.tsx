@@ -60,7 +60,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
         })) || [
                 { id: 'l1', type: 'MP3', name: 'Basic Lease', price: 29.99, features: ['MP3 File', '2,000 Streams', 'Non-Profit Use'], fileTypesIncluded: ['MP3'] },
                 { id: 'l2', type: 'WAV', name: 'Premium Lease', price: 49.99, features: ['WAV + MP3', '50,000 Streams', 'Commercial Use'], fileTypesIncluded: ['WAV', 'MP3'] },
-                { id: 'l3', type: 'STEMS', name: 'Exclusive Rights', price: 499.99, features: ['All Stems', 'Unlimited Streams', 'Full Ownership Transfer'], fileTypesIncluded: ['STEMS', 'WAV', 'MP3'] }
+                { id: 'l3', type: 'STEMS', name: 'Unlimited License', price: 199.99, features: ['All Stems', 'Unlimited Streams', 'Full Ownership Transfer'], fileTypesIncluded: ['STEMS', 'WAV', 'MP3'] }
             ]
     });
 
@@ -224,6 +224,14 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
             bpm: finalBpm,
             key: '' // Key removed per request, sending empty string or could be removed if API allows
         };
+
+        // Enforce license names
+        if (finalProject.licenses) {
+            finalProject.licenses = finalProject.licenses.map(l => ({
+                ...l,
+                name: l.name || `${l.type} Lease`
+            }));
+        }
 
         try {
             if (initialData && initialData.id) {

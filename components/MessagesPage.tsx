@@ -505,7 +505,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
                                     </div>
                                 ))}
                                 {/* Spacer for Fixed Inputs on Mobile */}
-                                <div className="h-20 lg:hidden" />
+                                <div className={`${isPlayerActive ? 'h-52' : 'h-40'} lg:hidden`} />
                             </div>
 
                             {/* Input Area */}

@@ -4,7 +4,8 @@ import { Project } from '../types';
 import { generateCreativeDescription } from '../services/geminiService';
 import PurchaseModal from './PurchaseModal';
 import { useCart } from '../contexts/CartContext';
-import { checkIsProjectSaved, saveProject, unsaveProject } from '../services/supabaseService';
+import { checkIsProjectSaved, saveProject, unsaveProject, giveGemToProject } from '../services/supabaseService';
+import { Gem } from 'lucide-react';
 
 interface ProjectCardProps {
     project: Project;
@@ -36,6 +37,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     const [isHovered, setIsHovered] = useState(false);
     const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
+    const [localGems, setLocalGems] = useState(project.gems || 0);
+    const [hasGivenGem, setHasGivenGem] = useState(false); // Local tracking for interaction feedback
 
     // Menu State
     const [showMenu, setShowMenu] = useState(false);
@@ -92,6 +95,24 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         }
     };
 
+    const handleGiveGem = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!project.id || hasGivenGem) return;
+
+        // Optimistic update
+        setLocalGems(prev => prev + 1);
+        setHasGivenGem(true);
+
+        try {
+            await giveGemToProject(project.id);
+        } catch (error) {
+            console.error('Failed to give gem:', error);
+            // Revert state
+            setLocalGems(prev => prev - 1);
+            setHasGivenGem(false);
+        }
+    };
+
     const handleAnalyze = async () => {
         if (description) {
             setDescription(null);
@@ -113,9 +134,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             />
             <div
                 // ... (rest of the file as is)
-                className="group h-full flex flex-col bg-neutral-950/50 border border-neutral-800/60 rounded-xl hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.05)] relative backdrop-blur-sm"
+                className="group h-full flex flex-col bg-neutral-950/50 border border-neutral-800/60 rounded-xl hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.05)] relative backdrop-blur-sm cursor-pointer"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
+                onClick={() => setPurchaseModalOpen(true)}
             >
                 {/* Top Gradient Line */}
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/0 to-transparent group-hover:via-primary/50 transition-all duration-700"></div>
@@ -319,6 +341,25 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                         >
                             <BookmarkPlus size={12} fill={isSaved ? "currentColor" : "none"} />
                         </button>
+
+                        {/* Gem Button */}
+                        <button
+                            onClick={handleGiveGem}
+                            className={`
+                                flex items-center gap-1 p-1.5 rounded transition-all active:scale-75
+                                ${hasGivenGem
+                                    ? 'text-primary bg-primary/10 border border-primary/20'
+                                    : 'text-neutral-500 hover:text-primary hover:bg-primary/5'
+                                }
+                            `}
+                            title="Give Gem"
+                        >
+                            <Gem size={12} fill={hasGivenGem ? "currentColor" : "none"} />
+                            <span className={`text-[9px] font-mono font-bold ${hasGivenGem ? 'text-primary' : 'hidden group-hover:inline-block'}`}>
+                                {localGems}
+                            </span>
+                        </button>
+
                         {!isPurchased && (
                             <button
                                 onClick={(e) => { e.stopPropagation(); setPurchaseModalOpen(true); }}

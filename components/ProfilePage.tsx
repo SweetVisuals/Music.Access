@@ -481,7 +481,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 )
             )}
 
-            <div className="w-full max-w-[1600px] mx-auto px-6 lg:px-8 pb-12 pt-[30px]">
+            <div className="w-full max-w-[1600px] mx-auto px-6 lg:px-8 pb-32 lg:pb-12 pt-[30px]">
 
                 {/* EDIT PROFILE MODAL - RESPONSIVE */}
                 {isEditModalOpen && (

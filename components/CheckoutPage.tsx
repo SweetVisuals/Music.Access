@@ -3,7 +3,11 @@ import { CreditCard, Bitcoin, Lock, CheckCircle, Copy, QrCode, AlertTriangle, Sh
 import { useCart } from '../contexts/CartContext';
 import { createPurchase } from '../services/supabaseService';
 
-const CheckoutPage: React.FC = () => {
+interface CheckoutPageProps {
+    isEmbedded?: boolean;
+}
+
+const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
     const { items, cartTotal, clearCart } = useCart();
     const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto'>('card');
     const [selectedCoin, setSelectedCoin] = useState('BTC');
@@ -73,7 +77,7 @@ const CheckoutPage: React.FC = () => {
     }
 
     return (
-        <div className="w-full max-w-[1600px] mx-auto pb-4 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+        <div className={isEmbedded ? "w-full pb-32 pt-2 px-1 animate-in fade-in duration-500" : "w-full max-w-[1600px] mx-auto pb-4 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500"}>
             <h1 className="text-3xl font-black text-white mb-8">Secure Checkout</h1>
 
             {error && (

@@ -116,7 +116,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
     return (
         <div className="w-full max-w-7xl mx-auto px-4 pt-0 pb-8 lg:px-6 lg:pt-0 lg:pb-[15px] animate-in fade-in duration-700 relative lg:[zoom:1.08] origin-top">
             {/* Header */}
-            <div className="text-center mb-10 lg:mb-12">
+            <div className="text-center pt-[20px] mb-10 lg:mb-12">
                 <h1 className="text-4xl lg:text-7xl font-black text-white tracking-tighter mb-4 uppercase">
                     Elevate Your <span className="text-primary">Sound</span>
                 </h1>

@@ -38,6 +38,8 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
     const [exchangeLoading, setExchangeLoading] = useState(false);
     const [purchaseError, setPurchaseError] = useState<string | null>(null);
     const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+    const [isBuyGemsOpen, setIsBuyGemsOpen] = useState(false);
+    const [activeGemPack, setActiveGemPack] = useState<number | null>(null);
 
     // Form States
     const [cardNumber, setCardNumber] = useState('');
@@ -56,14 +58,8 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
         setPurchaseError(null);
 
         try {
-            // Deduct 100 Gems and add 10 Promotion Credits
-            const newGems = userProfile.gems - 100;
-            const newPromo = (userProfile.promo_credits || 0) + 10;
-
-            await supabaseService.updateUserProfile(userProfile.id!, {
-                gems: newGems,
-                promo_credits: newPromo
-            });
+            // Use the atomic RPC function
+            await supabaseService.exchangeGemsForCredits(userProfile.id!, 100, 10);
 
             setPurchaseSuccess(true);
 
@@ -79,6 +75,18 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
         } finally {
             setExchangeLoading(false);
         }
+    };
+
+    const handleBuyGems = (amount: number) => {
+        setIsProcessing(true);
+        // Simulate API call to stripe/provider
+        setTimeout(() => {
+            setIsProcessing(false);
+            setIsBuyGemsOpen(false);
+            // In a real app, this would redirect to checkout or refresh gems
+            alert(`Demo: Successfully purchased ${amount} Gems!`);
+            window.dispatchEvent(new CustomEvent('profile-updated'));
+        }, 1500);
     };
 
     const handleAddMethod = () => {
@@ -180,7 +188,10 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                 <p className="text-neutral-500 text-xs">Approx. {formatCurrency((userProfile?.gems || 0) * 0.01)} USD</p>
                             </div>
                         </div>
-                        <button className="px-4 py-2 bg-purple-500 text-white text-xs font-bold rounded-lg hover:bg-purple-600 transition-colors shadow-lg shadow-purple-900/20 font-black uppercase tracking-wider">
+                        <button
+                            onClick={() => setIsBuyGemsOpen(true)}
+                            className="px-4 py-2 bg-purple-500 text-white text-xs font-bold rounded-lg hover:bg-purple-600 transition-colors shadow-lg shadow-purple-900/20 font-black uppercase tracking-wider"
+                        >
                             Buy Gems
                         </button>
                     </div>
@@ -488,6 +499,70 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* BUY GEMS MODAL */}
+            {isBuyGemsOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsBuyGemsOpen(false)}>
+                    <div
+                        className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-5 duration-300"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Modal Header */}
+                        <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                            <h3 className="font-bold text-white">Purchase Gems</h3>
+                            <button
+                                onClick={() => setIsBuyGemsOpen(false)}
+                                className="p-1 text-neutral-500 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                        { amount: 100, price: 0.99 },
+                                        { amount: 500, price: 4.49, popular: true },
+                                        { amount: 1200, price: 9.99 },
+                                        { amount: 2500, price: 19.99 }
+                                    ].map((pack) => (
+                                        <button
+                                            key={pack.amount}
+                                            onClick={() => setActiveGemPack(pack.amount)}
+                                            className={`relative p-4 rounded-xl border text-center transition-all ${activeGemPack === pack.amount ? 'border-purple-500 bg-purple-500/10' : 'border-white/5 bg-white/5 hover:border-white/10'}`}
+                                        >
+                                            {pack.popular && (
+                                                <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-purple-500 text-[8px] font-black text-white px-2 py-0.5 rounded-full uppercase tracking-tighter shadow-lg">Popular</span>
+                                            )}
+                                            <div className="flex flex-col items-center gap-1">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400"><path d="M6 3h12l4 6-10 13L2 9Z" /></svg>
+                                                <span className="text-lg font-black text-white">{pack.amount}</span>
+                                                <span className="text-[10px] text-neutral-500 font-bold">${pack.price}</span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={() => activeGemPack && handleBuyGems(activeGemPack)}
+                                    disabled={!activeGemPack || isProcessing}
+                                    className={`w-full py-4 rounded-xl font-black text-sm tracking-widest transition-all flex items-center justify-center gap-2 uppercase mt-4
+                                        ${!activeGemPack || isProcessing
+                                            ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                                            : 'bg-white text-black hover:bg-neutral-200'}`}
+                                >
+                                    {isProcessing ? 'Connecting...' : 'Secure Checkout'}
+                                </button>
+
+                                <div className="text-center">
+                                    <p className="text-[9px] text-neutral-600 uppercase tracking-widest font-bold">Secure payment by Stripe</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

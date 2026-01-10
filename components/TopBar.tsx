@@ -569,7 +569,7 @@ const TopBar: React.FC<TopBarProps> = ({
     }, [setIsCartOpen]);
 
     return (
-        <header className="h-[56px] fixed top-0 right-0 left-0 lg:left-[260px] z-[90] bg-[#050505]/90 backdrop-blur-lg border-b border-white/5 flex items-center px-3 lg:px-6 justify-between gap-4">
+        <header className="h-[56px] fixed top-0 right-0 left-0 lg:left-[260px] z-[90] bg-[#050505]/90 backdrop-blur-lg border-b border-white/5 flex items-center pr-3 lg:pr-6 pl-3 lg:pl-0 justify-between gap-4">
 
 
 
@@ -590,7 +590,7 @@ const TopBar: React.FC<TopBarProps> = ({
                 transition-all duration-400
                 ${mobileSearchOpen
                         ? 'absolute inset-0 bg-[#050505] flex items-center px-4 opacity-100 pointer-events-auto translate-x-0 z-[70]'
-                        : 'opacity-0 pointer-events-none absolute inset-0 translate-x-4 lg:absolute lg:inset-x-0 lg:flex lg:justify-center lg:items-center lg:pointer-events-auto lg:opacity-100 lg:-translate-x-[40px] mx-auto z-50'
+                        : 'opacity-0 pointer-events-none absolute inset-0 translate-x-4 lg:absolute lg:inset-x-0 lg:flex lg:justify-center lg:items-center lg:pointer-events-auto lg:opacity-100 lg:translate-x-0 mx-auto z-50'
                     }
                 ${!mobileSearchOpen && isFocused ? 'lg:max-w-[35rem] xl:max-w-[45rem] w-full' : 'lg:max-w-[24rem] xl:max-w-[32rem] w-full'}
             `}
@@ -610,7 +610,7 @@ const TopBar: React.FC<TopBarProps> = ({
                     <div className={`absolute inset-0 rounded-xl border transition-all duration-300 ${isFocused || aiResponse ? 'border-primary/50 bg-black' : 'border-white/5 bg-black/40'}`}></div>
 
                     {/* Main Input Area */}
-                    <div className="relative flex items-center px-3 py-2">
+                    <div className="relative flex items-center pl-1.5 pr-3 py-2">
 
                         {/* Mode Toggle */}
                         <button

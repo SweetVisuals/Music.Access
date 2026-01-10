@@ -642,6 +642,19 @@ export const updateUserProfile = async (userId: string, updates: Partial<UserPro
   if (error) throw error;
 };
 
+/**
+ * Exchange gems for promotion credits atomically via RPC
+ */
+export const exchangeGemsForCredits = async (userId: string, gemsCost: number, promoGain: number) => {
+  const { error } = await supabase.rpc('exchange_gems_for_promo', {
+    p_user_id: userId,
+    p_gems_cost: gemsCost,
+    p_promo_gain: promoGain
+  });
+
+  if (error) throw error;
+};
+
 export const createProject = async (project: Partial<Project>) => {
   const currentUser = await ensureUserExists();
   if (!currentUser) throw new Error('User not authenticated');

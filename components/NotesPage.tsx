@@ -331,15 +331,21 @@ const NotesPage: React.FC<NotesPageProps> = ({
                 trackTitle?: string;
                 trackId?: string;
                 fileName?: string;
-                trackUrl?: string; // Add trackUrl support
+                trackUrl?: string;
+                producerName?: string;
+                producerAvatar?: string;
             } | null;
 
             if (state?.createNewNote && !loading) {
                 hasHandledNavigation.current = true;
-                const noteTitle = 'Untitled Note';
+                const noteTitle = state.trackTitle || 'Untitled Note';
                 const noteContent = '';
                 // Prefer trackUrl if available, otherwise fallback to fileName
-                await handleCreateNote(noteTitle, noteContent, state.trackUrl || state.fileName);
+                await handleCreateNote(noteTitle, noteContent, state.trackUrl || state.fileName, {
+                    name: state.trackTitle,
+                    producer: state.producerName,
+                    avatar: state.producerAvatar
+                });
                 navigate(location.pathname, { replace: true, state: {} });
             }
         };
@@ -566,10 +572,11 @@ const NotesPage: React.FC<NotesPageProps> = ({
     const handleCreateNote = async (
         initialTitle: string = 'Untitled Note',
         initialContent: string = '',
-        initialAudio?: string
+        initialAudio?: string,
+        audioMetadata?: { name?: string, producer?: string, avatar?: string }
     ) => {
         try {
-            const newNote = await createNote(initialTitle, initialContent, initialAudio);
+            const newNote = await createNote(initialTitle, initialContent, initialAudio, audioMetadata);
             if (!trashView) {
                 setNotes([newNote, ...notes]);
                 setActiveNoteId(newNote.id);
@@ -684,13 +691,13 @@ const NotesPage: React.FC<NotesPageProps> = ({
             />
 
             {activeNote && activeNote.attachedAudio && (
-                <div className="h-12 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-3 lg:px-6 shrink-0 z-20">
+                <div className="h-12 bg-neutral-900 border-b border-white/5 flex items-center justify-between px-3 lg:px-6 shrink-0 z-20">
                     <div className="flex items-center gap-3 min-w-0">
                         <div className="w-6 h-6 bg-primary/20 rounded flex items-center justify-center text-primary shrink-0">
                             <Music size={12} />
                         </div>
                         <div className="min-w-0">
-                            <div className="text-xs font-bold text-white truncate">{activeNote.attachedAudio}</div>
+                            <div className="text-xs font-bold text-white truncate">{activeNote.attachedAudioName || activeNote.attachedAudio?.split('/').pop() || 'Audio Note'}</div>
                         </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
@@ -727,9 +734,9 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                     const noteProject: Project = {
                                         id: noteProjectId,
                                         title: 'My Notes',
-                                        producer: userProfile?.username || 'Me',
-                                        producerAvatar: userProfile?.avatar || '',
-                                        coverImage: userProfile?.avatar || '',
+                                        producer: activeNote.attachedAudioProducer || userProfile?.username || 'Me',
+                                        producerAvatar: activeNote.attachedAudioAvatar || userProfile?.avatar || '',
+                                        coverImage: activeNote.attachedAudioAvatar || userProfile?.avatar || '',
                                         price: 0,
                                         bpm: 0,
                                         genre: 'Notes',
@@ -738,7 +745,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                         tracks: [
                                             {
                                                 id: noteTrackId,
-                                                title: activeNote.attachedAudio?.split('/').pop() || 'Audio Note',
+                                                title: activeNote.attachedAudioName || activeNote.attachedAudio?.split('/').pop() || 'Audio Note',
                                                 duration: 0,
                                                 files: { mp3: audioUrl }
                                             }
@@ -779,8 +786,8 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                 <div
                                     ref={backdropRef}
                                     className={`
-                                        col-start-1 row-start-1 p-5 lg:p-12 whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono leading-relaxed text-transparent
-                                        ${textSize === 'xs' ? 'text-xs' : textSize === 'sm' ? 'text-sm' : textSize === 'base' ? 'text-base' : 'text-lg'}
+                                        col-start-1 row-start-1 p-5 lg:p-12 lg:px-16 xl:px-24 mx-auto max-w-4xl w-full whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono leading-relaxed text-transparent
+                                        ${textSize === 'xs' ? 'text-[0.825rem]' : textSize === 'sm' ? 'text-[0.96rem]' : textSize === 'base' ? 'text-[1.1rem]' : 'text-[1.23rem]'}
                                     `}
                                 >
                                     {activeNote && renderHighlightedText(activeNote.content + ' ')}
@@ -789,8 +796,8 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                 <textarea
                                     ref={textareaRef}
                                     className={`
-                                        col-start-1 row-start-1 w-full h-full bg-transparent p-5 lg:p-12 resize-none overflow-hidden focus:outline-none z-10 font-mono leading-relaxed whitespace-pre-wrap break-words
-                                        ${textSize === 'xs' ? 'text-xs' : textSize === 'sm' ? 'text-sm' : textSize === 'base' ? 'text-base' : 'text-lg'}
+                                        col-start-1 row-start-1 w-full h-full bg-transparent p-5 lg:p-12 lg:px-16 xl:px-24 mx-auto max-w-4xl resize-none overflow-hidden focus:outline-none z-10 font-mono leading-relaxed whitespace-pre-wrap break-words
+                                        ${textSize === 'xs' ? 'text-[0.825rem]' : textSize === 'sm' ? 'text-[0.96rem]' : textSize === 'base' ? 'text-[1.1rem]' : 'text-[1.23rem]'}
                                         ${rhymeMode ? 'text-transparent caret-white' : 'text-neutral-300 caret-white'}
                                     `}
                                     value={activeNote ? activeNote.content : ''}
@@ -812,10 +819,10 @@ const NotesPage: React.FC<NotesPageProps> = ({
 
                     <div className="h-32 lg:hidden shrink-0" />
 
-                    <div className="lg:hidden fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-0 right-0 z-[48] bg-[#050505] border-t border-white/20 pb-0">
+                    <div className="lg:hidden fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-0 right-0 z-[48] bg-[#050505] border-t border-white/5 pb-0">
                         <div className="flex flex-col">
                             {isSizeExpanded && (
-                                <div className="absolute bottom-[calc(100%+1px)] left-0 right-0 bg-[#0A0A0A] border-t border-white/10 p-4 z-[60] animate-in slide-in-from-bottom-2 fade-in duration-200 flex justify-center shadow-2xl">
+                                <div className="absolute bottom-[calc(100%+1px)] left-0 right-0 bg-[#0A0A0A] border-t border-white/5 p-4 z-[60] animate-in slide-in-from-bottom-2 fade-in duration-200 flex justify-center shadow-2xl">
                                     <div className="flex items-center gap-6 bg-white/5 rounded-full px-4 py-2 border border-white/10">
                                         <button
                                             onClick={() => setTextSize(prev => prev === 'xs' ? 'xs' : prev === 'sm' ? 'xs' : prev === 'base' ? 'sm' : 'base')}
@@ -891,9 +898,9 @@ const NotesPage: React.FC<NotesPageProps> = ({
                     {isToolkitOpen && (
                         <div
                             style={{ height: `${mobileSheetHeight}vh` }}
-                            className="lg:hidden absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[50] bg-black border-t-2 border-white/20 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] flex flex-col animate-in slide-in-from-bottom-full duration-300 transition-[height] ease-out"
+                            className="lg:hidden absolute bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[50] bg-black border-t-2 border-white/5 shadow-[0_-10px_40px_rgba(0,0,0,0.8)] flex flex-col animate-in slide-in-from-bottom-full duration-300 transition-[height] ease-out"
                         >
-                            <div className="w-full flex items-center justify-between px-4 py-2 bg-neutral-900/80 backdrop-blur-xl border-b border-white/10 relative shrink-0">
+                            <div className="w-full flex items-center justify-between px-4 py-2 bg-neutral-900/80 backdrop-blur-xl border-b border-white/5 relative shrink-0">
                                 <div
                                     className="absolute left-1/2 -translate-x-1/2 w-32 h-6 flex items-center justify-center cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100"
                                     onTouchStart={handleSheetDragStart}
@@ -914,7 +921,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                 </button>
                             </div>
 
-                            <div className="flex items-center border-b border-white/10 bg-black">
+                            <div className="flex items-center border-b border-white/5 bg-black">
                                 <button
                                     onClick={() => setToolkitTab('rhymes')}
                                     className={`flex-1 py-3 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors relative border-r border-white/5 ${toolkitTab === 'rhymes' ? 'text-black bg-primary' : 'text-neutral-500 hover:text-white'}`}
@@ -993,10 +1000,10 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="p-3 border-t border-white/10 bg-black shrink-0 pb-[calc(env(safe-area-inset-bottom)+12px)]">
+                                        <div className="p-3 border-t border-white/5 bg-black shrink-0 pb-[calc(env(safe-area-inset-bottom)+12px)]">
                                             <div className="relative flex items-center">
                                                 <input
-                                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-full pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-neutral-700 placeholder-neutral-600"
+                                                    className="w-full bg-neutral-900 border border-white/5 rounded-full pl-4 pr-10 py-3 text-sm text-white focus:outline-none focus:border-neutral-700 placeholder-neutral-600"
                                                     placeholder="Message AI..."
                                                     value={chatInput}
                                                     onChange={e => setChatInput(e.target.value)}
@@ -1019,8 +1026,8 @@ const NotesPage: React.FC<NotesPageProps> = ({
                 </div>
 
                 {/* Creative Assistant Sidebar (Desktop Only) */}
-                <div className="hidden lg:flex w-80 h-full bg-[#080808] border-l border-neutral-800 flex-col shrink-0 transition-all duration-300">
-                    <div className="flex items-center border-b border-neutral-800">
+                <div className="hidden lg:flex lg:w-64 xl:w-80 h-full bg-[#080808] border-l border-white/5 flex-col shrink-0 transition-all duration-300">
+                    <div className="flex items-center border-b border-white/5">
                         <button
                             onClick={() => setAssistantTab('rhymes')}
                             className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${assistantTab === 'rhymes' ? 'text-primary bg-primary/5 border-b-2 border-primary' : 'text-neutral-500 hover:text-white'}`}
@@ -1038,12 +1045,12 @@ const NotesPage: React.FC<NotesPageProps> = ({
                     <div className="flex-1 overflow-hidden relative flex flex-col">
                         {assistantTab === 'rhymes' && (
                             <>
-                                <div className="p-4 border-b border-neutral-800 bg-neutral-900/20 shrink-0">
+                                <div className="p-4 border-b border-white/5 bg-neutral-900/20 shrink-0">
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-[10px] uppercase font-bold text-neutral-500">Target Word</span>
                                         <button
                                             onClick={() => setAccent(accent === 'US' ? 'UK' : 'US')}
-                                            className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-neutral-800 bg-neutral-900 text-[9px] font-bold text-neutral-400 hover:text-white"
+                                            className="flex items-center gap-1 px-1.5 py-0.5 rounded border border-white/5 bg-neutral-900 text-[9px] font-bold text-neutral-400 hover:text-white"
                                             title="Toggle Accent"
                                         >
                                             <Globe size={10} /> {accent}
@@ -1060,7 +1067,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                             {suggestions.map((word, i) => (
                                                 <button
                                                     key={i}
-                                                    className="px-3 py-1.5 bg-neutral-900 border border-neutral-800 rounded-lg text-xs text-neutral-300 hover:text-white hover:border-primary/50 hover:bg-white/5 cursor-pointer transition-all active:scale-95"
+                                                    className="px-3 py-1.5 bg-neutral-900 border border-white/5 rounded-lg text-xs text-neutral-300 hover:text-white hover:border-primary/50 hover:bg-white/5 cursor-pointer transition-all active:scale-95"
                                                     onClick={() => {
                                                         if (activeNote) {
                                                             const newContent = activeNote.content + " " + word;
@@ -1103,7 +1110,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                     )}
                                     {chatMessages.map((msg, i) => (
                                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                            <div className={`max-w-[90%] p-3 rounded-2xl text-xs leading-relaxed break-words ${msg.role === 'user'
+                                            <div className={`max-w-[90%] p-3 rounded-2xl text-xs leading-relaxed break-words whitespace-pre-wrap ${msg.role === 'user'
                                                 ? 'bg-primary text-black rounded-tr-sm font-medium'
                                                 : 'bg-neutral-800 text-neutral-200 rounded-tl-sm border border-neutral-700'
                                                 }`}>
@@ -1121,18 +1128,24 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                         </div>
                                     )}
                                 </div>
-                                <div className="p-4 border-t border-neutral-800 bg-[#080808]">
+                                <div className="p-4 border-t border-white/5 bg-[#080808]">
                                     <div className="relative flex items-center">
                                         <textarea
                                             rows={1}
-                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-xl pl-4 pr-10 py-3 text-xs text-white focus:outline-none focus:border-neutral-700 placeholder-neutral-600 resize-none custom-scrollbar"
+                                            className="w-full bg-neutral-900 border border-white/5 rounded-xl pl-4 pr-10 py-3 text-xs text-white focus:outline-none focus:border-neutral-700 placeholder-neutral-600 resize-none custom-scrollbar"
                                             placeholder="Ask AI..."
                                             value={chatInput}
-                                            onChange={e => setChatInput(e.target.value)}
+                                            style={{ maxHeight: '150px', height: 'auto' }}
+                                            onChange={e => {
+                                                setChatInput(e.target.value);
+                                                e.target.style.height = 'auto';
+                                                e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
+                                            }}
                                             onKeyDown={e => {
                                                 if (e.key === 'Enter' && !e.shiftKey) {
                                                     e.preventDefault();
                                                     handleSendChat();
+                                                    (e.target as HTMLTextAreaElement).style.height = 'auto';
                                                 }
                                             }}
                                         />
@@ -1214,16 +1227,16 @@ const NotesPage: React.FC<NotesPageProps> = ({
     return (
         <div className={`
             w-full animate-in fade-in duration-500 flex flex-col overflow-hidden
-            fixed inset-x-0 bottom-0 top-16 ${isOverlayOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-full lg:bg-transparent
+            fixed inset-x-0 bottom-0 top-[56px] ${isOverlayOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-full lg:bg-transparent
         `}>
             <div className="flex-1 flex bg-[#0a0a0a] overflow-hidden relative">
 
                 {/* Sidebar (Left Side) */}
                 <div className={`
-                    absolute lg:static inset-y-0 left-0 z-[60] w-full lg:w-72 lg:border-r border-neutral-800 flex flex-col bg-black lg:bg-[#080808] transition-transform duration-300
+                    absolute lg:static inset-y-0 left-0 z-[60] w-full lg:w-80 xl:w-[350px] lg:border-r border-white/5 flex flex-col bg-black lg:bg-[#080808] transition-transform duration-300
                     ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
                 `}>
-                    <div className="p-4 border-b border-neutral-800 flex items-center justify-between shrink-0">
+                    <div className="p-4 border-b border-white/5 flex items-center justify-between shrink-0">
                         <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                             <FileText size={14} className="text-primary" />
                             My Notebook
@@ -1243,12 +1256,12 @@ const NotesPage: React.FC<NotesPageProps> = ({
 
                     <div className="px-4 mb-4 shrink-0 flex gap-2">
                         <div className="relative mt-4 flex-1">
-                            <input className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-primary/50 pl-8" placeholder={trashView ? "Search deleted..." : "Search notes..."} />
-                            <FileText size={12} className="absolute left-2.5 top-2.5 text-neutral-500" />
+                            <input className="w-full h-[34px] bg-neutral-900 border border-white/5 rounded px-3 text-xs text-white focus:outline-none focus:border-primary/50 pl-8" placeholder={trashView ? "Search deleted..." : "Search notes..."} />
+                            <FileText size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500" />
                         </div>
                         <button
                             onClick={() => setTrashView(!trashView)}
-                            className={`mt-4 w-10 h-[34px] flex items-center justify-center rounded border transition-colors shrink-0 ${trashView ? 'bg-red-500/10 border-red-500/50 text-red-500' : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white'}`}
+                            className={`mt-4 w-10 h-[34px] flex items-center justify-center rounded border transition-colors shrink-0 ${trashView ? 'bg-red-500/10 border-red-500/50 text-red-500' : 'bg-neutral-900 border-white/5 text-neutral-400 hover:text-white'}`}
                             title={trashView ? "View Active Notes" : "View Recycling Bin"}
                         >
                             {trashView ? <RotateCcw size={14} /> : <Trash size={14} />}
@@ -1315,7 +1328,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
                     {activeNote ? (
                         <div className="flex-1 flex flex-col overflow-hidden">
                             {/* Desktop Controls */}
-                            <div className="hidden lg:flex h-14 border-b border-neutral-800 items-center justify-between px-6 bg-neutral-900/30 z-20 shrink-0">
+                            <div className="hidden lg:flex h-14 border-b border-white/5 items-center justify-between px-6 bg-neutral-900/30 z-20 shrink-0">
                                 <div className="flex items-center gap-4">
                                     {viewMode === 'browser' && (
                                         <button onClick={() => setViewMode('editor')} className="p-1.5 hover:bg-white/5 rounded text-neutral-400 hover:text-white"><ChevronLeft size={16} /></button>

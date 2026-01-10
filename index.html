@@ -73,6 +73,37 @@
       background: #555;
     }
 
+    /* Thinner Scrollbar for Dropdowns and small containers */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 3px;
+      height: 3px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #666;
+    }
+
+    /* No Scrollbar Utility */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      /* IE and Edge */
+      scrollbar-width: none;
+      /* Firefox */
+    }
+
     /* Hide scrollbar on mobile */
     @media (max-width: 768px) {
 
@@ -97,6 +128,45 @@
         /* Firefox */
         -ms-overflow-style: none !important;
         /* IE and Edge */
+      }
+    }
+
+    /* Zoom adjustment for desktop screens (Unified) */
+    @media (min-width: 1024px) {
+      html {
+        font-size: 62.5%;
+        /* ~10px baseline, effectively zooms out everything */
+      }
+
+      /* Fix Sidebar Width (Wider & Standard Zoom) */
+      aside {
+        width: 26rem !important;
+      }
+
+      .lg\:pl-64 {
+        padding-left: 26rem !important;
+      }
+
+      /* Purchase Modal */
+      div.fixed.inset-0.z-\[9999\]>div {
+        zoom: 0.8;
+        /* Slightly adjusted to not be too tiny */
+        max-width: 960px !important;
+        /* Increased from 900 to compensate */
+        width: 100% !important;
+        min-height: 85vh !important;
+      }
+
+      /* Auth Modal */
+      div.fixed.inset-0.z-\[500\]>div {
+        zoom: 0.8;
+        max-width: 420px !important;
+        width: 100% !important;
+      }
+
+      /* Generic/Other Modals */
+      div.fixed.inset-0.z-50>div {
+        zoom: 0.8;
       }
     }
 

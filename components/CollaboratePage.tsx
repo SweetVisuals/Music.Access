@@ -1,10 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Verified, MessageSquare, ExternalLink, Instagram, Youtube, Music, Radio, LayoutGrid } from 'lucide-react';
 import { getCollabServices } from '../services/supabaseService';
 import { CollabService } from '../types';
 
 const CollaboratePage: React.FC = () => {
+    const navigate = useNavigate();
     const [collabServices, setCollabServices] = useState<CollabService[]>([]);
     const [activeTab, setActiveTab] = useState('all');
 
@@ -36,12 +38,12 @@ const CollaboratePage: React.FC = () => {
         : collabServices.filter(service => service.platform.toLowerCase() === activeTab);
 
     return (
-        <div className="w-full max-w-[1600px] mx-auto pb-4 lg:pb-32 pt-4 lg:pt-6 px-4 lg:px-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-[1900px] mx-auto pb-4 lg:pb-32 pt-4 lg:pt-6 px-4 lg:px-10 xl:px-14 animate-in fade-in duration-500">
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 lg:mb-8 gap-4">
                 <div>
-                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-1">Collaborate</h1>
-                    <p className="text-neutral-500 text-sm lg:text-base max-w-2xl">
+                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">Collaborate</h1>
+                    <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">
                         Connect with platforms, influencers, and channels to promote your music.
                     </p>
                 </div>
@@ -107,50 +109,86 @@ const CollaboratePage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredServices.map(service => (
-                    <div key={service.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden hover:border-primary/30 transition-all group hover:-translate-y-1 shadow-lg">
-                        <div className="p-6 relative">
-                            <div className="absolute top-4 right-4 p-2 bg-neutral-900 rounded-lg border border-neutral-800">
-                                {getPlatformIcon(service.platform)}
-                            </div>
-
-                            <div className="flex items-center gap-3 mb-4">
-                                <img src={service.avatar} alt={service.name} className="w-12 h-12 rounded-lg object-cover border border-white/10" />
-                                <div>
-                                    <h3 className="text-sm font-bold text-white flex items-center gap-1">
-                                        {service.name}
-                                        {service.verified && <Verified size={12} className="text-blue-400" />}
-                                    </h3>
-                                    <span className="text-[10px] text-neutral-500 font-mono">{service.handle}</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                {filteredServices.length > 0 ? (
+                    filteredServices.map(service => (
+                        <div key={service.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden hover:border-primary/30 transition-all group hover:-translate-y-1 shadow-lg">
+                            <div className="p-6 relative">
+                                <div className="absolute top-4 right-4 p-2 bg-neutral-900 rounded-lg border border-neutral-800">
+                                    {getPlatformIcon(service.platform)}
                                 </div>
-                            </div>
 
-                            <div className="mb-4">
-                                <h4 className="text-sm font-bold text-white mb-1">{service.serviceTitle}</h4>
-                                <p className="text-xs text-neutral-400 leading-relaxed h-10 line-clamp-2">{service.description}</p>
-                            </div>
-
-                            <div className="flex items-center justify-between p-3 bg-neutral-900/50 rounded-lg mb-4 border border-neutral-800">
-                                {service.stats.map((stat, idx) => (
-                                    <div key={idx} className="text-center flex-1 first:border-r border-neutral-800">
-                                        <div className="text-xs font-bold text-white">{stat.value}</div>
-                                        <div className="text-[8px] text-neutral-500 uppercase tracking-wider">{stat.label}</div>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <img src={service.avatar} alt={service.name} className="w-12 h-12 rounded-lg object-cover border border-white/10" />
+                                    <div>
+                                        <h3 className="text-sm font-bold text-white flex items-center gap-1">
+                                            {service.name}
+                                            {service.verified && <Verified size={12} className="text-blue-400" />}
+                                        </h3>
+                                        <span className="text-[10px] text-neutral-500 font-mono">{service.handle}</span>
                                     </div>
-                                ))}
-                            </div>
-
-                            <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                                <div className="text-xs font-mono">
-                                    <span className="text-neutral-500">Price:</span> <span className="text-white font-bold">{service.priceRange}</span>
                                 </div>
-                                <button className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg text-xs font-bold hover:bg-primary hover:text-black transition-colors">
-                                    <MessageSquare size={14} /> Message
-                                </button>
+
+                                <div className="mb-4">
+                                    <h4 className="text-sm font-bold text-white mb-1">{service.serviceTitle}</h4>
+                                    <p className="text-xs text-neutral-400 leading-relaxed h-10 line-clamp-2">{service.description}</p>
+                                </div>
+
+                                <div className="flex items-center justify-between p-3 bg-neutral-900/50 rounded-lg mb-4 border border-neutral-800">
+                                    {service.stats.map((stat, idx) => (
+                                        <div key={idx} className="text-center flex-1 first:border-r border-neutral-800">
+                                            <div className="text-xs font-bold text-white">{stat.value}</div>
+                                            <div className="text-[8px] text-neutral-500 uppercase tracking-wider">{stat.label}</div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                                    <div className="text-xs font-mono">
+                                        <span className="text-neutral-500">Price:</span> <span className="text-white font-bold">{service.priceRange}</span>
+                                    </div>
+                                    <button className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-lg text-xs font-bold hover:bg-primary hover:text-black transition-colors">
+                                        <MessageSquare size={14} /> Message
+                                    </button>
+                                </div>
                             </div>
                         </div>
+                    ))
+                ) : (
+                    <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-gradient-to-b from-neutral-900/50 to-neutral-900/10 border border-neutral-800 border-dashed rounded-3xl animate-in fade-in zoom-in duration-500">
+                        <div className="w-20 h-20 bg-neutral-900 rounded-2xl border border-neutral-800 flex items-center justify-center mb-6 shadow-2xl shadow-black/50 relative group overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            {activeTab === 'instagram' && <Instagram size={40} className="text-pink-500 relative z-10" />}
+                            {activeTab === 'youtube' && <Youtube size={40} className="text-red-500 relative z-10" />}
+                            {activeTab === 'tiktok' && <span className="font-black text-2xl bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-pink-500 relative z-10">TikTok</span>}
+                            {activeTab === 'spotify' && <Music size={40} className="text-green-500 relative z-10" />}
+                            {activeTab === 'all' && <LayoutGrid size={40} className="text-white relative z-10" />}
+                        </div>
+
+                        <h3 className="text-2xl font-black text-white mb-3 max-w-md">
+                            {activeTab === 'all'
+                                ? "Advertise your services here"
+                                : `Advertise your ${activeTab === 'tiktok' ? 'TikTok' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} services`}
+                        </h3>
+
+                        <p className="text-neutral-400 text-sm max-w-md mb-8 leading-relaxed">
+                            {activeTab === 'all'
+                                ? "Be the first to offer your services on our platform. Reach thousands of artists looking for promotion."
+                                : `No ${activeTab === 'tiktok' ? 'TikTok' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} services listed yet. This is your chance to dominate this category and get noticed by artists!`}
+                        </p>
+
+                        <button
+                            onClick={() => navigate('/post-service')}
+                            className="group relative px-8 py-3 bg-white text-black font-bold rounded-xl overflow-hidden transition-transform hover:scale-105 active:scale-95"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-primary to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <span className="relative z-10 flex items-center gap-2">
+                                <ExternalLink size={16} />
+                                Start Advertising Now
+                            </span>
+                        </button>
                     </div>
-                ))}
+                )}
             </div>
         </div>
     );

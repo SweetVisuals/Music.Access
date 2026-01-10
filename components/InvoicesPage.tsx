@@ -352,7 +352,7 @@ Status: ${invoice.status.toUpperCase()}
               {selectedInvoice.notes && (
                 <div>
                   <h3 className="text-sm font-bold text-neutral-400 uppercase mb-3">Notes</h3>
-                  <p className="text-neutral-300">{selectedInvoice.notes}</p>
+                  <p className="text-neutral-300 whitespace-pre-wrap">{selectedInvoice.notes}</p>
                 </div>
               )}
             </div>
@@ -399,7 +399,11 @@ Status: ${invoice.status.toUpperCase()}
                 <label className="text-xs font-bold text-neutral-400 uppercase mb-2 block">Service Description</label>
                 <textarea
                   placeholder="Describe the service or product"
-                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none h-20 resize-none"
+                  onChange={(e) => {
+                    e.target.style.height = 'auto';
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
+                  }}
+                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none min-h-[5rem] h-auto max-h-40 resize-none custom-scrollbar"
                 />
               </div>
 

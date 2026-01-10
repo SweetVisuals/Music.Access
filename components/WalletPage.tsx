@@ -13,8 +13,11 @@ import {
     X,
     Smartphone,
     Globe,
-    Lock
+    Lock,
+    Zap,
+    TrendingUp
 } from 'lucide-react';
+import * as supabaseService from '../services/supabaseService';
 
 interface WalletPageProps {
     userProfile: UserProfile | null;
@@ -31,12 +34,52 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
     const [isAddMethodOpen, setIsAddMethodOpen] = useState(false);
     const [addMethodType, setAddMethodType] = useState<'card' | 'paypal'>('card');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isBuyPromoOpen, setIsBuyPromoOpen] = useState(false);
+    const [exchangeLoading, setExchangeLoading] = useState(false);
+    const [purchaseError, setPurchaseError] = useState<string | null>(null);
+    const [purchaseSuccess, setPurchaseSuccess] = useState(false);
 
     // Form States
     const [cardNumber, setCardNumber] = useState('');
     const [expiry, setExpiry] = useState('');
     const [cvc, setCvc] = useState('');
     const [cardName, setCardName] = useState('');
+
+    const handleExchangeGems = async () => {
+        if (!userProfile) return;
+        if (userProfile.gems < 100) {
+            setPurchaseError('Insufficient Gems. You need 100 Gems.');
+            return;
+        }
+
+        setExchangeLoading(true);
+        setPurchaseError(null);
+
+        try {
+            // Deduct 100 Gems and add 10 Promotion Credits
+            const newGems = userProfile.gems - 100;
+            const newPromo = (userProfile.promo_credits || 0) + 10;
+
+            await supabaseService.updateUserProfile(userProfile.id!, {
+                gems: newGems,
+                promo_credits: newPromo
+            });
+
+            setPurchaseSuccess(true);
+
+            // Dispatch custom event to notify App.tsx to refresh profile
+            window.dispatchEvent(new CustomEvent('profile-updated'));
+
+            setTimeout(() => {
+                setIsBuyPromoOpen(false);
+                setPurchaseSuccess(false);
+            }, 2000);
+        } catch (error: any) {
+            setPurchaseError(error.message || 'Failed to exchange gems');
+        } finally {
+            setExchangeLoading(false);
+        }
+    };
 
     const handleAddMethod = () => {
         setIsProcessing(true);
@@ -137,8 +180,27 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                 <p className="text-neutral-500 text-xs">Approx. {formatCurrency((userProfile?.gems || 0) * 0.01)} USD</p>
                             </div>
                         </div>
-                        <button className="px-4 py-2 bg-purple-500 text-white text-xs font-bold rounded-lg hover:bg-purple-600 transition-colors shadow-lg shadow-purple-900/20">
+                        <button className="px-4 py-2 bg-purple-500 text-white text-xs font-bold rounded-lg hover:bg-purple-600 transition-colors shadow-lg shadow-purple-900/20 font-black uppercase tracking-wider">
                             Buy Gems
+                        </button>
+                    </div>
+
+                    {/* Promotion Credits Card */}
+                    <div className="bg-neutral-900/50 border border-white/5 rounded-2xl p-5 flex items-center justify-between group">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 group-hover:bg-amber-500/20 transition-colors">
+                                <Zap size={24} className="text-amber-400 group-hover:scale-110 transition-transform" />
+                            </div>
+                            <div>
+                                <h3 className="text-white font-bold text-lg">{userProfile?.promo_credits || 0} Promotion Credits</h3>
+                                <p className="text-neutral-500 text-xs">Used to boost visibility & ads</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setIsBuyPromoOpen(true)}
+                            className="px-4 py-2 bg-amber-500 text-black text-xs font-black rounded-lg hover:bg-amber-400 transition-all shadow-lg shadow-amber-900/20 uppercase tracking-wider"
+                        >
+                            Buy Credits
                         </button>
                     </div>
 
@@ -345,6 +407,87 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                     </>
                                 )}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* BUY PROMOTION CREDITS MODAL */}
+            {isBuyPromoOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div
+                        className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-5 duration-300"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Modal Header */}
+                        <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                            <h3 className="font-bold text-white">Buy Promotion Credits</h3>
+                            <button
+                                onClick={() => setIsBuyPromoOpen(false)}
+                                className="p-1 text-neutral-500 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            {!purchaseSuccess ? (
+                                <div className="space-y-6">
+                                    <div className="flex flex-col items-center text-center space-y-3">
+                                        <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center border border-amber-500/20">
+                                            <Zap size={32} className="text-amber-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-white font-bold text-xl">10 Promotion Credits</h4>
+                                            <p className="text-neutral-500 text-sm mt-1">Boost your tracks and profile</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-neutral-900/50 rounded-xl p-4 border border-white/5">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="text-neutral-400 text-xs font-medium">Price</span>
+                                            <div className="flex items-center gap-1.5 font-bold text-white">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400"><path d="M6 3h12l4 6-10 13L2 9Z" /></svg>
+                                                100 Gems
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-neutral-400 text-xs font-medium">Your Balance</span>
+                                            <div className="flex items-center gap-1.5 font-bold text-white">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400"><path d="M6 3h12l4 6-10 13L2 9Z" /></svg>
+                                                {userProfile?.gems || 0} Gems
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {purchaseError && (
+                                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs font-medium flex items-center gap-2">
+                                            <X size={14} /> {purchaseError}
+                                        </div>
+                                    )}
+
+                                    <button
+                                        onClick={handleExchangeGems}
+                                        disabled={exchangeLoading || (userProfile?.gems || 0) < 100}
+                                        className={`w-full py-4 rounded-xl font-black text-sm tracking-widest transition-all flex items-center justify-center gap-2 uppercase
+                                            ${(userProfile?.gems || 0) < 100
+                                                ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                                                : 'bg-white text-black hover:bg-neutral-200'
+                                            } ${exchangeLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                    >
+                                        {exchangeLoading ? 'Processing...' : 'Confirm Exchange'}
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="py-8 flex flex-col items-center text-center space-y-4 animate-in zoom-in-95 duration-300">
+                                    <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                                        <Check size={32} strokeWidth={3} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-white font-bold text-xl">Purchase Successful!</h4>
+                                        <p className="text-neutral-500 text-sm mt-1">Your credits are now available.</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

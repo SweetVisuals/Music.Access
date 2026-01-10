@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { X, Mail, Lock, ArrowRight, Music, Mic2, Settings, CheckCircle, Briefcase, Headphones, User } from 'lucide-react';
+
+import { X, Mail, Lock, ArrowRight, Music, Mic2, Settings, CheckCircle, Briefcase, Headphones, User, Globe } from 'lucide-react';
 import { signUp, signIn } from '../services/supabaseService';
 
 interface AuthModalProps {
@@ -10,12 +11,12 @@ interface AuthModalProps {
 }
 
 type AuthMode = 'login' | 'signup';
-type Role = 'artist' | 'producer' | 'engineer' | 'professional' | 'listener';
+type Role = 'artist' | 'producer' | 'engineer' | 'professional' | 'listener' | 'platform';
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
     const [mode, setMode] = useState<AuthMode>('login');
     const [step, setStep] = useState(1);
-    const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+    const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -58,7 +59,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
         setError(null);
 
         try {
-            await signUp(email, password, username, handle, selectedRole || 'listener');
+            // Join roles with comma
+            const roleString = selectedRoles.join(',');
+            await signUp(email, password, username, handle, roleString || 'listener');
             // After signup, automatically log in
             await signIn(email, password);
             onLogin();
@@ -71,10 +74,31 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
     };
 
     const handleSignupNext = () => {
-        if (step === 1 && selectedRole) {
+        if (step === 1 && selectedRoles.length > 0) {
             setStep(2);
         } else if (step === 2) {
             handleSignup();
+        }
+    };
+
+    const toggleRole = (role: Role) => {
+        if (role === 'platform') {
+            // If Platform is selected, it must be the only one
+            if (selectedRoles.includes('platform')) {
+                setSelectedRoles([]);
+            } else {
+                setSelectedRoles(['platform']);
+            }
+        } else {
+            // If any other role is selected, remove Platform if present
+            let newRoles = selectedRoles.filter(r => r !== 'platform');
+
+            if (newRoles.includes(role)) {
+                newRoles = newRoles.filter(r => r !== role);
+            } else {
+                newRoles.push(role);
+            }
+            setSelectedRoles(newRoles);
         }
     };
 
@@ -82,7 +106,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
     const switchMode = (m: AuthMode) => {
         setMode(m);
         setStep(1);
-        setSelectedRole(null);
+        setSelectedRoles([]);
         setError(null);
         setEmail('');
         setPassword('');
@@ -200,6 +224,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
                                 <div>
                                     <div className="text-center mb-4">
                                         <h3 className="text-sm font-bold text-white">I am a...</h3>
+                                        <p className="text-[10px] text-neutral-500 mt-1">Select all that apply</p>
                                     </div>
 
                                     {/* Compact Role Grid */}
@@ -208,42 +233,49 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
                                             icon={<Mic2 size={18} />}
                                             label="Artist"
                                             desc="I need beats & services"
-                                            active={selectedRole === 'artist'}
-                                            onClick={() => setSelectedRole('artist')}
+                                            active={selectedRoles.includes('artist')}
+                                            onClick={() => toggleRole('artist')}
                                         />
                                         <RoleCard
                                             icon={<Music size={18} />}
                                             label="Producer"
                                             desc="I sell beats & kits"
-                                            active={selectedRole === 'producer'}
-                                            onClick={() => setSelectedRole('producer')}
+                                            active={selectedRoles.includes('producer')}
+                                            onClick={() => toggleRole('producer')}
                                         />
                                         <RoleCard
                                             icon={<Settings size={18} />}
                                             label="Engineer"
                                             desc="I provide mixing services"
-                                            active={selectedRole === 'engineer'}
-                                            onClick={() => setSelectedRole('engineer')}
+                                            active={selectedRoles.includes('engineer')}
+                                            onClick={() => toggleRole('engineer')}
                                         />
                                         <RoleCard
                                             icon={<Briefcase size={18} />}
                                             label="Professional / Other"
                                             desc="Manager, Label, A&R"
-                                            active={selectedRole === 'professional'}
-                                            onClick={() => setSelectedRole('professional')}
+                                            active={selectedRoles.includes('professional')}
+                                            onClick={() => toggleRole('professional')}
                                         />
                                         <RoleCard
                                             icon={<Headphones size={18} />}
                                             label="Listener"
                                             desc="I'm here to discover music"
-                                            active={selectedRole === 'listener'}
-                                            onClick={() => setSelectedRole('listener')}
+                                            active={selectedRoles.includes('listener')}
+                                            onClick={() => toggleRole('listener')}
+                                        />
+                                        <RoleCard
+                                            icon={<Globe size={18} />}
+                                            label="Platform"
+                                            desc="Advertising & Promotions"
+                                            active={selectedRoles.includes('platform')}
+                                            onClick={() => toggleRole('platform')}
                                         />
                                     </div>
 
                                     <button
                                         onClick={handleSignupNext}
-                                        disabled={!selectedRole}
+                                        disabled={selectedRoles.length === 0}
                                         className="w-full py-3 bg-white text-black font-bold rounded-lg text-xs hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide"
                                     >
                                         Continue

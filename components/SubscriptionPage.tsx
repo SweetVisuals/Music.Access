@@ -103,6 +103,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
         try {
             await updateUserProfile(userProfile.id, { plan: selectedPlan as any });
             setSuccess(selectedPlan);
+            window.dispatchEvent(new CustomEvent('profile-updated'));
             setTimeout(() => setSuccess(null), 5000);
             setSelectedPlan(null);
         } catch (err) {
@@ -113,18 +114,18 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
     const targetPlan = plans.find(p => p.name === selectedPlan);
 
     return (
-        <div className="w-full max-w-7xl mx-auto px-4 pt-0 pb-8 lg:px-6 lg:pt-0 lg:pb-20 animate-in fade-in duration-700 relative lg:[zoom:0.85] origin-top">
+        <div className="w-full max-w-7xl mx-auto px-4 pt-0 pb-8 lg:px-6 lg:pt-0 lg:pb-[15px] animate-in fade-in duration-700 relative lg:[zoom:1.08] origin-top">
             {/* Header */}
-            <div className="text-center mb-12 lg:mb-16">
-                <h1 className="text-4xl lg:text-6xl font-black text-white tracking-tight mb-4">
+            <div className="text-center mb-10 lg:mb-12">
+                <h1 className="text-4xl lg:text-7xl font-black text-white tracking-tighter mb-4 uppercase">
                     Elevate Your <span className="text-primary">Sound</span>
                 </h1>
-                <p className="text-neutral-500 text-base lg:text-lg max-w-2xl lg:max-w-none mx-auto">
+                <p className="text-neutral-500 text-sm lg:text-lg max-w-2xl lg:max-w-none mx-auto font-medium">
                     Choose the plan that fits your workflow. From recording sketches to managing a professional studio.
                 </p>
 
                 {/* Billing Toggle */}
-                <div className="mt-8 flex items-center justify-center gap-4">
+                <div className="mt-6 flex items-center justify-center gap-4">
                     <span className={`text-sm font-bold ${billingCycle === 'monthly' ? 'text-white' : 'text-neutral-500'}`}>Monthly</span>
                     <button
                         onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
@@ -212,7 +213,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
             </div>
 
             {/* FAQ / Trust Badges */}
-            <div className="mt-16 lg:mt-24 grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-8">
+            <div className="mt-12 lg:mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-8">
                 <TrustBadge
                     icon={<Shield size={20} />}
                     title="Secure Payments"
@@ -236,7 +237,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
             </div>
 
             {/* Bottom Callout */}
-            <div className="mt-16 lg:mt-20 p-6 lg:p-12 rounded-[2rem] bg-gradient-to-r from-neutral-900 to-black border border-white/5 text-center relative overflow-hidden group">
+            <div className="mt-12 lg:mt-16 p-6 lg:p-12 rounded-[2rem] bg-gradient-to-r from-neutral-900 to-black border border-white/5 text-center relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
                 <div className="relative z-10">
                     <h2 className="text-2xl lg:text-3xl font-black text-white mb-4">Questions about Enterprise solutions?</h2>

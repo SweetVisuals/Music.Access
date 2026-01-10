@@ -18,6 +18,7 @@ interface CustomDropdownProps {
     searchable?: boolean;
     error?: string;
     fullWidth?: boolean;
+    size?: 'default' | 'compact';
 }
 
 const CustomDropdown: React.FC<CustomDropdownProps> = ({
@@ -29,7 +30,8 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     className = "",
     searchable = false,
     error,
-    fullWidth = true
+    fullWidth = true,
+    size = 'default'
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -68,6 +70,9 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
         setSearchTerm("");
     };
 
+    // Determine padding based on size
+    const paddingClass = size === 'compact' ? 'px-3 py-2' : 'px-4 py-3';
+
     return (
         <div className={`relative ${fullWidth ? 'w-full' : ''} ${className} ${isOpen ? 'z-[100]' : 'z-0'}`} ref={dropdownRef}>
             {label && (
@@ -80,7 +85,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                 type="button"
                 onClick={toggleDropdown}
                 className={`
-                    w-full flex items-center justify-between px-4 py-3 
+                    w-full flex items-center justify-between ${paddingClass} 
                     bg-neutral-900 border ${isOpen ? 'border-primary/50 bg-[#0c0c0c]' : 'border-neutral-800'} 
                     rounded-xl text-sm font-medium text-white transition-all duration-200
                     hover:border-neutral-700 hover:bg-[#0c0c0c]
@@ -112,13 +117,13 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                                     placeholder="Search..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    autoFocus
+                                    autoFocus={window.innerWidth >= 768}
                                 />
                             </div>
                         </div>
                     )}
 
-                    <div className="max-h-60 overflow-y-auto custom-scrollbar py-1">
+                    <div className="max-h-60 overflow-y-auto no-scrollbar py-1">
                         {filteredOptions.length > 0 ? (
                             filteredOptions.map((option) => (
                                 <button

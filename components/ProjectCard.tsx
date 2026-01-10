@@ -4,7 +4,7 @@ import { Project } from '../types';
 import { generateCreativeDescription } from '../services/geminiService';
 import PurchaseModal from './PurchaseModal';
 import { useCart } from '../contexts/CartContext';
-import { checkIsProjectSaved, saveProject, unsaveProject, giveGemToProject } from '../services/supabaseService';
+import { checkIsProjectSaved, saveProject, unsaveProject, giveGemToProject, undoGiveGem } from '../services/supabaseService';
 import { Gem } from 'lucide-react';
 
 interface ProjectCardProps {
@@ -39,6 +39,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     const [isSaved, setIsSaved] = useState(false);
     const [localGems, setLocalGems] = useState(project.gems || 0);
     const [hasGivenGem, setHasGivenGem] = useState(false); // Local tracking for interaction feedback
+    const [showUndo, setShowUndo] = useState(false);
+    const undoTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     // Menu State
     const [showMenu, setShowMenu] = useState(false);
@@ -102,14 +104,45 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         // Optimistic update
         setLocalGems(prev => prev + 1);
         setHasGivenGem(true);
+        setShowUndo(true);
+
+        // Start 1 minute timer to remove undo option
+        if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+        undoTimerRef.current = setTimeout(() => {
+            setShowUndo(false);
+        }, 60000);
 
         try {
             await giveGemToProject(project.id);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to give gem:', error);
             // Revert state
             setLocalGems(prev => prev - 1);
             setHasGivenGem(false);
+            setShowUndo(false);
+            if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+            // Optional: Show toast error
+            alert(error.message || "Failed to give gem");
+        }
+    };
+
+    const handleUndoGem = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!project.id) return;
+
+        // Optimistic revert
+        setLocalGems(prev => prev - 1);
+        setHasGivenGem(false);
+        setShowUndo(false);
+        if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+
+        try {
+            await undoGiveGem(project.id);
+        } catch (error) {
+            console.error('Failed to undo gem:', error);
+            // Revert optimistic update if API fails (set back to given state)
+            setLocalGems(prev => prev + 1);
+            setHasGivenGem(true);
         }
     };
 
@@ -134,7 +167,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             />
             <div
                 // ... (rest of the file as is)
-                className="group h-full flex flex-col bg-neutral-950/50 border border-neutral-800/60 rounded-xl hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.05)] relative backdrop-blur-sm cursor-pointer"
+                className="group h-full flex flex-col bg-neutral-950/50 border border-white/5 rounded-xl hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.05)] relative backdrop-blur-sm cursor-pointer"
+                style={{ zoom: '110%' }}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 onClick={() => setPurchaseModalOpen(true)}
@@ -243,7 +277,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 {/* Tracklist */}
                 <div className="flex-1 bg-[#050505] overflow-y-auto custom-scrollbar relative">
                     <div className="p-2 space-y-0.5">
-                        {project.tracks.map((track, idx) => {
+                        {project.tracks.slice(0, 5).map((track, idx) => {
                             const trackId = track.id || `track-${idx}`;
                             const isTrackPlaying = isPlaying && currentTrackId === trackId;
                             return (
@@ -305,8 +339,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 {/* Footer */}
                 <div className="rounded-b-xl px-3 py-2.5 bg-neutral-900/90 border-t border-white/5 flex items-center justify-between z-20">
                     <div className="flex items-center gap-2.5 overflow-hidden">
-                        <div className="h-5 w-5 rounded bg-neutral-800 text-neutral-400 border border-white/5 flex items-center justify-center text-[9px] font-bold uppercase shrink-0">
-                            {project.producer.charAt(0)}
+                        <div className="h-5 w-5 rounded bg-neutral-800 text-neutral-400 border border-white/5 flex items-center justify-center text-[9px] font-bold uppercase shrink-0 overflow-hidden">
+                            {project.producerAvatar ? (
+                                <img src={project.producerAvatar} alt={project.producer} className="w-full h-full object-cover" />
+                            ) : (
+                                project.producer.charAt(0)
+                            )}
                         </div>
                         <span className="text-[10px] font-bold text-neutral-400 hover:text-white transition-colors truncate cursor-pointer">
                             {project.producer}
@@ -344,7 +382,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
                         {/* Gem Button */}
                         <button
-                            onClick={handleGiveGem}
+                            onClick={showUndo ? handleUndoGem : handleGiveGem}
                             className={`
                                 flex items-center gap-1 p-1.5 rounded transition-all active:scale-75
                                 ${hasGivenGem
@@ -352,11 +390,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                     : 'text-neutral-500 hover:text-primary hover:bg-primary/5'
                                 }
                             `}
-                            title="Give Gem"
+                            title={showUndo ? "Take Gem Back (1m)" : "Give Gem"}
                         >
                             <Gem size={12} fill={hasGivenGem ? "currentColor" : "none"} />
                             <span className={`text-[9px] font-mono font-bold ${hasGivenGem ? 'text-primary' : 'hidden group-hover:inline-block'}`}>
-                                {localGems}
+                                {showUndo ? "UNDO" : localGems}
                             </span>
                         </button>
 
@@ -378,7 +416,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 export default ProjectCard;
 
 export const ProjectSkeleton: React.FC = () => (
-    <div className="flex flex-col h-full bg-neutral-950/50 border border-neutral-800/60 rounded-xl overflow-hidden animate-pulse">
+    <div className="flex flex-col h-full bg-neutral-950/50 border border-white/5 rounded-xl overflow-hidden animate-pulse">
         <div className="p-4 pb-2 space-y-2 border-b border-white/5">
             <div className="flex gap-2">
                 <div className="h-4 w-12 bg-neutral-800 rounded"></div>

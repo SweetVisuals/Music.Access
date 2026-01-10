@@ -2,7 +2,10 @@
 import { Project, UserProfile, Order, Conversation, Contract, Note, TalentProfile, CollabService, Purchase, LicenseInfo } from './types';
 
 export const GENRES = ["All Genres", "Trap", "Boom Bap", "R&B", "Drill", "Lofi", "Afrobeat", "Synthwave"];
-export const KEYS = ["All Keys", "Am", "Cm", "Em", "F#m", "Gm", "Bbm"];
+export const ROOT_KEYS = ["All Keys", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+export const SCALE_TYPES = ["All Scales", "Major", "Minor"];
+export const KEYS = ["All Keys", "Am", "Cm", "Em", "F#m", "Gm", "Bbm"]; // Kept for backward compatibility references
+
 
 const DEFAULT_LICENSES: LicenseInfo[] = [
     {
@@ -161,6 +164,7 @@ export const MOCK_USER_PROFILE: UserProfile = {
             title: 'Mixing & Mastering',
             description: 'Professional mix and master for your track. 48h turnaround.',
             price: 150,
+            rateType: 'flat',
             features: ['Analog Gear', 'Vocal Tuning', 'Stem Mixing']
         },
         {
@@ -168,6 +172,7 @@ export const MOCK_USER_PROFILE: UserProfile = {
             title: 'Custom Exclusive Beat',
             description: 'I will create a beat from scratch tailored to your specific requirements.',
             price: 500,
+            rateType: 'flat',
             features: ['Full Ownership', 'Stems Included', 'Unlimited Revisions']
         }
     ],
@@ -388,6 +393,8 @@ export const MOCK_TALENT: TalentProfile[] = [
         role: 'Producer',
         tags: ['Trap', 'Dark', 'Cinematic'],
         followers: '45.2K',
+        streams: 1200000,
+        tracks: 45,
         isVerified: true
     },
     {
@@ -398,6 +405,8 @@ export const MOCK_TALENT: TalentProfile[] = [
         role: 'Vocalist',
         tags: ['R&B', 'Soul', 'Hooks'],
         followers: '12.8K',
+        streams: 500000,
+        tracks: 20,
         isVerified: false
     },
     {
@@ -408,6 +417,8 @@ export const MOCK_TALENT: TalentProfile[] = [
         role: 'Engineer',
         tags: ['Mixing', 'Mastering', 'Dolby'],
         followers: '8.5K',
+        streams: 0,
+        tracks: 15,
         isVerified: true
     },
     {
@@ -418,6 +429,8 @@ export const MOCK_TALENT: TalentProfile[] = [
         role: 'Sound Designer',
         tags: ['Loops', 'Foley', 'Textures'],
         followers: '22.1K',
+        streams: 250000,
+        tracks: 120,
         isVerified: false
     }
 ];

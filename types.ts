@@ -138,7 +138,9 @@ export enum PlayState {
 
 export interface FilterState {
   genre: string;
-  key: string;
+  key?: string; // Deprecated, keeping temporarily if needed
+  rootKey: string;
+  scaleType: string;
   minBpm: number;
   maxBpm: number;
   minPrice: number;
@@ -154,6 +156,11 @@ export interface Message {
   text: string;
   timestamp: string;
   isMe: boolean;
+}
+
+export interface AiMessage {
+  role: 'user' | 'model';
+  text: string;
 }
 
 export interface Conversation {
@@ -250,12 +257,15 @@ export interface Note {
   tags: string[];
   updated: string;
   attachedAudio?: string;
+  attachedAudioName?: string;
+  attachedAudioProducer?: string;
+  attachedAudioAvatar?: string;
 }
 
 export interface Notification {
   id: string;
   userId: string;
-  type: 'sale' | 'message' | 'system' | 'alert';
+  type: 'sale' | 'message' | 'system' | 'alert' | 'follow' | 'order' | 'manage_order';
   title: string;
   message: string;
   link?: string;
@@ -272,6 +282,7 @@ export type View =
   | 'notes'
   | 'contracts'
   | 'browse-talent'
+  | 'following'
   | 'collaborate'
   | 'library'
   | 'checkout'

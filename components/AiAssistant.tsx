@@ -91,13 +91,27 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ projects, isOpen, onClose }) 
       {/* Input */}
       <div className="p-3 border-t border-neutral-800 bg-neutral-900 rounded-b-lg flex items-start space-x-2">
         <textarea
-          className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-2 py-2 text-sm text-white focus:outline-none focus:border-neutral-600 placeholder-neutral-600 font-mono resize-none"
+          className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-2 py-2 text-sm text-white focus:outline-none focus:border-neutral-600 placeholder-neutral-600 font-mono resize-none h-[38px] custom-scrollbar"
           placeholder="Type a command..."
           rows={1}
-          style={{ minHeight: '38px', maxHeight: '100px' }}
+          style={{ maxHeight: '150px' }}
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            e.target.style.height = 'auto';
+            e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+              (e.target as HTMLTextAreaElement).style.height = '38px';
+            } else if (e.key === 'Enter' && e.ctrlKey) {
+              e.preventDefault();
+              handleSend();
+              (e.target as HTMLTextAreaElement).style.height = '38px';
+            }
+          }}
         />
         <button
           onClick={handleSend}

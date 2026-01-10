@@ -1,9 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Conversation } from '../types';
-import { Search, Send, Paperclip, MoreVertical, Phone, Video, ArrowLeft, Plus, Menu, X, MessageCircle, Trash } from 'lucide-react';
-import { getConversations, deleteConversation } from '../services/supabaseService';
+import {
+    Search, Send, Paperclip, MoreVertical,
+    ArrowLeft, Plus, X, MessageCircle, Trash
+} from 'lucide-react';
+import {
+    getConversations,
+    deleteConversation,
+    getNotifications,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+    createConversation,
+    sendMessage,
+    deleteMessage,
+    searchUsers,
+    getCurrentUser,
+    supabase
+} from '../services/supabaseService';
 
 const StaticFab = ({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) => {
     return createPortal(
@@ -18,22 +33,25 @@ const StaticFab = ({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }
     );
 };
 
-const SwipeableConversationItem = ({
-    conv,
-    activeId,
-    onClick,
-    onDelete
-}: {
+interface SwipeableProps {
     conv: Conversation;
     activeId: string | null;
     onClick: () => void;
     onDelete: () => Promise<void>;
+}
+
+const SwipeableConversationItem: React.FC<SwipeableProps> = ({
+    conv,
+    activeId,
+    onClick,
+    onDelete
 }) => {
+
     const [offset, setOffset] = useState(0);
     const [startX, setStartX] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
-    const threshold = 100; // px to reveal
-    const deleteThreshold = window.innerWidth * 0.75; // 75% of screen width
+    const threshold = 100;
+    const deleteThreshold = window.innerWidth * 0.75;
 
     const handleTouchStart = (e: React.TouchEvent) => {
         setStartX(e.touches[0].clientX);
@@ -43,46 +61,34 @@ const SwipeableConversationItem = ({
     const handleTouchMove = (e: React.TouchEvent) => {
         const currentX = e.touches[0].clientX;
         const diff = currentX - startX;
-
-        // Allow swiping right (diff > 0)
-        // Add resistance if trying to swipe left
-        if (diff > 0) {
-            setOffset(diff);
-        }
+        if (diff > 0) setOffset(diff);
     };
 
     const handleTouchEnd = async () => {
         setIsDragging(false);
         if (offset > deleteThreshold) {
-            // Auto trigger delete logic
             await onDelete();
-            // Snap back if not deleted (cancelled)
             setOffset(0);
         } else if (offset > threshold) {
-            // Snap to open
             setOffset(threshold);
         } else {
-            // Snap back
             setOffset(0);
         }
     };
 
     return (
         <div className="relative overflow-hidden touch-pan-y select-none group bg-black lg:bg-[#0a0a0a]">
-            {/* Background / Actions */}
+            {/* Background Actions */}
             <div
                 className="absolute inset-y-0 left-0 bg-red-600 flex items-center justify-end pr-6 z-0 cursor-pointer overflow-hidden whitespace-nowrap"
                 style={{
-                    // Width matches the swipe offset exactly
                     width: `${Math.max(offset, 0)}px`,
                     opacity: offset > 0 ? 1 : 0,
-                    // Disable transition during drag for 1:1 follow, enable easing on release
                     transition: isDragging ? 'none' : 'width 0.3s ease-out, opacity 0.2s',
                 }}
-                onClick={async (e) => {
+                onClick={(e) => {
                     e.stopPropagation();
-                    await onDelete();
-                    setOffset(0);
+                    onDelete().then(() => setOffset(0));
                 }}
             >
                 <span className="text-white font-bold flex items-center gap-1.5">
@@ -104,13 +110,7 @@ const SwipeableConversationItem = ({
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
-                onClick={() => {
-                    if (offset > 0) {
-                        setOffset(0); // Close if open
-                    } else {
-                        onClick();
-                    }
-                }}
+                onClick={() => offset > 0 ? setOffset(0) : onClick()}
             >
                 <div className="p-4 flex items-center gap-3 cursor-pointer hover:bg-white/5 transition-colors">
                     <div className="relative shrink-0">
@@ -131,443 +131,414 @@ const SwipeableConversationItem = ({
 };
 
 const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }) => {
-    // Default open on desktop, closed on mobile
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
     const [activeId, setActiveId] = useState<string | null>(null);
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<'messages' | 'notifications'>('messages');
+    const [notifications, setNotifications] = useState<any[]>([]);
+    const [loadingNotifications, setLoadingNotifications] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchParams] = useSearchParams();
     const uidParam = searchParams.get('uid');
 
-    // New Conversation State
     const [isCreatingNew, setIsCreatingNew] = useState(false);
     const [userSearchQuery, setUserSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearchingUsers, setIsSearchingUsers] = useState(false);
     const [isStartingConversation, setIsStartingConversation] = useState(false);
 
-    useEffect(() => {
-        const fetchConversations = async () => {
-            try {
-                const data = await getConversations();
-                setConversations(data);
-                setFilteredConversations(data);
-            } catch (error) {
-                console.error('Failed to fetch conversations:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchConversations();
+    // Context Menu & Delete Dialog State
+    const [contextMenu, setContextMenu] = useState<{ x: number, y: number, messageId: string, isMe: boolean } | null>(null);
+    const [messageToDelete, setMessageToDelete] = useState<{ id: string, isMe: boolean } | null>(null);
+
+    const handleContextMenu = (e: React.MouseEvent, messageId: string, isMe: boolean) => {
+        e.preventDefault();
+        setContextMenu({ x: e.clientX, y: e.clientY, messageId, isMe });
+    };
+
+    const handleDeleteClick = () => {
+        if (contextMenu) {
+            setMessageToDelete({ id: contextMenu.messageId, isMe: contextMenu.isMe });
+            setContextMenu(null);
+        }
+    };
+
+    const handleDeleteMessage = async (messageId: string, forEveryone: boolean) => {
+        try {
+            await deleteMessage(messageId, forEveryone);
+            // Optimistically update UI
+            setConversations(prev => prev.map(c => {
+                if (c.id === activeId) {
+                    return {
+                        ...c,
+                        messages: c.messages.filter(m => m.id !== messageId)
+                    };
+                }
+                return c;
+            }));
+        } catch (e) {
+            console.error('Failed to delete message:', e);
+            alert('Could not delete message. You can only delete your own messages for everyone.');
+        } finally {
+            setMessageToDelete(null);
+        }
+    };
+
+    const loadConversations = useCallback(async () => {
+        try {
+            const data = await getConversations();
+            setConversations(data);
+            setFilteredConversations(data);
+        } catch (error) {
+            console.error('Failed to fetch conversations:', error);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    // Handle uid param to auto-select or suggest conversation
+    useEffect(() => {
+        loadConversations();
+    }, [loadConversations]);
+
+    // Clear unread message notifications when viewing messages
+    useEffect(() => {
+        const clearMessageNotifications = async () => {
+            const user = await getCurrentUser();
+            if (!user) return;
+
+            try {
+                const { data: unread } = await supabase
+                    .from('notifications')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .eq('type', 'message')
+                    .eq('read', false);
+
+                if (unread && unread.length > 0) {
+                    await Promise.all(unread.map(n => markNotificationAsRead(n.id)));
+                    window.dispatchEvent(new CustomEvent('notifications-updated'));
+                }
+            } catch (e) {
+                console.error("Error clearing message notifications", e);
+            }
+        };
+
+        if (activeTab === 'messages') {
+            clearMessageNotifications();
+        }
+    }, [activeTab]);
+
     useEffect(() => {
         if (!uidParam || loading) return;
-
-        const findAndSelect = async () => {
-            // 1. Check if we already have a conversation for this user in the loaded list
-            // Note: conversations objects have `user` (username), NOT `userId`. 
-            // We might need to fetch detailed conversation info or rely on searching if backend didn't provide userId.
-            // Assuming we don't have easy userId match in `conversations` list based on current type definition shown in previous file view?
-            // Wait, previous file view of MessagesPage showed `conversations` state.
-            // SwipeableConversationItem uses `conv.id`. Is that conversation ID or User ID? usually Conversation ID.
-            // If I want to find by USER ID, I need to know which conversation belongs to that user.
-
-            // If the `uid` param is passed, we might need to "Resolve" it to a conversation ID.
+        const handleUid = async () => {
             try {
-                // We'll define a helper to find or create conversation by user ID
-                // Ideally `getConversations` returns user_id, but if not we might need a specific call.
-                // Or, we can try to "Start Conversation" which usually returns existing one if exists.
-
-                // Let's optimize: First see if we can find it.
-                // Since we don't easily know which conv is for which user ID without more data, 
-                // the safest bet is to call `createConversation` (or similar "get or create") logic.
-
                 setIsStartingConversation(true);
-                const { createConversation } = await import('../services/supabaseService');
                 const convId = await createConversation(uidParam);
-
-                // Now reload conversations to ensure it's there
-                const { getConversations } = await import('../services/supabaseService');
-                const data = await getConversations();
-                setConversations(data);
-                setFilteredConversations(data);
+                await loadConversations();
                 setActiveId(convId);
                 setIsCreatingNew(false);
-                setIsSidebarOpen(false); // Close sidebar on mobile to show chat
-
+                setIsSidebarOpen(false);
             } catch (e) {
-                console.error("Failed to handle uid param:", e);
+                console.error("UID handled failed", e);
             } finally {
                 setIsStartingConversation(false);
             }
         };
+        handleUid();
+    }, [uidParam, loading, loadConversations]);
 
-        findAndSelect();
-    }, [uidParam, loading]); // Depend on loading to wait for initial fetch? Actually we might want independent check.
+    const loadNotifications = useCallback(async () => {
+        setLoadingNotifications(true);
+        try {
+            const user = await getCurrentUser();
+            if (user) setNotifications(await getNotifications(user.id));
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingNotifications(false);
+        }
+    }, []);
 
-    // Filter conversations
     useEffect(() => {
-        if (!searchQuery.trim()) {
-            setFilteredConversations(conversations);
-        } else {
-            const query = searchQuery.toLowerCase();
-            setFilteredConversations(conversations.filter(c =>
-                c.user.toLowerCase().includes(query) ||
-                c.lastMessage.toLowerCase().includes(query)
-            ));
-        }
-    }, [searchQuery, conversations]);
-
-    // On desktop, select first convo by default if none selected
-    React.useEffect(() => {
-        if (window.innerWidth >= 1024 && !activeId && filteredConversations.length > 0) {
-            setActiveId(filteredConversations[0].id);
-        }
-    }, [filteredConversations]);
-
-    const activeConv = conversations.find(c => c.id === activeId);
+        if (activeTab === 'notifications') loadNotifications();
+    }, [activeTab, loadNotifications]);
 
     const handleSend = async () => {
+        const activeConv = conversations.find(c => c.id === activeId);
         if (!inputText.trim() || !activeConv) return;
+
         const text = inputText;
-
-        // Optimistic Update
-        const tempId = Date.now().toString();
-        const newMsg = {
-            id: tempId,
-            sender: 'Me',
-            avatar: '', // You might want to grab this from a context or prop
-            text: text,
-            timestamp: 'Just now',
-            isMe: true
-        };
-
-        const updatedConv = {
-            ...activeConv,
-            messages: [...activeConv.messages, newMsg],
-            lastMessage: text,
-            timestamp: 'Just now'
-        };
-
-        const updatedList = conversations.map(c => c.id === activeId ? updatedConv : c);
-        setConversations(updatedList);
-        setFilteredConversations(prev => prev.map(c => c.id === activeId ? updatedConv : c));
-
         setInputText('');
 
+        // Optimistic
+        const tempMsg = { id: Date.now().toString(), sender: 'Me', avatar: '', text, timestamp: 'Just now', isMe: true };
+        setConversations(prev => prev.map(c => c.id === activeId ? { ...c, messages: [...c.messages, tempMsg], lastMessage: text, timestamp: 'Just now' } : c));
+
         try {
-            const { sendMessage } = await import('../services/supabaseService');
             await sendMessage(activeConv.id, text);
-        } catch (error) {
-            console.error('Failed to send message:', error);
-            // Optionally rollback here
+        } catch (e) {
+            console.error(e);
         }
     };
 
     const handleUserSearch = async (query: string) => {
         setUserSearchQuery(query);
-        if (query.length < 2) {
-            setSearchResults([]);
-            return;
-        }
-
+        if (query.length < 2) return setSearchResults([]);
         setIsSearchingUsers(true);
         try {
-            const { searchUsers } = await import('../services/supabaseService');
-            const results = await searchUsers(query);
-            setSearchResults(results);
-        } catch (e) {
-            console.error("Search failed", e);
+            setSearchResults(await searchUsers(query));
         } finally {
             setIsSearchingUsers(false);
         }
     };
 
-    const handleStartConversation = async (targetUserId: string) => {
+    const handleStartConversation = async (userId: string) => {
         if (isStartingConversation) return;
         setIsStartingConversation(true);
         try {
-            const { createConversation } = await import('../services/supabaseService');
-            const newConvId = await createConversation(targetUserId);
-
+            const newId = await createConversation(userId);
             setIsCreatingNew(false);
-            setUserSearchQuery('');
-            setSearchResults([]);
-
-            // Refresh conversations
-            setLoading(true);
-            const { getConversations } = await import('../services/supabaseService');
-            const data = await getConversations();
-            setConversations(data);
-            setActiveId(newConvId); // Select the new conversation
-            // Dispatch event to notify sidebar to re-sort
-            window.dispatchEvent(new CustomEvent('following-updated'));
+            await loadConversations();
+            setActiveId(newId);
         } catch (e) {
-            console.error("Failed to start conversation", e);
-            alert("Failed to start conversation. Please try again.");
+            alert("Error starting conversation");
         } finally {
-            setLoading(false);
             setIsStartingConversation(false);
         }
     };
 
-    const handleDeleteConversation = async (convId: string) => {
-        if (!confirm('Are you sure you want to delete this conversation?')) return;
-
+    const handleDeleteConvo = async (id: string) => {
+        if (!confirm('Delete conversation?')) return;
         try {
-            await deleteConversation(convId);
-            const updated = conversations.filter(c => c.id !== convId);
-            setConversations(updated);
-            setFilteredConversations(updated); // Simplified sync
-            if (activeId === convId) setActiveId(null);
+            await deleteConversation(id);
+            setConversations(prev => prev.filter(c => c.id !== id));
+            if (activeId === id) setActiveId(null);
         } catch (e) {
-            console.error('Failed to delete conversation', e);
-            alert('Failed to delete conversation');
+            console.error(e);
         }
     };
 
-    const isOverlayOpen = isSidebarOpen;
+    useEffect(() => {
+        const query = searchQuery.toLowerCase();
+        setFilteredConversations(conversations.filter(c =>
+            c.user.toLowerCase().includes(query) || c.lastMessage.toLowerCase().includes(query)
+        ));
+    }, [searchQuery, conversations]);
+
+    useEffect(() => {
+        if (window.innerWidth >= 1024 && !activeId && filteredConversations.length > 0) {
+            setActiveId(filteredConversations[0].id);
+        }
+    }, [filteredConversations, activeId]);
+
+    const activeConv = conversations.find(c => c.id === activeId);
 
     return (
-        <div className={`
-            w-full max-w-[1600px] mx-auto animate-in fade-in duration-500 flex flex-col overflow-hidden
-            fixed inset-x-0 bottom-0 top-16 ${isOverlayOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-[calc(100vh_-_8rem)] lg:pt-4 lg:px-8 lg:bg-transparent
-        `}>
-            {/* Static FAB for Mobile */}
+        <div className={`w-full absolute inset-0 sm:fixed sm:inset-x-0 sm:bottom-0 sm:top-16 ${isSidebarOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-full lg:bg-transparent overflow-hidden flex flex-col`}>
             <StaticFab isOpen={isSidebarOpen} onClick={() => setIsSidebarOpen(!isSidebarOpen)} />
 
-            {/* Desktop Header */}
-            <div className="hidden lg:flex items-end justify-between mb-6 shrink-0">
-                <div>
-                    <h1 className="text-3xl font-black text-white mb-1">Messages</h1>
-                    <p className="text-neutral-500 text-sm">Connect and collaborate with other artists.</p>
-                </div>
-                <button
-                    onClick={() => { setIsCreatingNew(true); setActiveId(null); }}
-                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold text-white transition-colors flex items-center gap-2"
-                >
-                    <Plus size={14} /> <span className="hidden sm:inline">New Message</span>
-                </button>
-            </div>
-
-            <div className="flex-1 flex bg-[#0a0a0a] lg:border border-neutral-800 lg:rounded-xl overflow-hidden shadow-none lg:shadow-2xl relative">
-                {/* Sidebar (List) */}
+            <div className="flex-1 flex bg-[#0a0a0a] overflow-hidden relative">
                 <div className={`
-                    absolute inset-0 z-[60] w-full lg:w-80 lg:static lg:border-r border-neutral-800 flex flex-col bg-black lg:bg-[#0a0a0a] transition-transform duration-300
-                    ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                    lg:translate-x-0
+                    absolute lg:static inset-y-0 left-0 z-[60] w-full lg:w-80 lg:border-r border-white/5 flex flex-col bg-black lg:bg-[#080808] transition-all duration-300
+                    ${isSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 lg:translate-x-0 lg:opacity-100'}
                 `}>
-                    <div className="p-4 border-b border-neutral-800 flex flex-col gap-4">
-                        <div className="flex items-center justify-between lg:hidden">
-                            <h2 className="text-lg font-bold text-white">Messages</h2>
-                            <button onClick={() => setIsSidebarOpen(false)} className="text-neutral-500 hover:text-white">
-                                <X size={20} />
+                    <div className="p-4 border-b border-white/5 flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                <MessageCircle size={14} className="text-primary" />
+                                Inbox
+                            </h3>
+                            <button onClick={() => { setIsCreatingNew(true); setActiveId(null); if (window.innerWidth < 1024) setIsSidebarOpen(false); }} className="text-neutral-400 hover:text-white"><Plus size={18} /></button>
+                        </div>
+
+                        <div className="flex p-1 bg-neutral-900 rounded-lg">
+                            <button onClick={() => setActiveTab('messages')} className={`flex-1 py-1.5 rounded text-[10px] font-bold uppercase transition-all ${activeTab === 'messages' ? 'bg-neutral-800 text-white' : 'text-neutral-500'}`}>Messages</button>
+                            <button onClick={() => setActiveTab('notifications')} className={`flex-1 py-1.5 rounded text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-2 ${activeTab === 'notifications' ? 'bg-neutral-800 text-white' : 'text-neutral-500'}`}>
+                                Alerts {notifications.some(n => !n.read) && <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>}
                             </button>
                         </div>
-                        <div className="relative">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-                            <input
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg py-2 pl-9 pr-4 text-xs text-white focus:outline-none focus:border-primary/50"
-                                placeholder="Search conversations..."
-                            />
-                        </div>
-                        <button
-                            onClick={() => {
-                                setIsCreatingNew(true);
-                                setActiveId(null);
-                                setIsSidebarOpen(false);
-                            }}
-                            className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold text-white transition-colors flex items-center justify-center gap-2 lg:hidden"
-                        >
-                            <Plus size={14} /> New Conversastion
-                        </button>
+
+                        {activeTab === 'messages' && (
+                            <div className="relative">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+                                <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-neutral-900 border border-white/5 rounded-lg py-2 pl-9 pr-4 text-xs text-white focus:outline-none" placeholder="Search..." />
+                            </div>
+                        )}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto">
-                        {loading ? (
-                            <div className="flex items-center justify-center py-8">
-                                <div className="text-center">
-                                    <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-2"></div>
-                                    <p className="text-neutral-500 font-mono text-xs">Loading...</p>
-                                </div>
-                            </div>
-                        ) : filteredConversations.length > 0 ? filteredConversations.map(conv => (
-                            <SwipeableConversationItem
-                                key={conv.id}
-                                conv={conv}
-                                activeId={activeId}
-                                onClick={() => {
-                                    setActiveId(conv.id);
-                                    setIsCreatingNew(false);
-                                    setIsSidebarOpen(false);
-                                }}
-                                onDelete={() => handleDeleteConversation(conv.id)}
-                            />
-                        )) : (
-                            <div className="flex items-center justify-center py-8 px-4 text-center">
-                                <div>
-                                    <p className="text-neutral-500 font-mono text-xs">No conversations found.</p>
-                                </div>
+                    <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1 custom-scrollbar">
+                        {activeTab === 'messages' ? (
+                            loading ? <div className="p-8 text-center text-xs text-neutral-500">Loading...</div> :
+                                filteredConversations.map(conv => (
+                                    <SwipeableConversationItem
+                                        key={conv.id}
+                                        conv={conv}
+                                        activeId={activeId}
+                                        onClick={() => { setActiveId(conv.id); setIsCreatingNew(false); setIsSidebarOpen(false); }}
+                                        onDelete={() => handleDeleteConvo(conv.id)}
+                                    />
+                                ))
+                        ) : (
+                            <div className="space-y-1">
+                                {loadingNotifications ? <div className="p-8 text-center text-xs text-neutral-500">Loading...</div> :
+                                    notifications.map(n => (
+                                        <div key={n.id} onClick={() => { if (!n.read) markNotificationAsRead(n.id); if (n.link) window.location.hash = '#' + n.link; }} className={`p-3 rounded-lg border cursor-pointer flex gap-3 ${n.read ? 'opacity-60 border-transparent' : 'bg-neutral-900 border-white/5'}`}>
+                                            <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-primary'}`}></div>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="text-xs font-bold text-white">{n.title}</h4>
+                                                <p className="text-xs text-neutral-500">{n.message}</p>
+                                            </div>
+                                        </div>
+                                    ))}
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Main Content Area */}
-                <div className="flex-1 flex flex-col bg-[#050505] relative w-full overflow-hidden">
+                <div className="flex-1 flex flex-col bg-[#050505] relative overflow-hidden">
                     {isCreatingNew ? (
-                        // --- NEW CONVERSATION VIEW ---
-                        <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-4 duration-300">
-                            {/* Header: To Input */}
-                            <div className="h-16 border-b border-neutral-800 flex items-center px-4 bg-neutral-900/30 gap-3">
+                        <div className="flex flex-col h-full bg-black/20">
+                            <div className="h-14 border-b border-white/5 flex items-center px-4 gap-3 bg-neutral-900/30">
                                 <span className="text-neutral-400 text-sm font-bold">To:</span>
-                                <div className="flex-1 relative">
-                                    <input
-                                        autoFocus={window.innerWidth >= 1024}
-                                        value={userSearchQuery}
-                                        onChange={(e) => handleUserSearch(e.target.value)}
-                                        className="w-full bg-transparent border-none text-white text-sm focus:outline-none placeholder-neutral-600"
-                                        placeholder="Type a name or handle..."
-                                    />
-                                    {isSearchingUsers && (
-                                        <div className="absolute right-0 top-1/2 -translate-y-1/2">
-                                            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                        </div>
-                                    )}
-                                </div>
+                                <input autoFocus={window.innerWidth >= 768} value={userSearchQuery} onChange={(e) => handleUserSearch(e.target.value)} className="flex-1 bg-transparent border-none text-white text-sm focus:outline-none" placeholder="Search creators..." />
                             </div>
-
-                            {/* Search Results */}
-                            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                                {userSearchQuery.length > 1 && searchResults.length === 0 && !isSearchingUsers ? (
-                                    <div className="text-center py-8 text-neutral-500 text-sm">No users found.</div>
-                                ) : searchResults.length > 0 ? (
-                                    <div className="space-y-1">
-                                        {searchResults.map(user => (
-                                            <div
-                                                key={user.id}
-                                                onClick={() => handleStartConversation(user.id)}
-                                                className={`flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl cursor-pointer transition-colors group ${isStartingConversation ? 'opacity-50 pointer-events-none' : ''}`}
-                                            >
-                                                <img src={user.avatar} className="w-10 h-10 rounded-full object-cover group-hover:scale-105 transition-transform" />
-                                                <div className="flex-1">
-                                                    <h4 className="text-sm font-bold text-white">{user.username}</h4>
-                                                    <p className="text-xs text-neutral-500">@{user.handle}</p>
-                                                </div>
-                                                <ArrowLeft size={16} className="text-neutral-600 group-hover:text-primary rotate-180 transition-colors opacity-0 group-hover:opacity-100" />
-                                            </div>
-                                        ))}
+                            <div className="flex-1 overflow-y-auto p-4">
+                                {searchResults.map(user => (
+                                    <div key={user.id} onClick={() => handleStartConversation(user.id)} className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl cursor-pointer">
+                                        <img src={user.avatar} className="w-10 h-10 rounded-full" />
+                                        <div className="flex-1"><h4 className="text-sm font-bold text-white">{user.username}</h4><p className="text-xs text-neutral-500">@{user.handle}</p></div>
                                     </div>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center h-full text-neutral-600 space-y-4">
-                                        <Search size={48} className="opacity-20" />
-                                        <p className="text-xs">Search for creators to start a conversation.</p>
-                                    </div>
-                                )}
+                                ))}
                             </div>
                         </div>
                     ) : activeConv ? (
                         <>
-                            {/* Chat Header */}
-                            <div className="h-16 lg:h-16 border-b border-neutral-800 flex items-center justify-between px-4 lg:px-6 bg-neutral-900/80 backdrop-blur-md shrink-0">
+                            <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-neutral-900/30">
                                 <div className="flex items-center gap-3">
-                                    <img src={activeConv.avatar} className="w-9 h-9 rounded-full object-cover border border-white/10" />
-                                    <div>
-                                        <h3 className="text-sm font-bold text-white">{activeConv.user}</h3>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
-                                            <span className="text-[10px] text-neutral-400">Online</span>
-                                        </div>
-                                    </div>
+                                    <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-neutral-400"><ArrowLeft size={20} /></button>
+                                    <img src={activeConv.avatar} className="w-8 h-8 rounded-full" />
+                                    <div><h3 className="text-sm font-bold text-white">{activeConv.user}</h3><span className="text-[10px] text-green-500">Online</span></div>
                                 </div>
-                                <div className="flex items-center gap-1 text-neutral-400">
-                                    {/* Call button hidden by default as requested (until following check is impl) */}
-                                    {/* <button className="p-2 hover:bg-white/5 rounded-lg hover:text-white transition-colors"><Phone size={18} /></button> */}
-                                    <button className="p-2 hover:bg-white/5 rounded-lg hover:text-white transition-colors"><MoreVertical size={18} /></button>
-                                </div>
+                                <button className="p-2 text-neutral-400"><MoreVertical size={18} /></button>
                             </div>
-
-                            {/* Messages List */}
-                            <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 custom-scrollbar bg-dot-grid">
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                                 {activeConv.messages.map(msg => (
                                     <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[85%] lg:max-w-[70%] rounded-2xl px-4 py-3 ${msg.isMe ? 'bg-primary text-black rounded-br-none' : 'bg-neutral-800 text-white rounded-bl-none'}`}>
-                                            <p className="text-sm leading-relaxed">{msg.text}</p>
-                                            <span className={`text-[9px] block mt-1 opacity-70 ${msg.isMe ? 'text-black/70' : 'text-neutral-400'}`}>{msg.timestamp}</span>
+                                        <div
+                                            onContextMenu={(e) => handleContextMenu(e, msg.id, msg.isMe)}
+                                            className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm cursor-pointer select-none transition-transform active:scale-[0.98] ${msg.isMe ? 'bg-primary text-black' : 'bg-neutral-800 text-white border border-neutral-700'}`}
+                                        >
+                                            <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                                            <span className="text-[9px] opacity-50 block mt-1">{msg.timestamp}</span>
                                         </div>
                                     </div>
                                 ))}
-                                {/* Spacer for Fixed Inputs on Mobile */}
-                                <div className={`${isPlayerActive ? 'h-52' : 'h-40'} lg:hidden`} />
                             </div>
-
-                            {/* Input Area */}
-                            <div className={`
-                                p-3 border-t border-neutral-800 bg-neutral-900/95 backdrop-blur-xl shrink-0
-                                lg:static lg:bg-neutral-900/50
-                                fixed left-0 right-0 z-20 border-t lg:border-t-0
-                                border-white/10 lg:border-neutral-800
-                                transition-all duration-300
-                            `}
-                                style={{ bottom: isPlayerActive ? 'calc(8rem + env(safe-area-inset-bottom))' : 'calc(4.5rem + env(safe-area-inset-bottom))' }}
-                            >
-                                <div className="flex items-center gap-3 max-w-[1600px] mx-auto">
-                                    <button className="p-2 text-neutral-400 hover:text-white hover:bg-white/10 rounded-full transition-colors shrink-0 flex items-center justify-center">
-                                        <Paperclip size={20} />
-                                    </button>
-                                    <div className="flex-1 bg-black/40 lg:bg-neutral-950 border border-neutral-800 rounded-2xl p-1.5 pl-3 focus-within:border-neutral-600 transition-colors flex items-center">
+                            <div className="p-4 border-t border-white/5 bg-[#0a0a0a]/80 backdrop-blur-md">
+                                <div className="flex items-center gap-3 max-w-4xl mx-auto">
+                                    <button className="text-neutral-500"><Paperclip size={20} /></button>
+                                    <div className="flex-1 bg-black/40 border border-white/5 rounded-xl px-4 py-2 flex items-center">
                                         <textarea
                                             value={inputText}
-                                            onChange={(e) => setInputText(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                                            className="w-full bg-transparent text-sm text-white focus:outline-none resize-none h-9 max-h-32 custom-scrollbar placeholder-neutral-600 py-2 leading-tight"
+                                            onChange={(e) => {
+                                                setInputText(e.target.value);
+                                                // Auto-resize logic
+                                                e.target.style.height = 'auto';
+                                                e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    handleSend();
+                                                    // Reset height
+                                                    const target = e.target as HTMLTextAreaElement;
+                                                    target.style.height = '1.5rem';
+                                                }
+                                            }}
+                                            className="w-full bg-transparent text-sm text-white focus:outline-none resize-none h-6 custom-scrollbar"
                                             placeholder="Message..."
                                             rows={1}
-                                            style={{ minHeight: '36px' }}
                                         />
                                     </div>
-                                    <button
-                                        onClick={handleSend}
-                                        disabled={!inputText.trim()}
-                                        className={`p-2.5 rounded-full transition-all duration-200 shrink-0 flex items-center justify-center ${inputText.trim() ? 'bg-primary text-black hover:scale-105 hover:shadow-lg hover:shadow-primary/20' : 'bg-neutral-800 text-neutral-500'}`}
-                                    >
-                                        <Send size={18} fill={inputText.trim() ? "currentColor" : "none"} />
-                                    </button>
+                                    <button onClick={handleSend} disabled={!inputText.trim()} className={`p-2 rounded-full ${inputText.trim() ? 'bg-primary text-black' : 'bg-neutral-800 text-neutral-500'}`}><Send size={18} /></button>
                                 </div>
                             </div>
                         </>
                     ) : (
-                        <div className="flex-1 flex items-center justify-center text-neutral-500 flex-col p-8">
-                            <div className="w-16 h-16 bg-neutral-900 rounded-2xl flex items-center justify-center mb-4">
-                                <Search size={32} />
-                            </div>
-                            <h3 className="text-lg font-bold text-white mb-2">No Conversation Selected</h3>
-                            <p className="text-sm text-center mb-6">Select a conversation from the sidebar to start messaging.</p>
-                            <button
-                                onClick={() => setIsCreatingNew(true)}
-                                className="px-6 py-3 bg-white text-black font-bold rounded-xl hover:scale-105 transition-transform"
-                            >
-                                Start New Conversation
-                            </button>
+                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-neutral-500">
+                            <MessageCircle size={48} className="mb-4 opacity-20" />
+                            <h3 className="text-lg font-bold text-white mb-2">Inbox</h3>
+                            <button onClick={() => setIsCreatingNew(true)} className="px-6 py-2 bg-white text-black font-bold rounded-lg uppercase text-xs tracking-widest mt-4">New Message</button>
                         </div>
                     )}
                 </div>
-
-                {isSidebarOpen && (
-                    <div
-                        className="absolute inset-0 bg-black/80 z-[48] lg:hidden"
-                        onClick={() => setIsSidebarOpen(false)}
-                    ></div>
-                )}
             </div>
-        </div >
+
+            {isSidebarOpen && <div className="absolute inset-0 bg-black/60 z-[58] lg:hidden" onClick={() => setIsSidebarOpen(false)} />}
+
+            {/* Message Context Menu */}
+            {contextMenu && (
+                <>
+                    <div className="fixed inset-0 z-[150]" onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }} />
+                    <div
+                        className="fixed z-[160] bg-neutral-900 border border-white/5 rounded-xl shadow-2xl py-1 min-w-[160px] animate-in fade-in zoom-in duration-100"
+                        style={{
+                            left: Math.min(contextMenu.x, window.innerWidth - 170),
+                            top: Math.min(contextMenu.y, window.innerHeight - 100)
+                        }}
+                    >
+                        <button
+                            onClick={handleDeleteClick}
+                            className="w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-white/5 flex items-center gap-3 transition-colors"
+                        >
+                            <Trash size={16} />
+                            Delete Message
+                        </button>
+                    </div>
+                </>
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            {messageToDelete && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="w-full max-w-sm bg-[#0a0a0a] border border-white/5 rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+                        <div className="p-8 text-center">
+                            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Trash size={28} className="text-red-500" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white mb-2">Delete Message?</h3>
+                            <p className="text-neutral-400 text-sm mb-8">This action cannot be undone.</p>
+
+                            <div className="space-y-3">
+                                <button
+                                    onClick={() => handleDeleteMessage(messageToDelete.id, false)}
+                                    className="w-full py-4 bg-neutral-800 hover:bg-neutral-700 text-white rounded-2xl text-sm font-bold transition-all active:scale-95"
+                                >
+                                    Delete for me
+                                </button>
+                                {messageToDelete.isMe && (
+                                    <button
+                                        onClick={() => handleDeleteMessage(messageToDelete.id, true)}
+                                        className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-2xl text-sm font-bold shadow-lg shadow-red-600/20 transition-all active:scale-95"
+                                    >
+                                        Delete for everyone
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setMessageToDelete(null)}
+                                    className="w-full py-4 text-neutral-500 hover:text-white text-sm font-bold transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 

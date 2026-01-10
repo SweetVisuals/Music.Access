@@ -14,6 +14,7 @@ import ContractsPage from './components/ContractsPage';
 import PostServicePage from './components/PostServicePage';
 import NotesPage from './components/NotesPage';
 import BrowseTalentPage from './components/BrowseTalentPage';
+import FollowingPage from './components/FollowingPage';
 import CollaboratePage from './components/CollaboratePage';
 import LibraryPage from './components/LibraryPage';
 import CheckoutPage from './components/CheckoutPage';
@@ -60,6 +61,7 @@ const App: React.FC = () => {
     if (pathname.startsWith('/@') || pathname === '/profile') return 'profile';
     if (pathname === '/upload') return 'upload';
     if (pathname === '/browse-talent') return 'browse-talent';
+    if (pathname === '/following') return 'following';
     if (pathname === '/collaborate') return 'collaborate';
     if (pathname === '/library') return 'library';
     if (pathname === '/checkout') return 'checkout';
@@ -96,7 +98,8 @@ const App: React.FC = () => {
 
   const [filters, setFilters] = useState<FilterState>({
     genre: "All Genres",
-    key: "All Keys",
+    rootKey: "All Keys",
+    scaleType: "All Scales",
     minBpm: 0,
     maxBpm: 300,
     minPrice: 0,
@@ -210,6 +213,13 @@ const App: React.FC = () => {
       setProfileLoading(false);
     };
     fetchUserProfile();
+
+    const handleProfileUpdate = () => fetchUserProfile();
+    window.addEventListener('profile-updated', handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener('profile-updated', handleProfileUpdate);
+    };
   }, [isLoggedIn]);
 
   // Auth Guard for protected routes
@@ -223,7 +233,29 @@ const App: React.FC = () => {
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
       const matchesGenre = filters.genre === "All Genres" || p.genre === filters.genre;
-      const matchesKey = filters.key === "All Keys" || p.key === filters.key;
+      // Key Filtering Logic
+      let matchesKey = true;
+      if (filters.rootKey !== "All Keys") {
+        if (filters.scaleType === "Major") {
+          // Exact match for Major (e.g., "C")
+          matchesKey = p.key === filters.rootKey;
+        } else if (filters.scaleType === "Minor") {
+          // Match Root + "m" (e.g., "Cm")
+          matchesKey = p.key === `${filters.rootKey}m`;
+        } else {
+          // Match either Major or Minor (e.g., "C" or "Cm")
+          matchesKey = p.key === filters.rootKey || p.key === `${filters.rootKey}m`;
+        }
+      } else if (filters.scaleType !== "All Scales") {
+        // Root is "All", but Scale is specific
+        if (filters.scaleType === "Major") {
+          // Major keys usually don't have 'm' at the end (simplistic assumption for this mock data)
+          // Actually, we should check if it DOESNT end in 'm'
+          matchesKey = !p.key?.endsWith('m');
+        } else if (filters.scaleType === "Minor") {
+          matchesKey = !!p.key?.endsWith('m');
+        }
+      }
 
       const query = filters.searchQuery.toLowerCase().trim();
       if (!query) return matchesGenre && matchesKey;
@@ -308,6 +340,7 @@ const App: React.FC = () => {
           'home': '/',
           'upload': '/upload',
           'browse-talent': '/browse-talent',
+          'following': '/following',
           'collaborate': '/collaborate',
           'library': '/library',
           'checkout': '/checkout',
@@ -342,6 +375,7 @@ const App: React.FC = () => {
         'profile': '/profile', // Special route for current user's profile
         'upload': '/upload',
         'browse-talent': '/browse-talent',
+        'following': '/following',
         'collaborate': '/collaborate',
         'library': '/library',
         'checkout': '/checkout',
@@ -411,10 +445,10 @@ const App: React.FC = () => {
             onMenuClick={() => setIsMobileMenuOpen(true)}
           />
 
-          <main ref={mainRef} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-4rem)] overflow-hidden pt-16' : 'overflow-y-auto pt-20 lg:pt-28 pb-24 lg:pb-8'} ${currentTrackId && currentView !== 'notes' ? 'pb-40' : ''} scroll-smooth`}>
+          <main ref={mainRef} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[56px]' : currentView === 'dashboard-messages' ? 'overflow-hidden pt-[64px] pb-0' : 'overflow-y-auto pt-[80px] lg:pt-[80px] pb-24 lg:pb-8'} ${currentTrackId && currentView !== 'notes' && currentView !== 'dashboard-messages' ? 'pb-40' : ''} scroll-smooth`}>
 
             {currentView === 'home' && (
-              <div className="max-w-[1800px] mx-auto px-3 lg:px-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {isLoggedIn && !gemsClaimedToday && !profileLoading && userProfile && (
                   <div className="mb-4 mt-3 lg:mt-0 p-3 bg-gradient-to-r from-primary/20 to-transparent border border-primary/20 rounded-xl flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -444,18 +478,18 @@ const App: React.FC = () => {
                 )}
 
                 {loading ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mt-3 pb-20">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mt-6 pb-20">
                     {[...Array(12)].map((_, i) => (
-                      <div key={i} className="h-[340px]">
+                      <div key={i} className="h-[282px]">
                         <ProjectSkeleton />
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mt-3 pb-20">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mt-6 pb-20">
                     {filteredProjects.length > 0 ? (
                       filteredProjects.map(project => (
-                        <div key={project.id} className="h-[340px]">
+                        <div key={project.id} className="h-[282px]">
                           <ProjectCard
                             project={project}
                             currentTrackId={currentTrackId}
@@ -469,7 +503,7 @@ const App: React.FC = () => {
                       <div className="col-span-full py-20 text-center border border-dashed border-neutral-800 rounded-xl bg-white/5">
                         <p className="text-neutral-500 font-mono text-xs mb-4">No data found matching query parameters.</p>
                         <button
-                          onClick={() => setFilters({ ...filters, genre: "All Genres", key: "All Keys", searchQuery: "" })}
+                          onClick={() => setFilters({ ...filters, genre: "All Genres", rootKey: "All Keys", scaleType: "All Scales", searchQuery: "" })}
                           className="px-4 py-2 bg-primary/10 text-primary border border-primary/50 rounded hover:bg-primary hover:text-black transition-colors font-mono text-xs uppercase tracking-wider"
                         >
                           Reset Search Query
@@ -495,6 +529,16 @@ const App: React.FC = () => {
 
             {currentView === 'browse-talent' && (
               <BrowseTalentPage
+                currentProject={currentProject}
+                currentTrackId={currentTrackId}
+                isPlaying={isPlaying}
+                onPlayTrack={handlePlayTrack}
+                onTogglePlay={handleTogglePlay}
+              />
+            )}
+
+            {currentView === 'following' && (
+              <FollowingPage
                 currentProject={currentProject}
                 currentTrackId={currentTrackId}
                 isPlaying={isPlaying}

@@ -370,7 +370,9 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                                             trackTitle: currentTrack.title,
                                             trackId: currentTrack.id,
                                             fileName: `${currentTrack.title}.mp3`,
-                                            trackUrl: audioUrl
+                                            trackUrl: audioUrl,
+                                            producerName: currentProject.producer,
+                                            producerAvatar: currentProject.producerAvatar
                                         }
                                     });
                                 }}
@@ -503,7 +505,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                     <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
                             <div className="h-10 w-10 rounded-lg overflow-hidden shrink-0 relative group cursor-pointer border border-white/5 bg-neutral-800">
-                                <img src={currentProject.coverImage || MOCK_USER_PROFILE.avatar} className="w-full h-full object-cover" />
+                                <img src={currentProject.producerAvatar || currentProject.coverImage || MOCK_USER_PROFILE.avatar} className="w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                             </div>
                             <div className="min-w-0 flex-1">
@@ -606,7 +608,9 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                                             trackTitle: currentTrack.title,
                                             trackId: currentTrack.id,
                                             fileName: `${currentTrack.title}.mp3`,
-                                            trackUrl: audioUrl
+                                            trackUrl: audioUrl,
+                                            producerName: currentProject.producer,
+                                            producerAvatar: currentProject.producerAvatar
                                         }
                                     });
                                 }}

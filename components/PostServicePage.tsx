@@ -108,8 +108,12 @@ const PostServicePage: React.FC = () => {
                         <label className="text-xs font-bold text-white uppercase tracking-wider">Description</label>
                         <textarea
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="w-full h-32 bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-white focus:border-primary/50 focus:outline-none resize-none"
+                            onChange={(e) => {
+                                setDescription(e.target.value);
+                                e.target.style.height = 'auto';
+                                e.target.style.height = `${Math.min(e.target.scrollHeight, 300)}px`;
+                            }}
+                            className="w-full min-h-[128px] h-auto bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-white focus:border-primary/50 focus:outline-none resize-none custom-scrollbar"
                             placeholder="Describe exactly what you offer..."
                             required
                         />

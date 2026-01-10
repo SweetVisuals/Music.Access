@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronDown, Activity, Music2, Key, Hash } from 'lucide-react';
 import CustomDropdown from './CustomDropdown';
 import CustomInput from './CustomInput';
-import { GENRES, KEYS } from '../constants';
+import { GENRES, ROOT_KEYS, SCALE_TYPES } from '../constants';
 import { FilterState } from '../types';
 
 interface FilterBarProps {
@@ -22,20 +22,23 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
 
   return (
     <div className="flex flex-col space-y-6 pb-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-white tracking-tight">Marketplace</h2>
+          <h1 className="text-3xl lg:text-5xl font-black text-white tracking-tighter mb-2">Discover</h1>
+          <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">
+            Explore the latest beats, sound kits, and projects from the community.
+          </p>
         </div>
 
-        <div className="flex items-center">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary mr-1.5 animate-pulse"></span>
+        <div className="flex items-center pb-2">
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 font-mono tracking-widest">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary mr-2 animate-pulse"></span>
             LIVE FEED
           </span>
         </div>
       </div>
 
-      <div className="w-full glass-panel p-4 lg:p-1.5 rounded-xl flex flex-col lg:flex-row items-stretch lg:items-center gap-4 lg:gap-2 lg:space-x-2 relative z-30">
+      <div className="w-full glass-panel p-4 lg:p-2.5 rounded-xl flex flex-col lg:flex-row items-stretch lg:items-center gap-4 lg:gap-3 lg:space-x-3 relative z-30 shadow-2xl">
         {/* Filters Container */}
 
         {/* Genre */}
@@ -46,17 +49,30 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
           placeholder="Genre"
           className="w-full lg:w-48"
           searchable
+          size="compact"
         />
 
-        {/* Key */}
-        <CustomDropdown
-          value={filters.key}
-          onChange={(val) => onFilterChange({ ...filters, key: val })}
-          options={KEYS}
-          placeholder="Key"
-          className="w-full lg:w-32"
-          searchable
-        />
+        {/* Key and Scale */}
+        <div className="flex items-center gap-2 w-full lg:w-auto">
+          <CustomDropdown
+            value={filters.rootKey}
+            onChange={(val) => onFilterChange({ ...filters, rootKey: val })}
+            options={ROOT_KEYS}
+            placeholder="Key"
+            className="w-full lg:w-32" // Increased width to fit "All Keys"
+            searchable
+            size="compact"
+          />
+          <CustomDropdown
+            value={filters.scaleType}
+            onChange={(val) => onFilterChange({ ...filters, scaleType: val })}
+            options={SCALE_TYPES}
+            placeholder="Scale"
+            className="w-full lg:w-32"
+            searchable={false}
+            size="compact"
+          />
+        </div>
 
         <div className="h-px w-full bg-white/10 lg:h-6 lg:w-px lg:mx-2"></div>
 

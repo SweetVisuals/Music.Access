@@ -256,7 +256,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 const isProjectPlaying = currentProject?.id === project.id && isPlaying;
 
                 return (
-                    <div key={project.id} className="bg-neutral-950/50 border border-neutral-800/60 rounded-xl overflow-hidden">
+                    <div key={project.id} className="bg-neutral-950/50 border border-white/5 rounded-xl overflow-hidden">
                         {/* Project Header */}
                         <div
                             className="flex items-center gap-3 p-3 cursor-pointer hover:bg-white/5 transition-colors"
@@ -363,7 +363,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                     </div>
                 );
             }) : (
-                <div className="py-32 text-center border border-dashed border-neutral-800 rounded-xl bg-white/5">
+                <div className="py-32 text-center border border-dashed border-white/5 rounded-xl bg-white/5">
                     <p className="text-neutral-500 font-mono mb-4">No projects in your library yet.</p>
                     <p className="text-xs text-neutral-600">Create your first project to get started!</p>
                 </div>
@@ -375,12 +375,12 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
 
 
     return (
-        <div className="w-full max-w-[1600px] mx-auto pb-12 pt-4 lg:pt-6 px-4 lg:px-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-[1900px] mx-auto pb-12 pt-4 lg:pt-6 px-4 lg:px-10 xl:px-14 animate-in fade-in duration-500">
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 lg:mb-8 gap-4">
                 <div>
-                    <h1 className="text-xl lg:text-3xl font-black text-white mb-1">My Library</h1>
-                    <p className="text-neutral-500 text-xs lg:text-sm">Your collection of beats, songs, and playlists.</p>
+                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">My Library</h1>
+                    <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Your collection of beats, songs, and playlists.</p>
                 </div>
 
             </div>
@@ -436,7 +436,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 </div>
 
                 {/* Desktop Segmented Control */}
-                <div className="hidden md:flex md:flex-nowrap md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 gap-1 md:gap-0">
+                <div className="hidden md:flex md:flex-nowrap md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-white/5 gap-1 md:gap-0">
                     <TabButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} label="All" mobileCompact />
                     <TabButton active={activeTab === 'saved'} onClick={() => setActiveTab('saved')} label="Saved" icon={<BookmarkPlus size={10} />} mobileCompact />
                     <TabButton active={activeTab === 'purchased'} onClick={() => setActiveTab('purchased')} label="Bought" icon={<Disc size={10} />} mobileCompact />
@@ -444,7 +444,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                 </div>
             </div>
 
-            <div className="flex items-center justify-between mb-6 bg-[#0a0a0a] border border-neutral-800 p-2 rounded-xl">
+            <div className="flex items-center justify-between mb-6 bg-[#0a0a0a] border border-white/5 p-2 rounded-xl">
                 <div className="relative flex-1 w-full md:max-w-md">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
                     <input className="w-full bg-transparent border-none text-xs text-white pl-9 focus:outline-none" placeholder="Search your library..." />
@@ -482,7 +482,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                             {/* Create Playlist Button - Only in Grid View? Or maybe List View allows header button? */}
                             <button
                                 onClick={() => setShowCreatePlaylist(true)}
-                                className="h-[200px] border-2 border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all group bg-white/[0.01]"
+                                className="h-[200px] border-2 border-dashed border-white/5 rounded-xl flex flex-col items-center justify-center text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all group bg-white/[0.01]"
                             >
                                 <div className="p-4 bg-neutral-900 rounded-full mb-3 group-hover:scale-110 transition-transform">
                                     <Plus size={24} />
@@ -498,7 +498,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                             ) : playlists.map(playlist => (
                                 <div
                                     key={playlist.id}
-                                    className="group relative h-[200px] bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden cursor-pointer hover:border-neutral-600 transition-colors"
+                                    className="group relative h-[200px] bg-[#0a0a0a] border border-white/5 rounded-xl overflow-hidden cursor-pointer hover:border-neutral-600 transition-colors"
                                 >
                                     <div className="absolute inset-0 flex items-center justify-center bg-neutral-900">
                                         <div className="grid grid-cols-2 gap-1 p-4 opacity-50 rotate-12 scale-110">
@@ -539,9 +539,9 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
             ) : viewMode === 'list' ? (
                 <ListView />
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     {displayProjects.length > 0 ? displayProjects.map(project => (
-                        <div key={project.id} className="h-[260px]">
+                        <div key={project.id} className="h-[282px]">
                             <ProjectCard
                                 project={project}
                                 currentTrackId={currentTrackId}
@@ -553,7 +553,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                             />
                         </div>
                     )) : (
-                        <div className="col-span-full py-32 text-center border border-dashed border-neutral-800 rounded-xl bg-white/5">
+                        <div className="col-span-full py-32 text-center border border-dashed border-white/5 rounded-xl bg-white/5">
                             <p className="text-neutral-500 font-mono mb-4">No projects in your library yet.</p>
                             <p className="text-xs text-neutral-600">Create your first project to get started!</p>
                         </div>
@@ -635,7 +635,7 @@ const PlaylistListView = ({ playlists, loadingPlaylists, setShowCreatePlaylist, 
         <div className="space-y-6">
             <button
                 onClick={() => setShowCreatePlaylist(true)}
-                className="w-full py-3 border-2 border-dashed border-neutral-800 rounded-xl flex items-center justify-center gap-2 text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all group bg-white/[0.01]"
+                className="w-full py-3 border-2 border-dashed border-white/5 rounded-xl flex items-center justify-center gap-2 text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all group bg-white/[0.01]"
             >
                 <div className="p-1 bg-neutral-900 rounded-full group-hover:scale-110 transition-transform">
                     <Plus size={16} />
@@ -653,7 +653,7 @@ const PlaylistListView = ({ playlists, loadingPlaylists, setShowCreatePlaylist, 
                 const isPlaylistPlaying = currentProject?.id === playlist.id && isPlaying;
 
                 return (
-                    <div key={playlist.id} className="bg-neutral-950/50 border border-neutral-800/60 rounded-xl overflow-hidden">
+                    <div key={playlist.id} className="bg-neutral-950/50 border border-white/5 rounded-xl overflow-hidden">
                         <div
                             className="flex items-center gap-3 p-3 cursor-pointer hover:bg-white/5 transition-colors"
                             onClick={() => togglePlaylistExpanded(playlist.id)}
@@ -764,7 +764,7 @@ const CreatePlaylistModalComponent: React.FC<{
 }) => (
         <div className="fixed inset-0 z-50 bg-black flex flex-col animate-in slide-in-from-bottom duration-300">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-neutral-800">
+            <div className="flex items-center justify-between p-4 border-white/5">
                 <button
                     onClick={() => setShowCreatePlaylist(false)}
                     className="p-2 -ml-2 text-neutral-400 hover:text-white"
@@ -795,14 +795,14 @@ const CreatePlaylistModalComponent: React.FC<{
                     className="w-full bg-transparent border-none text-2xl font-bold text-white placeholder-neutral-600 focus:outline-none focus:ring-0 px-0"
                     autoFocus={window.innerWidth >= 768}
                 />
-                <div className="h-[1px] w-full bg-neutral-800 mt-2"></div>
+                <div className="h-[1px] w-full bg-white/5 mt-2"></div>
                 <p className="text-xs text-neutral-500 mt-3 font-medium">
                     {selectedTracks.size} {selectedTracks.size === 1 ? 'track' : 'tracks'} selected
                 </p>
             </div>
 
             {/* Source Tabs */}
-            <div className="flex border-b border-neutral-800">
+            <div className="flex border-b border-white/5">
                 <button
                     onClick={() => setTrackSourceTab('uploads')}
                     className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold transition-colors ${trackSourceTab === 'uploads'
@@ -882,7 +882,7 @@ const CreatePlaylistModalComponent: React.FC<{
             </div>
 
             {/* Footer Action Button */}
-            <div className="px-4 pt-4 pb-24 border-t border-neutral-800 bg-black safe-area-bottom">
+            <div className="px-4 pt-4 pb-24 border-t border-white/5 bg-black safe-area-bottom">
                 <button
                     onClick={handleCreatePlaylist}
                     disabled={!playlistName.trim() || selectedTracks.size === 0 || creatingPlaylist}

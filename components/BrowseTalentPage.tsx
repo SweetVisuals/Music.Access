@@ -5,7 +5,7 @@ import { MOCK_TALENT } from '../constants';
 import { Verified, UserPlus, ChevronRight, Star, Music, Zap, MessageCircle } from 'lucide-react';
 import ProjectCard, { ProjectSkeleton } from './ProjectCard';
 import { Project, TalentProfile, Service } from '../types';
-import { getTalentProfiles, getServices, getProjects } from '../services/supabaseService';
+import { getTalentProfiles, getServices, getProjects, getCurrentUser } from '../services/supabaseService';
 
 interface BrowseTalentPageProps {
     currentTrackId: string | null;
@@ -27,6 +27,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
     const [services, setServices] = useState<Service[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -68,6 +69,12 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
             setLoading(false);
         };
         fetchData();
+
+        const checkUser = async () => {
+            const user = await getCurrentUser();
+            if (user) setCurrentUserId(user.id);
+        };
+        checkUser();
     }, []);
 
     const handleFollow = async (e: React.MouseEvent, talent: TalentProfile) => {
@@ -118,12 +125,12 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
     };
 
     return (
-        <div className="w-full max-w-[1600px] mx-auto pb-4 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-[1900px] mx-auto pb-4 lg:pb-32 pt-4 lg:pt-6 px-4 lg:px-10 xl:px-14 animate-in fade-in duration-500">
 
             {/* Header */}
             <div className="mb-10">
-                <h1 className="text-3xl font-black text-white mb-2">Browse Talent</h1>
-                <p className="text-neutral-500 text-sm">Discover the best emerging producers, vocalists, and engineers.</p>
+                <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Browse Talent</h1>
+                <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Discover the best emerging producers, vocalists, and engineers.</p>
             </div>
 
             {/* Featured Talent Section */}
@@ -135,7 +142,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                     <button className="text-xs text-neutral-500 hover:text-white flex items-center gap-1">View All <ChevronRight size={12} /></button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     {loading ? (
                         [...Array(4)].map((_, i) => <TalentSkeleton key={i} />)
                     ) : (
@@ -143,7 +150,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                             <div
                                 key={talent.id}
                                 onClick={() => navigate(`/@${talent.handle}`)}
-                                className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-5 hover:border-neutral-600 transition-all group hover:-translate-y-1 flex flex-col h-full cursor-pointer"
+                                className="bg-[#0a0a0a] border border-white/5 rounded-xl p-5 hover:border-neutral-600 transition-all group hover:-translate-y-1 flex flex-col h-full cursor-pointer"
                             >
                                 <div className="flex-1">
                                     {/* Header: User Info & Top Right Role */}
@@ -164,7 +171,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                                         </div>
 
                                         {talent.role && (
-                                            <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-bold text-primary uppercase tracking-wide">
+                                            <span className="px-2 py-0.5 rounded bg-white/5 border border-white/5 text-[9px] font-bold text-primary uppercase tracking-wide">
                                                 {talent.role}
                                             </span>
                                         )}
@@ -173,16 +180,16 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
 
 
                                     {/* Stats Grid - No bottom margin to align with footer spacing */}
-                                    <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2 border border-neutral-800">
+                                    <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2 border border-white/5">
                                         <div className="text-center">
                                             <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Followers</div>
                                             <div className="text-xs font-bold text-white">{talent.followers}</div>
                                         </div>
-                                        <div className="text-center border-l border-neutral-800">
+                                        <div className="text-center border-l border-white/5">
                                             <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Plays</div>
                                             <div className="text-xs font-bold text-white">{talent.streams ? talent.streams.toLocaleString() : '0'}</div>
                                         </div>
-                                        <div className="text-center border-l border-neutral-800">
+                                        <div className="text-center border-l border-white/5">
                                             <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Tracks</div>
                                             <div className="text-xs font-bold text-white">{talent.tracks || 0}</div>
                                         </div>
@@ -190,17 +197,20 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                                 </div>
 
                                 {/* Footer with symmetrical spacing (mt-4 / pt-4) */}
-                                <div className="flex items-center gap-2 pt-4 border-t border-neutral-800 mt-4">
+                                <div className="flex items-center gap-2 pt-4 border-t border-white/5 mt-4">
                                     <button
-                                        onClick={(e) => handleFollow(e, talent)}
-                                        className={`flex-1 text-xs font-bold flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors border ${talent.isFollowing
-                                            ? 'bg-transparent border-neutral-700 text-neutral-400 hover:text-red-500 hover:border-red-900'
-                                            : 'text-white bg-primary/10 hover:bg-primary hover:text-black border-primary/20'
+                                        onClick={(e) => talent.id !== currentUserId && handleFollow(e, talent)}
+                                        disabled={talent.id === currentUserId}
+                                        className={`flex-1 text-xs font-bold flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors border ${talent.id === currentUserId
+                                            ? 'bg-neutral-800 border-neutral-800 text-neutral-500 cursor-not-allowed opacity-50'
+                                            : talent.isFollowing
+                                                ? 'bg-transparent border-white/5 text-neutral-400 hover:text-red-500 hover:border-red-900'
+                                                : 'text-white bg-primary/10 hover:bg-primary hover:text-black border-primary/20'
                                             }`}
                                     >
                                         <UserPlus size={14} /> {talent.isFollowing ? 'Following' : 'Follow'}
                                     </button>
-                                    <button className="text-neutral-400 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 px-3 py-2 rounded-lg transition-colors" title="Message">
+                                    <button className="text-neutral-400 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-white/5 hover:border-neutral-700 px-3 py-2 rounded-lg transition-colors" title="Message">
                                         <MessageCircle size={14} />
                                     </button>
                                 </div>
@@ -219,16 +229,16 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                     <button className="text-xs text-neutral-500 hover:text-white flex items-center gap-1">View All <ChevronRight size={12} /></button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     {loading ? (
                         [...Array(4)].map((_, i) => (
-                            <div key={i} className="h-[340px]">
+                            <div key={i} className="h-[282px]">
                                 <ProjectSkeleton />
                             </div>
                         ))
                     ) : (
                         projects.slice(0, 4).map(project => (
-                            <div key={project.id} className="h-[340px]">
+                            <div key={project.id} className="h-[282px]">
                                 <ProjectCard
                                     project={project}
                                     currentTrackId={currentTrackId}
@@ -293,7 +303,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
 };
 
 const TalentSkeleton = () => (
-    <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-5 flex flex-col h-full animate-pulse">
+    <div className="bg-[#0a0a0a] border border-white/5 rounded-xl p-5 flex flex-col h-full animate-pulse">
         <div className="flex-1">
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
@@ -310,9 +320,9 @@ const TalentSkeleton = () => (
                 <div className="h-5 w-12 bg-neutral-800 rounded"></div>
                 <div className="h-5 w-12 bg-neutral-800 rounded"></div>
             </div>
-            <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 h-10"></div>
+            <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2 border border-white/5 h-10"></div>
         </div>
-        <div className="flex items-center gap-2 pt-4 border-t border-neutral-800 mt-4">
+        <div className="flex items-center gap-2 pt-4 border-t border-white/5 mt-4">
             <div className="h-9 w-full bg-neutral-800 rounded-lg"></div>
         </div>
     </div>

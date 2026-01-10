@@ -97,7 +97,7 @@ const RightActions: React.FC<{
                         {/* Gem Balance */}
                         <div
                             onClick={isSpacer ? undefined : () => onNavigate('dashboard-wallet')}
-                            className="h-8 bg-neutral-900 border border-white/10 rounded-full flex items-center px-3 gap-2 cursor-pointer hover:bg-neutral-800 transition-colors"
+                            className="h-8 bg-neutral-900 border border-white/5 rounded-full flex items-center px-3 gap-2 cursor-pointer hover:bg-neutral-800 transition-colors"
                         >
                             <Gem size={12} className="text-primary" />
                             <span className="text-[10px] font-bold text-white font-mono mt-0.5">
@@ -297,7 +297,7 @@ const RightActions: React.FC<{
                             onClick={isSpacer ? undefined : (isLoggedIn ? () => setIsProfileOpen(!isProfileOpen) : onOpenAuth)}
                             className="flex items-center gap-2 pl-2"
                         >
-                            <div className="w-8 h-8 rounded-lg bg-neutral-800 border border-white/10 overflow-hidden hover:border-white/30 transition-all">
+                            <div className="w-8 h-8 rounded-lg bg-neutral-800 border border-white/5 overflow-hidden hover:border-white/30 transition-all">
                                 {isLoggedIn && userProfile ? (
                                     <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
@@ -311,7 +311,7 @@ const RightActions: React.FC<{
 
                         {/* Profile Dropdown */}
                         {isLoggedIn && isProfileOpen && !isSpacer && (
-                            <div className="absolute right-0 top-full mt-3 w-52 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                            <div className="absolute right-0 top-full mt-3 w-52 bg-[#0a0a0a] border border-white/5 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                                 <div className="p-3 border-b border-white/5">
                                     <div className="text-xs font-bold text-white">{userProfile?.username || 'User'}</div>
                                     <div className="text-[9px] text-neutral-500 truncate mb-2">{userProfile?.handle || '@user'}</div>
@@ -431,9 +431,9 @@ const TopBar: React.FC<TopBarProps> = ({
     // Fetch notifications
     useEffect(() => {
         const fetchNotifications = async () => {
-            if (isLoggedIn) {
+            if (isLoggedIn && userProfile?.id) {
                 try {
-                    const data = await getNotifications();
+                    const data = await getNotifications(userProfile.id);
                     setNotifications(data);
                 } catch (error) {
                     console.error("Error fetching notifications:", error);
@@ -446,7 +446,7 @@ const TopBar: React.FC<TopBarProps> = ({
         fetchNotifications();
 
         // Optional: Set up real-time subscription here later if needed
-    }, [isLoggedIn]);
+    }, [isLoggedIn, userProfile?.id]);
 
     // Initialize Theme
     useEffect(() => {
@@ -513,6 +513,7 @@ const TopBar: React.FC<TopBarProps> = ({
     };
 
     const handleMarkAllRead = async () => {
+        if (!userProfile?.id) return;
         // Optimistic update
         const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
         if (unreadIds.length === 0) return;
@@ -520,7 +521,7 @@ const TopBar: React.FC<TopBarProps> = ({
         setNotifications(prev => prev.map(n => ({ ...n, read: true })));
 
         try {
-            await markAllNotificationsAsRead();
+            await markAllNotificationsAsRead(userProfile.id);
         } catch (error) {
             console.error("Error marking all as read:", error);
             // Revert on error? Or just log it. For UI responsiveness, optimistic is better.
@@ -568,7 +569,7 @@ const TopBar: React.FC<TopBarProps> = ({
     }, [setIsCartOpen]);
 
     return (
-        <header className="h-16 fixed top-0 right-0 left-0 lg:left-64 z-[90] bg-[#050505]/90 backdrop-blur-lg border-b border-white/5 flex items-center px-3 lg:px-6 justify-between gap-4">
+        <header className="h-[56px] fixed top-0 right-0 left-0 lg:left-[260px] z-[90] bg-[#050505]/90 backdrop-blur-lg border-b border-white/5 flex items-center px-3 lg:px-6 justify-between gap-4">
 
 
 
@@ -589,7 +590,7 @@ const TopBar: React.FC<TopBarProps> = ({
                 transition-all duration-400
                 ${mobileSearchOpen
                         ? 'absolute inset-0 bg-[#050505] flex items-center px-4 opacity-100 pointer-events-auto translate-x-0 z-[70]'
-                        : 'opacity-0 pointer-events-none absolute inset-0 translate-x-4 lg:absolute lg:inset-x-0 lg:flex lg:justify-center lg:items-center lg:pointer-events-auto lg:opacity-100 lg:translate-x-0 mx-auto z-50'
+                        : 'opacity-0 pointer-events-none absolute inset-0 translate-x-4 lg:absolute lg:inset-x-0 lg:flex lg:justify-center lg:items-center lg:pointer-events-auto lg:opacity-100 lg:-translate-x-[40px] mx-auto z-50'
                     }
                 ${!mobileSearchOpen && isFocused ? 'lg:max-w-[35rem] xl:max-w-[45rem] w-full' : 'lg:max-w-[24rem] xl:max-w-[32rem] w-full'}
             `}
@@ -606,7 +607,7 @@ const TopBar: React.FC<TopBarProps> = ({
                     className={`relative group rounded-xl transition-all duration-300 w-full ${isFocused ? 'lg:shadow-[0_0_40px_rgb(var(--primary)/0.15)]' : ''}`}
                 >
                     {/* Input Background */}
-                    <div className={`absolute inset-0 rounded-xl border transition-all duration-300 ${isFocused || aiResponse ? 'border-primary/50 bg-black' : 'border-white/10 bg-black/40'}`}></div>
+                    <div className={`absolute inset-0 rounded-xl border transition-all duration-300 ${isFocused || aiResponse ? 'border-primary/50 bg-black' : 'border-white/5 bg-black/40'}`}></div>
 
                     {/* Main Input Area */}
                     <div className="relative flex items-center px-3 py-2">
@@ -676,7 +677,7 @@ const TopBar: React.FC<TopBarProps> = ({
 
                     {/* AI Response Panel */}
                     {(aiResponse || (aiLoading && searchMode === 'ai')) && (
-                        <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-xl border border-neutral-800 rounded-xl shadow-2xl overflow-hidden z-50">
+                        <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/5 rounded-xl shadow-2xl overflow-hidden z-50">
                             <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-white/[0.02]">
                                 <div className="flex items-center gap-2">
                                     <Terminal size={10} className="text-primary" />

@@ -72,8 +72,8 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-0 md:p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-4xl bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-full md:h-auto md:max-h-[80vh]">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-0 md:p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-4xl bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-full md:h-auto md:max-h-[85vh] md:m-auto">
 
                 {/* Left Side: Project/Track Info */}
                 <div className="w-full md:w-1/3 bg-neutral-950 p-4 md:p-6 border-b md:border-b-0 md:border-r border-neutral-800 flex flex-col shrink-0">
@@ -121,15 +121,16 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                         <div className="overflow-y-auto custom-scrollbar flex-1 -mx-2 px-2 space-y-1 max-h-[150px] md:max-h-none">
                             {project.type === 'beat_tape' && (
                                 <>
-                                    {project.tracks.map(track => {
-                                        const isSelected = selectedTrackIds.includes(track.id);
+                                    {project.tracks.map((track, idx) => {
+                                        const trackId = track.id || `track-${idx}`;
+                                        const isSelected = selectedTrackIds.includes(trackId);
                                         const hasStems = !!track.files?.stems; // Check if stems exist
-                                        const stemsSelected = !!wantsStems[track.id];
+                                        const stemsSelected = !!wantsStems[trackId];
 
                                         return (
                                             <div
-                                                key={track.id}
-                                                onClick={() => toggleTrack(track.id)}
+                                                key={trackId}
+                                                onClick={() => toggleTrack(trackId)}
                                                 className={`
                                                     flex items-center gap-3 p-2 md:p-3 rounded-lg cursor-pointer transition-all border
                                                     ${isSelected
@@ -150,7 +151,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                                 {/* Stems Checkbox / Indicator */}
                                                 {hasStems && (
                                                     <div
-                                                        onClick={(e) => toggleStems(track.id, e)}
+                                                        onClick={(e) => toggleStems(trackId, e)}
                                                         className={`
                                                             flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9px] font-mono font-bold uppercase transition-all
                                                             ${stemsSelected
@@ -279,13 +280,13 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                                         }
 
                                                         return (
-                                                            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] font-black tracking-wider uppercase ${styleClass}`}>
+                                                            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] md:text-[10px] font-black tracking-wider uppercase ${styleClass}`}>
                                                                 <Icon size={10} className="fill-current" /> {label}
                                                             </div>
                                                         );
                                                     })()}
                                                 </div>
-                                                <h4 className={`text-base font-bold uppercase tracking-tight leading-none ${isSelected ? 'text-white' : 'text-neutral-300'}`}>
+                                                <h4 className={`text-base font-bold uppercase tracking-tight ${isSelected ? 'text-white' : 'text-neutral-200'}`}>
                                                     {license.name}
                                                 </h4>
                                             </div>
@@ -337,7 +338,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                     if (selectedLicense) {
                                         if (project.type === 'beat_tape') {
                                             selectedTrackIds.forEach(trackId => {
-                                                const track = project.tracks.find(t => t.id === trackId);
+                                                const track = project.tracks.find((t, idx) => (t.id || `track-${idx}`) === trackId);
 
                                                 // Determine license for this specific track
                                                 // If Wants Stems, use stemsLicense if available. Otherwise use selectedLicense
@@ -373,10 +374,10 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                         onClose();
                                     }
                                 }}
-                                disabled={project.type === 'beat_tape' && selectedTrackIds.length === 0}
-                                className="flex-1 md:flex-none px-6 md:px-8 py-3 bg-primary text-black font-bold rounded-xl hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)] transition-all flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={(project.type === 'beat_tape' && selectedTrackIds.length === 0) || !selectedLicenseId}
+                                className="flex-1 md:flex-none px-4 py-2 text-sm md:px-8 md:py-3 md:text-base bg-primary text-black font-bold rounded-xl hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)] transition-all flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <ShoppingCart size={16} />
+                                <ShoppingCart size={16} className="md:w-5 md:h-5" />
                                 <span>Add to Cart {project.type === 'beat_tape' && selectedTrackIds.length > 0 && `(${selectedTrackIds.length})`}</span>
                             </button>
                         </div>

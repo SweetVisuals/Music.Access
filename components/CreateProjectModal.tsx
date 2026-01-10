@@ -349,8 +349,12 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                     <label className="text-xs font-bold text-neutral-400 uppercase">Description</label>
                                     <textarea
                                         value={projectData.description}
-                                        onChange={(e) => setProjectData({ ...projectData, description: e.target.value })}
-                                        className="w-full h-24 md:h-32 bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none resize-none"
+                                        onChange={(e) => {
+                                            setProjectData({ ...projectData, description: e.target.value });
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = `${Math.min(e.target.scrollHeight, 300)}px`;
+                                        }}
+                                        className="w-full min-h-[96px] md:min-h-[128px] h-auto bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none resize-none custom-scrollbar"
                                         placeholder="Tell us about this project..."
                                     />
                                 </div>

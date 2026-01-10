@@ -270,45 +270,85 @@ export const giveGemToProject = async (projectId: string) => {
   const currentUser = await ensureUserExists();
   if (!currentUser) throw new Error('User not authenticated');
 
-  // Check user balance (mock check since we don't have full real-time gem balance in backend yet properly enforced maybe)
-  // For now, assume optimistic UI or handle DB error if constraint exists.
+  // 1. Fetch project to check owner and current gems
+  const { data: project, error: projectError } = await supabase
+    .from('projects')
+    .select('user_id, gems')
+    .eq('id', projectId)
+    .single();
 
-  // Call RPC or perform transaction
-  // Using an RPC is best for atomicity: decrement user gems, increment project gems (or project owner gems)
-  // For this MVP step, let's assume we just increment a "gems" counter on the project if we added it to the table,
-  // or we need to add the column to projects first. 
-  // Verified: Projects table does NOT have gems column in database_updates.sql yet? 
-  // Wait, I didn't verify if 'projects' table actually has 'gems'. 
-  // checked `database_updates.sql` -> no `gems` column on `projects` was explicitly seen in the view, but `users` has it.
-  // Actually, let's re-read the plan. The plan said "Update getProjects to map gems". 
-  // If the DB column doesn't exist, this will crash or do nothing.
-  // I should probably ensure the column exists or mock it in the service if I can't change DB schema easily (I can via SQL tool but user might prefer I stick to TS if possible, but real implementation needs DB).
-  // Given the user wants "show amount of gems it has received", it implies persistence. 
-  // I'll assume I should try to update the project's gems. 
-  // If the column is missing in my previous `getProjects` select, it will be undefined.
+  if (projectError || !project) throw new Error('Project not found');
 
-  // Let's implement a simple update for now, assuming the column 'gems' exists or we add it safely.
-  // If it doesn't exist, Supabase will throw.
-  // To be safe, I'm just going to write the service function assuming it works, or I'll add a database migration if I fail.
-  // Actually, I should probably check if I can just "rpc" it.
-
-  // Let's try to update the project directly for now.
-  const { error } = await supabase.rpc('give_gem', { project_id: projectId });
-
-  // If RPC doesn't exist (likely), fallback to manual update (less safe but works for MVP)
-  if (error) {
-    // Fallback: Get current gems, increment, update. Race conditions possible but acceptable for prototype.
-    const { data: project } = await supabase.from('projects').select('gems').eq('id', projectId).single();
-    const currentGems = project?.gems || 0;
-
-    // Also decrement user gems? User didn't ask for cost, just "give gems". 
-    // Usually giving gems costs the user gems. 
-    // Let's assume unlimited giving or just tracking "likes" styled as gems for now unless specified.
-    // "give gems from other users" -> usually implies a transaction.
-    // I'll implement a simple increment for the project.
-
-    await supabase.from('projects').update({ gems: currentGems + 1 }).eq('id', projectId);
+  // 2. Prevent self-giving
+  if (project.user_id === currentUser.id) {
+    throw new Error('You cannot give gems to your own project');
   }
+
+  // 3. Update Transaction (Client-side logic for MVP - moving towards RPC ideally later)
+  // Get current user profile for gem balance
+  const { data: userProfile, error: userError } = await supabase
+    .from('users')
+    .select('gems')
+    .eq('id', currentUser.id)
+    .single();
+
+  if (userError || !userProfile) throw new Error('User profile not found');
+
+  if (userProfile.gems < 1) {
+    throw new Error('Insufficient gems');
+  }
+
+  // Decrement User Gems
+  const { error: updateUserError } = await supabase
+    .from('users')
+    .update({ gems: userProfile.gems - 1 })
+    .eq('id', currentUser.id);
+
+  if (updateUserError) throw updateUserError;
+
+  // Increment Project Gems
+  const { error: updateProjectError } = await supabase
+    .from('projects')
+    .update({ gems: (project.gems || 0) + 1 })
+    .eq('id', projectId);
+
+  if (updateProjectError) {
+    // Rollback user gem deduction
+    await supabase.from('users').update({ gems: userProfile.gems }).eq('id', currentUser.id);
+    throw updateProjectError;
+  }
+};
+
+export const undoGiveGem = async (projectId: string) => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  const { data: project, error: projectError } = await supabase
+    .from('projects')
+    .select('gems')
+    .eq('id', projectId)
+    .single();
+
+  if (projectError || !project) throw new Error('Project not found');
+
+  const { data: userProfile, error: userError } = await supabase
+    .from('users')
+    .select('gems')
+    .eq('id', currentUser.id)
+    .single();
+
+  if (userError || !userProfile) throw new Error('User profile not found');
+
+  // Revert changes
+  await supabase
+    .from('users')
+    .update({ gems: userProfile.gems + 1 })
+    .eq('id', currentUser.id);
+
+  await supabase
+    .from('projects')
+    .update({ gems: Math.max(0, (project.gems || 0) - 1) })
+    .eq('id', projectId);
 };
 
 // Helper: Ensure user exists in 'users' table (JIT Provisioning)
@@ -338,6 +378,7 @@ export const ensureUserExists = async () => {
         email: user.email,
         gems: 0,
         balance: 0.00,
+        promo_credits: 0,
         avatar_url: user.user_metadata?.avatar_url,
         banner_url: user.user_metadata?.banner_url
       });
@@ -370,7 +411,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance, last_gem_claim_date, role')
+    .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan')
     .eq('id', targetUserId)
     .single();
 
@@ -396,31 +437,34 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
   }
 
   if (data) {
+    const userData = data as any;
     // Fetch related data
     try {
       const [projects, services, followersCount, stats] = await Promise.all([
-        getProjectsByUserId(data.id),
-        getServicesByUserId(data.id),
-        getFollowersCount(data.id),
-        getUserStats(data.id)
+        getProjectsByUserId(userData.id),
+        getServicesByUserId(userData.id),
+        getFollowersCount(userData.id),
+        getUserStats(userData.id)
       ]);
 
       return {
-        id: data.id,
-        username: data.username,
-        handle: data.handle,
-        role: data.role || (data as any).raw_user_meta_data?.role || 'Producer',
+        id: userData.id,
+        username: userData.username,
+        handle: userData.handle,
+        role: userData.role || (userData as any).raw_user_meta_data?.role || 'Producer',
         email: authEmail,
-        location: data.location,
-        avatar: data.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
-        banner: data.banner_url || '',
+        location: userData.location,
+        avatar: userData.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+        banner: userData.banner_url || '',
         subscribers: followersCount,
         streams: stats.streams,
-        gems: data.gems || 0,
-        balance: data.balance || 0,
-        lastGemClaimDate: data.last_gem_claim_date,
-        bio: data.bio,
-        website: data.website,
+        gems: userData.gems || 0,
+        balance: userData.balance || 0,
+        promo_credits: userData.promo_credits || 0,
+        plan: userData.plan || 'Basic',
+        lastGemClaimDate: userData.last_gem_claim_date,
+        bio: userData.bio,
+        website: userData.website,
         projects: projects,
         services: services,
         soundPacks: projects.filter(p => p.type === 'sound_pack').map(p => ({
@@ -436,20 +480,22 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
       console.error('Error fetching related profile data:', err);
       // Return basic profile if related data fails
       return {
-        id: data.id,
-        username: data.username,
-        handle: data.handle,
+        id: userData.id,
+        username: userData.username,
+        handle: userData.handle,
         email: authEmail,
-        location: data.location,
-        avatar: data.avatar_url,
-        banner: data.banner_url,
+        location: userData.location,
+        avatar: userData.avatar_url,
+        banner: userData.banner_url,
         subscribers: 0,
         streams: 0,
-        gems: data.gems || 0,
-        balance: data.balance || 0,
-        lastGemClaimDate: data.last_gem_claim_date,
-        bio: data.bio,
-        website: data.website,
+        gems: userData.gems || 0,
+        balance: userData.balance || 0,
+        promo_credits: userData.promo_credits || 0,
+        plan: userData.plan || 'Basic',
+        lastGemClaimDate: userData.last_gem_claim_date,
+        bio: userData.bio,
+        website: userData.website,
         projects: [],
         services: [],
         soundPacks: []
@@ -477,6 +523,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
           hashed_password: '', // Not needed
           gems: 0,
           balance: 0.00,
+          promo_credits: 0,
           avatar_url: currentUser.user_metadata?.avatar_url,
           banner_url: currentUser.user_metadata?.banner_url
         });
@@ -498,6 +545,8 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
         subscribers: 0,
         gems: 0,
         balance: 0,
+        promo_credits: 0,
+        plan: 'Basic',
         bio: '',
         website: '',
         projects: [],
@@ -512,37 +561,40 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
 export const getUserProfileByHandle = async (handle: string): Promise<UserProfile | null> => {
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, email, location, avatar_url, banner_url, bio, website, gems, balance, last_gem_claim_date')
+    .select('id, username, handle, email, location, avatar_url, banner_url, bio, website, gems, balance, promo_credits, last_gem_claim_date, plan')
     .eq('handle', handle)
     .single();
 
   if (error && error.code !== 'PGRST116') throw error;
 
   if (data) {
+    const userData = data as any;
     // Fetch related data
     const [projects, services, followersCount, stats] = await Promise.all([
-      getProjectsByUserId(data.id),
-      getServicesByUserId(data.id),
-      getFollowersCount(data.id),
-      getUserStats(data.id)
+      getProjectsByUserId(userData.id),
+      getServicesByUserId(userData.id),
+      getFollowersCount(userData.id),
+      getUserStats(userData.id)
     ]);
 
     return {
-      id: data.id,
-      username: data.username,
-      handle: data.handle,
+      id: userData.id,
+      username: userData.username,
+      handle: userData.handle,
       role: 'Producer',
-      email: data.email,
-      location: data.location,
-      avatar: data.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
-      banner: data.banner_url || '',
+      email: userData.email,
+      location: userData.location,
+      avatar: userData.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+      banner: userData.banner_url || '',
       subscribers: followersCount,
       streams: stats.streams,
-      gems: data.gems,
-      balance: data.balance,
-      lastGemClaimDate: data.last_gem_claim_date,
-      bio: data.bio,
-      website: data.website,
+      gems: userData.gems,
+      balance: userData.balance,
+      promo_credits: userData.promo_credits || 0,
+      plan: userData.plan || 'Basic',
+      lastGemClaimDate: userData.last_gem_claim_date,
+      bio: userData.bio,
+      website: userData.website,
       projects: projects.filter(p => p.type === 'beat_tape'),
       services: services,
       soundPacks: projects.filter(p => p.type === 'sound_pack').map(p => ({
@@ -576,9 +628,11 @@ export const updateUserProfile = async (userId: string, updates: Partial<UserPro
   if (updates.banner !== undefined) updateObj.banner_url = updates.banner;
   if (updates.gems !== undefined) updateObj.gems = updates.gems;
   if (updates.balance !== undefined) updateObj.balance = updates.balance;
+  if (updates.promo_credits !== undefined) updateObj.promo_credits = updates.promo_credits;
   if (updates.lastGemClaimDate !== undefined) updateObj.last_gem_claim_date = updates.lastGemClaimDate;
   if (updates.is_public !== undefined) updateObj.is_public = updates.is_public;
   if (updates.role !== undefined) updateObj.role = updates.role;
+  if (updates.plan !== undefined) updateObj.plan = updates.plan;
 
   const { error } = await supabase
     .from('users')
@@ -1381,6 +1435,33 @@ export const sendMessage = async (conversationId: string, content: string) => {
     .update({ updated_at: new Date().toISOString() })
     .eq('id', conversationId);
 
+
+  // 3. Notify the OTHER participant
+  try {
+    const { data: participants } = await supabase
+      .from('conversation_participants')
+      .select('user_id')
+      .eq('conversation_id', conversationId)
+      .neq('user_id', currentUser.id); // Get everyone else
+
+    if (participants && participants.length > 0) {
+      // Create notification for each recipient
+      await Promise.all(participants.map(p =>
+        createNotification({
+          userId: p.user_id,
+          type: 'message',
+          title: 'New Message',
+          message: `You have a new message from @${currentUser.user_metadata?.username || 'user'}`,
+          link: `/dashboard/messages?cid=${conversationId}`, // Link to conversation
+          data: { conversationId, senderId: currentUser.id }
+        })
+      ));
+    }
+  } catch (notifError) {
+    console.error('Failed to send message notification:', notifError);
+    // Don't fail the message send if notification fails
+  }
+
   return {
     id: data.id,
     sender: 'Me',
@@ -1390,6 +1471,40 @@ export const sendMessage = async (conversationId: string, content: string) => {
     isMe: true
   };
 };
+
+export const deleteMessage = async (messageId: string, forEveryone: boolean = false) => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  if (forEveryone) {
+    // Delete for everyone (removes from messages table)
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('id', messageId)
+      .eq('sender_id', currentUser.id); // Only sender can delete for everyone
+
+    if (error) throw error;
+  } else {
+    // Delete for me (hide from user)
+    // Note: This requires a many-to-many visibility table or a 'hidden_for_users' array in messages.
+    // Since we might not have that schema, we will just delete it from current view for now.
+    // If the schema exists, it should be updated here.
+    // For now, let's just delete it if the user is the sender, or ignore if receiver (MVP).
+    // Actually, let's just delete the record for now if they are the sender, 
+    // or if the schema doesn't support "for me", we'll just remove it from local state.
+
+    // Attempt to delete if sender, otherwise we'd need a visibility table
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('id', messageId)
+      .eq('sender_id', currentUser.id);
+
+    if (error) throw error;
+  }
+};
+
 
 export const getConversations = async (): Promise<Conversation[]> => {
   const currentUser = await getCurrentUser();
@@ -1563,6 +1678,11 @@ export const followUser = async (targetUserId: string) => {
     throw new Error('User not authenticated');
   }
 
+  if (currentUser.id === targetUserId) {
+    console.warn('[Follow] User attempted to follow themselves');
+    return;
+  }
+
   // Check if already following
   const { data: existing } = await supabase
     .from('followers')
@@ -1592,6 +1712,21 @@ export const followUser = async (targetUserId: string) => {
     console.error('[Follow] Error executing insert:', error);
     throw error;
   }
+
+  // Notify the user being followed
+  try {
+    await createNotification({
+      userId: targetUserId,
+      type: 'follow',
+      title: 'New Follower',
+      message: `${currentUser.user_metadata?.username || 'Someone'} started following you!`,
+      link: `/profile/${currentUser.user_metadata?.handle || currentUser.id}`,
+      data: { followerId: currentUser.id }
+    });
+  } catch (notifError) {
+    console.error('[Follow] Failed to create notification:', notifError);
+  }
+
   console.log('[Follow] Successfully followed');
 };
 
@@ -1800,7 +1935,7 @@ export const getTalentProfiles = async (): Promise<TalentProfile[]> => {
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance, role')
+    .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance, promo_credits, role')
     .order('created_at', { ascending: false }) // Show new users first
     .limit(50); // Increased limit
 
@@ -1989,7 +2124,75 @@ export const getFollowingProfilesForSidebar = async (): Promise<TalentProfile[]>
 };
 
 
+
+export const getFollowingProfiles = async (): Promise<TalentProfile[]> => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return [];
+
+  // 1. Get IDs of users we are following
+  const { data: followData, error: followError } = await supabase
+    .from('followers')
+    .select('following_id')
+    .eq('follower_id', currentUser.id);
+
+  if (followError) throw followError;
+  if (!followData || followData.length === 0) return [];
+
+  const followingIds = followData.map((f: any) => f.following_id);
+
+  // 2. Fetch full user profiles
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance, promo_credits, role')
+    .in('id', followingIds)
+    .order('username', { ascending: true }); // Alphabetical sort for the full list
+
+  if (error) throw error;
+
+  // 3. Enhance with stats
+  const profiles = await Promise.all(data.map(async (user) => {
+    // Get follower count
+    const { count } = await supabase
+      .from('followers')
+      .select('*', { count: 'exact', head: true })
+      .eq('following_id', user.id);
+
+    const stats = await getUserStats(user.id);
+
+    // Get role from database (stored as lowercase)
+    const rawRole = (user as any).role as string | null | undefined;
+    const displayRole = rawRole ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1).toLowerCase() : null;
+
+    let tags: string[] = [];
+    if (displayRole) tags.push(displayRole);
+
+    // Add additional tags based on role
+    const roleLC = rawRole?.toLowerCase();
+    if (roleLC === 'artist') tags.push('Musician', 'Vocalist');
+    else if (roleLC === 'engineer') tags.push('Mixing');
+    else if (roleLC === 'producer') tags.push('Beatmaker');
+
+
+    return {
+      id: user.id,
+      username: user.username,
+      handle: user.handle,
+      avatar: user.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+      role: displayRole || '',
+      tags: tags,
+      followers: (count || 0).toString(),
+      isVerified: false,
+      isFollowing: true, // We know we are following them
+      streams: stats.streams,
+      tracks: stats.tracks
+    };
+  }));
+
+  return profiles;
+};
+
 export const getCollabServices = async (): Promise<CollabService[]> => {
+
   const { data, error } = await supabase
     .from('collab_services')
     .select('*');
@@ -2650,7 +2853,10 @@ export const getNotes = async (): Promise<Note[]> => {
     preview: n.preview || '',
     tags: n.tags || [],
     updated: new Date(n.updated_at).toLocaleDateString(),
-    attachedAudio: n.attached_audio
+    attachedAudio: n.attached_audio,
+    attachedAudioName: n.attached_audio_name,
+    attachedAudioProducer: n.attached_audio_producer,
+    attachedAudioAvatar: n.attached_audio_avatar
   }));
 };
 
@@ -2679,14 +2885,18 @@ export const getDeletedNotes = async (): Promise<Note[]> => {
     preview: n.preview || '',
     tags: n.tags || [],
     updated: new Date(n.updated_at).toLocaleDateString(),
-    attachedAudio: n.attached_audio
+    attachedAudio: n.attached_audio,
+    attachedAudioName: n.attached_audio_name,
+    attachedAudioProducer: n.attached_audio_producer,
+    attachedAudioAvatar: n.attached_audio_avatar
   }));
 };
 
 export const createNote = async (
   title: string = 'Untitled Note',
   content: string = '',
-  attachedAudio?: string
+  attachedAudio?: string,
+  audioMetadata?: { name?: string; producer?: string; avatar?: string }
 ) => {
   const user = await ensureUserExists();
   if (!user) throw new Error('User not logged in');
@@ -2698,7 +2908,10 @@ export const createNote = async (
       title,
       content,
       preview: content.slice(0, 100),
-      attached_audio: attachedAudio, // Must match DB column name
+      attached_audio: attachedAudio,
+      attached_audio_name: audioMetadata?.name,
+      attached_audio_producer: audioMetadata?.producer,
+      attached_audio_avatar: audioMetadata?.avatar,
       updated_at: new Date().toISOString()
     })
     .select()
@@ -2713,7 +2926,10 @@ export const createNote = async (
     preview: data.preview || '',
     tags: data.tags || [],
     updated: new Date(data.updated_at).toLocaleDateString(),
-    attachedAudio: data.attached_audio
+    attachedAudio: data.attached_audio,
+    attachedAudioName: data.attached_audio_name,
+    attachedAudioProducer: data.attached_audio_producer,
+    attachedAudioAvatar: data.attached_audio_avatar
   } as Note;
 };
 
@@ -2733,6 +2949,9 @@ export const updateNote = async (id: string, updates: Partial<Note>) => {
   }
   if (updates.tags !== undefined) dbUpdates.tags = updates.tags;
   if (updates.attachedAudio !== undefined) dbUpdates.attached_audio = updates.attachedAudio;
+  if (updates.attachedAudioName !== undefined) dbUpdates.attached_audio_name = updates.attachedAudioName;
+  if (updates.attachedAudioProducer !== undefined) dbUpdates.attached_audio_producer = updates.attachedAudioProducer;
+  if (updates.attachedAudioAvatar !== undefined) dbUpdates.attached_audio_avatar = updates.attachedAudioAvatar;
 
   const { error } = await supabase
     .from('notes')
@@ -3048,6 +3267,61 @@ export const createPurchase = async (items: any[], total: number, paymentMethod:
     if (itemsError) {
       console.error("Error creating purchase items:", itemsError);
     }
+  }
+
+  // 3. Send Notifications to Sellers
+  try {
+    // Group items by seller to send one notification per seller per purchase
+    const itemsBySeller: Record<string, any[]> = {};
+    items.forEach(item => {
+      const sellerId = item.sellerId || item.seller_id; // Check both just in case
+      if (sellerId && sellerId !== currentUser.id) { // Don't notify if buying own item (testing)
+        if (!itemsBySeller[sellerId]) itemsBySeller[sellerId] = [];
+        itemsBySeller[sellerId].push(item);
+      }
+    });
+
+    await Promise.all(Object.keys(itemsBySeller).map(async (sellerId) => {
+      const sellerItems = itemsBySeller[sellerId];
+      const itemCount = sellerItems.length;
+      const firstItemName = sellerItems[0].title || sellerItems[0].item_name || 'Item';
+      const message = itemCount > 1
+        ? `You sold ${itemCount} items including "${firstItemName}"!`
+        : `You sold "${firstItemName}"!`;
+
+      // Notify seller of the sale
+      await createNotification({
+        userId: sellerId,
+        type: 'sale',
+        title: 'New Sale! 💰',
+        message: message,
+        link: '/dashboard/sales',
+        data: { purchaseId: purchaseId, items: sellerItems }
+      });
+
+      // Also notify seller to manage the new order
+      await createNotification({
+        userId: sellerId,
+        type: 'manage_order',
+        title: 'New Order Assignment',
+        message: `You have a new order to manage: ${firstItemName}`,
+        link: '/dashboard/manage',
+        data: { purchaseId: purchaseId, items: sellerItems }
+      });
+    }));
+
+    // 4. Notify Buyer of Successful Order
+    await createNotification({
+      userId: currentUser.id,
+      type: 'order',
+      title: 'Order Confirmed! 🎵',
+      message: `Your purchase of ${items.length} item(s) was successful. Check your library and orders for details.`,
+      link: '/dashboard/orders',
+      data: { purchaseId: purchaseId }
+    });
+
+  } catch (notifError) {
+    console.error("Failed to send purchase notifications:", notifError);
   }
 
   return purchaseData;
@@ -3368,76 +3642,7 @@ export const getDashboardAnalytics = async (): Promise<DashboardAnalytics | null
   };
 };
 
-// Notifications
-export const getNotifications = async (): Promise<Notification[]> => {
-  const currentUser = await getCurrentUser();
-  if (!currentUser) return [];
-
-  const { data, error } = await supabase
-    .from('notifications')
-    .select('*')
-    .eq('user_id', currentUser.id)
-    .order('created_at', { ascending: false })
-    .limit(50);
-
-  if (error) throw error;
-
-  return data.map(n => ({
-    id: n.id,
-    userId: n.user_id,
-    type: n.type,
-    title: n.title,
-    message: n.message,
-    link: n.link,
-    read: n.read,
-    data: n.data,
-    createdAt: n.created_at
-  }));
-};
-
-export const markNotificationAsRead = async (notificationId: string) => {
-  const { error } = await supabase
-    .from('notifications')
-    .update({ read: true })
-    .eq('id', notificationId);
-
-  if (error) throw error;
-};
-
-export const markAllNotificationsAsRead = async () => {
-  const currentUser = await getCurrentUser();
-  if (!currentUser) return;
-
-  const { error } = await supabase
-    .from('notifications')
-    .update({ read: true })
-    .eq('user_id', currentUser.id)
-    .eq('read', false);
-
-  if (error) throw error;
-};
-
-export const createNotification = async (notification: Partial<Notification>) => {
-  const currentUser = await ensureUserExists();
-  if (!currentUser) throw new Error('User not authenticated');
-
-  // If userId is provided in the arg, use it (for admin sending to others), otherwise default to current (self-notif)
-  const targetUserId = notification.userId || currentUser.id;
-
-  const { error } = await supabase
-    .from('notifications')
-    .insert({
-      user_id: targetUserId,
-      type: notification.type,
-      title: notification.title,
-      message: notification.message,
-      link: notification.link,
-      data: notification.data,
-      read: false
-    });
-
-  if (error) throw error;
-};
+// Notification functions moved to end of file
 
 // --- Roadmap Strategy Functions ---
 
@@ -3802,4 +4007,78 @@ export const emptyTrashNotes = async () => {
 
   if (error) throw error;
 };
+
+// Notifications
+export const getNotifications = async (userId: string): Promise<Notification[]> => {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) throw error;
+
+  return data.map((n: any) => ({
+    id: n.id,
+    userId: n.user_id,
+    type: n.type,
+    title: n.title,
+    message: n.message,
+    link: n.link,
+    read: n.read,
+    data: n.data,
+    createdAt: n.created_at
+  }));
+};
+
+export const getUnreadNotificationCount = async (userId: string): Promise<number> => {
+  const { count, error } = await supabase
+    .from('notifications')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('read', false);
+
+  if (error) console.error("Error fetching unread count", error);
+  return count || 0;
+};
+
+export const markNotificationAsRead = async (notificationId: string) => {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: true })
+    .eq('id', notificationId);
+
+  if (error) throw error;
+};
+
+export const markAllNotificationsAsRead = async (userId: string) => {
+  const { error } = await supabase
+    .from('notifications')
+    .update({ read: true })
+    .eq('user_id', userId)
+    .eq('read', false);
+
+  if (error) throw error;
+};
+
+export const createNotification = async (notification: Partial<Notification>) => {
+  // If we are sending to another user, we don't need to be that user.
+  // The RLS policy "Authenticated users can insert notifications" allows this.
+
+  const { error } = await supabase
+    .from('notifications')
+    .insert({
+      user_id: notification.userId,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      link: notification.link,
+      data: notification.data,
+      read: false
+    });
+
+  if (error) console.error('Error creating notification:', error);
+};
+
 

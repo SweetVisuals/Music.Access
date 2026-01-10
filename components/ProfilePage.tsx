@@ -34,6 +34,8 @@ import CreateSoundpackModal from './CreateSoundpackModal';
 import CreateServiceModal from './CreateServiceModal';
 import EditProjectModal from './EditProjectModal';
 import { getUserProfile, getUserProfileByHandle, updateUserProfile, getCurrentUser, uploadFile, followUser, unfollowUser, checkIsFollowing, deleteProject, updateProject } from '../services/supabaseService';
+import EmptyStateCard from './EmptyStateCard';
+
 
 interface ProfilePageProps {
     profile: UserProfile | null;
@@ -481,12 +483,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 )
             )}
 
-            <div className="w-full max-w-[1600px] mx-auto px-6 lg:px-8 pb-32 lg:pb-12 pt-[30px]">
+            <div className="w-full max-w-[1600px] mx-auto px-6 lg:px-8 pb-20 lg:pb-12 pt-[30px]">
 
                 {/* EDIT PROFILE MODAL - RESPONSIVE */}
                 {isEditModalOpen && (
                     <div className="fixed inset-0 z-[100] flex flex-col lg:items-center lg:justify-center bg-black lg:bg-black/80 lg:backdrop-blur-sm lg:p-4 animate-in fade-in duration-200">
-                        <div className="flex-1 lg:flex-none w-full lg:max-w-lg bg-black lg:bg-[#0a0a0a] lg:border border-neutral-800 lg:rounded-xl lg:shadow-2xl overflow-hidden flex flex-col h-full lg:max-h-[90vh]">
+                        <div className="flex-1 lg:flex-none w-full lg:max-w-lg bg-black lg:bg-[#0a0a0a] lg:border border-white/5 lg:rounded-xl lg:shadow-2xl overflow-hidden flex flex-col h-full lg:max-h-[90vh]">
 
                             {/* HEADER */}
                             <div className="p-4 border-b border-white/5 flex justify-between items-center bg-neutral-900/50 backdrop-blur-md shrink-0">
@@ -613,8 +615,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Bio</label>
                                             <textarea
                                                 value={editForm.bio}
-                                                onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                                                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none resize-none h-32 transition-colors focus:bg-neutral-900"
+                                                onChange={(e) => {
+                                                    setEditForm({ ...editForm, bio: e.target.value });
+                                                    e.target.style.height = 'auto';
+                                                    e.target.style.height = `${Math.min(e.target.scrollHeight, 400)}px`;
+                                                }}
+                                                style={{ height: 'auto', minHeight: '128px' }}
+                                                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none resize-none transition-colors focus:bg-neutral-900 custom-scrollbar"
                                                 placeholder="Tell your story..."
                                             />
                                         </div>
@@ -649,7 +656,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 )}
 
                 {/* HEADER SECTION */}
-                <div className="relative rounded-3xl overflow-hidden bg-[#0a0a0a] border border-neutral-800 mb-6 group/header shadow-lg">
+                <div className="relative rounded-3xl overflow-hidden bg-[#0a0a0a] border border-white/5 mb-6 group/header shadow-lg">
 
                     {/* View Controls (Top Right) */}
                     <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
@@ -718,14 +725,14 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     </div>
 
                     {/* Profile Content Layer */}
-                    <div className="relative z-10 px-4 md:px-8 pb-4 md:pb-8 pt-20 md:pt-32 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-8 pointer-events-none">
+                    <div className="relative z-10 px-4 md:px-8 pb-4 md:pb-8 pt-[72px] md:pt-32 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-8 pointer-events-none">
 
                         {/* Avatar */}
                         <div className={`
                     relative z-30 shrink-0 rounded-2xl md:rounded-3xl p-1 md:p-1.5 bg-[#0a0a0a] shadow-2xl pointer-events-auto
                     ${!isViewerMode ? 'cursor-pointer group/avatar' : ''}
                 `} onClick={triggerAvatarUpload}>
-                            <div className="h-24 w-24 md:h-44 md:w-44 rounded-xl md:rounded-2xl bg-neutral-800 overflow-hidden relative border border-neutral-800">
+                            <div className="h-24 w-24 md:h-44 md:w-44 rounded-xl md:rounded-2xl bg-neutral-800 overflow-hidden relative border border-white/5">
                                 <img src={userProfile.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'} alt="Avatar" className="w-full h-full object-cover" />
 
                                 {/* Avatar Hover Overlay */}
@@ -735,9 +742,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     </div>
                                 )}
                             </div>
-                            <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 bg-[#0a0a0a] p-1 md:p-1.5 rounded-full border border-neutral-800 z-40 pointer-events-none">
-                                <Verified className="text-blue-400 fill-blue-400/10 w-4 h-4 md:w-6 md:h-6" />
-                            </div>
+                            {/* Only show Verified tick if plan is Pro or Studio+ */}
+                            {(userProfile.plan === 'Pro' || userProfile.plan === 'Studio+') && (
+                                <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 bg-[#0a0a0a] p-1 md:p-1.5 rounded-full border border-neutral-800 z-40 pointer-events-none">
+                                    <Verified className="text-blue-400 fill-blue-400/10 w-4 h-4 md:w-6 md:h-6" />
+                                </div>
+                            )}
                         </div>
 
                         {/* Info & Actions */}
@@ -747,9 +757,17 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                             <div className="w-full md:w-auto mt-2 md:mt-0">
                                 <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
                                     <h1 className="text-2xl md:text-5xl font-black text-white tracking-tight">{userProfile.username}</h1>
-                                    <span className="px-1.5 py-0.5 md:px-2 md:py-0.5 bg-primary/20 rounded text-[9px] md:text-[10px] font-mono font-bold text-primary border border-primary/20 uppercase">
-                                        Pro
-                                    </span>
+                                    {/* Dynamic Plan Badge */}
+                                    {userProfile.plan && userProfile.plan !== 'Basic' && (
+                                        <span className={`px-1.5 py-0.5 md:px-2 md:py-0.5 rounded text-[9px] md:text-[10px] font-mono font-bold border uppercase
+                                            ${userProfile.plan === 'Studio+'
+                                                ? 'bg-amber-500/20 text-amber-500 border-amber-500/20'
+                                                : 'bg-primary/20 text-primary border-primary/20'
+                                            }
+                                        `}>
+                                            {userProfile.plan}
+                                        </span>
+                                    )}
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-x-4 md:gap-x-6 gap-y-2 text-sm text-neutral-400 mt-2 md:mt-3">
@@ -774,16 +792,18 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                             </div>
 
                             {/* Actions & Stats */}
-                            <div className="flex flex-col-reverse md:flex-row items-start md:items-center gap-4 md:gap-6 w-full md:w-auto mt-4 md:mt-0 md:translate-y-6">
-                                <div className="flex items-center gap-3 w-full md:w-auto">
+                            <div className="flex flex-col-reverse md:flex-row items-stretch gap-4 md:gap-6 w-full md:w-auto mt-4 md:mt-0 md:translate-y-6">
+                                <div className="flex items-stretch gap-3 w-full md:w-auto">
                                     {(isViewerMode || !isOwnProfile) && (
                                         <>
                                             <button
                                                 onClick={handleToggleFollow}
-                                                disabled={isFollowLoading}
-                                                className={`h-11 px-6 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all border flex-1 md:flex-auto ${isFollowing
-                                                    ? 'bg-transparent border-neutral-600 text-neutral-300 hover:border-red-500 hover:text-red-500'
-                                                    : 'bg-primary border-primary text-black hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)]'
+                                                disabled={isFollowLoading || isOwnProfile}
+                                                className={`px-10 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all border flex-1 md:flex-auto ${isOwnProfile
+                                                    ? 'bg-neutral-800 border-neutral-800 text-neutral-500 cursor-not-allowed opacity-50'
+                                                    : isFollowing
+                                                        ? 'bg-transparent border-neutral-600 text-neutral-300 hover:border-red-500 hover:text-red-500'
+                                                        : 'bg-primary border-primary text-black hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)]'
                                                     } ${isFollowLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
                                                 <UserPlus size={16} />
@@ -791,7 +811,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             </button>
                                             <button
                                                 onClick={handleMessage}
-                                                className="h-11 px-6 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-white/10 transition-colors flex items-center justify-center gap-2 flex-1 md:flex-auto"
+                                                className="px-10 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-white/10 transition-colors flex items-center justify-center gap-2 flex-1 md:flex-auto"
                                             >
                                                 <MessageSquare size={16} />
                                                 MESSAGE
@@ -809,7 +829,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                         <div className="text-base md:text-lg font-black text-white font-mono">{userProfile.subscribers.toLocaleString()}</div>
                                         <div className="text-[8px] md:text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Followers</div>
                                     </div>
-                                    <div className="px-4 md:px-5 py-2 md:py-3 text-center flex-1 md:flex-none">
+                                    <div className="px-6 md:px-8 py-2 md:py-3 text-center flex-1 md:flex-none">
                                         <div className="text-base md:text-lg font-black text-primary flex items-center justify-center gap-1 font-mono">
                                             {userProfile.gems !== undefined ? userProfile.gems.toLocaleString() : '0'} <Gem size={14} />
                                         </div>
@@ -915,7 +935,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 {!isViewerMode && isOwnProfile && (
                                     <div
                                         onClick={() => setIsCreateModalOpen(true)}
-                                        className="border border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[340px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                        className="border border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                     >
                                         <div className="h-16 w-16 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                             <Box size={24} />
@@ -924,31 +944,45 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     </div>
                                 )}
 
-                                {localProjects
-                                    .filter(project => {
-                                        // If not owner (or viewing as visitor), only show published projects
-                                        if (!isOwnProfile || isViewerMode) {
-                                            return project.status === 'published';
-                                        }
-                                        // If owner and hidePrivate is active, also only show published
-                                        if (hidePrivate) {
-                                            return project.status === 'published';
-                                        }
-                                        return true; // Owner sees all by default
-                                    })
-                                    .map(project => (
-                                        <div key={project.id} className="h-[340px]">
-                                            <ProjectCard
-                                                project={project}
-                                                currentTrackId={currentTrackId}
-                                                isPlaying={currentProject?.id === project.id && isPlaying}
-                                                onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
-                                                onTogglePlay={onTogglePlay}
-                                                onEdit={!isViewerMode && isOwnProfile ? handleEditProject : undefined}
-                                                onDelete={!isViewerMode && isOwnProfile ? handleDeleteProject : undefined}
-                                            />
-                                        </div>
-                                    ))}
+                                {localProjects.filter(project => {
+                                    if (!isOwnProfile || isViewerMode) return project.status === 'published';
+                                    if (hidePrivate) return project.status === 'published';
+                                    return true;
+                                }).length === 0 && (isViewerMode || !isOwnProfile) ? (
+                                    <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4">
+                                        <EmptyStateCard
+                                            icon={Music}
+                                            title="No Projects Found"
+                                            description="This user hasn't published any projects yet."
+                                        />
+                                    </div>
+                                ) : (
+                                    localProjects
+                                        .filter(project => {
+                                            // If not owner (or viewing as visitor), only show published projects
+                                            if (!isOwnProfile || isViewerMode) {
+                                                return project.status === 'published';
+                                            }
+                                            // If owner and hidePrivate is active, also only show published
+                                            if (hidePrivate) {
+                                                return project.status === 'published';
+                                            }
+                                            return true; // Owner sees all by default
+                                        })
+                                        .map(project => (
+                                            <div key={project.id} className="h-[282px]">
+                                                <ProjectCard
+                                                    project={project}
+                                                    currentTrackId={currentTrackId}
+                                                    isPlaying={currentProject?.id === project.id && isPlaying}
+                                                    onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
+                                                    onTogglePlay={onTogglePlay}
+                                                    onEdit={!isViewerMode && isOwnProfile ? handleEditProject : undefined}
+                                                    onDelete={!isViewerMode && isOwnProfile ? handleDeleteProject : undefined}
+                                                />
+                                            </div>
+                                        ))
+                                )}
                             </div>
                         </div>
                     )}
@@ -971,7 +1005,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 {!isViewerMode && isOwnProfile && (
                                     <div
                                         onClick={() => setIsCreateServiceModalOpen(true)}
-                                        className="border border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center h-full min-h-[220px] md:min-h-[300px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                        className="border border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center h-full min-h-[220px] md:min-h-[255px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                     >
                                         <div className="h-16 w-16 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                             <Mic2 size={24} />
@@ -980,40 +1014,51 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     </div>
                                 )}
 
-                                {userProfile.services.map(service => (
-                                    <div key={service.id} className="glass-panel p-6 rounded-xl border border-white/5 hover:border-primary/30 transition-all group hover:shadow-[0_0_30px_rgb(var(--primary)/0.1)] relative overflow-hidden flex flex-col">
-                                        <div className="flex justify-between items-start mb-6 relative z-10">
-                                            <div className="p-3 bg-neutral-900 rounded-xl text-primary border border-primary/20 group-hover:bg-primary group-hover:text-black transition-colors shadow-lg">
-                                                <Mic2 size={24} />
-                                            </div>
-                                            <div className="flex flex-col items-end">
-                                                <span className="text-2xl font-bold text-white font-mono tracking-tight">
-                                                    ${service.price}
-                                                    {service.rateType === 'hourly' && <span className="text-sm text-neutral-500 font-normal ml-1">/hr</span>}
-                                                </span>
-                                                <span className="text-[10px] text-neutral-500 font-mono uppercase bg-neutral-900 px-1.5 rounded">
-                                                    {service.rateType === 'hourly' ? 'Hourly Rate' : 'Starting at'}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <h3 className="text-lg font-bold text-white mb-3 relative z-10">{service.title}</h3>
-                                        <p className="text-neutral-400 text-sm mb-6 leading-relaxed relative z-10 line-clamp-3">{service.description}</p>
-
-                                        <div className="space-y-3 mb-8 relative z-10 flex-1">
-                                            {service.features.map((feat, i) => (
-                                                <div key={i} className="flex items-center text-xs text-neutral-300 font-medium">
-                                                    <CheckCircle size={12} className="text-primary mr-3 shrink-0" />
-                                                    {feat}
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        <button className="w-full py-3.5 bg-white text-black font-bold rounded-lg hover:bg-primary transition-all relative z-10 text-[10px] tracking-widest uppercase shadow-lg">
-                                            Book Service
-                                        </button>
+                                {userProfile.services.length === 0 && (isViewerMode || !isOwnProfile) ? (
+                                    <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                                        <EmptyStateCard
+                                            icon={Mic2}
+                                            title="No Services Available"
+                                            description="This user hasn't listed any services yet."
+                                            height="h-[255px]"
+                                        />
                                     </div>
-                                ))}
+                                ) : (
+                                    userProfile.services.map(service => (
+                                        <div key={service.id} className="glass-panel p-6 rounded-xl border border-white/5 hover:border-primary/30 transition-all group hover:shadow-[0_0_30px_rgb(var(--primary)/0.1)] relative overflow-hidden flex flex-col">
+                                            <div className="flex justify-between items-start mb-6 relative z-10">
+                                                <div className="p-3 bg-neutral-900 rounded-xl text-primary border border-primary/20 group-hover:bg-primary group-hover:text-black transition-colors shadow-lg">
+                                                    <Mic2 size={24} />
+                                                </div>
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-2xl font-bold text-white font-mono tracking-tight">
+                                                        ${service.price}
+                                                        {service.rateType === 'hourly' && <span className="text-sm text-neutral-500 font-normal ml-1">/hr</span>}
+                                                    </span>
+                                                    <span className="text-[10px] text-neutral-500 font-mono uppercase bg-neutral-900 px-1.5 rounded">
+                                                        {service.rateType === 'hourly' ? 'Hourly Rate' : 'Starting at'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <h3 className="text-lg font-bold text-white mb-3 relative z-10">{service.title}</h3>
+                                            <p className="text-neutral-400 text-sm mb-6 leading-relaxed relative z-10 line-clamp-3">{service.description}</p>
+
+                                            <div className="space-y-3 mb-8 relative z-10 flex-1">
+                                                {service.features.map((feat, i) => (
+                                                    <div key={i} className="flex items-center text-xs text-neutral-300 font-medium">
+                                                        <CheckCircle size={12} className="text-primary mr-3 shrink-0" />
+                                                        {feat}
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <button className="w-full py-3.5 bg-white text-black font-bold rounded-lg hover:bg-primary transition-all relative z-10 text-[10px] tracking-widest uppercase shadow-lg">
+                                                Book Service
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
                     )}
@@ -1036,7 +1081,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 {!isViewerMode && isOwnProfile && (
                                     <div
                                         onClick={() => setIsCreateSoundpackModalOpen(true)}
-                                        className="border border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[340px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                        className="border border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[255px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                     >
                                         <div className="h-16 w-16 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                             <Box size={24} />
@@ -1045,36 +1090,47 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     </div>
                                 )}
 
-                                {userProfile.soundPacks.map(pack => (
-                                    <div key={pack.id} className="bg-neutral-900/50 border border-white/5 rounded-xl overflow-hidden group hover:border-primary/30 transition-all hover:-translate-y-1 hover:shadow-xl">
-                                        <div className="h-48 bg-black flex items-center justify-center relative overflow-hidden">
-                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-black to-black opacity-50"></div>
-                                            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#333 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
-                                            <Box size={56} className="text-neutral-700 group-hover:text-primary transition-all duration-500 relative z-10 group-hover:scale-110 group-hover:rotate-6 drop-shadow-[0_0_15px_rgba(var(--primary),0.3)]" />
-
-                                            <div className="absolute top-3 right-3 z-20">
-                                                <span className="px-2.5 py-1 bg-black/80 backdrop-blur text-xs font-mono font-bold text-white border border-white/10 rounded-md">
-                                                    ${pack.price}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="p-5">
-                                            <div className="flex justify-between items-center mb-1.5">
-                                                <span className="text-[9px] font-mono text-primary uppercase tracking-wider bg-primary/10 px-1.5 py-0.5 rounded">{pack.type}</span>
-                                            </div>
-                                            <h3 className="text-base font-bold text-white mb-3 leading-tight group-hover:text-primary transition-colors">{pack.title}</h3>
-
-                                            <div className="flex items-center justify-between text-[10px] text-neutral-500 font-mono mb-5 border-t border-white/5 pt-3">
-                                                <span className="flex items-center gap-1.5"><Download size={12} /> {pack.fileSize}</span>
-                                                <span className="flex items-center gap-1.5"><Box size={12} /> {pack.itemCount} Files</span>
-                                            </div>
-
-                                            <button className="w-full py-2.5 bg-white/5 hover:bg-white hover:text-black border border-white/10 rounded-lg text-[10px] font-bold text-white transition-all flex items-center justify-center gap-2 uppercase tracking-wide">
-                                                Add to Cart
-                                            </button>
-                                        </div>
+                                {userProfile.soundPacks.length === 0 && (isViewerMode || !isOwnProfile) ? (
+                                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
+                                        <EmptyStateCard
+                                            icon={Box}
+                                            title="No Soundpacks Available"
+                                            description="This user hasn't published any soundpacks yet."
+                                            height="h-[255px]"
+                                        />
                                     </div>
-                                ))}
+                                ) : (
+                                    userProfile.soundPacks.map(pack => (
+                                        <div key={pack.id} className="bg-neutral-900/50 border border-white/5 rounded-xl overflow-hidden group hover:border-primary/30 transition-all hover:-translate-y-1 hover:shadow-xl">
+                                            <div className="h-48 bg-black flex items-center justify-center relative overflow-hidden">
+                                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-black to-black opacity-50"></div>
+                                                <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#333 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+                                                <Box size={56} className="text-neutral-700 group-hover:text-primary transition-all duration-500 relative z-10 group-hover:scale-110 group-hover:rotate-6 drop-shadow-[0_0_15px_rgba(var(--primary),0.3)]" />
+
+                                                <div className="absolute top-3 right-3 z-20">
+                                                    <span className="px-2.5 py-1 bg-black/80 backdrop-blur text-xs font-mono font-bold text-white border border-white/10 rounded-md">
+                                                        ${pack.price}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="p-5">
+                                                <div className="flex justify-between items-center mb-1.5">
+                                                    <span className="text-[9px] font-mono text-primary uppercase tracking-wider bg-primary/10 px-1.5 py-0.5 rounded">{pack.type}</span>
+                                                </div>
+                                                <h3 className="text-base font-bold text-white mb-3 leading-tight group-hover:text-primary transition-colors">{pack.title}</h3>
+
+                                                <div className="flex items-center justify-between text-[10px] text-neutral-500 font-mono mb-5 border-t border-white/5 pt-3">
+                                                    <span className="flex items-center gap-1.5"><Download size={12} /> {pack.fileSize}</span>
+                                                    <span className="flex items-center gap-1.5"><Box size={12} /> {pack.itemCount} Files</span>
+                                                </div>
+
+                                                <button className="w-full py-2.5 bg-white/5 hover:bg-white hover:text-black border border-white/10 rounded-lg text-[10px] font-bold text-white transition-all flex items-center justify-center gap-2 uppercase tracking-wide">
+                                                    Add to Cart
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
                     )}
@@ -1150,7 +1206,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
@@ -1231,7 +1287,7 @@ const ProfileSkeleton = () => (
             {[...Array(4)].map((_, i) => <div key={i} className="h-6 w-24 bg-neutral-900 rounded"></div>)}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => <div key={i} className="h-[340px] bg-neutral-900/50 rounded-xl border border-neutral-800"></div>)}
+            {[...Array(4)].map((_, i) => <div key={i} className="h-[282px] bg-neutral-900/50 rounded-xl border border-neutral-800"></div>)}
         </div>
     </div>
 );

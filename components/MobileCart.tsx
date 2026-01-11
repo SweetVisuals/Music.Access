@@ -25,7 +25,7 @@ const MobileCart: React.FC<MobileCartProps> = ({ onNavigate }) => {
         } else {
             setVisible(false);
             document.body.style.overflow = '';
-            const timer = setTimeout(() => setRender(false), 300);
+            const timer = setTimeout(() => setRender(false), 500);
             return () => clearTimeout(timer);
         }
     }, [isOpen]);
@@ -35,7 +35,7 @@ const MobileCart: React.FC<MobileCartProps> = ({ onNavigate }) => {
     return createPortal(
         <div className={`
             fixed inset-0 z-[130] lg:hidden flex flex-col bg-black 
-            transition-transform duration-300 ease-in-out will-change-transform
+            transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform
             ${visible ? 'translate-y-0' : 'translate-y-full'}
         `}>
             {/* Background Blur Effect */}
@@ -138,9 +138,12 @@ const MobileCart: React.FC<MobileCartProps> = ({ onNavigate }) => {
 
                                             <div className="flex items-center justify-between pt-3 border-t border-white/5">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-4 h-4 rounded bg-neutral-800 border border-white/10 overflow-hidden">
-                                                        {/* Placeholder for seller avatar if we had it */}
-                                                        <div className="w-full h-full bg-gradient-to-br from-neutral-700 to-neutral-800"></div>
+                                                    <div className="w-4 h-4 rounded bg-neutral-800 border border-white/10 overflow-hidden shrink-0">
+                                                        {item.sellerAvatar ? (
+                                                            <img src={item.sellerAvatar} alt={item.sellerName} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-gradient-to-br from-neutral-700 to-neutral-800"></div>
+                                                        )}
                                                     </div>
                                                     <span className="text-[10px] text-neutral-500 font-bold">{item.sellerName}</span>
                                                 </div>

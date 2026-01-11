@@ -177,14 +177,29 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
                         </div>
 
                         <div className="flex-1 space-y-4 mb-8">
-                            {plan.features.map((feature, idx) => (
-                                <div key={idx} className="flex items-center gap-3">
-                                    <div className={`p-0.5 rounded-full ${plan.color === 'primary' ? 'text-primary' : plan.color === 'premium' ? 'text-amber-400' : 'text-neutral-500'}`}>
-                                        <Check size={14} strokeWidth={3} />
+                            {plan.features.map((feature, idx) => {
+                                const isCredits = feature.toLowerCase().includes('promotion credits') || feature.toLowerCase().includes('credits');
+                                const isGems = feature.toLowerCase().includes('gem');
+
+                                return (
+                                    <div key={idx} className="flex items-center gap-3">
+                                        {isCredits ? (
+                                            <div className="w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center shrink-0 border border-yellow-600/20">
+                                                <Star size={10} className="text-neutral-900 fill-neutral-900" />
+                                            </div>
+                                        ) : isGems ? (
+                                            <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                                                <Gem size={16} className="text-primary" />
+                                            </div>
+                                        ) : (
+                                            <div className={`p-0.5 rounded-full ${plan.color === 'primary' ? 'text-primary' : plan.color === 'premium' ? 'text-amber-400' : 'text-neutral-500'}`}>
+                                                <Check size={14} strokeWidth={3} />
+                                            </div>
+                                        )}
+                                        <span className="text-sm text-neutral-300">{feature}</span>
                                     </div>
-                                    <span className="text-sm text-neutral-300">{feature}</span>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         <button

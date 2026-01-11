@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -29,10 +29,12 @@ import MobileCart from './components/MobileCart';
 import NotLoggedInState from './components/NotLoggedInState';
 import { FloatingMessenger } from './components/FloatingMessenger';
 import BottomNav from './components/BottomNav';
+import PullToRefresh from './components/PullToRefresh';
 import { getProjects, getUserProfile, supabase, signOut, updateUserProfile, getCurrentUser } from './services/supabaseService';
 import { Project, FilterState, View, UserProfile } from './types';
 
 import { CartProvider } from './contexts/CartContext';
+import { ToastProvider } from './contexts/ToastContext';
 
 const App: React.FC = () => {
   const navigate = useNavigate();
@@ -133,22 +135,23 @@ const App: React.FC = () => {
     }
   }, [location.pathname]);
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await getProjects();
-        setProjects(data);
-      } catch (err) {
-        console.error("Failed to fetch projects:", err);
-        setError("Could not connect to database. Please check your connection.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProjects();
+  const fetchProjects = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getProjects();
+      setProjects(data);
+    } catch (err) {
+      console.error("Failed to fetch projects:", err);
+      setError("Could not connect to database. Please check your connection.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   // Check for existing auth session on app load
   useEffect(() => {
@@ -408,289 +411,293 @@ const App: React.FC = () => {
 
   return (
     <CartProvider>
-      <div className="h-screen w-full flex overflow-hidden selection:bg-primary/30 selection:text-primary transition-colors duration-500">
-        <MobileCart onNavigate={handleNavigate} />
-        <AuthModal
-          isOpen={isAuthModalOpen}
-          onClose={() => setIsAuthModalOpen(false)}
-          onLogin={handleLogin}
-        />
-
-        <Sidebar
-          currentView={currentView}
-          onNavigate={handleNavigate}
-          isLoggedIn={isLoggedIn}
-          onOpenAuth={() => setIsAuthModalOpen(true)}
-          userProfile={userProfile}
-          profileLoading={profileLoading}
-          isOpen={isMobileMenuOpen}
-          onClose={() => setIsMobileMenuOpen(false)}
-          isPlayerActive={!!currentTrackId}
-        />
-
-        {/* Main Layout Container - Adjusted padding for mobile and smaller sidebar */}
-        <div className="flex-1 flex flex-col relative w-full">
-          <TopBar
-            projects={projects}
-            currentView={currentView}
-            onSearch={handleSearch}
-            onNavigate={handleNavigate}
-            isLoggedIn={isLoggedIn}
-            userProfile={userProfile}
-            onOpenAuth={() => setIsAuthModalOpen(true)}
-            onLogout={handleLogout}
-            onClaimGems={handleClaimDailyGems}
-            gemsClaimedToday={gemsClaimedToday}
-            profileLoading={profileLoading}
-            onMenuClick={() => setIsMobileMenuOpen(true)}
+      <ToastProvider>
+        <div className="h-screen h-[100dvh] w-full flex overflow-hidden overscroll-y-none selection:bg-primary/30 selection:text-primary transition-colors duration-500">
+          <MobileCart onNavigate={handleNavigate} />
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => setIsAuthModalOpen(false)}
+            onLogin={handleLogin}
           />
 
-          <main ref={mainRef} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[56px]' : currentView === 'dashboard-messages' ? 'overflow-hidden pt-[64px] pb-0' : 'overflow-y-auto pt-[80px] lg:pt-[80px] pb-24 lg:pb-8'} ${currentTrackId && currentView !== 'notes' && currentView !== 'dashboard-messages' ? 'pb-40' : ''} scroll-smooth`}>
+          <Sidebar
+            currentView={currentView}
+            onNavigate={handleNavigate}
+            isLoggedIn={isLoggedIn}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            userProfile={userProfile}
+            profileLoading={profileLoading}
+            isOpen={isMobileMenuOpen}
+            onClose={() => setIsMobileMenuOpen(false)}
+            isPlayerActive={!!currentTrackId}
+          />
 
-            {currentView === 'home' && (
-              <div className="max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {isLoggedIn && !gemsClaimedToday && !profileLoading && userProfile && (
-                  <div className="mb-4 mt-3 lg:mt-0 p-3 bg-gradient-to-r from-primary/20 to-transparent border border-primary/20 rounded-xl flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-primary animate-pulse">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z" /></svg>
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-white text-sm">Daily Reward Available!</h3>
-                        <p className="text-xs text-neutral-300 hidden sm:block">Claim your 10 free Gems for today.</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleClaimDailyGems}
-                      className="px-3 py-1.5 bg-primary text-black font-bold rounded-lg text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
-                    >
-                      Claim 10 Gems
-                    </button>
-                  </div>
-                )}
+          {/* Main Layout Container - Adjusted padding for mobile and smaller sidebar */}
+          <div className="flex-1 flex flex-col relative w-full">
+            <TopBar
+              projects={projects}
+              currentView={currentView}
+              onSearch={handleSearch}
+              onNavigate={handleNavigate}
+              isLoggedIn={isLoggedIn}
+              userProfile={userProfile}
+              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onLogout={handleLogout}
+              onClaimGems={handleClaimDailyGems}
+              gemsClaimedToday={gemsClaimedToday}
+              profileLoading={profileLoading}
+              onMenuClick={() => setIsMobileMenuOpen(true)}
+            />
 
-                <FilterBar filters={filters} onFilterChange={setFilters} />
+            <main ref={mainRef} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[56px]' : currentView === 'dashboard-messages' ? 'overflow-hidden pt-[56px] pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pt-0 lg:pb-0' : 'overflow-y-auto overscroll-y-contain pt-[80px] lg:pt-[80px] pb-24 lg:pb-8'} ${currentTrackId && currentView !== 'notes' && currentView !== 'dashboard-messages' ? 'pb-40' : ''} scroll-smooth`}>
 
-                {error && (
-                  <div className="mb-3 p-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-xs rounded-lg font-mono text-center">
-                    {error}
-                  </div>
-                )}
-
-                {loading ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mt-6 pb-20">
-                    {[...Array(12)].map((_, i) => (
-                      <div key={i} className="h-[282px]">
-                        <ProjectSkeleton />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mt-6 pb-20">
-                    {filteredProjects.length > 0 ? (
-                      filteredProjects.map(project => (
-                        <div key={project.id} className="h-[282px]">
-                          <ProjectCard
-                            project={project}
-                            currentTrackId={currentTrackId}
-                            isPlaying={currentProject?.id === project.id && isPlaying}
-                            onPlayTrack={(trackId) => handlePlayTrack(project, trackId)}
-                            onTogglePlay={handleTogglePlay}
-                          />
+              {currentView === 'home' && (
+                <PullToRefresh onRefresh={fetchProjects}>
+                  <div className="max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {isLoggedIn && !gemsClaimedToday && !profileLoading && userProfile && (
+                      <div className="mb-4 mt-3 lg:mt-0 p-3 bg-gradient-to-r from-primary/20 to-transparent border border-primary/20 rounded-xl flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-primary animate-pulse">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z" /></svg>
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-white text-sm">Daily Reward Available!</h3>
+                            <p className="text-xs text-neutral-300 hidden sm:block">Claim your 10 free Gems for today.</p>
+                          </div>
                         </div>
-                      ))
-                    ) : (
-                      <div className="col-span-full py-20 text-center border border-dashed border-neutral-800 rounded-xl bg-white/5">
-                        <p className="text-neutral-500 font-mono text-xs mb-4">No data found matching query parameters.</p>
                         <button
-                          onClick={() => setFilters({ ...filters, genre: "All Genres", rootKey: "All Keys", scaleType: "All Scales", searchQuery: "" })}
-                          className="px-4 py-2 bg-primary/10 text-primary border border-primary/50 rounded hover:bg-primary hover:text-black transition-colors font-mono text-xs uppercase tracking-wider"
+                          onClick={handleClaimDailyGems}
+                          className="px-3 py-1.5 bg-primary text-black font-bold rounded-lg text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
                         >
-                          Reset Search Query
+                          Claim 10 Gems
                         </button>
                       </div>
                     )}
+
+                    <FilterBar filters={filters} onFilterChange={setFilters} />
+
+                    {error && (
+                      <div className="mb-3 p-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-xs rounded-lg font-mono text-center">
+                        {error}
+                      </div>
+                    )}
+
+                    {loading ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mt-6 pb-20">
+                        {[...Array(12)].map((_, i) => (
+                          <div key={i} className="h-auto md:h-[282px]">
+                            <ProjectSkeleton />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mt-6 pb-20">
+                        {filteredProjects.length > 0 ? (
+                          filteredProjects.map(project => (
+                            <div key={project.id} className="h-auto md:h-[282px]">
+                              <ProjectCard
+                                project={project}
+                                currentTrackId={currentTrackId}
+                                isPlaying={currentProject?.id === project.id && isPlaying}
+                                onPlayTrack={(trackId) => handlePlayTrack(project, trackId)}
+                                onTogglePlay={handleTogglePlay}
+                              />
+                            </div>
+                          ))
+                        ) : (
+                          <div className="col-span-full py-20 text-center border border-dashed border-neutral-800 rounded-xl bg-white/5">
+                            <p className="text-neutral-500 font-mono text-xs mb-4">No data found matching query parameters.</p>
+                            <button
+                              onClick={() => setFilters({ ...filters, genre: "All Genres", rootKey: "All Keys", scaleType: "All Scales", searchQuery: "" })}
+                              className="px-4 py-2 bg-primary/10 text-primary border border-primary/50 rounded hover:bg-primary hover:text-black transition-colors font-mono text-xs uppercase tracking-wider"
+                            >
+                              Reset Search Query
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            )}
+                </PullToRefresh>
+              )}
 
-            {currentView === 'profile' && (
-              <ProfilePage
-                profile={(!profileUsername || (userProfile && userProfile.handle === profileUsername)) ? userProfile : null} // Use local profile if it matches URL, else fetch
-                profileUsername={profileUsername}
-                currentProject={currentProject}
-                currentTrackId={currentTrackId}
-                isPlaying={isPlaying}
-                onPlayTrack={handlePlayTrack}
-                onTogglePlay={handleTogglePlay}
-              />
-            )}
-
-            {currentView === 'browse-talent' && (
-              <BrowseTalentPage
-                currentProject={currentProject}
-                currentTrackId={currentTrackId}
-                isPlaying={isPlaying}
-                onPlayTrack={handlePlayTrack}
-                onTogglePlay={handleTogglePlay}
-              />
-            )}
-
-            {currentView === 'following' && (
-              <FollowingPage
-                currentProject={currentProject}
-                currentTrackId={currentTrackId}
-                isPlaying={isPlaying}
-                onPlayTrack={handlePlayTrack}
-                onTogglePlay={handleTogglePlay}
-              />
-            )}
-
-            {currentView === 'collaborate' && (
-              <CollaboratePage />
-            )}
-
-            {currentView === 'library' && (
-              isLoggedIn ? (
-                <LibraryPage
+              {currentView === 'profile' && (
+                <ProfilePage
+                  profile={(!profileUsername || (userProfile && userProfile.handle === profileUsername)) ? userProfile : null} // Use local profile if it matches URL, else fetch
+                  profileUsername={profileUsername}
                   currentProject={currentProject}
                   currentTrackId={currentTrackId}
                   isPlaying={isPlaying}
                   onPlayTrack={handlePlayTrack}
                   onTogglePlay={handleTogglePlay}
                 />
-              ) : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-            )}
+              )}
 
-            {currentView === 'upload' && (
-              isLoggedIn ? (
-                <UploadPage
-                  currentProject={currentProject}
-                  currentTrackId={currentTrackId}
-                  isPlaying={isPlaying}
-                  onPlayTrack={handlePlayTrack}
-                  onTogglePlay={handleTogglePlay}
-                  userProfile={userProfile}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-[60vh]">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              )
-            )}
-
-            {currentView === 'contracts' && (
-              isLoggedIn ? <ContractsPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-            )}
-
-            {currentView === 'post-service' && (
-              isLoggedIn ? <PostServicePage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-            )}
-
-            {currentView === 'notes' && (
-              isLoggedIn ? (
-                <NotesPage
-                  userProfile={userProfile}
+              {currentView === 'browse-talent' && (
+                <BrowseTalentPage
                   currentProject={currentProject}
                   currentTrackId={currentTrackId}
                   isPlaying={isPlaying}
                   onPlayTrack={handlePlayTrack}
                   onTogglePlay={handleTogglePlay}
                 />
-              ) : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-            )}
+              )}
 
-            {currentView === 'checkout' && (
-              isLoggedIn ? <CheckoutPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-            )}
+              {currentView === 'following' && (
+                <FollowingPage
+                  currentProject={currentProject}
+                  currentTrackId={currentTrackId}
+                  isPlaying={isPlaying}
+                  onPlayTrack={handlePlayTrack}
+                  onTogglePlay={handleTogglePlay}
+                />
+              )}
 
-            {currentView === 'dashboard-messages' && (
-              isLoggedIn ? <MessagesPage isPlayerActive={!!currentTrackId} /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-            )}
+              {currentView === 'collaborate' && (
+                <CollaboratePage />
+              )}
 
-            {currentView === 'dashboard-manage' && (
-              isLoggedIn ? <ManageServicesPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-            )}
-
-            {/* Settings & Help Views */}
-            {(currentView === 'settings' || currentView === 'dashboard-settings') && (
-              <SettingsPage userProfile={userProfile} />
-            )}
-
-            {(currentView === 'help' || currentView === 'dashboard-help') && (
-              <GetHelpPage onNavigate={handleNavigate} />
-            )}
-
-            {currentView === 'terms' && (
-              <TermsPage onBack={() => setCurrentView('help')} />
-            )}
-
-            {currentView === 'privacy' && (
-              <PrivacyPage onBack={() => setCurrentView('help')} />
-            )}
-
-            {/* Handle remaining Dashboard sub-views via DashboardPage or specifically if needed */}
-            {(currentView.startsWith('dashboard') &&
-              currentView !== 'dashboard-messages' &&
-              currentView !== 'dashboard-manage' &&
-              currentView !== 'dashboard-settings' &&
-              currentView !== 'dashboard-help' &&
-              currentView !== 'dashboard-invoices' &&
-              currentView !== 'dashboard-invoices' &&
-              currentView !== 'dashboard-roadmap') && (
+              {currentView === 'library' && (
                 isLoggedIn ? (
-                  <DashboardPage
-                    view={currentView}
-                    projects={projects}
-                    setProjects={setProjects}
+                  <LibraryPage
+                    currentProject={currentProject}
+                    currentTrackId={currentTrackId}
+                    isPlaying={isPlaying}
+                    onPlayTrack={handlePlayTrack}
+                    onTogglePlay={handleTogglePlay}
+                  />
+                ) : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+              )}
+
+              {currentView === 'upload' && (
+                isLoggedIn ? (
+                  <UploadPage
+                    currentProject={currentProject}
                     currentTrackId={currentTrackId}
                     isPlaying={isPlaying}
                     onPlayTrack={handlePlayTrack}
                     onTogglePlay={handleTogglePlay}
                     userProfile={userProfile}
-                    onNavigate={handleNavigate}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-[60vh]">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  </div>
+                )
+              )}
+
+              {currentView === 'contracts' && (
+                isLoggedIn ? <ContractsPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+              )}
+
+              {currentView === 'post-service' && (
+                isLoggedIn ? <PostServicePage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+              )}
+
+              {currentView === 'notes' && (
+                isLoggedIn ? (
+                  <NotesPage
+                    userProfile={userProfile}
+                    currentProject={currentProject}
+                    currentTrackId={currentTrackId}
+                    isPlaying={isPlaying}
+                    onPlayTrack={handlePlayTrack}
+                    onTogglePlay={handleTogglePlay}
                   />
                 ) : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
               )}
 
-            {/* Invoices Page */}
-            {currentView === 'dashboard-invoices' && (
-              isLoggedIn ? <InvoicesPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-            )}
-            {/* Subscription Page */}
-            {currentView === 'subscription' && (
-              <SubscriptionPage onNavigate={handleNavigate} userProfile={userProfile} />
-            )}
+              {currentView === 'checkout' && (
+                isLoggedIn ? <CheckoutPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+              )}
 
-            {/* Roadmap & Planning Page */}
-            {currentView === 'dashboard-roadmap' && (
-              isLoggedIn ? <RoadmapPage onNavigate={(view) => handleNavigate(view as View)} /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-            )}
+              {currentView === 'dashboard-messages' && (
+                isLoggedIn ? <MessagesPage isPlayerActive={!!currentTrackId} /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+              )}
 
-          </main>
-        </div>
+              {currentView === 'dashboard-manage' && (
+                isLoggedIn ? <ManageServicesPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+              )}
 
-        <MusicPlayer
-          currentProject={currentProject}
-          currentTrackId={currentTrackId}
-          isPlaying={isPlaying}
-          togglePlay={handleTogglePlay}
-          currentView={currentView}
-          onClose={() => {
-            setIsPlaying(false);
-            setCurrentProject(null);
-            setCurrentTrackId(null);
-          }}
-          onNavigate={handleNavigate}
-          isSidebarOpen={isMobileMenuOpen}
-        />
+              {/* Settings & Help Views */}
+              {(currentView === 'settings' || currentView === 'dashboard-settings') && (
+                <SettingsPage userProfile={userProfile} />
+              )}
 
-        <BottomNav
-          currentView={currentView}
-          onNavigate={handleNavigate}
-        />
-      </div >
+              {(currentView === 'help' || currentView === 'dashboard-help') && (
+                <GetHelpPage onNavigate={handleNavigate} />
+              )}
+
+              {currentView === 'terms' && (
+                <TermsPage onBack={() => setCurrentView('help')} />
+              )}
+
+              {currentView === 'privacy' && (
+                <PrivacyPage onBack={() => setCurrentView('help')} />
+              )}
+
+              {/* Handle remaining Dashboard sub-views via DashboardPage or specifically if needed */}
+              {(currentView.startsWith('dashboard') &&
+                currentView !== 'dashboard-messages' &&
+                currentView !== 'dashboard-manage' &&
+                currentView !== 'dashboard-settings' &&
+                currentView !== 'dashboard-help' &&
+                currentView !== 'dashboard-invoices' &&
+                currentView !== 'dashboard-invoices' &&
+                currentView !== 'dashboard-roadmap') && (
+                  isLoggedIn ? (
+                    <DashboardPage
+                      view={currentView}
+                      projects={projects}
+                      setProjects={setProjects}
+                      currentTrackId={currentTrackId}
+                      isPlaying={isPlaying}
+                      onPlayTrack={handlePlayTrack}
+                      onTogglePlay={handleTogglePlay}
+                      userProfile={userProfile}
+                      onNavigate={handleNavigate}
+                    />
+                  ) : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+                )}
+
+              {/* Invoices Page */}
+              {currentView === 'dashboard-invoices' && (
+                isLoggedIn ? <InvoicesPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+              )}
+              {/* Subscription Page */}
+              {currentView === 'subscription' && (
+                <SubscriptionPage onNavigate={handleNavigate} userProfile={userProfile} />
+              )}
+
+              {/* Roadmap & Planning Page */}
+              {currentView === 'dashboard-roadmap' && (
+                isLoggedIn ? <RoadmapPage onNavigate={(view) => handleNavigate(view as View)} /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+              )}
+
+            </main>
+          </div>
+
+          <MusicPlayer
+            currentProject={currentProject}
+            currentTrackId={currentTrackId}
+            isPlaying={isPlaying}
+            togglePlay={handleTogglePlay}
+            currentView={currentView}
+            onClose={() => {
+              setIsPlaying(false);
+              setCurrentProject(null);
+              setCurrentTrackId(null);
+            }}
+            onNavigate={handleNavigate}
+            isSidebarOpen={isMobileMenuOpen}
+          />
+
+          <BottomNav
+            currentView={currentView}
+            onNavigate={handleNavigate}
+          />
+        </div >
+      </ToastProvider>
     </CartProvider >
   );
 };

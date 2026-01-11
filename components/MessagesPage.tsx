@@ -24,8 +24,8 @@ const StaticFab = ({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }
     return createPortal(
         <button
             onClick={onClick}
-            className="fixed z-[100] right-4 w-14 h-14 bg-primary text-black rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-200 lg:hidden"
-            style={{ bottom: 'calc(10rem + env(safe-area-inset-bottom))' }}
+            className="fixed z-[100] right-6 w-14 h-14 bg-black border-2 border-primary text-primary rounded-full shadow-[0_0_20px_rgba(var(--primary),0.3)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 lg:hidden"
+            style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
         >
             {isOpen ? <X size={24} /> : <MessageCircle size={24} fill="currentColor" />}
         </button>,
@@ -119,10 +119,10 @@ const SwipeableConversationItem: React.FC<SwipeableProps> = ({
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline mb-1">
-                            <h4 className={`text-sm font-bold truncate ${activeId === conv.id ? 'text-white' : 'text-neutral-300'}`}>{conv.user}</h4>
-                            <span className="text-[10px] text-neutral-500">{conv.timestamp}</span>
+                            <h4 className={`text-xl font-bold truncate ${activeId === conv.id ? 'text-white' : 'text-neutral-300'}`}>{conv.user}</h4>
+                            <span className="text-xs text-neutral-500">{conv.timestamp}</span>
                         </div>
-                        <p className={`text-xs truncate ${conv.unread > 0 ? 'text-white font-bold' : 'text-neutral-500'}`}>{conv.lastMessage}</p>
+                        <p className={`text-lg truncate ${conv.unread > 0 ? 'text-white font-bold' : 'text-neutral-500'}`}>{conv.lastMessage}</p>
                     </div>
                 </div>
             </div>
@@ -337,7 +337,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
     const activeConv = conversations.find(c => c.id === activeId);
 
     return (
-        <div className={`w-full absolute inset-0 sm:fixed sm:inset-x-0 sm:bottom-0 sm:top-16 ${isSidebarOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-full lg:bg-transparent overflow-hidden flex flex-col`}>
+        <div className={`w-full relative flex-1 ${isSidebarOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-full lg:bg-transparent overflow-hidden flex flex-col`}>
             <StaticFab isOpen={isSidebarOpen} onClick={() => setIsSidebarOpen(!isSidebarOpen)} />
 
             <div className="flex-1 flex bg-[#0a0a0a] overflow-hidden relative">
@@ -347,16 +347,16 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
                 `}>
                     <div className="p-4 border-b border-white/5 flex flex-col gap-4">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                                <MessageCircle size={14} className="text-primary" />
+                            <h3 className="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                <MessageCircle size={16} className="text-primary" />
                                 Inbox
                             </h3>
                             <button onClick={() => { setIsCreatingNew(true); setActiveId(null); if (window.innerWidth < 1024) setIsSidebarOpen(false); }} className="text-neutral-400 hover:text-white"><Plus size={18} /></button>
                         </div>
 
                         <div className="flex p-1 bg-neutral-900 rounded-lg">
-                            <button onClick={() => setActiveTab('messages')} className={`flex-1 py-1.5 rounded text-[10px] font-bold uppercase transition-all ${activeTab === 'messages' ? 'bg-neutral-800 text-white' : 'text-neutral-500'}`}>Messages</button>
-                            <button onClick={() => setActiveTab('notifications')} className={`flex-1 py-1.5 rounded text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-2 ${activeTab === 'notifications' ? 'bg-neutral-800 text-white' : 'text-neutral-500'}`}>
+                            <button onClick={() => setActiveTab('messages')} className={`flex-1 py-1.5 rounded text-xs font-bold uppercase transition-all ${activeTab === 'messages' ? 'bg-neutral-800 text-white' : 'text-neutral-500'}`}>Messages</button>
+                            <button onClick={() => setActiveTab('notifications')} className={`flex-1 py-1.5 rounded text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 ${activeTab === 'notifications' ? 'bg-neutral-800 text-white' : 'text-neutral-500'}`}>
                                 Alerts {notifications.some(n => !n.read) && <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>}
                             </button>
                         </div>
@@ -364,7 +364,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
                         {activeTab === 'messages' && (
                             <div className="relative">
                                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-neutral-900 border border-white/5 rounded-lg py-2 pl-9 pr-4 text-xs text-white focus:outline-none" placeholder="Search..." />
+                                <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-neutral-900 border border-white/5 rounded-lg py-2 pl-9 pr-4 text-sm text-white focus:outline-none" placeholder="Search..." />
                             </div>
                         )}
                     </div>
@@ -401,35 +401,50 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
                 <div className="flex-1 flex flex-col bg-[#050505] relative overflow-hidden">
                     {isCreatingNew ? (
                         <div className="flex flex-col h-full bg-black/20">
-                            <div className="h-14 border-b border-white/5 flex items-center px-4 gap-3 bg-neutral-900/30">
-                                <span className="text-neutral-400 text-sm font-bold">To:</span>
+                            <div className="h-24 border-b border-white/5 flex items-center px-4 gap-3 bg-neutral-900/30">
+                                <span className="text-neutral-400 text-lg font-bold">To:</span>
                                 <input autoFocus={window.innerWidth >= 768} value={userSearchQuery} onChange={(e) => handleUserSearch(e.target.value)} className="flex-1 bg-transparent border-none text-white text-sm focus:outline-none" placeholder="Search creators..." />
                             </div>
                             <div className="flex-1 overflow-y-auto p-4">
                                 {searchResults.map(user => (
                                     <div key={user.id} onClick={() => handleStartConversation(user.id)} className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl cursor-pointer">
-                                        <img src={user.avatar} className="w-10 h-10 rounded-full" />
-                                        <div className="flex-1"><h4 className="text-sm font-bold text-white">{user.username}</h4><p className="text-xs text-neutral-500">@{user.handle}</p></div>
+                                        <img src={user.avatar} className="w-14 h-14 rounded-full" />
+                                        <div className="flex-1"><h4 className="text-xl font-bold text-white">{user.username}</h4><p className="text-base text-neutral-500">@{user.handle}</p></div>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     ) : activeConv ? (
                         <>
-                            <div className="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-neutral-900/30">
-                                <div className="flex items-center gap-3">
-                                    <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-neutral-400"><ArrowLeft size={20} /></button>
-                                    <img src={activeConv.avatar} className="w-8 h-8 rounded-full" />
-                                    <div><h3 className="text-sm font-bold text-white">{activeConv.user}</h3><span className="text-[10px] text-green-500">Online</span></div>
+                            <div className="h-24 border-b border-white/5 flex items-center justify-between px-6 bg-neutral-900/30">
+                                <div className="flex items-center gap-4">
+                                    <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-neutral-400 mr-2"><ArrowLeft size={24} /></button>
+                                    <div
+                                        onClick={() => {
+                                            if (activeConv.userId) {
+                                                window.location.hash = `#@${activeConv.userId}`;
+                                            }
+                                        }}
+                                        className="flex items-center gap-4 cursor-pointer group"
+                                    >
+                                        <img src={activeConv.avatar} className="w-14 h-14 rounded-full object-cover border-2 border-white/5 group-hover:border-primary/50 transition-colors" />
+                                        <div>
+                                            <h3 className="text-2xl font-bold text-white group-hover:text-primary transition-colors">{activeConv.user}</h3>
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
+                                                <span className="text-xs text-green-500 font-bold uppercase tracking-wider">Online</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <button className="p-2 text-neutral-400"><MoreVertical size={18} /></button>
+                                <button className="p-3 text-neutral-400 hover:text-white transition-colors"><MoreVertical size={24} /></button>
                             </div>
                             <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                                 {activeConv.messages.map(msg => (
                                     <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
                                         <div
                                             onContextMenu={(e) => handleContextMenu(e, msg.id, msg.isMe)}
-                                            className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm cursor-pointer select-none transition-transform active:scale-[0.98] ${msg.isMe ? 'bg-primary text-black' : 'bg-neutral-800 text-white border border-neutral-700'}`}
+                                            className={`max-w-[85%] rounded-2xl px-6 py-4 text-lg cursor-pointer select-none transition-transform active:scale-[0.98] ${msg.isMe ? 'bg-primary text-black' : 'bg-neutral-800 text-white border border-white/5 shadow-lg'}`}
                                         >
                                             <p className="whitespace-pre-wrap break-words">{msg.text}</p>
                                             <span className="text-[9px] opacity-50 block mt-1">{msg.timestamp}</span>

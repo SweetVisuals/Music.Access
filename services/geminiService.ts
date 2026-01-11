@@ -203,7 +203,7 @@ export const getWritingAssistance = async (userPrompt: string, currentText: stri
 export const getRhymesForWord = async (word: string): Promise<string[]> => {
   try {
     const prompt = `
-            List 25 creative, slant, and perfect rhymes for the word "${word}" suitable for modern song lyrics (rap/pop/r&b).
+            List 50 creative, slant, and perfect rhymes for the word "${word}" suitable for modern song lyrics (rap/pop/r&b).
             
             Constraints:
             1. Return STRICTLY a JSON array of strings. Example: ["rhyme1", "rhyme2"]

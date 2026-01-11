@@ -4,6 +4,7 @@ import { Project } from '../types';
 import { generateCreativeDescription } from '../services/geminiService';
 import PurchaseModal from './PurchaseModal';
 import { useCart } from '../contexts/CartContext';
+import { useToast } from '../contexts/ToastContext';
 import { checkIsProjectSaved, saveProject, unsaveProject, giveGemToProject, undoGiveGem } from '../services/supabaseService';
 import { Gem } from 'lucide-react';
 
@@ -47,6 +48,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     const menuRef = useRef<HTMLDivElement>(null);
 
     const { addToCart } = useCart();
+    const { showToast } = useToast();
 
     useEffect(() => {
         const checkSavedStatus = async () => {
@@ -105,6 +107,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         setLocalGems(prev => prev + 1);
         setHasGivenGem(true);
         setShowUndo(true);
+        showToast("Gem sent! You're awesome.", 'success');
 
         // Start 1 minute timer to remove undo option
         if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
@@ -122,7 +125,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             setShowUndo(false);
             if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
             // Optional: Show toast error
-            alert(error.message || "Failed to give gem");
+            showToast(error.message || "Failed to give gem", 'error');
         }
     };
 
@@ -277,62 +280,95 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 {/* Tracklist */}
                 <div className="flex-1 bg-[#050505] overflow-y-auto custom-scrollbar relative">
                     <div className="p-2 space-y-0.5">
-                        {project.tracks.slice(0, 5).map((track, idx) => {
-                            const trackId = track.id || `track-${idx}`;
-                            const isTrackPlaying = isPlaying && currentTrackId === trackId;
-                            return (
-                                <div
-                                    key={trackId}
-                                    className={`
-                            flex items-center px-3 py-2 rounded-md transition-all duration-200 cursor-pointer group/track border border-transparent
-                            ${isTrackPlaying
-                                            ? 'bg-primary/5 border-primary/10'
-                                            : 'hover:bg-white/5 hover:border-white/5'
-                                        }
-                        `}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        isTrackPlaying ? onTogglePlay() : onPlayTrack(trackId);
-                                    }}
-                                >
-                                    {/* Status Indicator */}
-                                    <div className="w-6 flex items-center justify-center mr-1">
-                                        {isTrackPlaying ? (
-                                            <div className="relative flex items-center justify-center">
-                                                <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-20 animate-ping"></span>
-                                                <Pause size={10} className="text-primary fill-primary relative z-10" />
+                        {(() => {
+                            const tracksToShow = project.tracks.slice(0, 5);
+                            // Ensure 5 slots are always shown on mobile
+                            while (tracksToShow.length < 5) {
+                                tracksToShow.push({ id: `empty-${tracksToShow.length}`, title: 'Empty Slot', duration: 0, isPlaceholder: true } as any);
+                            }
+
+                            return tracksToShow.map((track, idx) => {
+                                const isPlaceholder = (track as any).isPlaceholder;
+                                if (isPlaceholder) {
+                                    return (
+                                        <div
+                                            key={track.id}
+                                            className="flex items-center px-3 py-2 rounded-md border border-transparent opacity-20 pointer-events-none"
+                                        >
+                                            <div className="w-6 flex items-center justify-center mr-1">
+                                                <span className="text-[9px] md:text-[10px] font-mono text-neutral-700">
+                                                    {(idx + 1).toString().padStart(2, '0')}
+                                                </span>
                                             </div>
-                                        ) : (
-                                            <span className="text-[10px] font-mono text-neutral-700 group-hover/track:hidden">
-                                                {(idx + 1).toString().padStart(2, '0')}
+                                            <div className="flex-1 min-w-0 mr-3">
+                                                <div className="text-[10px] md:text-xs font-medium truncate text-neutral-800">
+                                                    ••••••••••••
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center text-neutral-900">
+                                                <Clock size={10} className="mr-1.5" />
+                                                <span className="text-[8px] md:text-[9px] font-mono">--:--</span>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                const trackId = track.id || `track-${idx}`;
+                                const isTrackPlaying = isPlaying && currentTrackId === trackId;
+                                return (
+                                    <div
+                                        key={trackId}
+                                        className={`
+                                            flex items-center px-3 py-2 rounded-md transition-all duration-200 cursor-pointer group/track border border-transparent
+                                            ${isTrackPlaying
+                                                ? 'bg-primary/5 border-primary/10'
+                                                : 'hover:bg-white/5 hover:border-white/5'
+                                            }
+                                        `}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            isTrackPlaying ? onTogglePlay() : onPlayTrack(trackId);
+                                        }}
+                                    >
+                                        {/* Status Indicator */}
+                                        <div className="w-6 flex items-center justify-center mr-1">
+                                            {isTrackPlaying ? (
+                                                <div className="relative flex items-center justify-center">
+                                                    <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-20 animate-ping"></span>
+                                                    <Pause size={10} className="text-primary fill-primary relative z-10" />
+                                                </div>
+                                            ) : (
+                                                <span className="text-[9px] md:text-[10px] font-mono text-neutral-700 group-hover/track:hidden">
+                                                    {(idx + 1).toString().padStart(2, '0')}
+                                                </span>
+                                            )}
+                                            {!isTrackPlaying && <Play size={10} className="text-neutral-300 fill-neutral-300 hidden group-hover/track:block" />}
+                                        </div>
+
+                                        {/* Track Info */}
+                                        <div className="flex-1 min-w-0 mr-3">
+                                            <div className={`text-[10px] md:text-xs font-medium truncate transition-colors ${isTrackPlaying ? 'text-primary' : 'text-neutral-400 group-hover/track:text-white'}`}>
+                                                {track.title}
+                                            </div>
+                                        </div>
+
+                                        {/* Duration */}
+                                        <div className="flex items-center text-neutral-700 group-hover/track:text-neutral-500 transition-colors">
+                                            <Clock size={10} className="mr-1.5" />
+                                            <span className="text-[8px] md:text-[9px] font-mono">
+                                                {Math.floor(track.duration / 60)}:{(track.duration % 60).toString().padStart(2, '0')}
                                             </span>
+                                        </div>
+
+                                        {renderTrackAction && (
+                                            <div className="ml-3" onClick={(e) => e.stopPropagation()}>
+                                                {renderTrackAction(track)}
+                                            </div>
                                         )}
-                                        {!isTrackPlaying && <Play size={10} className="text-neutral-300 fill-neutral-300 hidden group-hover/track:block" />}
                                     </div>
-
-                                    {/* Track Info */}
-                                    <div className="flex-1 min-w-0 mr-3">
-                                        <div className={`text-xs font-medium truncate transition-colors ${isTrackPlaying ? 'text-primary' : 'text-neutral-400 group-hover/track:text-white'}`}>
-                                            {track.title}
-                                        </div>
-                                    </div>
-
-                                    {/* Duration */}
-                                    <div className="flex items-center text-neutral-700 group-hover/track:text-neutral-500 transition-colors">
-                                        <Clock size={10} className="mr-1.5" />
-                                        <span className="text-[9px] font-mono">
-                                            {Math.floor(track.duration / 60)}:{(track.duration % 60).toString().padStart(2, '0')}
-                                        </span>
-                                    </div>
-
-                                    {renderTrackAction && (
-                                        <div className="ml-3" onClick={(e) => e.stopPropagation()}>
-                                            {renderTrackAction(track)}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                );
+                            });
+                        })()}
                     </div>
                 </div>
 

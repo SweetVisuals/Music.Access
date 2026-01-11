@@ -274,8 +274,8 @@ const Studio: React.FC<StudioProps> = ({
                 <div className="w-full max-w-[1600px] mx-auto pb-40 lg:pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
                         <div>
-                            <h1 className="text-3xl font-black text-white tracking-tight mb-1">My Studio</h1>
-                            <p className="text-neutral-500 text-sm">Manage your releases, organize purchased beats, and track contracts.</p>
+                            <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">My Studio</h1>
+                            <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Manage your releases, organize purchased beats, and track contracts.</p>
                         </div>
                         <button
                             onClick={() => setIsCreateModalOpen(true)}

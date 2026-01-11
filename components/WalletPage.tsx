@@ -14,8 +14,8 @@ import {
     Smartphone,
     Globe,
     Lock,
-    Zap,
-    TrendingUp
+    TrendingUp,
+    Star
 } from 'lucide-react';
 import * as supabaseService from '../services/supabaseService';
 
@@ -112,8 +112,8 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
             {/* Header / Title */}
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight">Wallet</h1>
-                    <p className="text-neutral-500 text-xs lg:text-sm">Manage balance & payment methods</p>
+                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Wallet</h1>
+                    <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Manage balance & payment methods</p>
                 </div>
                 <button className="lg:hidden p-2 bg-neutral-900 rounded-full text-neutral-400 hover:text-white">
                     <MoreHorizontal size={20} />
@@ -200,7 +200,9 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                     <div className="bg-neutral-900/50 border border-white/5 rounded-2xl p-5 flex items-center justify-between group">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 group-hover:bg-amber-500/20 transition-colors">
-                                <Zap size={24} className="text-amber-400 group-hover:scale-110 transition-transform" />
+                                <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center shrink-0">
+                                    <Star size={10} strokeWidth={3} className="text-black fill-current" />
+                                </div>
                             </div>
                             <div>
                                 <h3 className="text-white font-bold text-lg">{userProfile?.promo_credits || 0} Promotion Credits</h3>
@@ -445,7 +447,9 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                 <div className="space-y-6">
                                     <div className="flex flex-col items-center text-center space-y-3">
                                         <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center border border-amber-500/20">
-                                            <Zap size={32} className="text-amber-400" />
+                                            <div className="w-9 h-9 rounded-full bg-amber-400 flex items-center justify-center shrink-0">
+                                                <Star size={16} strokeWidth={3} className="text-black fill-current" />
+                                            </div>
                                         </div>
                                         <div>
                                             <h4 className="text-white font-bold text-xl">10 Promotion Credits</h4>

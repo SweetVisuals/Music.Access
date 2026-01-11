@@ -482,7 +482,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                             {/* Create Playlist Button - Only in Grid View? Or maybe List View allows header button? */}
                             <button
                                 onClick={() => setShowCreatePlaylist(true)}
-                                className="h-[200px] border-2 border-dashed border-white/5 rounded-xl flex flex-col items-center justify-center text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all group bg-white/[0.01]"
+                                className="h-auto md:h-[282px] border-2 border-dashed border-white/5 rounded-xl flex flex-col items-center justify-center text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all group bg-white/[0.01]"
                             >
                                 <div className="p-4 bg-neutral-900 rounded-full mb-3 group-hover:scale-110 transition-transform">
                                     <Plus size={24} />
@@ -541,7 +541,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     {displayProjects.length > 0 ? displayProjects.map(project => (
-                        <div key={project.id} className="h-[282px]">
+                        <div key={project.id} className="h-auto md:h-[282px]">
                             <ProjectCard
                                 project={project}
                                 currentTrackId={currentTrackId}

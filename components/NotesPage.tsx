@@ -786,8 +786,8 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                 <div
                                     ref={backdropRef}
                                     className={`
-                                        col-start-1 row-start-1 p-5 lg:p-12 lg:px-16 xl:px-24 mx-auto max-w-4xl w-full whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono leading-relaxed text-transparent
-                                        ${textSize === 'xs' ? 'text-[0.825rem]' : textSize === 'sm' ? 'text-[0.96rem]' : textSize === 'base' ? 'text-[1.1rem]' : 'text-[1.23rem]'}
+                                        col-start-1 row-start-1 p-5 lg:p-10 lg:px-10 xl:px-12 mx-auto max-w-6xl w-full whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono leading-relaxed text-transparent
+                                        ${textSize === 'xs' ? 'text-[1.05rem]' : textSize === 'sm' ? 'text-[1.25rem]' : textSize === 'base' ? 'text-[1.45rem]' : 'text-[1.75rem]'}
                                     `}
                                 >
                                     {activeNote && renderHighlightedText(activeNote.content + ' ')}
@@ -796,8 +796,8 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                 <textarea
                                     ref={textareaRef}
                                     className={`
-                                        col-start-1 row-start-1 w-full h-full bg-transparent p-5 lg:p-12 lg:px-16 xl:px-24 mx-auto max-w-4xl resize-none overflow-hidden focus:outline-none z-10 font-mono leading-relaxed whitespace-pre-wrap break-words
-                                        ${textSize === 'xs' ? 'text-[0.825rem]' : textSize === 'sm' ? 'text-[0.96rem]' : textSize === 'base' ? 'text-[1.1rem]' : 'text-[1.23rem]'}
+                                        col-start-1 row-start-1 w-full h-full bg-transparent p-5 lg:p-10 lg:px-10 xl:px-12 mx-auto max-w-6xl resize-none overflow-hidden focus:outline-none z-10 font-mono leading-relaxed whitespace-pre-wrap break-words
+                                        ${textSize === 'xs' ? 'text-[1.05rem]' : textSize === 'sm' ? 'text-[1.25rem]' : textSize === 'base' ? 'text-[1.45rem]' : 'text-[1.75rem]'}
                                         ${rhymeMode ? 'text-transparent caret-white' : 'text-neutral-300 caret-white'}
                                     `}
                                     value={activeNote ? activeNote.content : ''}
@@ -1026,7 +1026,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
                 </div>
 
                 {/* Creative Assistant Sidebar (Desktop Only) */}
-                <div className="hidden lg:flex lg:w-64 xl:w-80 h-full bg-[#080808] border-l border-white/5 flex-col shrink-0 transition-all duration-300">
+                <div className="hidden lg:flex lg:w-72 xl:w-96 h-full bg-[#080808] border-l border-white/5 flex-col shrink-0 transition-all duration-300">
                     <div className="flex items-center border-b border-white/5">
                         <button
                             onClick={() => setAssistantTab('rhymes')}
@@ -1233,10 +1233,10 @@ const NotesPage: React.FC<NotesPageProps> = ({
 
                 {/* Sidebar (Left Side) */}
                 <div className={`
-                    absolute lg:static inset-y-0 left-0 z-[60] w-full lg:w-80 xl:w-[350px] lg:border-r border-white/5 flex flex-col bg-black lg:bg-[#080808] transition-transform duration-300
+                    absolute lg:static inset-y-0 left-0 z-[60] w-full lg:w-80 xl:w-96 lg:border-r border-white/5 flex flex-col bg-black lg:bg-[#080808] transition-transform duration-300
                     ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
                 `}>
-                    <div className="p-4 border-b border-white/5 flex items-center justify-between shrink-0">
+                    <div className="p-4 lg:h-20 border-b border-white/5 flex items-center justify-between shrink-0">
                         <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                             <FileText size={14} className="text-primary" />
                             My Notebook
@@ -1299,7 +1299,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                         <Headphones size={12} className={activeNoteId === note.id ? 'text-primary' : 'text-neutral-600'} />
                                     )}
                                 </div>
-                                <p className="text-xs text-neutral-500 line-clamp-1 mb-2">{note.preview || 'No content'}</p>
+                                <p className="text-[11px] text-neutral-500 line-clamp-1 mb-2">{note.preview || 'No content'}</p>
                                 <span className="text-[9px] text-neutral-600 font-mono">{note.updated}</span>
 
                                 {trashView ? (
@@ -1328,7 +1328,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
                     {activeNote ? (
                         <div className="flex-1 flex flex-col overflow-hidden">
                             {/* Desktop Controls */}
-                            <div className="hidden lg:flex h-14 border-b border-white/5 items-center justify-between px-6 bg-neutral-900/30 z-20 shrink-0">
+                            <div className="hidden lg:flex h-20 border-b border-white/5 items-center justify-between px-6 bg-neutral-900/30 z-20 shrink-0">
                                 <div className="flex items-center gap-4">
                                     {viewMode === 'browser' && (
                                         <button onClick={() => setViewMode('editor')} className="p-1.5 hover:bg-white/5 rounded text-neutral-400 hover:text-white"><ChevronLeft size={16} /></button>

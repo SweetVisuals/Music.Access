@@ -170,6 +170,7 @@ export interface Conversation {
   lastMessage: string;
   timestamp: string;
   unread: number;
+  userId?: string;
   messages: Message[];
 }
 
@@ -226,6 +227,7 @@ export interface CartItem {
   serviceId?: string;
   licenseId?: string;
   trackId?: string | null;
+  sellerAvatar?: string;
 }
 
 export interface Contract {

@@ -6,7 +6,6 @@ import {
     Users,
     MessageSquare,
     Headphones,
-    TrendingUp,
     Library,
     FileText,
     Settings,
@@ -17,6 +16,7 @@ import {
     DollarSign,
     Briefcase,
     ArrowLeft,
+    ArrowRight,
     ShoppingBag,
     LayoutGrid,
     Clipboard,
@@ -24,7 +24,9 @@ import {
     X,
     CreditCard,
     ChevronRight,
-    Map
+    Map,
+    Gem,
+    Star
 } from 'lucide-react';
 import { View, UserProfile, TalentProfile } from '../types';
 import { getStorageUsage, getFollowingProfilesForSidebar, supabase } from '../services/supabaseService';
@@ -217,7 +219,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
         fixed inset-0 z-[100] w-full lg:w-[260px] bg-black lg:bg-[#050505] lg:border-r border-white/5 flex flex-col font-sans transition-transform duration-300 ease-in-out transform
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:h-screen
       `}>
-                <div className="h-[56px] flex items-center justify-center px-5 shrink-0 border-b border-white/5 relative overflow-hidden">
+                <div className="h-[56px] flex items-center justify-between lg:justify-center px-5 shrink-0 border-b border-white/5 relative overflow-hidden">
                     <div
                         className="flex items-center gap-2 cursor-pointer group"
                         onClick={() => onNavigate('home')}
@@ -230,14 +232,37 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             />
                         </div>
                     </div>
-                    {/* Mobile Close Button */}
-                    <button onClick={onClose} className="absolute right-4 lg:hidden text-neutral-500 hover:text-white p-2">
-                        <X size={18} />
-                    </button>
+
+                    {/* Mobile Stats & Close Button */}
+                    <div className="flex items-center gap-3 lg:hidden">
+                        {isLoggedIn && userProfile && (
+                            <div className="flex items-center gap-1.5 min-[380px]:gap-2 mr-1 translate-y-px min-[380px]:translate-y-0">
+                                {/* Gems */}
+                                <div className="flex items-center gap-1 min-[380px]:gap-1.5 px-1.5 py-0.5 min-[380px]:px-2 min-[380px]:py-1 bg-white/5 rounded-full border border-white/5">
+                                    <Gem className="text-primary w-2 h-2 min-[380px]:w-2.5 min-[380px]:h-2.5" />
+                                    <span className="text-[9px] min-[380px]:text-[10px] font-bold text-white font-mono">
+                                        {userProfile.gems?.toLocaleString() || '0'}
+                                    </span>
+                                </div>
+                                {/* Promo Credits */}
+                                <div className="flex items-center gap-1 min-[380px]:gap-1.5 px-1.5 py-0.5 min-[380px]:px-2 min-[380px]:py-1 bg-white/5 rounded-full border border-white/5">
+                                    <div className="w-3.5 h-3.5 min-[380px]:w-4 min-[380px]:h-4 rounded-full bg-amber-400 flex items-center justify-center shrink-0">
+                                        <Star strokeWidth={2.5} className="text-black fill-current w-[8px] h-[8px] min-[380px]:w-[9px] min-[380px]:h-[9px]" />
+                                    </div>
+                                    <span className="text-[9px] min-[380px]:text-[10px] font-bold text-white font-mono">
+                                        {userProfile.promo_credits || 0}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                        <button onClick={onClose} className="text-neutral-500 hover:text-white p-1">
+                            <X size={20} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Content */}
-                <div ref={scrollContainerRef} className="flex-1 px-3 py-3 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+                <div ref={scrollContainerRef} className="flex-1 px-3 py-3 overflow-y-auto overscroll-y-contain [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
 
                     {isDashboard ? ( // --- DASHBOARD MODE ---
                         <div className="space-y-6">
@@ -292,8 +317,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                 <nav className="space-y-px">
                                     <SidebarItem icon={<FileText size={15} />} label="Contracts" active={currentView === 'contracts'} onClick={() => onNavigate('contracts')} />
                                     <SidebarItem icon={<PlusCircle size={15} />} label="Post Service" active={currentView === 'post-service'} onClick={() => onNavigate('post-service')} />
-                                    <SidebarItem icon={<Clipboard size={15} />} label="Notes & Lyrics" active={currentView === 'notes'} onClick={() => onNavigate('notes')} />
-                                    <SidebarItem icon={<TrendingUp size={15} />} label="Analytics" active={currentView === 'dashboard-analytics'} onClick={() => onNavigate('dashboard-analytics')} />
                                 </nav>
                             </div >
 
@@ -423,6 +446,19 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                         </div>
                     )}
                 </div >
+
+                {isLoggedIn && !isDashboard && (
+                    <div className="hidden lg:block px-4 pb-6 pt-2 bg-[#050505]">
+                        <button
+                            onClick={() => onNavigate('dashboard-overview')}
+                            className="w-full group flex items-center justify-center gap-2 py-2 bg-primary hover:bg-primary/90 text-black rounded-md font-bold text-[11px] transition-all shadow-[0_2px_10px_rgba(var(--primary),0.15)]"
+                        >
+                            <LayoutDashboard size={14} />
+                            <span>Go to Dashboard</span>
+                            <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform duration-300" />
+                        </button>
+                    </div>
+                )}
 
                 {/* Footer */}
                 < div className={`

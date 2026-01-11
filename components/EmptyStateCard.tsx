@@ -8,7 +8,7 @@ interface EmptyStateCardProps {
     height?: string;
 }
 
-const EmptyStateCard: React.FC<EmptyStateCardProps> = ({ icon: Icon, title, description, height = "h-[282px]" }) => {
+const EmptyStateCard: React.FC<EmptyStateCardProps> = ({ icon: Icon, title, description, height = "h-auto md:h-[282px]" }) => {
     return (
         <div className={`w-full ${height} rounded-xl border border-dashed border-white/10 bg-neutral-900/20 flex flex-col items-center justify-center text-center p-6 animate-in fade-in duration-500`}>
             <div className="w-16 h-16 rounded-full bg-neutral-900 border border-white/5 flex items-center justify-center mb-4 shadow-lg">

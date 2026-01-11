@@ -97,11 +97,11 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
 
                     <div>
-                        <h1 className="text-3xl font-black text-white mb-2 flex items-center gap-3">
+                        <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter flex items-center gap-3">
                             <Map className="text-primary" size={32} />
                             Roadmap
                         </h1>
-                        <p className="text-neutral-500 text-sm">Plan your career trajectory, manage campaigns, and track goals.</p>
+                        <p className="text-neutral-500 text-sm lg:text-base">Plan your career trajectory, manage campaigns, and track goals.</p>
                     </div>
 
                     <div className="flex w-full md:w-auto bg-neutral-900/50 p-1 rounded-lg border border-neutral-800">

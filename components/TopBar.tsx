@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
     Search, Bell, Menu, User, LogOut, Settings, Terminal, ShoppingBag,
-    ArrowRight, ArrowLeft, Clock, Gem, Wallet, Eye, EyeOff, Palette,
+    ArrowRight, ArrowLeft, Clock, Gem, Wallet, Eye, EyeOff, Palette, Star,
     Command, Sparkles, Music, Package, Mic, Info, X, ChevronDown, Trash2, Check, LayoutDashboard
 } from 'lucide-react';
 import { Project, UserProfile, Notification, View } from '../types';
@@ -59,6 +59,7 @@ const RightActions: React.FC<{
     onLogout: () => void;
     isSpacer?: boolean;
     onMobileSearchOpen?: () => void;
+    isCartAnimating?: boolean;
 }> = ({
     isLoggedIn, isFocused, mobileSearchOpen, currentView, userProfile,
     gemsClaimedToday, profileLoading, onClaimGems, onNavigate,
@@ -66,7 +67,7 @@ const RightActions: React.FC<{
     themeRef, notifRef, isNotificationsOpen, setIsNotificationsOpen, notifications,
     handleMarkAllRead, handleMarkRead, cartRef, isCartOpen, setIsCartOpen, cartItems,
     cartTotal, removeFromCart, dropdownRef, isProfileOpen, setIsProfileOpen,
-    onOpenAuth, onLogout, isSpacer = false, onMobileSearchOpen
+    onOpenAuth, onLogout, isSpacer = false, onMobileSearchOpen, isCartAnimating
 }) => {
         // Spacer helper: makes content invisible and non-interactive
         // Spacer helper: makes content invisible and non-interactive
@@ -102,6 +103,19 @@ const RightActions: React.FC<{
                             <Gem size={12} className="text-primary" />
                             <span className="text-[10px] font-bold text-white font-mono mt-0.5">
                                 {userProfile?.gems !== undefined ? userProfile.gems.toLocaleString() : '0'}
+                            </span>
+                        </div>
+
+                        {/* Promotion Credits Balance */}
+                        <div
+                            onClick={isSpacer ? undefined : () => onNavigate('dashboard-wallet')}
+                            className="h-8 bg-neutral-900 border border-white/5 rounded-full flex items-center px-3 gap-2 cursor-pointer hover:bg-neutral-800 transition-colors"
+                        >
+                            <div className="w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center shrink-0">
+                                <Star size={9} strokeWidth={2.5} className="text-black fill-current" />
+                            </div>
+                            <span className="text-[10px] font-bold text-white font-mono mt-0.5">
+                                {userProfile?.promo_credits !== undefined ? userProfile.promo_credits.toLocaleString() : '0'}
                             </span>
                         </div>
 
@@ -214,11 +228,15 @@ const RightActions: React.FC<{
                     <div className="relative" ref={isSpacer ? null : cartRef}>
                         <button
                             onClick={isSpacer ? undefined : () => setIsCartOpen(!isCartOpen)}
-                            className={`relative p-2 rounded-lg transition-all duration-200 group ${isCartOpen && !isSpacer ? 'bg-white/10 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+                            className={`
+                                relative p-2 rounded-lg transition-all duration-200 group 
+                                ${isCartOpen && !isSpacer ? 'bg-white/10 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}
+                                ${isCartAnimating ? 'animate-[bounce_0.5s_ease-in-out]' : ''}
+                            `}
                         >
-                            <ShoppingBag size={16} />
+                            <ShoppingBag size={16} className={`${isCartAnimating ? 'text-primary scale-110' : ''} transition-all duration-300`} />
                             {cartItems.length > 0 && (
-                                <span className="absolute top-1.5 right-2 h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_5px_rgb(var(--primary)/0.6)]"></span>
+                                <span className={`absolute top-1.5 right-2 h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_5px_rgb(var(--primary)/0.6)] ${isCartAnimating ? 'scale-150' : ''} transition-transform duration-300`}></span>
                             )}
                         </button>
 
@@ -239,8 +257,19 @@ const RightActions: React.FC<{
 
                                             return (
                                                 <div key={item.id} className="p-3 border-b border-white/5 flex gap-3 hover:bg-white/5 transition-colors group items-start">
-                                                    <div className="w-8 h-8 bg-neutral-800 rounded flex items-center justify-center shrink-0 text-neutral-400 group-hover:text-primary group-hover:bg-primary/10 transition-all">
-                                                        <TypeIcon size={14} />
+                                                    <div className="relative shrink-0">
+                                                        <div className="w-8 h-8 bg-neutral-800 rounded flex items-center justify-center text-neutral-400 group-hover:text-primary group-hover:bg-primary/10 transition-all overflow-hidden border border-white/5">
+                                                            {item.sellerAvatar ? (
+                                                                <img src={item.sellerAvatar} alt={item.sellerName} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <TypeIcon size={14} />
+                                                            )}
+                                                        </div>
+                                                        {item.sellerAvatar && (
+                                                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-black border border-white/10 rounded-full flex items-center justify-center text-primary">
+                                                                <TypeIcon size={8} />
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                     <div className="flex-1 min-w-0">
@@ -297,14 +326,16 @@ const RightActions: React.FC<{
                             onClick={isSpacer ? undefined : (isLoggedIn ? () => setIsProfileOpen(!isProfileOpen) : onOpenAuth)}
                             className="flex items-center gap-2 pl-2"
                         >
-                            <div className="w-8 h-8 rounded-lg bg-neutral-800 border border-white/5 overflow-hidden hover:border-white/30 transition-all">
-                                {isLoggedIn && userProfile ? (
-                                    <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-neutral-500">
-                                        <User size={14} />
-                                    </div>
-                                )}
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-neutral-800 border border-white/5 overflow-hidden hover:border-white/30 transition-all">
+                                    {isLoggedIn && userProfile ? (
+                                        <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-neutral-500">
+                                            <User size={14} />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             {isLoggedIn && <ChevronDown size={12} className="text-neutral-500 hover:text-white transition-colors" />}
                         </button>
@@ -313,8 +344,7 @@ const RightActions: React.FC<{
                         {isLoggedIn && isProfileOpen && !isSpacer && (
                             <div className="absolute right-0 top-full mt-3 w-52 bg-[#0a0a0a] border border-white/5 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                                 <div className="p-3 border-b border-white/5">
-                                    <div className="text-xs font-bold text-white">{userProfile?.username || 'User'}</div>
-                                    <div className="text-[9px] text-neutral-500 truncate mb-2">{userProfile?.handle || '@user'}</div>
+                                    <div className="text-base font-bold text-white truncate">{userProfile?.username || 'User'}</div>
 
                                     <div
                                         onClick={(e) => {
@@ -347,12 +377,12 @@ const RightActions: React.FC<{
                                     </div>
                                 </div>
                                 <div className="p-1.5">
-                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('dashboard-overview'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
-                                        <LayoutDashboard size={12} /> Dashboard
-                                    </button>
-
                                     <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
                                         <User size={12} /> My Profile
+                                    </button>
+
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('dashboard-overview'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
+                                        <LayoutDashboard size={12} /> Dashboard
                                     </button>
 
                                     <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('settings'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
@@ -414,6 +444,8 @@ const TopBar: React.FC<TopBarProps> = ({
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [isCartAnimating, setIsCartAnimating] = useState(false);
+    const prevItemsLength = useRef(cartItems.length);
 
     // Refs
     const searchRef = useRef<HTMLDivElement>(null);
@@ -427,6 +459,16 @@ const TopBar: React.FC<TopBarProps> = ({
     const placeholderText = searchMode === 'ai'
         ? (mobileSearchOpen ? "Ask AI..." : "Ask me anything (e.g., 'Find me trap beats under $30')...")
         : (mobileSearchOpen ? "Search..." : "Search for beats, producers, or kits...");
+
+    // Trigger cart animation when items change
+    useEffect(() => {
+        if (cartItems.length > prevItemsLength.current) {
+            setIsCartAnimating(true);
+            const timer = setTimeout(() => setIsCartAnimating(false), 500);
+            return () => clearTimeout(timer);
+        }
+        prevItemsLength.current = cartItems.length;
+    }, [cartItems.length]);
 
     // Fetch notifications
     useEffect(() => {
@@ -714,6 +756,7 @@ const TopBar: React.FC<TopBarProps> = ({
                     cartTotal={cartTotal} removeFromCart={removeFromCart} dropdownRef={dropdownRef}
                     isProfileOpen={isProfileOpen} setIsProfileOpen={setIsProfileOpen} onOpenAuth={onOpenAuth}
                     onLogout={onLogout} isSpacer={false} onMobileSearchOpen={() => setMobileSearchOpen(true)}
+                    isCartAnimating={isCartAnimating}
                 />
             </div>
             {/* Mobile Notifications Portal - Rendered outside transformed containers */}

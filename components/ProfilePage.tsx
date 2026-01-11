@@ -28,7 +28,7 @@ import {
     ChevronDown,
     User
 } from 'lucide-react';
-import ProjectCard from './ProjectCard';
+import ProjectCard, { ProjectSkeleton } from './ProjectCard';
 import CreateProjectModal from './CreateProjectModal';
 import CreateSoundpackModal from './CreateSoundpackModal';
 import CreateServiceModal from './CreateServiceModal';
@@ -799,7 +799,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             <button
                                                 onClick={handleToggleFollow}
                                                 disabled={isFollowLoading || isOwnProfile}
-                                                className={`px-10 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all border flex-1 md:flex-auto ${isOwnProfile
+                                                className={`px-4 md:px-10 py-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all border flex-1 md:flex-auto ${isOwnProfile
                                                     ? 'bg-neutral-800 border-neutral-800 text-neutral-500 cursor-not-allowed opacity-50'
                                                     : isFollowing
                                                         ? 'bg-transparent border-neutral-600 text-neutral-300 hover:border-red-500 hover:text-red-500'
@@ -811,7 +811,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             </button>
                                             <button
                                                 onClick={handleMessage}
-                                                className="px-10 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-white/10 transition-colors flex items-center justify-center gap-2 flex-1 md:flex-auto"
+                                                className="px-4 md:px-10 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-white/10 transition-colors flex items-center justify-center gap-2 flex-1 md:flex-auto"
                                             >
                                                 <MessageSquare size={16} />
                                                 MESSAGE
@@ -970,7 +970,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             return true; // Owner sees all by default
                                         })
                                         .map(project => (
-                                            <div key={project.id} className="h-[282px]">
+                                            <div key={project.id} className="h-auto md:h-[282px]">
                                                 <ProjectCard
                                                     project={project}
                                                     currentTrackId={currentTrackId}
@@ -1287,7 +1287,7 @@ const ProfileSkeleton = () => (
             {[...Array(4)].map((_, i) => <div key={i} className="h-6 w-24 bg-neutral-900 rounded"></div>)}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => <div key={i} className="h-[282px] bg-neutral-900/50 rounded-xl border border-neutral-800"></div>)}
+            {[...Array(4)].map((_, i) => <div key={i} className="h-auto md:h-[282px] bg-neutral-900/50 rounded-xl border border-neutral-800"><ProjectSkeleton /></div>)}
         </div>
     </div>
 );

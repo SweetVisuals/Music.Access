@@ -277,7 +277,13 @@ export const giveGemToProject = async (projectId: string) => {
     .eq('id', projectId)
     .single();
 
-  if (projectError || !project) throw new Error('Project not found');
+  if (projectError) {
+    console.error('Error fetching project for gem:', projectError);
+    // Explicitly throw the detailed error
+    throw new Error(`Database error: ${projectError.message}`);
+  }
+
+  if (!project) throw new Error('Project not found');
 
   // 2. Prevent self-giving
   if (project.user_id === currentUser.id) {
@@ -329,7 +335,12 @@ export const undoGiveGem = async (projectId: string) => {
     .eq('id', projectId)
     .single();
 
-  if (projectError || !project) throw new Error('Project not found');
+  if (projectError) {
+    console.error('Error fetching project for undo gem:', projectError);
+    throw new Error(`Database error: ${projectError.message}`);
+  }
+
+  if (!project) throw new Error('Project not found');
 
   const { data: userProfile, error: userError } = await supabase
     .from('users')
@@ -1562,6 +1573,7 @@ export const getConversations = async (): Promise<Conversation[]> => {
     return {
       id: conversation.id,
       user: otherParticipant?.username || 'Unknown User',
+      userId: otherParticipant?.id,
       avatar: otherParticipant?.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
       lastMessage: lastMessage?.content || 'No messages yet',
       timestamp: formatTimeAgo(lastMessage?.created_at || conversation.updated_at),

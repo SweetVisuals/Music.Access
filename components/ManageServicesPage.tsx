@@ -53,8 +53,8 @@ const ManageServicesPage: React.FC = () => {
             {/* Header - Hidden on mobile if order selected to maximize space */}
             <div className={`flex flex-col md:flex-row justify-between items-start md:items-center mb-6 shrink-0 gap-4 ${selectedOrder ? 'hidden lg:flex' : 'flex'}`}>
                 <div>
-                    <h1 className="text-3xl font-black text-white mb-2">Manage Orders</h1>
-                    <p className="text-neutral-500 text-sm">Track and deliver your active services.</p>
+                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Manage Orders</h1>
+                    <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Track and deliver your active services.</p>
                 </div>
 
                 {/* Desktop Filter Tabs */}

@@ -183,8 +183,8 @@ Status: ${invoice.status.toUpperCase()}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-black text-white mb-2">Invoices</h1>
-          <p className="text-neutral-500 text-sm">Manage your invoices and track payments.</p>
+          <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Invoices</h1>
+          <p className="text-neutral-500 text-sm lg:text-base">Manage your invoices and track payments.</p>
         </div>
 
         <div className="flex items-center gap-3">

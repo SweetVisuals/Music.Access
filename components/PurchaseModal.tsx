@@ -19,6 +19,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
     );
     // State for tracks where user specifically requested stems
     const [wantsStems, setWantsStems] = useState<Record<string, boolean>>({});
+    const [isAdded, setIsAdded] = useState(false);
 
     // Find the currently selected license object
     const selectedLicense = project.licenses?.find((l, i) => (l.id || `license-${i}`) === selectedLicenseId);
@@ -336,13 +337,10 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                             <button
                                 onClick={() => {
                                     if (selectedLicense) {
+                                        setIsAdded(true);
                                         if (project.type === 'beat_tape') {
                                             selectedTrackIds.forEach(trackId => {
                                                 const track = project.tracks.find((t, idx) => (t.id || `track-${idx}`) === trackId);
-
-                                                // Determine license for this specific track
-                                                // If Wants Stems, use stemsLicense if available. Otherwise use selectedLicense
-                                                // Note: This logic assumes if stems are wanted, we upgrade the license for this track
                                                 const effectiveLicense = (wantsStems[trackId] && stemsLicense) ? stemsLicense : selectedLicense;
 
                                                 onAddToCart({
@@ -352,6 +350,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                                     price: effectiveLicense.price,
                                                     sellerName: project.producer,
                                                     sellerHandle: '@' + project.producer,
+                                                    sellerAvatar: project.producerAvatar,
                                                     licenseType: effectiveLicense.name,
                                                     projectId: project.id,
                                                     trackId: trackId,
@@ -366,20 +365,41 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                                 price: selectedLicense.price,
                                                 sellerName: project.producer,
                                                 sellerHandle: '@' + project.producer,
+                                                sellerAvatar: project.producerAvatar,
                                                 licenseType: selectedLicense.name,
                                                 projectId: project.id,
                                                 licenseId: selectedLicenseId || undefined
                                             });
                                         }
-                                        onClose();
+
+                                        setTimeout(() => {
+                                            onClose();
+                                            setTimeout(() => setIsAdded(false), 500);
+                                        }, 800);
                                     }
                                 }}
-                                disabled={(project.type === 'beat_tape' && selectedTrackIds.length === 0) || !selectedLicenseId}
-                                className="flex-1 md:flex-none px-4 py-2 text-sm md:px-8 md:py-3 md:text-base bg-primary text-black font-bold rounded-xl hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)] transition-all flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={(project.type === 'beat_tape' && selectedTrackIds.length === 0) || !selectedLicenseId || isAdded}
+                                className={`
+                                        flex-1 md:flex-none px-4 py-2 text-sm md:px-8 md:py-3 md:text-base font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed
+                                        ${isAdded
+                                        ? 'bg-green-500 text-white scale-95 shadow-[0_0_20px_rgba(34,197,94,0.4)]'
+                                        : 'bg-primary text-black hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)] hover:scale-[1.02]'
+                                    }
+                                    `}
                             >
-                                <ShoppingCart size={16} className="md:w-5 md:h-5" />
-                                <span>Add to Cart {project.type === 'beat_tape' && selectedTrackIds.length > 0 && `(${selectedTrackIds.length})`}</span>
+                                {isAdded ? (
+                                    <>
+                                        <Check size={16} className="md:w-5 md:h-5" />
+                                        <span>Added to Cart!</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <ShoppingCart size={16} className="md:w-5 md:h-5" />
+                                        <span>Add to Cart {project.type === 'beat_tape' && selectedTrackIds.length > 0 && `(${selectedTrackIds.length})`}</span>
+                                    </>
+                                )}
                             </button>
+                            );
                         </div>
                     </div>
                 </div>

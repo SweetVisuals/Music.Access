@@ -77,13 +77,14 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
         <div className="h-px w-full bg-white/10 lg:h-6 lg:w-px lg:mx-2"></div>
 
         {/* BPM Range */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full lg:w-auto">
           <CustomInput
             type="number"
             value={filters.minBpm}
             onChange={(e) => onFilterChange({ ...filters, minBpm: e.target.value })}
             placeholder="Min"
-            className="w-20 !py-2 !px-3 font-mono text-center"
+            className="w-full lg:w-24 !py-2 !px-3 font-mono text-center"
+            containerClassName="flex-1 lg:flex-none"
             noLabel
             hideControls
           />
@@ -93,7 +94,8 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
             value={filters.maxBpm}
             onChange={(e) => onFilterChange({ ...filters, maxBpm: e.target.value })}
             placeholder="Max"
-            className="w-20 !py-2 !px-3 font-mono text-center"
+            className="w-full lg:w-24 !py-2 !px-3 font-mono text-center"
+            containerClassName="flex-1 lg:flex-none"
             noLabel
             hideControls
           />

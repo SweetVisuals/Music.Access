@@ -3,14 +3,17 @@ import { createPortal } from 'react-dom';
 import { X, ShoppingBag, Trash2, ArrowRight, ArrowLeft, Music, Package, Mic } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import CheckoutPage from './CheckoutPage';
-import { View } from '../types';
+import { usePurchaseModal } from '../contexts/PurchaseModalContext';
+import { View, Project } from '../types';
 
 interface MobileCartProps {
     onNavigate: (view: View | string) => void;
+    projects?: Project[];
 }
 
-const MobileCart: React.FC<MobileCartProps> = ({ onNavigate }) => {
+const MobileCart: React.FC<MobileCartProps> = ({ onNavigate, projects = [] }) => {
     const { items, cartTotal, isOpen, setIsOpen, removeFromCart } = useCart();
+    const { openPurchaseModal } = usePurchaseModal();
 
     const [render, setRender] = useState(false);
     const [visible, setVisible] = useState(false);
@@ -113,7 +116,13 @@ const MobileCart: React.FC<MobileCartProps> = ({ onNavigate }) => {
                                 return (
                                     <div
                                         key={item.id}
-                                        className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl flex gap-4 animate-in slide-in-from-bottom-2 duration-300"
+                                        onClick={() => {
+                                            const project = projects.find(p => p.id === item.projectId);
+                                            if (project) {
+                                                openPurchaseModal(project, item);
+                                            }
+                                        }}
+                                        className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl flex gap-4 animate-in slide-in-from-bottom-2 duration-300 cursor-pointer active:scale-[0.98] transition-all"
                                     >
                                         <div className="w-12 h-12 bg-neutral-900 rounded-xl flex items-center justify-center text-neutral-400 border border-white/5 shrink-0">
                                             <TypeIcon size={24} />

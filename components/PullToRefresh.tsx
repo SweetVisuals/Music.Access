@@ -97,29 +97,34 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, children, disa
 
     return (
         <div ref={containerRef} className="relative w-full min-h-full overflow-x-hidden">
-            {/* Pull Indicator */}
+            {/* Pull Indicator - Rectangular Tab Style */}
             <div
                 className="absolute left-0 right-0 flex justify-center pointer-events-none z-50 transition-transform duration-200 ease-out"
                 style={{
-                    transform: `translateY(${pullDistance - 50}px)`,
-                    opacity: showIndicator ? opacity : 0,
+                    transform: `translateY(${pullDistance - 60}px)`,
+                    opacity: showIndicator ? 1 : 0,
                 }}
             >
                 <div className={`
-          p-2.5 bg-neutral-900 border border-white/10 rounded-full shadow-2xl shadow-primary/20
-          flex items-center justify-center
-          transition-transform duration-200
-          ${isRefreshing ? 'animate-spin' : ''}
-          ${pullDistance >= threshold && !isRefreshing ? 'scale-110 border-primary/40' : 'scale-100'}
-        `}>
-                    <RefreshCw
-                        size={20}
-                        className={`${pullDistance >= threshold ? 'text-primary' : 'text-neutral-400'} transition-colors duration-200`}
-                        style={{
-                            transform: isRefreshing ? 'none' : `rotate(${rotation}deg)`,
-                            transition: isRefreshing ? 'none' : 'transform 0.1s linear'
-                        }}
-                    />
+                    px-6 py-2.5 bg-neutral-900/90 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl shadow-primary/20 
+                    flex items-center gap-3
+                    transition-all duration-300
+                    ${pullDistance >= threshold ? 'border-primary/40' : 'border-white/10'}
+                    ${isRefreshing ? 'bg-primary/10 border-primary/20' : ''}
+                `}>
+                    <div className={isRefreshing ? 'animate-spin' : ''}>
+                        <RefreshCw
+                            size={18}
+                            className={`${pullDistance >= threshold || isRefreshing ? 'text-primary' : 'text-neutral-400'} transition-colors duration-200`}
+                            style={{
+                                transform: isRefreshing ? 'none' : `rotate(${rotation}deg)`,
+                                transition: isRefreshing ? 'none' : 'transform 0.1s linear'
+                            }}
+                        />
+                    </div>
+                    <span className={`text-[13px] font-bold tracking-tight transition-all duration-200 ${pullDistance >= threshold || isRefreshing ? 'text-primary' : 'text-neutral-400'}`}>
+                        {isRefreshing ? 'REFRESHING...' : pullDistance >= threshold ? 'RELEASE TO REFRESH' : 'PULL TO REFRESH'}
+                    </span>
                 </div>
             </div>
 

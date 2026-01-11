@@ -8,6 +8,7 @@ import { Project, UserProfile, Notification, View } from '../types';
 import MobileNotifications from './MobileNotifications';
 import { useCart } from '../contexts/CartContext';
 import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/supabaseService';
+import { usePurchaseModal } from '../contexts/PurchaseModalContext';
 
 interface TopBarProps {
     projects: Project[];
@@ -60,6 +61,7 @@ const RightActions: React.FC<{
     isSpacer?: boolean;
     onMobileSearchOpen?: () => void;
     isCartAnimating?: boolean;
+    projects: Project[];
 }> = ({
     isLoggedIn, isFocused, mobileSearchOpen, currentView, userProfile,
     gemsClaimedToday, profileLoading, onClaimGems, onNavigate,
@@ -67,8 +69,9 @@ const RightActions: React.FC<{
     themeRef, notifRef, isNotificationsOpen, setIsNotificationsOpen, notifications,
     handleMarkAllRead, handleMarkRead, cartRef, isCartOpen, setIsCartOpen, cartItems,
     cartTotal, removeFromCart, dropdownRef, isProfileOpen, setIsProfileOpen,
-    onOpenAuth, onLogout, isSpacer = false, onMobileSearchOpen, isCartAnimating
+    onOpenAuth, onLogout, isSpacer = false, onMobileSearchOpen, isCartAnimating, projects
 }) => {
+        const { openPurchaseModal } = usePurchaseModal();
         // Spacer helper: makes content invisible and non-interactive
         // Spacer helper: makes content invisible and non-interactive
         const visibilityClasses = (mobileSearchOpen || isSpacer)
@@ -256,7 +259,17 @@ const RightActions: React.FC<{
                                             if (item.type.includes('Service') || item.type.includes('Mixing')) TypeIcon = Mic;
 
                                             return (
-                                                <div key={item.id} className="p-3 border-b border-white/5 flex gap-3 hover:bg-white/5 transition-colors group items-start">
+                                                <div
+                                                    key={item.id}
+                                                    onClick={() => {
+                                                        const project = projects.find(p => p.id === item.projectId);
+                                                        if (project) {
+                                                            openPurchaseModal(project, item);
+                                                            setIsCartOpen(false);
+                                                        }
+                                                    }}
+                                                    className="p-3 border-b border-white/5 flex gap-3 hover:bg-white/5 transition-colors group items-start cursor-pointer"
+                                                >
                                                     <div className="relative shrink-0">
                                                         <div className="w-8 h-8 bg-neutral-800 rounded flex items-center justify-center text-neutral-400 group-hover:text-primary group-hover:bg-primary/10 transition-all overflow-hidden border border-white/5">
                                                             {item.sellerAvatar ? (
@@ -757,6 +770,7 @@ const TopBar: React.FC<TopBarProps> = ({
                     isProfileOpen={isProfileOpen} setIsProfileOpen={setIsProfileOpen} onOpenAuth={onOpenAuth}
                     onLogout={onLogout} isSpacer={false} onMobileSearchOpen={() => setMobileSearchOpen(true)}
                     isCartAnimating={isCartAnimating}
+                    projects={projects}
                 />
             </div>
             {/* Mobile Notifications Portal - Rendered outside transformed containers */}

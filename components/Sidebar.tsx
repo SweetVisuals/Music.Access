@@ -224,7 +224,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                         className="flex items-center gap-2 cursor-pointer group"
                         onClick={() => onNavigate('home')}
                     >
-                        <div className="relative h-[40px] flex items-start pt-[1px] transition-transform scale-[1.1] lg:scale-100 translate-x-[2px] lg:translate-x-0 lg:group-hover:scale-105 origin-center">
+                        <div className="relative h-[40px] flex items-start pt-[1px] transition-transform scale-100 min-[380px]:scale-[1.1] lg:scale-100 translate-x-[2px] lg:translate-x-0 lg:group-hover:scale-105 origin-center">
                             <img
                                 src="/images/MUSIC ACCESS-Photoroom.png"
                                 alt="Music Access"
@@ -238,18 +238,18 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                         {isLoggedIn && userProfile && (
                             <div className="flex items-center gap-1.5 min-[380px]:gap-2 mr-1 translate-y-px min-[380px]:translate-y-0">
                                 {/* Gems */}
-                                <div className="flex items-center gap-1 min-[380px]:gap-1.5 px-1.5 py-0.5 min-[380px]:px-2 min-[380px]:py-1 bg-white/5 rounded-full border border-white/5">
-                                    <Gem className="text-primary w-2 h-2 min-[380px]:w-2.5 min-[380px]:h-2.5" />
-                                    <span className="text-[9px] min-[380px]:text-[10px] font-bold text-white font-mono">
+                                <div className="flex items-center gap-1 min-[380px]:gap-1.5 px-2 py-0.5 min-[380px]:py-1 bg-white/5 rounded-full border border-white/5">
+                                    <Gem className="text-primary w-2.5 h-2.5 min-[380px]:w-3 min-[380px]:h-3" />
+                                    <span className="text-[10px] min-[380px]:text-[11px] font-bold text-white font-mono">
                                         {userProfile.gems?.toLocaleString() || '0'}
                                     </span>
                                 </div>
                                 {/* Promo Credits */}
-                                <div className="flex items-center gap-1 min-[380px]:gap-1.5 px-1.5 py-0.5 min-[380px]:px-2 min-[380px]:py-1 bg-white/5 rounded-full border border-white/5">
+                                <div className="flex items-center gap-1 min-[380px]:gap-1.5 px-2 py-0.5 min-[380px]:py-1 bg-white/5 rounded-full border border-white/5">
                                     <div className="w-3.5 h-3.5 min-[380px]:w-4 min-[380px]:h-4 rounded-full bg-amber-400 flex items-center justify-center shrink-0">
-                                        <Star strokeWidth={2.5} className="text-black fill-current w-[8px] h-[8px] min-[380px]:w-[9px] min-[380px]:h-[9px]" />
+                                        <Star strokeWidth={2.5} className="text-black fill-current w-[9px] h-[9px] min-[380px]:w-[10px] min-[380px]:h-[10px]" />
                                     </div>
-                                    <span className="text-[9px] min-[380px]:text-[10px] font-bold text-white font-mono">
+                                    <span className="text-[10px] min-[380px]:text-[11px] font-bold text-white font-mono">
                                         {userProfile.promo_credits || 0}
                                     </span>
                                 </div>

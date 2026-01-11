@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Conversation } from '../types';
@@ -119,10 +119,10 @@ const SwipeableConversationItem: React.FC<SwipeableProps> = ({
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline mb-1">
-                            <h4 className={`text-xl font-bold truncate ${activeId === conv.id ? 'text-white' : 'text-neutral-300'}`}>{conv.user}</h4>
-                            <span className="text-xs text-neutral-500">{conv.timestamp}</span>
+                            <h4 className={`text-base lg:text-lg font-bold truncate ${activeId === conv.id ? 'text-white' : 'text-neutral-300'}`}>{conv.user}</h4>
+                            <span className="text-[10px] lg:text-xs text-neutral-500">{conv.timestamp}</span>
                         </div>
-                        <p className={`text-lg truncate ${conv.unread > 0 ? 'text-white font-bold' : 'text-neutral-500'}`}>{conv.lastMessage}</p>
+                        <p className={`text-sm lg:text-base truncate ${conv.unread > 0 ? 'text-white font-bold' : 'text-neutral-500'}`}>{conv.lastMessage}</p>
                     </div>
                 </div>
             </div>
@@ -131,6 +131,7 @@ const SwipeableConversationItem: React.FC<SwipeableProps> = ({
 };
 
 const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }) => {
+    const messagesEndRef = useRef<HTMLDivElement>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
@@ -336,6 +337,14 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
 
     const activeConv = conversations.find(c => c.id === activeId);
 
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [activeConv?.messages, activeId]);
+
     return (
         <div className={`w-full relative flex-1 ${isSidebarOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-full lg:bg-transparent overflow-hidden flex flex-col`}>
             <StaticFab isOpen={isSidebarOpen} onClick={() => setIsSidebarOpen(!isSidebarOpen)} />
@@ -401,56 +410,57 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
                 <div className="flex-1 flex flex-col bg-[#050505] relative overflow-hidden">
                     {isCreatingNew ? (
                         <div className="flex flex-col h-full bg-black/20">
-                            <div className="h-24 border-b border-white/5 flex items-center px-4 gap-3 bg-neutral-900/30">
-                                <span className="text-neutral-400 text-lg font-bold">To:</span>
+                            <div className="h-16 lg:h-24 border-b border-white/5 flex items-center px-4 gap-3 bg-neutral-900/30">
+                                <span className="text-neutral-400 text-base lg:text-lg font-bold">To:</span>
                                 <input autoFocus={window.innerWidth >= 768} value={userSearchQuery} onChange={(e) => handleUserSearch(e.target.value)} className="flex-1 bg-transparent border-none text-white text-sm focus:outline-none" placeholder="Search creators..." />
                             </div>
                             <div className="flex-1 overflow-y-auto p-4">
                                 {searchResults.map(user => (
                                     <div key={user.id} onClick={() => handleStartConversation(user.id)} className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-xl cursor-pointer">
-                                        <img src={user.avatar} className="w-14 h-14 rounded-full" />
-                                        <div className="flex-1"><h4 className="text-xl font-bold text-white">{user.username}</h4><p className="text-base text-neutral-500">@{user.handle}</p></div>
+                                        <img src={user.avatar} className="w-10 h-10 lg:w-14 lg:h-14 rounded-full" />
+                                        <div className="flex-1"><h4 className="text-base lg:text-xl font-bold text-white">{user.username}</h4><p className="text-sm lg:text-base text-neutral-500">@{user.handle}</p></div>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     ) : activeConv ? (
                         <>
-                            <div className="h-24 border-b border-white/5 flex items-center justify-between px-6 bg-neutral-900/30">
-                                <div className="flex items-center gap-4">
-                                    <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-neutral-400 mr-2"><ArrowLeft size={24} /></button>
+                            <div className="h-16 lg:h-24 border-b border-white/5 flex items-center justify-between px-4 lg:px-6 bg-neutral-900/30">
+                                <div className="flex items-center gap-3 lg:gap-4">
+                                    <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-neutral-400 mr-1"><ArrowLeft size={20} /></button>
                                     <div
                                         onClick={() => {
                                             if (activeConv.userId) {
                                                 window.location.hash = `#@${activeConv.userId}`;
                                             }
                                         }}
-                                        className="flex items-center gap-4 cursor-pointer group"
+                                        className="flex items-center gap-3 lg:gap-4 cursor-pointer group"
                                     >
-                                        <img src={activeConv.avatar} className="w-14 h-14 rounded-full object-cover border-2 border-white/5 group-hover:border-primary/50 transition-colors" />
+                                        <img src={activeConv.avatar} className="w-9 h-9 lg:w-14 lg:h-14 rounded-full object-cover border-2 border-white/5 group-hover:border-primary/50 transition-colors" />
                                         <div>
-                                            <h3 className="text-2xl font-bold text-white group-hover:text-primary transition-colors">{activeConv.user}</h3>
+                                            <h3 className="text-base lg:text-2xl font-bold text-white group-hover:text-primary transition-colors">{activeConv.user}</h3>
                                             <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
-                                                <span className="text-xs text-green-500 font-bold uppercase tracking-wider">Online</span>
+                                                <span className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
+                                                <span className="text-[10px] lg:text-xs text-green-500 font-bold uppercase tracking-wider">Online</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <button className="p-3 text-neutral-400 hover:text-white transition-colors"><MoreVertical size={24} /></button>
+                                <button className="p-2 lg:p-3 text-neutral-400 hover:text-white transition-colors"><MoreVertical size={20} className="lg:w-6 lg:h-6" /></button>
                             </div>
                             <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
                                 {activeConv.messages.map(msg => (
                                     <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
                                         <div
                                             onContextMenu={(e) => handleContextMenu(e, msg.id, msg.isMe)}
-                                            className={`max-w-[85%] rounded-2xl px-6 py-4 text-lg cursor-pointer select-none transition-transform active:scale-[0.98] ${msg.isMe ? 'bg-primary text-black' : 'bg-neutral-800 text-white border border-white/5 shadow-lg'}`}
+                                            className={`max-w-[85%] rounded-2xl px-4 py-3 lg:px-6 lg:py-4 text-sm lg:text-base cursor-pointer select-none transition-transform active:scale-[0.98] ${msg.isMe ? 'bg-primary text-black' : 'bg-neutral-800 text-white border border-white/5 shadow-lg'}`}
                                         >
                                             <p className="whitespace-pre-wrap break-words">{msg.text}</p>
                                             <span className="text-[9px] opacity-50 block mt-1">{msg.timestamp}</span>
                                         </div>
                                     </div>
                                 ))}
+                                <div ref={messagesEndRef} />
                             </div>
                             <div className="p-4 border-t border-white/5 bg-[#0a0a0a]/80 backdrop-blur-md">
                                 <div className="flex items-center gap-3 max-w-4xl mx-auto">

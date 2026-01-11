@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, MoreVertical, Cpu, ShoppingCart, Bookmark, Sparkles, Clock, BookmarkPlus, Lock, Edit, Trash2 } from 'lucide-react';
 import { Project } from '../types';
 import { generateCreativeDescription } from '../services/geminiService';
-import PurchaseModal from './PurchaseModal';
-import { useCart } from '../contexts/CartContext';
+import { usePurchaseModal } from '../contexts/PurchaseModalContext';
 import { useToast } from '../contexts/ToastContext';
 import { checkIsProjectSaved, saveProject, unsaveProject, giveGemToProject, undoGiveGem } from '../services/supabaseService';
 import { Gem } from 'lucide-react';
@@ -36,7 +35,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     const [description, setDescription] = useState<string | null>(null);
     const [loadingDesc, setLoadingDesc] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
-    const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
     const [localGems, setLocalGems] = useState(project.gems || 0);
     const [hasGivenGem, setHasGivenGem] = useState(false); // Local tracking for interaction feedback
@@ -47,7 +45,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
-    const { addToCart } = useCart();
+    const { openPurchaseModal } = usePurchaseModal();
     const { showToast } = useToast();
 
     useEffect(() => {
@@ -162,19 +160,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
     return (
         <>
-            <PurchaseModal
-                isOpen={purchaseModalOpen}
-                onClose={() => setPurchaseModalOpen(false)}
-                project={project}
-                onAddToCart={(item) => addToCart(item)}
-            />
             <div
                 // ... (rest of the file as is)
                 className="group h-full flex flex-col bg-neutral-950/50 border border-white/5 rounded-xl hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.05)] relative backdrop-blur-sm cursor-pointer"
                 style={{ zoom: '110%' }}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
-                onClick={() => setPurchaseModalOpen(true)}
+                onClick={() => openPurchaseModal(project)}
             >
                 {/* Top Gradient Line */}
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/0 to-transparent group-hover:via-primary/50 transition-all duration-700"></div>
@@ -436,7 +428,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
                         {!isPurchased && (
                             <button
-                                onClick={(e) => { e.stopPropagation(); setPurchaseModalOpen(true); }}
+                                onClick={(e) => { e.stopPropagation(); openPurchaseModal(project); }}
                                 className="p-1.5 text-neutral-500 hover:text-primary hover:bg-white/5 rounded transition-colors"
                             >
                                 <ShoppingCart size={12} />

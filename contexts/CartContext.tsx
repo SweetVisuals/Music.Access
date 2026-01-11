@@ -5,6 +5,7 @@ interface CartContextType {
     items: CartItem[];
     addToCart: (item: CartItem) => void;
     removeFromCart: (itemId: number | string) => void;
+    updateCartItem: (oldId: number | string, newItem: CartItem) => void;
     clearCart: () => void;
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
@@ -52,6 +53,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setItems(prev => prev.filter(item => item.id !== itemId));
     };
 
+    const updateCartItem = (oldId: number | string, newItem: CartItem) => {
+        setItems(prev => prev.map(item => item.id === oldId ? newItem : item));
+    };
+
     const clearCart = () => {
         setItems([]);
     };
@@ -65,6 +70,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             items,
             addToCart,
             removeFromCart,
+            updateCartItem,
             clearCart,
             isOpen,
             setIsOpen,

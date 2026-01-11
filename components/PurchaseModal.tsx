@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Project, Track, LicenseInfo } from '../types';
 import { X, Check, ShoppingCart, Disc, Play, Info, Box, Gem } from 'lucide-react';
 
@@ -8,15 +8,39 @@ interface PurchaseModalProps {
     onClose: () => void;
     project: Project;
     initialTrackId?: string | null;
+    initialCartItem?: any; // Allow passing the existing item for editing
     onAddToCart: (item: any) => void;
 }
 
-const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project, initialTrackId, onAddToCart }) => {
+const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project, initialTrackId, initialCartItem, onAddToCart }) => {
     // Initialize with ID of first license or its index fallback
-    const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>(initialTrackId ? [initialTrackId] : []);
-    const [selectedLicenseId, setSelectedLicenseId] = useState<string | null>(
-        project.licenses?.[0]?.id || (project.licenses?.length ? 'license-0' : null)
-    );
+    const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>(() => {
+        if (initialCartItem?.trackId) return [initialCartItem.trackId];
+        return initialTrackId ? [initialTrackId] : [];
+    });
+
+    const [selectedLicenseId, setSelectedLicenseId] = useState<string | null>(() => {
+        if (initialCartItem?.licenseId) return initialCartItem.licenseId;
+        return project.licenses?.[0]?.id || (project.licenses?.length ? 'license-0' : null);
+    });
+
+    // Reset state when modal opens with new props
+    useEffect(() => {
+        if (isOpen) {
+            if (initialCartItem) {
+                if (initialCartItem.trackId) setSelectedTrackIds([initialCartItem.trackId]);
+                if (initialCartItem.licenseId) setSelectedLicenseId(initialCartItem.licenseId);
+            } else {
+                setSelectedTrackIds(initialTrackId ? [initialTrackId] : []);
+                // If not editing, default to first license if none selected
+                if (!selectedLicenseId) {
+                    setSelectedLicenseId(project.licenses?.[0]?.id || (project.licenses?.length ? 'license-0' : null));
+                }
+            }
+            setIsAdded(false);
+        }
+    }, [isOpen, initialCartItem, initialTrackId, project]);
+
     // State for tracks where user specifically requested stems
     const [wantsStems, setWantsStems] = useState<Record<string, boolean>>({});
     const [isAdded, setIsAdded] = useState(false);
@@ -344,7 +368,12 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                                 const effectiveLicense = (wantsStems[trackId] && stemsLicense) ? stemsLicense : selectedLicense;
 
                                                 onAddToCart({
-                                                    id: `${project.id}-${trackId}-${effectiveLicense.id}-${Date.now()}`,
+                                                    // If editing, use existing ID to replacing it, OR create new ID if user wants that...
+                                                    // But here we want to replace.
+                                                    // IMPORTANT: If we are editing, we should pass back the SAME ID so the context knows to replace.
+                                                    // However, the logic below constructs a NEW item.
+                                                    // We probably want to return a new object but with the OLD ID if we are editing.
+                                                    id: initialCartItem ? initialCartItem.id : `${project.id}-${trackId}-${effectiveLicense.id}-${Date.now()}`,
                                                     title: track ? `${track.title} (${project.title})` : project.title,
                                                     type: 'Exclusive License',
                                                     price: effectiveLicense.price,
@@ -359,7 +388,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                             });
                                         } else {
                                             onAddToCart({
-                                                id: `${project.id}-pack-${selectedLicense.id}-${Date.now()}`,
+                                                id: initialCartItem ? initialCartItem.id : `${project.id}-pack-${selectedLicense.id}-${Date.now()}`,
                                                 title: project.title,
                                                 type: 'Sound Kit',
                                                 price: selectedLicense.price,
@@ -390,12 +419,12 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                 {isAdded ? (
                                     <>
                                         <Check size={16} className="md:w-5 md:h-5" />
-                                        <span>Added to Cart!</span>
+                                        <span>{initialCartItem ? 'Cart Updated!' : 'Added to Cart!'}</span>
                                     </>
                                 ) : (
                                     <>
                                         <ShoppingCart size={16} className="md:w-5 md:h-5" />
-                                        <span>Add to Cart {project.type === 'beat_tape' && selectedTrackIds.length > 0 && `(${selectedTrackIds.length})`}</span>
+                                        <span>{initialCartItem ? 'Update Cart' : 'Add to Cart'} {project.type === 'beat_tape' && selectedTrackIds.length > 0 && `(${selectedTrackIds.length})`}</span>
                                     </>
                                 )}
                             </button>

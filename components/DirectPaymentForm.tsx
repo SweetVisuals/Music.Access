@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStripe, useElements, PaymentElement, ExpressCheckoutElement, Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-import { listPaymentMethods, SavedPaymentMethod, createDirectSubscription, processMarketplacePayment, processTestPayment } from '../services/stripeService';
+import { listPaymentMethods, SavedPaymentMethod, createDirectSubscription, processMarketplacePayment } from '../services/stripeService';
 import { CreditCard, Plus, Check, Loader2, ArrowRight, Lock, AlertCircle } from 'lucide-react';
 
 const STRIPE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -152,7 +152,7 @@ const DirectPaymentContent: React.FC<DirectPaymentFormProps> = ({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                     <ExpressCheckoutElement onConfirm={handleExpressPayment} options={{
                         buttonType: {
                             applePay: 'buy',
@@ -160,34 +160,6 @@ const DirectPaymentContent: React.FC<DirectPaymentFormProps> = ({
                         },
                         buttonHeight: 48
                     }} />
-
-                    <button
-                        type="button"
-                        onClick={async () => {
-                            setProcessing(true);
-                            try {
-                                await processTestPayment(mode, {
-                                    userId,
-                                    planName,
-                                    billingCycle,
-                                    purchaseId: purchaseId || undefined
-                                });
-                                onSuccess();
-                            } catch (err: any) {
-                                setError(err.message);
-                            } finally {
-                                setProcessing(false);
-                            }
-                        }}
-                        className="h-[48px] bg-[#0070ba] hover:bg-[#003087] text-white rounded-lg flex items-center justify-center gap-2 transition-all font-bold text-sm shadow-lg shadow-blue-500/10"
-                    >
-                        <div className="flex items-baseline gap-1">
-                            <span className="italic font-black text-lg">Pay</span>
-                            <span className="italic font-black text-lg text-sky-200">Pal</span>
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-tighter opacity-50">|</span>
-                        <span>Test Pay</span>
-                    </button>
                 </div>
 
                 <div className="relative py-2">

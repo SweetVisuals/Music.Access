@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CreditCard, Bitcoin, Lock, CheckCircle, Copy, QrCode, AlertTriangle, ShieldCheck, ArrowRight, Music, Package, Mic, ShoppingBag, Wallet, Loader2 } from 'lucide-react';
+import { CreditCard, Bitcoin, Lock, CheckCircle, Copy, QrCode, AlertTriangle, ShieldCheck, ArrowRight, Music, Package, Mic, ShoppingBag, Wallet, Loader2, Beaker } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { createPurchase } from '../services/supabaseService';
 import * as stripeService from '../services/stripeService';
@@ -14,7 +14,7 @@ interface CheckoutPageProps {
 
 const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
     const { items, cartTotal, clearCart } = useCart();
-    const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto'>('card');
+    const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto' | 'test'>('card');
     const [selectedCoin, setSelectedCoin] = useState('BTC');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
@@ -154,8 +154,8 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
     }
 
     return (
-        <div className={isEmbedded ? "w-full pb-32 pt-2 px-1 animate-in fade-in duration-500" : "w-full max-w-[1600px] mx-auto pb-32 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500"}>
-            <h1 className="text-3xl font-black text-white mb-8">Secure Checkout</h1>
+        <div className={isEmbedded ? "w-full pb-32 pt-2 px-4 animate-in fade-in duration-500" : "w-full max-w-[1600px] mx-auto pb-32 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500"}>
+            {!isEmbedded && <h1 className="text-3xl font-black text-white mb-8">Secure Checkout</h1>}
 
             {error && (
                 <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl flex items-center gap-3">
@@ -184,10 +184,17 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                             <Bitcoin size={20} />
                             <span className="font-bold">Crypto</span>
                         </button>
+                        <button
+                            onClick={() => setPaymentMethod('test')}
+                            className={`p-4 rounded-xl border flex items-center justify-center gap-3 transition-all ${paymentMethod === 'test' ? 'bg-primary/10 border-primary text-white ring-1 ring-primary/50' : 'bg-[#0a0a0a] border-neutral-800 text-neutral-500 hover:bg-white/5'}`}
+                        >
+                            <Beaker size={20} />
+                            <span className="font-bold">Test Pay</span>
+                        </button>
                     </div>
 
                     {/* Payment Form */}
-                    <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-8">
+                    <div className={`bg-[#0a0a0a] border border-neutral-800 rounded-xl ${paymentMethod === 'card' ? 'p-0 overflow-hidden' : 'p-6 lg:p-8'}`}>
                         {paymentMethod === 'card' ? (
                             <div className="animate-in fade-in slide-in-from-left-4 duration-300">
                                 {userProfile ? (
@@ -306,9 +313,83 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                                 </div>
                             </div>
                         )}
+
+                        {paymentMethod === 'test' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                                <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 text-center space-y-4">
+                                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary mb-2">
+                                        <Beaker size={32} />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white">Test Payment Mode</h3>
+                                    <p className="text-neutral-400 max-w-md mx-auto">
+                                        This is a simulation mode for testing the checkout flow. No actual money will be charged, and a successful transaction will be recorded.
+                                    </p>
+
+                                    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 text-left max-w-sm mx-auto flex gap-3 text-yellow-500">
+                                        <AlertTriangle size={20} className="shrink-0" />
+                                        <div className="text-xs">
+                                            <span className="font-bold block mb-1">Developer Mode</span>
+                                            Use this to verify post-purchase logic, email delivery, and database updates without using real cards.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={async () => {
+                                        setIsProcessing(true);
+                                        setError(null);
+                                        try {
+                                            // Validate guest email if applicable
+                                            if (isGuest) {
+                                                if (!guestEmail || !guestEmail.includes('@')) {
+                                                    throw new Error("Please enter a valid email address for the guest receipt.");
+                                                }
+                                            }
+
+                                            // Simulate processing time
+                                            await new Promise(resolve => setTimeout(resolve, 1500));
+
+                                            // Create a COMPLETED purchase directly (mocking success)
+                                            // We create a new "test" purchase regardless of whether a pending one exists,
+                                            // so that we get a fresh "Completed" record and notifications.
+                                            const purchase = await createPurchase(
+                                                items,
+                                                total,
+                                                'test_card',
+                                                `txn_test_${Date.now()}`,
+                                                'Completed',
+                                                isGuest ? guestEmail : undefined
+                                            );
+
+                                            if (!purchase) throw new Error("Failed to record simulated purchase");
+
+                                            // Success
+                                            clearCart();
+                                            setIsComplete(true);
+                                        } catch (err: any) {
+                                            console.error("Test payment error:", err);
+                                            setError(err.message || "Test payment failed");
+                                        } finally {
+                                            setIsProcessing(false);
+                                        }
+                                    }}
+                                    disabled={isProcessing}
+                                    className="w-full py-4 bg-white/10 hover:bg-white/20 text-white font-black text-sm uppercase tracking-widest rounded-xl transition-all border border-white/10 flex items-center justify-center gap-3"
+                                >
+                                    {isProcessing ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            <span>Processing Test Payment...</span>
+                                        </>
+                                    ) : (
+                                        <>Simulate Successful Payment <ArrowRight size={16} /></>
+                                    )}
+                                </button>
+                            </div>
+                        )}
                     </div>
 
-                    {paymentMethod !== 'card' && (
+                    {(paymentMethod !== 'card' && paymentMethod !== 'test') && (
                         <button
                             onClick={handlePayment}
                             disabled={isProcessing}

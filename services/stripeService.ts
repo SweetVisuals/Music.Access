@@ -225,12 +225,17 @@ export const processTestPayment = async (
         planName?: string;
         billingCycle?: 'monthly' | 'yearly';
         purchaseId?: string;
+        guestEmail?: string;
     }
 ): Promise<PaymentResult> => {
-    // We'll call the backend to handle the success logic directly
-    const result = await callStripeAction<PaymentResult>('process-test-payment', {
-        type,
-        ...payload
-    });
-    return result;
+    // Client-side simulation only - no Edge Function call
+    console.log('[StripeService] Processing test payment client-side...', { type, payload });
+
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    return {
+        success: true,
+        transactionId: `test_txn_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
+    };
 };

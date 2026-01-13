@@ -127,15 +127,15 @@ async function handleMarketplaceSuccess(purchaseId: string, paymentIntentId: any
     console.log(`Processing marketplace success for purchase: ${purchaseId}`);
 
     // 1. Mark Purchase as Completed
-    await supabase.from('purchases').update({
+    const { data: purchaseData } = await supabase.from('purchases').update({
         status: 'Completed',
         stripe_payment_id: paymentIntentId as string
-    }).eq('id', purchaseId);
+    }).eq('id', purchaseId).select('buyer_id, guest_email').single();
 
-    // 2. Handle Seller Transfers
+    // 2. Handle Seller Transfers and Contracts
     const { data: items } = await supabase
         .from('purchase_items')
-        .select('*, project:projects(user_id)')
+        .select('*, project:projects(user_id, title)')
         .eq('purchase_id', purchaseId);
 
     if (items) {
@@ -149,6 +149,7 @@ async function handleMarketplaceSuccess(purchaseId: string, paymentIntentId: any
                 .eq('id', sellerUserId)
                 .single();
 
+            // Handle Seller Transfer
             if (sellerUser?.stripe_account_id) {
                 let feePercentage = 0.02;
                 if (sellerUser.plan === 'Pro' || sellerUser.plan === 'Studio+') feePercentage = 0;
@@ -166,6 +167,66 @@ async function handleMarketplaceSuccess(purchaseId: string, paymentIntentId: any
                     });
                 } catch (e) {
                     console.error("Transfer failed", e);
+                }
+            }
+
+            // 3. Handle Contract Generation
+            if (item.license_id) {
+                try {
+                    // Fetch license and its contract template
+                    const { data: license } = await supabase
+                        .from('licenses')
+                        .select('*, contract:contracts(*)')
+                        .eq('id', item.license_id)
+                        .maybeSingle();
+
+                    if (license && (license as any).contract_id) {
+                        const template = (license as any).contract;
+
+                        // Fetch buyer name if available
+                        let buyerName = purchaseData?.guest_email || 'Buyer';
+                        if (purchaseData?.buyer_id) {
+                            const { data: buyerUser } = await supabase
+                                .from('users')
+                                .select('username')
+                                .eq('id', purchaseData.buyer_id)
+                                .single();
+                            if (buyerUser) buyerName = buyerUser.username;
+                        }
+
+                        // Create a signed contract instance
+                        const { data: signedContract } = await supabase
+                            .from('contracts')
+                            .insert({
+                                user_id: sellerUserId,
+                                title: `${item.item_name} - ${license.name} License Agreement`,
+                                type: template?.type || (license.type === 'Exclusive' ? 'exclusive' : 'lease'),
+                                status: 'signed',
+                                client_name: buyerName,
+                                content: template?.content || 'Terms and conditions for use of the audio asset.',
+                                royalty_split: template?.royalty_split || 50,
+                                revenue_split: template?.revenue_split || 50,
+                                notes: `Automatically generated on purchase of ${item.item_name}.`,
+                                dist_notes: template?.dist_notes || '',
+                                pub_notes: template?.pub_notes || '',
+                                publisher_name: template?.publisher_name || '',
+                                producer_signature: template?.producer_signature || 'Electronically Signed',
+                                client_signature: 'Electronically Signed'
+                            })
+                            .select()
+                            .single();
+
+                        if (signedContract) {
+                            console.log(`Generated signed contract ${signedContract.id} for item ${item.id}`);
+                            // Link contract to purchase item
+                            await supabase
+                                .from('purchase_items')
+                                .update({ contract_id: signedContract.id })
+                                .eq('id', item.id);
+                        }
+                    }
+                } catch (contractErr) {
+                    console.error("Error generating contract:", contractErr);
                 }
             }
         }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStripe, useElements, PaymentElement, ExpressCheckoutElement, Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-import { listPaymentMethods, SavedPaymentMethod, createDirectSubscription, processMarketplacePayment } from '../services/stripeService';
+import { listPaymentMethods, SavedPaymentMethod, createDirectSubscription, processMarketplacePayment, processTestPayment } from '../services/stripeService';
 import { CreditCard, Plus, Check, Loader2, ArrowRight, Lock, AlertCircle } from 'lucide-react';
 
 const STRIPE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -151,13 +151,45 @@ const DirectPaymentContent: React.FC<DirectPaymentFormProps> = ({
                         <div className="h-4 w-6 bg-neutral-900 rounded border border-white/5 opacity-50 flex items-center justify-center"><span className="text-[10px]"></span></div>
                     </div>
                 </div>
-                <ExpressCheckoutElement onConfirm={handleExpressPayment} options={{
-                    buttonType: {
-                        applePay: 'buy',
-                        googlePay: 'buy'
-                    },
-                    buttonHeight: 48
-                }} />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <ExpressCheckoutElement onConfirm={handleExpressPayment} options={{
+                        buttonType: {
+                            applePay: 'buy',
+                            googlePay: 'buy'
+                        },
+                        buttonHeight: 48
+                    }} />
+
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            setProcessing(true);
+                            try {
+                                await processTestPayment(mode, {
+                                    userId,
+                                    planName,
+                                    billingCycle,
+                                    purchaseId: purchaseId || undefined
+                                });
+                                onSuccess();
+                            } catch (err: any) {
+                                setError(err.message);
+                            } finally {
+                                setProcessing(false);
+                            }
+                        }}
+                        className="h-[48px] bg-[#0070ba] hover:bg-[#003087] text-white rounded-lg flex items-center justify-center gap-2 transition-all font-bold text-sm shadow-lg shadow-blue-500/10"
+                    >
+                        <div className="flex items-baseline gap-1">
+                            <span className="italic font-black text-lg">Pay</span>
+                            <span className="italic font-black text-lg text-sky-200">Pal</span>
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-tighter opacity-50">|</span>
+                        <span>Test Pay</span>
+                    </button>
+                </div>
+
                 <div className="relative py-2">
                     <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
                     <div className="relative flex justify-center"><span className="bg-[#0a0a0a] px-4 text-[10px] font-black text-neutral-600 uppercase">Legacy Payment Methods</span></div>

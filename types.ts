@@ -205,6 +205,7 @@ export interface Purchase {
   image: string;
   type: 'Beat License' | 'Sound Kit' | 'Mixing' | 'Service';
   projectId?: string;
+  contractId?: string;
   coverImage?: string;
   sellerAvatar?: string;
   buyer?: string;

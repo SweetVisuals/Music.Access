@@ -97,11 +97,11 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-0 md:p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-4xl bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-full md:h-auto md:max-h-[85vh] md:m-auto">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-0 md:p-6 animate-in fade-in duration-200">
+            <div className="w-full max-w-6xl bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-full md:h-auto md:max-h-[85vh] md:m-auto">
 
                 {/* Left Side: Project/Track Info */}
-                <div className="w-full md:w-1/3 bg-neutral-950 p-4 md:p-6 border-b md:border-b-0 md:border-r border-neutral-800 flex flex-col shrink-0">
+                <div className="w-full md:w-[380px] bg-neutral-950 p-4 md:p-8 border-b md:border-b-0 md:border-r border-neutral-800 flex flex-col shrink-0">
                     <div className="hidden md:block aspect-square w-full bg-neutral-900 rounded-xl mb-6 border border-white/5 relative overflow-hidden shrink-0">
                         {/* Gems Overlay (Desktop) */}
                         <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 shadow-lg">
@@ -306,8 +306,8 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                             <div className="flex-1 mr-4">
                                                 {/* Premium Left Border Accent */}
                                                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${isUnlimited ? 'bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' :
-                                                        isPro ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' :
-                                                            'bg-neutral-600'
+                                                    isPro ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' :
+                                                        'bg-neutral-600'
                                                     } ${isSelected ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`} />
 
                                                 <div className="pl-4">

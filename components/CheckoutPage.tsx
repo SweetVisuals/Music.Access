@@ -36,7 +36,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                 // Initialize a pending purchase record
                 if (items.length > 0 && !pendingPurchaseId) {
                     try {
-                        const purchase = await createPurchase(items, cartTotal, 'card', undefined, 'Processing');
+                        const subtotalVal = items.reduce((sum, i) => sum + i.price, 0);
+                        const feeVal = subtotalVal * 0.02;
+                        const finalTotal = subtotalVal + feeVal;
+
+                        const purchase = await createPurchase(items, finalTotal, 'card', undefined, 'Processing');
                         if (purchase) setPendingPurchaseId(purchase.id);
                     } catch (e) {
                         console.error("Failed to init purchase record", e);
@@ -57,7 +61,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
         setEmailError(null);
         setIsProcessing(true);
         try {
-            const purchase = await createPurchase(items, cartTotal, 'card', undefined, 'Processing', guestEmail);
+            const purchase = await createPurchase(items, total, 'card', undefined, 'Processing', guestEmail);
             if (purchase) {
                 setPendingPurchaseId(purchase.id);
             }
@@ -69,7 +73,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
         }
     };
 
-    const total = cartTotal;
+    const subtotal = cartTotal;
+    const FEE_RATE = 0.02;
+
+    const platformFee = subtotal * FEE_RATE;
+    const total = subtotal + platformFee;
 
     const handlePayment = async () => {
         // This is now handled by the DirectPaymentForm component for Card
@@ -194,16 +202,15 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                                 ) : isGuest ? (
                                     <div className="space-y-6">
                                         {/* Benefits Notice */}
-                                        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex gap-4">
+                                        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                                                 <ShieldCheck className="text-primary w-5 h-5" />
                                             </div>
                                             <div>
-                                                <h4 className="text-sm font-bold text-white mb-1">Checking out as Guest</h4>
-                                                <p className="text-[11px] text-neutral-400 leading-relaxed">
-                                                    Making an account allows you to <strong className="text-primary">view purchase history</strong>,
-                                                    request <strong className="text-primary">refunds</strong>, and <strong className="text-primary">save purchased items</strong> to your library permanently.
-                                                    Guests will not have access to these features after purchase.
+                                                <h4 className="text-sm font-bold text-white mb-0.5">Checking out as Guest</h4>
+                                                <p className="text-[11px] text-neutral-400 leading-tight">
+                                                    Making an account allows you to <strong className="text-primary">view history</strong>,
+                                                    request <strong className="text-primary">refunds</strong>, and <strong className="text-primary">save items</strong>.
                                                 </p>
                                             </div>
                                         </div>
@@ -340,12 +347,12 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                                                 <div className="text-sm font-mono font-bold text-white">${item.price.toFixed(2)}</div>
                                             </div>
 
-                                            <div className="flex flex-wrap gap-2 mt-1">
-                                                <span className="text-[10px] font-bold text-neutral-400 px-1.5 py-0.5 rounded bg-white/5 border border-white/5">
+                                            <div className="flex items-center flex-wrap gap-2 mt-1.5">
+                                                <span className="text-[10px] font-bold text-primary/80 px-1.5 py-0.5 rounded bg-primary/5 border border-primary/20">
                                                     {item.type}
                                                 </span>
                                                 {item.licenseType && (
-                                                    <span className="text-[10px] text-neutral-500">
+                                                    <span className="text-[10px] text-neutral-500 font-medium">
                                                         {item.licenseType}
                                                     </span>
                                                 )}
@@ -359,11 +366,11 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                         <div className="border-t border-neutral-800 pt-4 space-y-2">
                             <div className="flex justify-between text-xs text-neutral-400">
                                 <span>Subtotal</span>
-                                <span>${total.toFixed(2)}</span>
+                                <span>${subtotal.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-xs text-neutral-400">
-                                <span>Taxes (Est.)</span>
-                                <span>$0.00</span>
+                                <span>Processing Fee (2%)</span>
+                                <span>${platformFee.toFixed(2)}</span>
                             </div>
                         </div>
 

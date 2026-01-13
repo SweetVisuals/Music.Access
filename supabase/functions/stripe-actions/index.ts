@@ -226,6 +226,11 @@ serve(async (req) => {
 
             case 'create-checkout-session': {
                 const { items, userId, purchaseId, successUrl, cancelUrl } = data;
+
+                // Calculate Subtotal in cents
+                const subtotal = items.reduce((sum: number, item: any) => sum + Math.round(item.price * 100), 0);
+                const platformFee = Math.round(subtotal * 0.02);
+
                 const lineItems = items.map((item: any) => ({
                     price_data: {
                         currency: 'usd',
@@ -239,6 +244,21 @@ serve(async (req) => {
                     quantity: 1,
                 }));
 
+                // Add Processing Fee as a separate line item if it's > 0
+                if (platformFee > 0) {
+                    lineItems.push({
+                        price_data: {
+                            currency: 'usd',
+                            product_data: {
+                                name: 'Processing Fee',
+                                description: '2% Service Fee',
+                            },
+                            unit_amount: platformFee,
+                        },
+                        quantity: 1,
+                    });
+                }
+
                 const session = await stripe.checkout.sessions.create({
                     payment_method_types: ['card'],
                     line_items: lineItems,
@@ -249,7 +269,8 @@ serve(async (req) => {
                     metadata: {
                         userId: userId,
                         type: 'marketplace_order',
-                        purchaseId: purchaseId
+                        purchaseId: purchaseId,
+                        platformFee: platformFee.toString()
                     }
                 });
 
@@ -261,7 +282,9 @@ serve(async (req) => {
                 const { items, userId, purchaseId, email } = data;
                 const { customerId } = await getOrCreateCustomer(userId, email);
 
-                const totalAmount = items.reduce((sum: number, item: any) => sum + Math.round(item.price * 100), 0);
+                const subtotal = items.reduce((sum: number, item: any) => sum + Math.round(item.price * 100), 0);
+                const platformFee = Math.round(subtotal * 0.02);
+                const totalAmount = subtotal + platformFee;
 
                 const paymentIntent = await stripe.paymentIntents.create({
                     amount: totalAmount,
@@ -270,7 +293,8 @@ serve(async (req) => {
                     metadata: {
                         userId,
                         purchaseId,
-                        type: 'marketplace_order'
+                        type: 'marketplace_order',
+                        platformFee: platformFee.toString()
                     },
                     // Enable automatic payment methods (Card, Apple Pay, Google Pay)
                     automatic_payment_methods: { enabled: true }
@@ -290,6 +314,54 @@ serve(async (req) => {
                 });
 
                 result = { success: true, payoutId: payout.id };
+                break;
+            }
+
+            case 'process-test-payment': {
+                const { type, userId, planName, billingCycle, purchaseId } = data;
+                const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+                const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+                const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+                if (type === 'subscription') {
+                    if (!userId || !planName) throw new Error("Missing userId or planName");
+
+                    const now = new Date();
+                    const nextPeriod = new Date();
+                    if (billingCycle === 'yearly') {
+                        nextPeriod.setFullYear(now.getFullYear() + 1);
+                    } else {
+                        nextPeriod.setMonth(now.getMonth() + 1);
+                    }
+
+                    const { error } = await supabase.from('users').update({
+                        plan: planName as any,
+                        subscription_status: 'active',
+                        subscription_id: `sub_test_${Math.random().toString(36).substr(2, 9)}`,
+                        current_period_end: nextPeriod.toISOString(),
+                        cancel_at_period_end: false
+                    }).eq('id', userId);
+
+                    if (error) throw error;
+                } else if (type === 'marketplace') {
+                    if (!purchaseId) throw new Error("Missing purchaseId");
+
+                    // 1. Mark Purchase as Completed
+                    const { data: purchaseData, error: pError } = await supabase.from('purchases').update({
+                        status: 'Completed',
+                        stripe_payment_id: `test_pay_${Date.now()}`
+                    }).eq('id', purchaseId).select('buyer_id, guest_email').single();
+
+                    if (pError) throw pError;
+
+                    // 2. Handle items (Library access, etc.)
+                    // We call handleMarketplaceSuccess if it were accessible, 
+                    // but here we just need to make sure the user sees it in their library.
+                    // Usually, 'Completed' status is enough for the frontend to show download links,
+                    // but contracts and transfers won't happen. For "Test Pay", that's usually fine.
+                }
+
+                result = { success: true };
                 break;
             }
 

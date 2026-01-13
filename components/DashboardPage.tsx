@@ -472,6 +472,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                                     <>Download Files <ChevronDown size={14} className="transition-transform" /></>
                                                 )}
                                             </button>
+                                            {purchase.contractId && (
+                                                <button
+                                                    onClick={() => onNavigate(`contracts?id=${purchase.contractId}`)}
+                                                    className="w-full py-2.5 bg-primary/10 text-primary font-bold rounded-lg text-xs hover:bg-primary hover:text-black transition-colors flex items-center justify-center gap-2"
+                                                >
+                                                    <FileText size={14} /> View Contract
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => setViewingReceipt(purchase)}
                                                 className="w-full py-2.5 text-neutral-500 font-bold rounded-lg text-xs hover:text-white transition-colors"

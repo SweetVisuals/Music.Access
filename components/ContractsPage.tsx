@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Contract } from '../types';
 import { FileText, Plus, Download, Trash2, ExternalLink, Eye, Printer, MoreVertical, PenTool, Save, X, Check, PenLine, ArrowLeft, ChevronRight, Mic2, Music } from 'lucide-react';
 import { getContracts, createContract, updateContract, deleteContract } from '../services/supabaseService';
@@ -19,6 +20,8 @@ const formatDate = (dateString: string | undefined) => {
 };
 
 const ContractsPage: React.FC = () => {
+    const [searchParams] = useSearchParams();
+    const contractIdFromQuery = searchParams.get('id');
     const [contracts, setContracts] = useState<Contract[]>([]);
     const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
     const [isEditing, setIsEditing] = useState(false);
@@ -58,12 +61,27 @@ const ContractsPage: React.FC = () => {
             setError(null);
             const contractsData = await getContracts();
             setContracts(contractsData);
-            if (contractsData.length > 0 && !selectedContract) {
-                // Initial load: select first but don't force edit mode
-                setSelectedContract(contractsData[0]);
+
+            if (contractsData.length > 0) {
+                // Check if we should select a specific contract from query params
+                if (contractIdFromQuery) {
+                    const target = contractsData.find(c => c.id === contractIdFromQuery);
+                    if (target) {
+                        setSelectedContract(target);
+                        if (window.innerWidth < 1024) {
+                            setMobileView('detail');
+                        }
+                    } else {
+                        setSelectedContract(contractsData[0]);
+                    }
+                } else if (!selectedContract) {
+                    // Initial load: select first but don't force edit mode
+                    setSelectedContract(contractsData[0]);
+                }
             }
+
             // On mobile, keep list view initially unless a contract is explicitly selected
-            if (window.innerWidth < 1024) {
+            if (window.innerWidth < 1024 && !contractIdFromQuery) {
                 setMobileView('list');
             }
         } catch (err) {

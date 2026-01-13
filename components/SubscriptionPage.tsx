@@ -137,29 +137,36 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
             return;
         }
 
-
-        // Removed window.confirm
-
         setCancelling(true);
         try {
             const subId = userProfile.subscription_id || 'sub_mock_fallback';
+            const isTest = subId.startsWith('sub_test_') || subId.includes('_mock');
 
-            // If it's a mock subscription, don't call Stripe backend
-            if (subId.includes('_mock') || subId.includes('sub_undefined')) {
-                console.log("Cancelling mock subscription locally");
-                await new Promise(r => setTimeout(r, 1000)); // Simulate delay
+            if (isTest) {
+                console.log("Cancelling test subscription instantly");
+                // For test subscriptions, we cancel immediately
+                await updateUserProfile(userProfile.id, {
+                    plan: null,
+                    subscription_status: 'canceled',
+                    subscription_id: null,
+                    current_period_end: null,
+                    cancel_at_period_end: false
+                });
             } else {
+                // Real Stripe subscription
                 await stripeService.cancelSubscription(userProfile.id, subId);
+                // Optimistic update for UI
+                await updateUserProfile(userProfile.id, { cancel_at_period_end: true });
             }
 
-            // Optimistic update
-            await updateUserProfile(userProfile.id, { cancel_at_period_end: true });
             window.dispatchEvent(new CustomEvent('profile-updated'));
+            showToast(isTest ? 'Subscription cancelled instantly.' : 'Subscription set to cancel at period end.', 'success');
         } catch (err) {
             console.error('Failed to cancel plan:', err);
             showToast('Failed to cancel plan. Please try again.', 'error');
         } finally {
             setCancelling(false);
+            setShowCancelModal(false);
         }
     };
 
@@ -168,8 +175,8 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
     return (
         <div className="w-full max-w-7xl mx-auto px-4 pt-0 pb-8 lg:px-6 lg:pt-0 lg:pb-[15px] animate-in fade-in duration-700 relative lg:[zoom:1.08] origin-top">
             {/* Header */}
-            <div className="text-center pt-0 mb-10 lg:mb-12">
-                <h1 className="text-4xl lg:text-7xl font-black text-white tracking-tighter mb-4 uppercase">
+            <div className="text-center pt-0 mb-6 lg:mb-8">
+                <h1 className="text-4xl lg:text-5xl font-black text-white tracking-tighter mb-4 uppercase">
                     Elevate Your <span className="text-primary">Sound</span>
                 </h1>
                 <p className="text-neutral-500 text-sm lg:text-lg max-w-2xl lg:max-w-none mx-auto font-medium">
@@ -177,7 +184,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
                 </p>
 
                 {/* Billing Toggle */}
-                <div className="mt-6 flex items-center justify-center gap-4">
+                <div className="mt-4 flex items-center justify-center gap-4">
                     <span className={`text-sm font-bold ${billingCycle === 'monthly' ? 'text-white' : 'text-neutral-500'}`}>Monthly</span>
                     <button
                         onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
@@ -350,7 +357,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
             {/* Payment Modal */}
             {selectedPlan && targetPlan && createPortal(
                 <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full h-full sm:h-auto max-w-2xl bg-[#0a0a0a] border-0 sm:border border-neutral-800 rounded-none sm:rounded-3xl overflow-y-auto shadow-2xl animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+                    <div className="w-full h-full sm:h-auto max-w-4xl bg-[#0a0a0a] border-0 sm:border border-neutral-800 rounded-none sm:rounded-3xl overflow-y-auto shadow-2xl animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
                         <div className="sticky top-0 z-10 bg-[#0a0a0a] p-4 border-b border-white/5 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                 Upgrade to <span className={targetPlan.color === 'primary' ? 'text-primary' : 'text-amber-400'}>{targetPlan.name}</span>

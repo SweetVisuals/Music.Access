@@ -214,3 +214,23 @@ export const cancelSubscription = async (userId: string, subscriptionId: string)
     });
     return result;
 };
+/**
+ * Processes a test payment that bypasses Stripe.
+ * For use in development/testing only.
+ */
+export const processTestPayment = async (
+    type: 'subscription' | 'marketplace',
+    payload: {
+        userId: string | null;
+        planName?: string;
+        billingCycle?: 'monthly' | 'yearly';
+        purchaseId?: string;
+    }
+): Promise<PaymentResult> => {
+    // We'll call the backend to handle the success logic directly
+    const result = await callStripeAction<PaymentResult>('process-test-payment', {
+        type,
+        ...payload
+    });
+    return result;
+};

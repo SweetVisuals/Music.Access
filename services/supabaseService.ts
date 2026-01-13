@@ -2263,6 +2263,7 @@ export const getPurchasesByUserId = async (userId: string): Promise<Purchase[]> 
         item_id,
         item_name,
         item_type,
+        contract_id,
         seller:users!seller_id (
           username,
           avatar_url
@@ -2319,6 +2320,7 @@ export const getPurchasesByUserId = async (userId: string): Promise<Purchase[]> 
       type: item?.item_type || 'Service',
       created_at: purchase.created_at,
       projectId: item?.item_id,
+      contractId: item?.contract_id,
       ...(projectDetails as any)
     };
   }));
@@ -3390,7 +3392,8 @@ export const getSales = async (): Promise<Purchase[]> => {
       purchase_items!inner (
         price,
         seller_id,
-        item_name
+        item_name,
+        contract_id
       )
     `)
     .eq('purchase_items.seller_id', currentUser.id)
@@ -3445,7 +3448,8 @@ export const getSales = async (): Promise<Purchase[]> => {
       status: p.status,
       image: p.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop',
       type: p.type,
-      projectId: p.project_id
+      projectId: p.project_id,
+      contractId: p.purchase_items?.[0]?.contract_id
     };
   });
 };
@@ -3461,7 +3465,8 @@ export const getPurchases = async (): Promise<Purchase[]> => {
       purchase_items (
         price,
         seller_id,
-        item_name
+        item_name,
+        contract_id
       )
     `)
     .eq('buyer_id', currentUser.id)
@@ -3521,7 +3526,8 @@ export const getPurchases = async (): Promise<Purchase[]> => {
       status: p.status,
       image: p.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop',
       type: p.type,
-      projectId: p.project_id
+      projectId: p.project_id,
+      contractId: p.purchase_items?.[0]?.contract_id
     };
   });
 };

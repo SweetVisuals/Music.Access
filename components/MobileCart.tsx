@@ -153,14 +153,23 @@ const MobileCart: React.FC<MobileCartProps> = ({ onNavigate, projects = [] }) =>
             {/* Footer / Summary */}
             {items.length > 0 && (
                 <div className="p-6 border-t border-white/5 bg-black/80 backdrop-blur-2xl shrink-0 space-y-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-                    <div className="flex justify-between items-end">
-                        <div className="space-y-1">
-                            <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">Summary</span>
-                            <div className="text-xs text-neutral-400">Subtotal ({items.length} items)</div>
+                    <div className="flex flex-col gap-2">
+                        <div className="flex justify-between items-center text-xs text-neutral-500">
+                            <span>Subtotal</span>
+                            <span>${cartTotal.toFixed(2)}</span>
                         </div>
-                        <div className="text-2xl font-black text-white font-mono tracking-tighter">
-                            <span className="text-primary mr-1">$</span>
-                            {cartTotal.toFixed(2)}
+                        <div className="flex justify-between items-center text-xs text-neutral-500">
+                            <span>Processing Fee (2%)</span>
+                            <span>${(cartTotal * 0.02).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between items-end pt-2 border-t border-white/5">
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">Total</span>
+                            </div>
+                            <div className="text-2xl font-black text-white font-mono tracking-tighter">
+                                <span className="text-primary mr-1">$</span>
+                                {(cartTotal * 1.02).toFixed(2)}
+                            </div>
                         </div>
                     </div>
 

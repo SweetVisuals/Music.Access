@@ -4,6 +4,20 @@ import { Contract } from '../types';
 import { FileText, Plus, Download, Trash2, ExternalLink, Eye, Printer, MoreVertical, PenTool, Save, X, Check, PenLine, ArrowLeft, ChevronRight, Mic2, Music } from 'lucide-react';
 import { getContracts, createContract, updateContract, deleteContract } from '../services/supabaseService';
 
+const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'N/A';
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    } catch (e) {
+        return dateString;
+    }
+};
+
 const ContractsPage: React.FC = () => {
     const [contracts, setContracts] = useState<Contract[]>([]);
     const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
@@ -21,18 +35,22 @@ const ContractsPage: React.FC = () => {
     const [showMobileInfo, setShowMobileInfo] = useState(false);
     const [filter, setFilter] = useState<'all' | 'service' | 'audio'>('all');
 
+    const handleSelectContract = (contract: Contract | null) => {
+        setSelectedContract(contract);
+        setEditForm({});
+        setIsEditing(false);
+        setIsSigning(false);
+        setSignatureInput('');
+        if (window.innerWidth < 1024 && contract) {
+            setMobileView('detail');
+        }
+    };
+
     // Load contracts on component mount
     useEffect(() => {
         loadContracts();
     }, []);
 
-    // When selectedContract changes, reset edit/sign mode
-    useEffect(() => {
-        setIsEditing(false);
-        setEditForm({});
-        setIsSigning(false);
-        setSignatureInput('');
-    }, [selectedContract]);
 
     const loadContracts = async () => {
         try {
@@ -41,6 +59,7 @@ const ContractsPage: React.FC = () => {
             const contractsData = await getContracts();
             setContracts(contractsData);
             if (contractsData.length > 0 && !selectedContract) {
+                // Initial load: select first but don't force edit mode
                 setSelectedContract(contractsData[0]);
             }
             // On mobile, keep list view initially unless a contract is explicitly selected
@@ -65,7 +84,7 @@ const ContractsPage: React.FC = () => {
                 revenueSplit: 50,
                 terms: 'Enter your terms and conditions here. This contract serves as a binding agreement between the Producer and the Licensee.',
                 notes: '',
-                // distNotes is deprecated/missing in DB
+                distNotes: '',
                 pubNotes: '',
                 publisherName: '',
                 producerSignature: '',
@@ -76,6 +95,8 @@ const ContractsPage: React.FC = () => {
             setSelectedContract(newContract);
             setEditForm(newContract);
             setIsEditing(true);
+            setIsSigning(false);
+            setSignatureInput('');
             setMobileView('detail');
             setShowMobileInfo(true);
         } catch (err) {
@@ -102,11 +123,8 @@ const ContractsPage: React.FC = () => {
 
             // If the deleted contract was selected, clear selection or select another contract
             if (selectedContract?.id === contractId) {
-                setContracts(prev => {
-                    const remainingContracts = prev.filter(c => c.id !== contractId);
-                    setSelectedContract(remainingContracts.length > 0 ? remainingContracts[0] : null);
-                    return remainingContracts;
-                });
+                const remainingContracts = contracts.filter(c => c.id !== contractId);
+                handleSelectContract(remainingContracts.length > 0 ? remainingContracts[0] : null);
             }
         } catch (err) {
             console.error('Error deleting contract:', err);
@@ -168,16 +186,15 @@ const ContractsPage: React.FC = () => {
     const displayData = isEditing ? { ...selectedContract, ...editForm } as Contract : selectedContract;
 
     return (
-        <div className="w-full h-[calc(100vh-5rem)] lg:h-[calc(100vh-10rem)] max-w-[1600px] mx-auto pb-4 pt-4 px-4 lg:px-6 animate-in fade-in duration-500 flex flex-col">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 shrink-0 gap-4">
+        <div className="w-full h-[calc(100vh-5rem)] lg:h-[calc(100vh-10rem)] max-w-[1900px] mx-auto pb-4 pt-4 lg:pt-6 px-4 lg:px-10 xl:px-14 animate-in fade-in duration-500 flex flex-col">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 lg:mb-8 shrink-0 gap-4">
                 <div>
-                    <h1 className="text-xl lg:text-3xl font-black text-white mb-1">Contracts</h1>
-                    <p className="text-neutral-500 text-xs lg:text-sm">Manage your service and audio contracts</p>
+                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">Contracts</h1>
+                    <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Manage your service and audio contracts</p>
                 </div>
-
             </div>
 
-            <div className="w-auto md:w-auto -mx-4 px-4 md:mx-0 md:px-0 mb-6">
+            <div className="w-auto md:w-auto -mx-4 px-4 md:mx-0 md:px-0 mb-6 lg:mb-8">
                 {/* Mobile Tabs Layout (Grid) */}
                 <div className="lg:hidden relative pb-2">
                     <div className="grid grid-cols-3 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5">
@@ -219,7 +236,7 @@ const ContractsPage: React.FC = () => {
                     <button
                         onClick={() => setFilter('all')}
                         className={`
-                            px-4 py-1.5 text-xs font-bold rounded-md transition-all border flex items-center justify-center
+                            px-6 py-2.5 text-sm font-bold rounded-md transition-all border flex items-center justify-center
                             ${filter === 'all'
                                 ? 'bg-neutral-800 text-white border-transparent shadow'
                                 : 'bg-transparent text-neutral-400 border-transparent hover:bg-white/5'
@@ -231,7 +248,7 @@ const ContractsPage: React.FC = () => {
                     <button
                         onClick={() => setFilter('service')}
                         className={`
-                            px-4 py-1.5 text-xs font-bold rounded-md transition-all border flex items-center justify-center
+                            px-6 py-2.5 text-sm font-bold rounded-md transition-all border flex items-center justify-center
                             ${filter === 'service'
                                 ? 'bg-neutral-800 text-white border-transparent shadow'
                                 : 'bg-transparent text-neutral-400 border-transparent hover:bg-white/5'
@@ -243,7 +260,7 @@ const ContractsPage: React.FC = () => {
                     <button
                         onClick={() => setFilter('audio')}
                         className={`
-                            px-4 py-1.5 text-xs font-bold rounded-md transition-all border flex items-center justify-center
+                            px-6 py-2.5 text-sm font-bold rounded-md transition-all border flex items-center justify-center
                             ${filter === 'audio'
                                 ? 'bg-neutral-800 text-white border-transparent shadow'
                                 : 'bg-transparent text-neutral-400 border-transparent hover:bg-white/5'
@@ -272,7 +289,7 @@ const ContractsPage: React.FC = () => {
                     {/* Sidebar List */}
                     <div className={`
                 ${mobileView === 'list' ? 'flex' : 'hidden lg:flex'} 
-                w-full lg:w-64 xl:w-72 flex-col gap-3 overflow-y-auto pr-2 shrink-0 custom-scrollbar
+                w-full lg:w-80 xl:w-96 flex-col gap-3 overflow-y-auto pr-2 shrink-0 custom-scrollbar
             `}>
                         <button
                             onClick={handleCreateNew}
@@ -285,10 +302,7 @@ const ContractsPage: React.FC = () => {
                         {contracts.map(contract => (
                             <div
                                 key={contract.id}
-                                onClick={() => {
-                                    setSelectedContract(contract);
-                                    setMobileView('detail');
-                                }}
+                                onClick={() => handleSelectContract(contract)}
                                 className={`p-3 rounded-lg border cursor-pointer transition-all hover:bg-white/5 group ${selectedContract?.id === contract.id ? 'bg-white/5 border-primary/50' : 'bg-[#0a0a0a] border-neutral-800'}`}
                             >
                                 <div className="flex justify-between items-start mb-1">
@@ -307,9 +321,9 @@ const ContractsPage: React.FC = () => {
                                         </button>
                                     </div>
                                 </div>
-                                <h3 className="text-xs font-bold text-white mb-1 truncate">{contract.title}</h3>
+                                <h3 className="text-sm font-bold text-white mb-1 truncate">{contract.title}</h3>
                                 <div className="flex justify-between items-center">
-                                    <p className="text-[9px] text-neutral-500 font-mono">Created {contract.created}</p>
+                                    <p className="text-[10px] text-neutral-500 font-mono">Created {formatDate(contract.created)}</p>
                                     <ChevronRight size={12} className="text-neutral-700 lg:hidden" />
                                 </div>
                             </div>
@@ -377,18 +391,18 @@ const ContractsPage: React.FC = () => {
                                 <div className={`
                             ${showMobileInfo ? 'flex translate-x-0' : 'hidden lg:flex'} 
                             absolute lg:relative inset-0 lg:inset-auto z-30 lg:z-0
-                            w-full lg:w-64 xl:w-72 border-r border-white/5 p-4 space-y-4 bg-neutral-950 overflow-y-auto custom-scrollbar shrink-0 transition-transform duration-300
+                            w-full lg:w-72 xl:w-80 border-r border-white/5 p-5 space-y-6 bg-neutral-950 overflow-y-auto custom-scrollbar shrink-0 transition-transform duration-300
                         `}>
                                     {/* Mobile Info Overlay Close Button */}
-                                    <div className="flex lg:hidden justify-between items-center mb-2">
-                                        <h3 className="text-xs font-bold text-white uppercase tracking-wider">Contract Details</h3>
+                                    <div className="flex lg:hidden justify-between items-center mb-4">
+                                        <h3 className="text-sm font-bold text-white uppercase tracking-wider">Contract Details</h3>
                                         <button onClick={() => setShowMobileInfo(false)} className="p-1.5 hover:bg-white/5 rounded-lg text-neutral-500"><X size={16} /></button>
                                     </div>
 
                                     <div className="space-y-4">
                                         {/* General */}
                                         <div>
-                                            <h3 className="text-xs font-bold text-white mb-3 uppercase tracking-wider flex items-center gap-2">
+                                            <h3 className="text-[11px] font-bold text-white mb-4 uppercase tracking-[0.1em] flex items-center gap-2 opacity-80">
                                                 General Information
                                             </h3>
                                             <div className="space-y-3">
@@ -413,9 +427,9 @@ const ContractsPage: React.FC = () => {
                                                     )}
                                                 </div>
 
-                                                <div className="space-y-1">
-                                                    <label className="text-[10px] text-neutral-500 font-mono block">Created At</label>
-                                                    <div className="text-xs text-neutral-300 font-medium">{displayData?.created}</div>
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider block">Created At</label>
+                                                    <div className="text-sm text-neutral-300 font-medium">{formatDate(displayData?.created)}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -424,8 +438,8 @@ const ContractsPage: React.FC = () => {
 
                                         {/* Splits */}
                                         <div>
-                                            <h3 className="text-xs font-bold text-white mb-3 uppercase tracking-wider">Splits</h3>
-                                            <div className="space-y-3">
+                                            <h3 className="text-[11px] font-bold text-white mb-4 uppercase tracking-[0.1em] opacity-80">Splits</h3>
+                                            <div className="space-y-4">
                                                 <div className="grid grid-cols-2 gap-2">
                                                     <InputGroup label="Royalty %" value={displayData?.royaltySplit} onChange={(v) => handleInputChange('royaltySplit', parseInt(v) || 0)} isEditing={isEditing} type="number" />
                                                     <InputGroup label="Revenue %" value={displayData?.revenueSplit} onChange={(v) => handleInputChange('revenueSplit', parseInt(v) || 0)} isEditing={isEditing} type="number" />
@@ -438,7 +452,7 @@ const ContractsPage: React.FC = () => {
 
                                         {/* Terms */}
                                         <div>
-                                            <h3 className="text-xs font-bold text-white mb-3 uppercase tracking-wider">Terms & Conditions</h3>
+                                            <h3 className="text-[11px] font-bold text-white mb-4 uppercase tracking-[0.1em] opacity-80">Terms & Conditions</h3>
                                             <InputGroup label="Content" value={displayData?.terms} onChange={(v) => handleInputChange('terms', v)} isEditing={isEditing} multiline rows={4} placeholder="Enter detailed terms..." />
                                         </div>
 
@@ -446,13 +460,13 @@ const ContractsPage: React.FC = () => {
 
                                         {/* Distribution */}
                                         <div>
-                                            <h3 className="text-xs font-bold text-white mb-3 uppercase tracking-wider">Distribution</h3>
+                                            <h3 className="text-[11px] font-bold text-white mb-4 uppercase tracking-[0.1em] opacity-80">Distribution</h3>
                                             <InputGroup label="Territories" value={displayData?.distNotes} onChange={(v) => handleInputChange('distNotes', v)} isEditing={isEditing} placeholder="Worldwide" />
                                         </div>
 
                                         {/* Publishing */}
                                         <div>
-                                            <h3 className="text-xs font-bold text-white mb-3 uppercase tracking-wider">Publishing</h3>
+                                            <h3 className="text-[11px] font-bold text-white mb-4 uppercase tracking-[0.1em] opacity-80">Publishing</h3>
                                             <InputGroup label="Publisher Name" value={displayData?.publisherName} onChange={(v) => handleInputChange('publisherName', v)} isEditing={isEditing} placeholder="N/A" />
                                             <InputGroup label="Notes" value={displayData?.pubNotes} onChange={(v) => handleInputChange('pubNotes', v)} isEditing={isEditing} placeholder="None" />
                                         </div>
@@ -492,7 +506,7 @@ const ContractsPage: React.FC = () => {
                                                         <p><strong className="font-sans">Title:</strong> {displayData?.title}</p>
                                                         <p><strong className="font-sans">Type:</strong> {displayData?.type?.toUpperCase()}</p>
                                                         <p><strong className="font-sans">Status:</strong> {displayData?.status}</p>
-                                                        <p><strong className="font-sans">Created At:</strong> {displayData?.created}</p>
+                                                        <p><strong className="font-sans">Created At:</strong> {formatDate(displayData?.created)}</p>
                                                     </div>
                                                 </section>
 
@@ -632,8 +646,8 @@ const ContractsPage: React.FC = () => {
 };
 
 const InputGroup = ({ label, value, onChange, isEditing, multiline, rows, type = "text", placeholder }: any) => (
-    <div className="space-y-1">
-        <label className="text-[10px] text-neutral-500 font-mono block">{label}</label>
+    <div className="space-y-2">
+        <label className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider block">{label}</label>
         {isEditing ? (
             multiline ? (
                 <textarea
@@ -648,12 +662,12 @@ const InputGroup = ({ label, value, onChange, isEditing, multiline, rows, type =
                     type={type}
                     value={value || ''}
                     onChange={(e) => onChange(e.target.value)}
-                    className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-xs text-white focus:border-primary/50 focus:outline-none placeholder-neutral-700"
+                    className="w-full bg-neutral-900 border border-neutral-800 rounded-md px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none placeholder-neutral-700 transition-all"
                     placeholder={placeholder}
                 />
             )
         ) : (
-            <div className="text-xs text-neutral-300 font-medium min-h-[1.5em] whitespace-pre-wrap break-words">
+            <div className="text-sm text-neutral-300 font-medium min-h-[1.5em] whitespace-pre-wrap break-words">
                 {value || <span className="text-neutral-600 italic">{placeholder || 'N/A'}</span>}
             </div>
         )}

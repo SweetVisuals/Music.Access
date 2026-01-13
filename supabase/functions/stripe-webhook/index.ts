@@ -37,86 +37,70 @@ serve(async (req) => {
         // 2. Handle the Event
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object;
-            const purchaseId = session.client_reference_id; // This is what we passed from frontend
 
-            console.log(`Payment success for session: ${session.id}, purchaseId: ${purchaseId}`);
+            if (session.mode === 'subscription') {
+                const userId = session.metadata?.userId;
+                const planName = session.metadata?.planName;
+                const subscriptionId = session.subscription;
+                await handleSubscriptionSuccess(userId, planName, subscriptionId);
+            } else {
+                const purchaseId = session.client_reference_id || session.metadata?.purchaseId;
+                const paymentIntentId = session.payment_intent;
+                await handleMarketplaceSuccess(purchaseId, paymentIntentId);
+            }
+        }
+        else if (event.type === 'payment_intent.succeeded') {
+            const pi = event.data.object;
+            if (pi.metadata?.type === 'marketplace_order') {
+                await handleMarketplaceSuccess(pi.metadata.purchaseId, pi.id);
+            }
+        }
+        else if (event.type === 'invoice.payment_succeeded') {
+            const invoice = event.data.object;
+            const subscriptionId = invoice.subscription;
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
-            if (purchaseId) {
-                // 3. Update Supabase
+            const userId = subscription.metadata?.userId;
+            const planName = subscription.metadata?.planName;
+            await handleSubscriptionSuccess(userId, planName, subscriptionId);
+        }
+
+
+        // Handle Subscription Updates (Renewals, Cancellations)
+        else if (event.type === 'customer.subscription.updated') {
+            const subscription = event.data.object;
+            const userId = subscription.metadata?.userId;
+
+            if (userId) {
+                console.log(`Subscription updated for user: ${userId}. Status: ${subscription.status}, CancelAtEnd: ${subscription.cancel_at_period_end}`);
                 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
                 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
                 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-                // A. Mark Purchase as Completed
-                const { error: updateError } = await supabase
-                    .from('purchases')
-                    .update({
-                        status: 'Completed',
-                        stripe_payment_id: session.payment_intent as string
-                    })
-                    .eq('id', purchaseId);
+                await supabase.from('users').update({
+                    subscription_status: subscription.status,
+                    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+                    cancel_at_period_end: subscription.cancel_at_period_end
+                }).eq('id', userId);
+            }
+        }
 
-                if (updateError) {
-                    console.error('Failed to update purchase:', updateError);
-                    return new Response('Database update failed', { status: 500 });
-                }
+        // Handle Subscription Deletion (Final expiration)
+        else if (event.type === 'customer.subscription.deleted') {
+            const subscription = event.data.object;
+            const userId = subscription.metadata?.userId;
 
-                // B. Handle Seller Transfers (90% to Seller)
-                const { data: items, error: itemsError } = await supabase
-                    .from('purchase_items')
-                    .select('*, project:projects(user_id)')
-                    .eq('purchase_id', purchaseId);
+            if (userId) {
+                console.log(`Subscription deleted/expired for user: ${userId}`);
+                const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+                const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+                const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-                if (itemsError) {
-                    console.error('Failed to fetch items for transfer:', itemsError);
-                } else if (items) {
-                    for (const item of items) {
-                        // Resolve seller ID (assuming project owner is seller)
-                        // Note: We need to fetch the seller's Stripe Account ID from the 'users' table
-                        const sellerUserId = item.project?.user_id; // or however you store seller relation
-
-                        if (sellerUserId) {
-                            const { data: sellerUser } = await supabase
-                                .from('users')
-                                .select('stripe_account_id, plan')
-                                .eq('id', sellerUserId)
-                                .single();
-
-                            if (sellerUser?.stripe_account_id) {
-                                // Calculate Seller Share (Default 98% -> 2% Fee)
-                                // Premium Plans (Pro, Studio+) get 100% (0% Fee)
-                                let feePercentage = 0.02; // 2%
-                                if (sellerUser.plan === 'Pro' || sellerUser.plan === 'Studio+') {
-                                    feePercentage = 0;
-                                }
-
-                                const amountTotal = Math.round(item.price * 100); // in cents
-                                const sellerAmount = Math.round(amountTotal * (1 - feePercentage));
-                                const feeAmount = amountTotal - sellerAmount;
-
-                                try {
-                                    console.log(`Transferring $${sellerAmount / 100} to seller ${sellerUser.stripe_account_id} (Fee: $${feeAmount / 100})`);
-
-                                    await stripe.transfers.create({
-                                        amount: sellerAmount,
-                                        currency: 'usd',
-                                        destination: sellerUser.stripe_account_id,
-                                        transfer_group: purchaseId, // Links transfer to the purchase
-                                        metadata: {
-                                            purchaseItemId: item.id,
-                                            originalPrice: item.price,
-                                            platformFee: feeAmount
-                                        }
-                                    });
-                                } catch (transferError) {
-                                    console.error(`Failed to transfer to seller ${sellerUser.stripe_account_id}:`, transferError);
-                                    // We don't rollback the purchase, but we log the error. 
-                                    // In prod, you'd want a 'failed_transfers' table or queue.
-                                }
-                            }
-                        }
-                    }
-                }
+                await supabase.from('users').update({
+                    plan: null,
+                    subscription_status: 'canceled',
+                    cancel_at_period_end: false
+                }).eq('id', userId);
             }
         }
 
@@ -129,3 +113,85 @@ serve(async (req) => {
         return new Response(err.message, { status: 400 })
     }
 })
+
+/**
+ * Modular handler for Marketplace order success
+ */
+async function handleMarketplaceSuccess(purchaseId: string, paymentIntentId: any) {
+    if (!purchaseId) return;
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    console.log(`Processing marketplace success for purchase: ${purchaseId}`);
+
+    // 1. Mark Purchase as Completed
+    await supabase.from('purchases').update({
+        status: 'Completed',
+        stripe_payment_id: paymentIntentId as string
+    }).eq('id', purchaseId);
+
+    // 2. Handle Seller Transfers
+    const { data: items } = await supabase
+        .from('purchase_items')
+        .select('*, project:projects(user_id)')
+        .eq('purchase_id', purchaseId);
+
+    if (items) {
+        for (const item of items) {
+            const sellerUserId = item.project?.user_id;
+            if (!sellerUserId) continue;
+
+            const { data: sellerUser } = await supabase
+                .from('users')
+                .select('stripe_account_id, plan')
+                .eq('id', sellerUserId)
+                .single();
+
+            if (sellerUser?.stripe_account_id) {
+                let feePercentage = 0.02;
+                if (sellerUser.plan === 'Pro' || sellerUser.plan === 'Studio+') feePercentage = 0;
+
+                const amountTotal = Math.round(item.price * 100);
+                const sellerAmount = Math.round(amountTotal * (1 - feePercentage));
+
+                try {
+                    await stripe.transfers.create({
+                        amount: sellerAmount,
+                        currency: 'usd',
+                        destination: sellerUser.stripe_account_id,
+                        transfer_group: purchaseId,
+                        metadata: { purchaseItemId: item.id }
+                    });
+                } catch (e) {
+                    console.error("Transfer failed", e);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Modular handler for Subscription success
+ */
+async function handleSubscriptionSuccess(userId: string, planName: string, subscriptionId: any) {
+    if (!userId || !planName || !subscriptionId) return;
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    console.log(`Processing subscription success for user: ${userId}, plan: ${planName}`);
+
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId as string);
+
+    await supabase.from('users').update({
+        plan: planName as any,
+        subscription_id: subscriptionId,
+        subscription_status: subscription.status,
+        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        cancel_at_period_end: subscription.cancel_at_period_end
+    }).eq('id', userId);
+}
+

@@ -38,7 +38,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
         </div>
       </div>
 
-      <div className="w-full glass-panel p-4 lg:p-2.5 rounded-xl flex flex-col lg:flex-row items-stretch lg:items-center gap-4 lg:gap-3 lg:space-x-3 relative z-30 shadow-2xl">
+      <div className="w-full glass-panel p-4 lg:p-2.5 rounded-xl flex flex-col lg:flex-row items-stretch lg:items-center gap-4 lg:gap-3 relative z-30 shadow-2xl">
         {/* Filters Container */}
 
         {/* Genre */}
@@ -87,6 +87,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
             containerClassName="flex-1 lg:flex-none"
             noLabel
             hideControls
+            fullWidth={false}
           />
           <span className="text-neutral-700">-</span>
           <CustomInput
@@ -98,6 +99,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
             containerClassName="flex-1 lg:flex-none"
             noLabel
             hideControls
+            fullWidth={false}
           />
         </div>
 

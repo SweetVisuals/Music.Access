@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import Stripe from "https://esm.sh/stripe@12.0.0?target=deno"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1"
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
     apiVersion: '2022-11-15',
@@ -20,45 +21,195 @@ serve(async (req) => {
     try {
         const { action, ...data } = await req.json()
 
-        // Simple mock user check - in production verify JWT
-        // const authHeader = req.headers.get('Authorization')
-        // if (!authHeader) throw new Error('Missing Authorization header')
-
         let result;
 
         switch (action) {
-            case 'create-connect-account': {
+            case 'get-or-create-customer': {
                 const { userId, email } = data;
-                const account = await stripe.accounts.create({
-                    type: 'express',
-                    country: 'GB', // UK Platform
-                    email: email,
-                    capabilities: {
-                        card_payments: { requested: true },
-                        transfers: { requested: true },
+                const { customerId } = await getOrCreateCustomer(userId, email);
+                result = { customerId };
+                break;
+            }
+
+            case 'list-payment-methods': {
+                const { userId } = data;
+                console.log(`[list-payment-methods] Fetching for userId: ${userId}`);
+                try {
+                    const { customerId } = await getOrCreateCustomer(userId);
+
+                    const paymentMethods = await stripe.paymentMethods.list({
+                        customer: customerId,
+                        type: 'card',
+                    });
+
+                    result = {
+                        paymentMethods: paymentMethods.data.map(pm => ({
+                            id: pm.id,
+                            brand: pm.card?.brand,
+                            last4: pm.card?.last4,
+                            exp_month: pm.card?.exp_month,
+                            exp_year: pm.card?.exp_year,
+                        }))
+                    };
+                } catch (e: any) {
+                    console.error(`[list-payment-methods] Error:`, e.message);
+                    throw e;
+                }
+                break;
+            }
+
+            case 'create-setup-intent': {
+                const { userId } = data;
+                const { customerId } = await getOrCreateCustomer(userId);
+
+                const setupIntent = await stripe.setupIntents.create({
+                    customer: customerId,
+                    payment_method_types: ['card', 'paypal'],
+                    usage: 'off_session',
+                });
+
+                result = { clientSecret: setupIntent.client_secret };
+                break;
+            }
+
+            case 'create-direct-subscription': {
+                const { planName, userId, billingCycle, paymentMethodId } = data;
+                const { customerId } = await getOrCreateCustomer(userId);
+
+                // 1. Attach payment method if provided (saved card)
+                if (paymentMethodId) {
+                    try {
+                        await stripe.paymentMethods.attach(paymentMethodId, {
+                            customer: customerId,
+                        });
+                        // Set as default
+                        await stripe.customers.update(customerId, {
+                            invoice_settings: {
+                                default_payment_method: paymentMethodId,
+                            },
+                        });
+                    } catch (e) {
+                        // Might already be attached
+                        console.log("PM attach skip/fail:", e.message);
+                    }
+                }
+
+                // 3. Map Plan to Price ID
+                const priceMap: Record<string, string> = {
+                    'Basic_monthly': 'price_1Sp5lmBSQA5JBjNFZlcFaKxs',
+                    'Basic_yearly': 'price_1Sp5lmBSQA5JBjNF1r3KqUAl',
+                    'Pro_monthly': 'price_1Sp5muBSQA5JBjNF17k7RyQH',
+                    'Pro_yearly': 'price_1Sp5nKBSQA5JBjNF3DOGMv1i',
+                    'Studio+_monthly': 'price_1Sp5ntBSQA5JBjNFNU2Xx5OE',
+                    'Studio+_yearly': 'price_1Sp5otBSQA5JBjNFOF4VmwfL'
+                };
+
+                const priceId = priceMap[`${planName}_${billingCycle}`];
+                if (!priceId) throw new Error(`Invalid plan: ${planName}_${billingCycle}`);
+
+                // 4. Create Subscription
+                const subscription = await stripe.subscriptions.create({
+                    customer: customerId,
+                    items: [{ price: priceId }],
+                    payment_behavior: 'default_incomplete',
+                    payment_settings: {
+                        save_default_payment_method: 'on_subscription',
+                        payment_method_types: ['card', 'paypal'] // Explicitly allow PayPal
                     },
-                    metadata: { supabase_user_id: userId }
+                    expand: ['latest_invoice.payment_intent'],
+                    metadata: {
+                        userId: userId,
+                        planName: planName
+                    }
                 });
 
-                const accountLink = await stripe.accountLinks.create({
-                    account: account.id,
-                    refresh_url: `${data.origin}/wallet?connect_refresh=true`,
-                    return_url: `${data.origin}/wallet?connect_success=true&account_id=${account.id}`,
-                    type: 'account_onboarding',
-                });
+                const paymentIntent = (subscription.latest_invoice as any).payment_intent;
 
-                result = { url: accountLink.url, accountId: account.id };
+                result = {
+                    subscriptionId: subscription.id,
+                    clientSecret: paymentIntent?.client_secret,
+                    status: subscription.status
+                };
+                break;
+            }
+
+            case 'create-connect-account': {
+                const { userId, email, country, type } = data;
+
+                // First, check if user already has an account to avoid duplicates
+                const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+                const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+                const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+                const { data: user } = await supabase
+                    .from('users')
+                    .select('stripe_account_id')
+                    .eq('id', userId)
+                    .single();
+
+                let accountId = user?.stripe_account_id;
+
+                // Validate the account ID with Stripe if it exists (Handle stale IDs)
+                if (accountId) {
+                    try {
+                        const account = await stripe.accounts.retrieve(accountId);
+                        if (account.deleted) {
+                            accountId = null; // Account was deleted, create new one
+                        }
+                    } catch (e) {
+                        console.log(`Stale or invalid account ID ${accountId}, creating new one.`);
+                        accountId = null;
+                    }
+                }
+
+                if (!accountId) {
+                    try {
+                        const account = await stripe.accounts.create({
+                            type: type || 'express',
+                            country: country || 'US', // Default to US if not specified
+                            email: email,
+                            capabilities: {
+                                card_payments: { requested: true },
+                                transfers: { requested: true },
+                            },
+                            metadata: { supabase_user_id: userId }
+                        });
+                        accountId = account.id;
+
+                        await supabase
+                            .from('users')
+                            .update({ stripe_account_id: accountId })
+                            .eq('id', userId);
+                    } catch (e: any) {
+                        console.error('Failed to create Stripe Connect account:', e);
+                        // Provide a clearer error if it's likely a configuration issue
+                        if (e.message?.includes('Connect')) {
+                            throw new Error(`Stripe Connect configuration error: ${e.message}`);
+                        }
+                        throw e;
+                    }
+                }
+
+                try {
+                    const accountLink = await stripe.accountLinks.create({
+                        account: accountId,
+                        refresh_url: `${data.origin}/dashboard/wallet?connect_refresh=true`,
+                        return_url: `${data.origin}/dashboard/wallet?connect_success=true&account_id=${accountId}`,
+                        type: 'account_onboarding',
+                    });
+
+                    result = { url: accountLink.url, accountId: accountId };
+                } catch (e: any) {
+                    console.error('Failed to create Account Link:', e);
+                    throw new Error(`Failed to generate onboarding link: ${e.message}`);
+                }
                 break;
             }
 
             case 'get-account-status': {
                 const { stripeAccountId } = data;
                 const account = await stripe.accounts.retrieve(stripeAccountId);
-
-                // Fetch balance
-                const balance = await stripe.balance.retrieve({
-                    stripeAccount: stripeAccountId
-                });
+                const balance = await stripe.balance.retrieve({ stripeAccount: stripeAccountId });
 
                 result = {
                     charges_enabled: account.charges_enabled,
@@ -75,25 +226,9 @@ serve(async (req) => {
 
             case 'create-checkout-session': {
                 const { items, userId, purchaseId, successUrl, cancelUrl } = data;
-
-                // Logic to construct line items and destination charges
-                // Note: Stripe Checkout with "Destination Charges" (split payment) 
-                // usually requires creating a session on behalf of the connected account 
-                // OR using 'transfer_data' on each line item or the session.
-                // For a cart with mixed sellers, we might need 'payment_intent_data.transfer_group' and separate transfers later,
-                // OR simple destination charges if 1 seller.
-                // Assuming single seller per item is tricky in one checkout unless we use simple destination charge logic per item 
-                // BUT Stripe Checkout doesn't support different destinations per line item easily in one session unless using 'subscription_data' or specialized flows.
-                // SIMPLIFICATION for now: We assume single-seller checkout or we just take payment to Platform and transfer later (Separate Charges and Transfers).
-
-                // Let's use "Separate Charges and Transfers" model:
-                // 1. Platform takes full payment.
-                // 2. We use 'transfer_group' to tag the payment.
-                // 3. Webhook later splits the money to sellers.
-
                 const lineItems = items.map((item: any) => ({
                     price_data: {
-                        currency: 'usd', // Or gbp
+                        currency: 'usd',
                         product_data: {
                             name: item.title,
                             description: item.type,
@@ -110,7 +245,7 @@ serve(async (req) => {
                     mode: 'payment',
                     success_url: successUrl,
                     cancel_url: cancelUrl,
-                    client_reference_id: purchaseId, // CRITICAL: Links Stripe Session to Supabase Purchase ID
+                    client_reference_id: purchaseId,
                     metadata: {
                         userId: userId,
                         type: 'marketplace_order',
@@ -122,60 +257,31 @@ serve(async (req) => {
                 break;
             }
 
-            case 'create-subscription': {
-                const { planName, userId, billingCycle, successUrl, cancelUrl } = data;
+            case 'create-marketplace-payment-intent': {
+                const { items, userId, purchaseId, email } = data;
+                const { customerId } = await getOrCreateCustomer(userId, email);
 
-                // Map plans to Stripe Price IDs (You should put your real Price IDs here)
-                // Real Price IDs provided by user
-                const priceMap: Record<string, string> = {
-                    'Basic_monthly': 'price_1Sp5lmBSQA5JBjNFZlcFaKxs',
-                    'Basic_yearly': 'price_1Sp5lmBSQA5JBjNF1r3KqUAl',
-                    'Pro_monthly': 'price_1Sp5muBSQA5JBjNF17k7RyQH',
-                    'Pro_yearly': 'price_1Sp5nKBSQA5JBjNF3DOGMv1i',
-                    'Studio+_monthly': 'price_1Sp5ntBSQA5JBjNFNU2Xx5OE',
-                    'Studio+_yearly': 'price_1Sp5otBSQA5JBjNFOF4VmwfL'
-                };
+                const totalAmount = items.reduce((sum: number, item: any) => sum + Math.round(item.price * 100), 0);
 
-                const priceId = priceMap[`${planName}_${billingCycle}`];
-                if (!priceId) {
-                    throw new Error(`Invalid plan or billing cycle: ${planName} / ${billingCycle}`);
-                }
-
-                // If we don't have real price IDs, we can use ad-hoc prices for testing
-                const session = await stripe.checkout.sessions.create({
-                    payment_method_types: ['card'],
-                    line_items: [
-                        {
-                            price_data: {
-                                currency: 'usd',
-                                product_data: {
-                                    name: `${planName} Plan (${billingCycle})`,
-                                },
-                                unit_amount: planName === 'Pro' ? 1499 : (planName === 'Studio+' ? 2499 : 799),
-                                recurring: {
-                                    interval: billingCycle === 'yearly' ? 'year' : 'month'
-                                }
-                            },
-                            quantity: 1,
-                        },
-                    ],
-                    mode: 'subscription',
-                    success_url: successUrl,
-                    cancel_url: cancelUrl,
+                const paymentIntent = await stripe.paymentIntents.create({
+                    amount: totalAmount,
+                    currency: 'usd',
+                    customer: customerId,
                     metadata: {
-                        userId: userId,
-                        planName: planName
-                    }
+                        userId,
+                        purchaseId,
+                        type: 'marketplace_order'
+                    },
+                    // Enable automatic payment methods (Card, Apple Pay, Google Pay)
+                    automatic_payment_methods: { enabled: true }
                 });
 
-                result = { sessionId: session.id, url: session.url };
+                result = { clientSecret: paymentIntent.client_secret };
                 break;
             }
 
             case 'execute-payout': {
                 const { amount, stripeAccountId } = data;
-
-                // Initiate a payout from the connected account to their bank
                 const payout = await stripe.payouts.create({
                     amount: amount,
                     currency: 'gbp',
@@ -184,6 +290,15 @@ serve(async (req) => {
                 });
 
                 result = { success: true, payoutId: payout.id };
+                break;
+            }
+
+            case 'cancel-subscription': {
+                const { userId, subscriptionId } = data;
+                const subscription = await stripe.subscriptions.update(subscriptionId, {
+                    cancel_at_period_end: true
+                });
+                result = { success: true, subscription };
                 break;
             }
 
@@ -202,3 +317,76 @@ serve(async (req) => {
         )
     }
 })
+
+async function getOrCreateCustomer(userId: string, email?: string) {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    console.log(`[getOrCreateCustomer] userId: ${userId}, email: ${email}`);
+
+    // Handle Guest Checkout
+    if (userId === 'guest' || !userId || userId === 'null' || userId === 'undefined') {
+        if (!email) throw new Error("Email required for guest checkout");
+
+        // Check if customer with this email already exists to avoid duplicates
+        const existingCustomers = await stripe.customers.list({ email: email, limit: 1 });
+        if (existingCustomers.data.length > 0) {
+            console.log(`[getOrCreateCustomer] Found existing guest customer: ${existingCustomers.data[0].id}`);
+            return { customerId: existingCustomers.data[0].id };
+        }
+
+        const customer = await stripe.customers.create({
+            email: email,
+            metadata: { type: 'guest' }
+        });
+        console.log(`[getOrCreateCustomer] Created new guest customer: ${customer.id}`);
+        return { customerId: customer.id };
+    }
+
+    const { data: user, error: fetchError } = await supabase
+        .from('users')
+        .select('stripe_customer_id, email, username')
+        .eq('id', userId)
+        .maybeSingle();
+
+    if (fetchError || !user) {
+        console.log(`[getOrCreateCustomer] User not found in public.users: ${userId}. Error: ${fetchError?.message}`);
+
+        // Check if customer already exists metadata-wise to avoid duplicates
+        const existingByMeta = await stripe.customers.search({
+            query: `metadata['supabase_user_id']:'${userId}'`,
+        });
+
+        if (existingByMeta.data.length > 0) {
+            return { customerId: existingByMeta.data[0].id };
+        }
+
+        // Create new one if we have an email, else it might fail Stripe validation if email is empty but we should try
+        const customer = await stripe.customers.create({
+            email: email || undefined,
+            metadata: { supabase_user_id: userId }
+        });
+        console.log(`[getOrCreateCustomer] Created fallback customer: ${customer.id}`);
+        return { customerId: customer.id };
+    }
+
+    if (user.stripe_customer_id) {
+        console.log(`[getOrCreateCustomer] Found existing customer in DB: ${user.stripe_customer_id}`);
+        return { customerId: user.stripe_customer_id };
+    }
+
+    const customer = await stripe.customers.create({
+        email: email || user.email || undefined,
+        name: user.username || undefined,
+        metadata: { supabase_user_id: userId }
+    });
+
+    console.log(`[getOrCreateCustomer] Created new customer and updating DB: ${customer.id}`);
+    await supabase
+        .from('users')
+        .update({ stripe_customer_id: customer.id })
+        .eq('id', userId);
+
+    return { customerId: customer.id };
+}

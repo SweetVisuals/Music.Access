@@ -31,6 +31,8 @@ import {
     LayoutList
 } from 'lucide-react';
 import { MOCK_CONTRACTS, MOCK_NOTES } from '../constants';
+import ConfirmationModal from './ConfirmationModal';
+import { useToast } from '../contexts/ToastContext';
 import {
     createProject,
     deleteProject as deleteProjectService,
@@ -103,6 +105,8 @@ const Studio: React.FC<StudioProps> = ({
     const [activeView, setActiveView] = useState<'dashboard' | 'workspace'>('dashboard');
     const [selectedProject, setSelectedProject] = useState<StudioProject | null>(null);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+    const { showToast } = useToast();
 
     // --- CREATE MODAL STATE ---
     const [newProjectTitle, setNewProjectTitle] = useState('');
@@ -164,15 +168,20 @@ const Studio: React.FC<StudioProps> = ({
         setActiveView('workspace');
     };
 
-    const deleteProject = async (e: React.MouseEvent, id: string) => {
-        e.stopPropagation();
-        if (window.confirm('Are you sure you want to delete this project?')) {
-            try {
-                await deleteProjectService(id);
-                setProjects(prev => prev.filter(p => p.id !== id));
-            } catch (error) {
-                console.error("Failed to delete project:", error);
-            }
+    const deleteProject = async (e?: React.MouseEvent, id?: string) => {
+        if (e) e.stopPropagation();
+        const targetId = id || projectToDelete;
+        if (!targetId) return;
+
+        try {
+            await deleteProjectService(targetId);
+            setProjects(prev => prev.filter(p => p.id !== targetId));
+            showToast('Project deleted successfully', 'success');
+        } catch (error) {
+            console.error("Failed to delete project:", error);
+            showToast('Failed to delete project', 'error');
+        } finally {
+            setProjectToDelete(null);
         }
     };
 
@@ -324,7 +333,7 @@ const Studio: React.FC<StudioProps> = ({
                                             <div className="group/menu relative">
                                                 <button className="text-neutral-500 hover:text-white"><MoreVertical size={16} /></button>
                                                 <div className="absolute right-0 top-full mt-1 w-32 bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl hidden group-hover/menu:block z-20">
-                                                    <button onClick={(e) => deleteProject(e, project.id)} className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-white/5 rounded-t-lg">Delete</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); setProjectToDelete(project.id); }} className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-white/5 rounded-t-lg">Delete</button>
                                                     <button className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-white/5 rounded-b-lg">Rename</button>
                                                 </div>
                                             </div>
@@ -382,14 +391,25 @@ const Studio: React.FC<StudioProps> = ({
                         currentTrackId={currentTrackId}
                         onPlayTrack={onPlayTrack}
                         onTogglePlay={onTogglePlay}
+                        setProjectToDelete={setProjectToDelete}
                     />
                 )
             )}
+
+            {/* Project Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={!!projectToDelete}
+                onClose={() => setProjectToDelete(null)}
+                onConfirm={deleteProject}
+                title="Delete Project"
+                message="Are you sure you want to delete this project? This will permanently remove all tracks and data associated with it."
+                confirmLabel="Delete Project"
+                cancelLabel="Cancel"
+                isDestructive={true}
+            />
         </div>
     );
 };
-
-// --- WORKSPACE VIEW (The "Album Manager" Interface) ---
 
 interface WorkspaceViewProps {
     project: StudioProject;
@@ -400,6 +420,7 @@ interface WorkspaceViewProps {
     currentTrackId: string | null;
     onPlayTrack: (project: Project, trackId: string) => void;
     onTogglePlay: () => void;
+    setProjectToDelete: (id: string | null) => void;
 }
 
 const WorkspaceView: React.FC<WorkspaceViewProps> = ({
@@ -410,7 +431,8 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     isPlaying,
     currentTrackId,
     onPlayTrack,
-    onTogglePlay
+    onTogglePlay,
+    setProjectToDelete
 }) => {
     const [tab, setTab] = useState<'tracks' | 'files' | 'contracts' | 'overview'>('tracks');
     const [draggingAsset, setDraggingAsset] = useState<LibraryAsset | null>(null);
@@ -431,6 +453,8 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
     // Library Assets State
     const [assets, setAssets] = useState<LibraryAsset[]>(LIBRARY_ASSETS);
+    const [trackToDelete, setTrackToDelete] = useState<string | null>(null);
+    const { showToast } = useToast();
 
     useEffect(() => {
         const fetchAssets = async () => {
@@ -478,14 +502,17 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
         }
     };
 
-    const deleteTrack = async (trackId: string) => {
-        if (window.confirm('Remove this track?')) {
-            try {
-                await deleteTrackService(trackId);
-                onUpdate({ ...project, tracks: project.tracks.filter(t => t.id !== trackId) });
-            } catch (e) {
-                console.error("Failed to delete track", e);
-            }
+    const deleteTrack = async () => {
+        if (!trackToDelete) return;
+        try {
+            await deleteTrackService(trackToDelete);
+            onUpdate({ ...project, tracks: project.tracks.filter(t => t.id !== trackToDelete) });
+            showToast('Track removed from project', 'success');
+        } catch (e) {
+            console.error("Failed to delete track", e);
+            showToast('Failed to remove track', 'error');
+        } finally {
+            setTrackToDelete(null);
         }
     };
 
@@ -744,12 +771,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            if (window.confirm('Are you sure you want to delete this entire workspace? This cannot be undone.')) {
-                                deleteProjectService(project.id).then(() => {
-                                    setProjects(prev => prev.filter(p => p.id !== project.id));
-                                    onBack();
-                                }).catch(err => console.error("Failed to delete workspace:", err));
-                            }
+                            setProjectToDelete(project.id);
                         }}
                         className="ml-2 p-2 text-neutral-500 hover:text-red-500 transition-colors"
                         title="Delete Workspace"
@@ -931,7 +953,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                                     {openMenuId === track.id && (
                                                         <div className="absolute right-0 top-full mt-1 w-40 bg-[#0a0a0a] border border-neutral-800 rounded-lg shadow-2xl z-50 overflow-hidden">
                                                             <button onClick={(e) => { e.stopPropagation(); openAttachNoteModal(track.id); }} className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-white/5">Attach Note</button>
-                                                            <button onClick={(e) => { e.stopPropagation(); deleteTrack(track.id); }} className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-white/5">Delete Track</button>
+                                                            <button onClick={(e) => { e.stopPropagation(); setTrackToDelete(track.id); }} className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-white/5">Delete Track</button>
                                                         </div>
                                                     )}
                                                 </div>
@@ -999,7 +1021,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                                                     <X size={12} /> Remove Note
                                                                 </button>
                                                             )}
-                                                            <button onClick={(e) => { e.stopPropagation(); deleteTrack(track.id); setOpenMenuId(null); }} className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-white/5 flex items-center gap-2">
+                                                            <button onClick={(e) => { e.stopPropagation(); setTrackToDelete(track.id); setOpenMenuId(null); }} className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-white/5 flex items-center gap-2">
                                                                 <Trash2 size={12} /> Delete Track
                                                             </button>
                                                         </div>

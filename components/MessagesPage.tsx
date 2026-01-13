@@ -19,6 +19,8 @@ import {
     getCurrentUser,
     supabase
 } from '../services/supabaseService';
+import ConfirmationModal from './ConfirmationModal';
+import { useToast } from '../contexts/ToastContext';
 
 
 
@@ -145,6 +147,8 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
     // Context Menu & Delete Dialog State
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, messageId: string, isMe: boolean } | null>(null);
     const [messageToDelete, setMessageToDelete] = useState<{ id: string, isMe: boolean } | null>(null);
+    const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+    const { showToast } = useToast();
 
     const handleContextMenu = (e: React.MouseEvent, messageId: string, isMe: boolean) => {
         e.preventDefault();
@@ -173,7 +177,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
             }));
         } catch (e) {
             console.error('Failed to delete message:', e);
-            alert('Could not delete message. You can only delete your own messages for everyone.');
+            showToast('Could not delete message. You can only delete your own messages for everyone.', 'error');
         } finally {
             setMessageToDelete(null);
         }
@@ -295,21 +299,26 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
             setIsCreatingNew(false);
             await loadConversations();
             setActiveId(newId);
+            setActiveId(newId);
         } catch (e) {
-            alert("Error starting conversation");
+            showToast("Error starting conversation", 'error');
         } finally {
             setIsStartingConversation(false);
         }
     };
 
-    const handleDeleteConvo = async (id: string) => {
-        if (!confirm('Delete conversation?')) return;
+    const handleDeleteConvo = async () => {
+        if (!conversationToDelete) return;
         try {
-            await deleteConversation(id);
-            setConversations(prev => prev.filter(c => c.id !== id));
-            if (activeId === id) setActiveId(null);
+            await deleteConversation(conversationToDelete);
+            setConversations(prev => prev.filter(c => c.id !== conversationToDelete));
+            if (activeId === conversationToDelete) setActiveId(null);
+            showToast("Conversation deleted", "success");
         } catch (e) {
             console.error(e);
+            showToast("Failed to delete conversation", "error");
+        } finally {
+            setConversationToDelete(null);
         }
     };
 
@@ -387,7 +396,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
                                             conv={conv}
                                             activeId={activeId}
                                             onClick={() => { setActiveId(conv.id); setIsCreatingNew(false); setIsSidebarOpen(false); }}
-                                            onDelete={() => handleDeleteConvo(conv.id)}
+                                            onDelete={async () => setConversationToDelete(conv.id)}
                                         />
                                     ))
                                 ) : (
@@ -568,6 +577,18 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
                     </div>
                 </div>
             )}
+
+            {/* Conversation Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={!!conversationToDelete}
+                onClose={() => setConversationToDelete(null)}
+                onConfirm={handleDeleteConvo}
+                title="Delete Conversation"
+                message="Are you sure you want to delete this conversation? This action cannot be undone."
+                confirmLabel="Delete Conversation"
+                cancelLabel="Cancel"
+                isDestructive={true}
+            />
         </div>
     );
 };

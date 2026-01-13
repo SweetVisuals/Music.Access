@@ -4,6 +4,8 @@ import { User, Mail, Bell, Shield, Palette, Trash2, Save, Globe, Lock } from 'lu
 import { UserProfile } from '../types';
 import { updateUserProfile, getCurrentUser } from '../services/supabaseService';
 import CustomDropdown from './CustomDropdown';
+import ConfirmationModal from './ConfirmationModal';
+import { useToast } from '../contexts/ToastContext';
 
 interface SettingsPageProps {
     userProfile?: UserProfile | null;
@@ -13,6 +15,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const { showToast } = useToast();
 
     const [notifications, setNotifications] = useState({
         email: true,
@@ -58,18 +62,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
     };
 
     const handleDeleteAccount = () => {
-        const confirmed = window.confirm("Are you sure you want to delete your account? This action cannot be undone.");
-        if (confirmed) {
-            const doubleCheck = window.confirm("This will permanently delete all your tracks, projects, and data. Confirm deletion?");
-            if (doubleCheck) {
-                alert("Account deletion simulation: Account would be deleted here.");
-            }
-        }
+        // Logic for actual delete would go here
+        showToast("Account deletion simulation: Account would be deleted here.", "info");
     };
 
     if (!profile && !userProfile) {
         return (
-            <div className="w-full max-w-4xl mx-auto pb-4 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+            <div className="w-full max-w-7xl mx-auto pb-4 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
                 <div className="text-white">Loading profile settings...</div>
             </div>
         );
@@ -79,10 +78,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
     const displayProfile = profile || userProfile;
 
     return (
-        <div className="w-full max-w-4xl mx-auto pb-4 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-7xl mx-auto pb-4 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
             <div className="mb-10">
-                <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Settings</h1>
-                <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Manage your profile, preferences, and account security.</p>
+                <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">Settings</h1>
+                <p className="text-neutral-400 text-lg max-w-2xl leading-relaxed">Manage your profile, preferences, and account security.</p>
             </div>
 
             {message && (
@@ -168,8 +167,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                     <div className="p-8 space-y-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <h3 className="text-sm font-bold text-white mb-1">Public Profile</h3>
-                                <p className="text-xs text-neutral-500">Allow your profile to be discovered in search and Browse Talent.</p>
+                                <h3 className="text-base font-bold text-white mb-1">Public Profile</h3>
+                                <p className="text-sm text-neutral-400">Allow your profile to be discovered in search and Browse Talent.</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
@@ -244,15 +243,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                     <div className="p-8 space-y-4">
                         <div className="flex items-center justify-between p-4 bg-neutral-900/30 border border-neutral-800 rounded-lg">
                             <div>
-                                <h3 className="text-sm font-bold text-white">Password</h3>
-                                <p className="text-xs text-neutral-500">Last changed 3 months ago</p>
+                                <h3 className="text-base font-bold text-white">Password</h3>
+                                <p className="text-sm text-neutral-400">Last changed 3 months ago</p>
                             </div>
                             <button className="px-4 py-2 border border-neutral-700 rounded-lg text-xs font-bold text-white hover:bg-white/5">Change Password</button>
                         </div>
                         <div className="flex items-center justify-between p-4 bg-neutral-900/30 border border-neutral-800 rounded-lg">
                             <div>
-                                <h3 className="text-sm font-bold text-white">Two-Factor Authentication</h3>
-                                <p className="text-xs text-neutral-500">Add an extra layer of security to your account</p>
+                                <h3 className="text-base font-bold text-white">Two-Factor Authentication</h3>
+                                <p className="text-sm text-neutral-400">Add an extra layer of security to your account</p>
                             </div>
                             <button className="px-4 py-2 border border-neutral-700 rounded-lg text-xs font-bold text-white hover:bg-white/5">Enable 2FA</button>
                         </div>
@@ -267,13 +266,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                     </div>
                     <div className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
                         <div>
-                            <h3 className="text-sm font-bold text-white mb-1">Delete Account</h3>
-                            <p className="text-xs text-neutral-400 max-w-md">
+                            <h3 className="text-base font-bold text-white mb-1">Delete Account</h3>
+                            <p className="text-sm text-neutral-400 max-w-md">
                                 Permanently remove your account and all of its contents from the MusicAccess platform. This action is not reversible, so please be certain.
                             </p>
                         </div>
                         <button
-                            onClick={handleDeleteAccount}
+                            onClick={() => setShowDeleteConfirm(true)}
                             className="px-6 py-3 bg-red-500 text-white font-bold rounded-lg text-xs hover:bg-red-600 transition-colors flex items-center gap-2 whitespace-nowrap shadow-lg shadow-red-500/20"
                         >
                             <Trash2 size={16} /> Delete Account
@@ -281,6 +280,18 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                     </div>
                 </section>
             </div>
+
+            {/* Account Deletion Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={handleDeleteAccount}
+                title="Delete Account"
+                message="Are you sure you want to delete your account? This action cannot be undone and will permanently delete all your tracks, projects, and data."
+                confirmLabel="Delete Everything"
+                cancelLabel="Keep My Account"
+                isDestructive={true}
+            />
         </div>
     );
 };

@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { CreditCard, Bitcoin, Lock, CheckCircle, Copy, QrCode, AlertTriangle, ShieldCheck, ArrowRight, Music, Package, Mic, ShoppingBag, Wallet } from 'lucide-react';
+import { CreditCard, Bitcoin, Lock, CheckCircle, Copy, QrCode, AlertTriangle, ShieldCheck, ArrowRight, Music, Package, Mic, ShoppingBag, Wallet, Loader2 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { createPurchase } from '../services/supabaseService';
 import * as stripeService from '../services/stripeService';
+import { DirectPaymentForm } from './DirectPaymentForm';
+import { getUserProfile } from '../services/supabaseService';
+import { UserProfile } from '../types';
+import { supabase } from '../services/supabaseService';
 
 interface CheckoutPageProps {
     isEmbedded?: boolean;
@@ -15,39 +19,88 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [guestEmail, setGuestEmail] = useState('');
+    const [emailError, setEmailError] = useState<string | null>(null);
+    const [pendingPurchaseId, setPendingPurchaseId] = useState<string | null>(null);
+    const [isGuest, setIsGuest] = useState(false);
+
+    React.useEffect(() => {
+        const fetchUserAndInitialize = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const profile = await getUserProfile(user.id);
+                setUserProfile(profile);
+                setIsGuest(false);
+
+                // Initialize a pending purchase record
+                if (items.length > 0 && !pendingPurchaseId) {
+                    try {
+                        const purchase = await createPurchase(items, cartTotal, 'card', undefined, 'Processing');
+                        if (purchase) setPendingPurchaseId(purchase.id);
+                    } catch (e) {
+                        console.error("Failed to init purchase record", e);
+                    }
+                }
+            } else {
+                setIsGuest(true);
+            }
+        };
+        fetchUserAndInitialize();
+    }, [items.length]);
+
+    const handleInitGuestPurchase = async () => {
+        if (!guestEmail || !guestEmail.includes('@')) {
+            setEmailError("Please enter a valid email address.");
+            return;
+        }
+        setEmailError(null);
+        setIsProcessing(true);
+        try {
+            const purchase = await createPurchase(items, cartTotal, 'card', undefined, 'Processing', guestEmail);
+            if (purchase) {
+                setPendingPurchaseId(purchase.id);
+            }
+        } catch (e) {
+            console.error("Failed to init guest purchase record", e);
+            setError("Failed to initialize checkout. Please try again.");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
 
     const total = cartTotal;
 
     const handlePayment = async () => {
+        // This is now handled by the DirectPaymentForm component for Card
+        // For Gems/Crypto, we still need the logic
+        if (paymentMethod === 'card') return; // Should not be called for card if using DirectPaymentForm cta
+
         setIsProcessing(true);
         setError(null);
         try {
-            // 1. Create PENDING Purchase Record in Supabase
-            // We do this FIRST so we have an ID to pass to Stripe
-            const purchase = await createPurchase(items, total, paymentMethod, undefined, 'Pending');
-
+            const purchase = await createPurchase(items, total, paymentMethod, undefined, 'Processing', guestEmail);
             if (!purchase || !purchase.id) throw new Error("Failed to initialize purchase");
 
-            // 2. Process Payment via Stripe (or Crypto/Gems) using the Purchase ID
             const result = await stripeService.processMarketplacePayment(items, total, paymentMethod, purchase.id);
+            if (!result.success) throw new Error(result.error || "Payment failed");
 
-            if (!result.success) {
-                throw new Error(result.error || "Payment failed");
-            }
-
-            // If we are redirecting (Stripe), the code stops here.
-            // If instant (Gems/Crypto mock), we finish up.
-            if (result.transactionId !== 'pending_redirect') {
-                clearCart();
-                setIsComplete(true);
-            }
-
+            clearCart();
+            setIsComplete(true);
         } catch (err: any) {
-            console.error("Checkout failed", err);
-            setError(err.message || "Payment processing failed. Please try again.");
+            setError(err.message || "Payment processing failed.");
             setIsProcessing(false);
         }
     };
+
+    const handleCardSuccess = async () => {
+        // The webhook will handle marking it as 'Completed' via Metadata
+        // But we can optimistically clear and move to success screen
+        clearCart();
+        setIsComplete(true);
+    };
+
+
 
     // Check for success URL param (returning from Stripe)
     React.useEffect(() => {
@@ -93,7 +146,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
     }
 
     return (
-        <div className={isEmbedded ? "w-full pb-32 pt-2 px-1 animate-in fade-in duration-500" : "w-full max-w-[1600px] mx-auto pb-4 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500"}>
+        <div className={isEmbedded ? "w-full pb-32 pt-2 px-1 animate-in fade-in duration-500" : "w-full max-w-[1600px] mx-auto pb-32 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500"}>
             <h1 className="text-3xl font-black text-white mb-8">Secure Checkout</h1>
 
             {error && (
@@ -128,49 +181,81 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                     {/* Payment Form */}
                     <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-8">
                         {paymentMethod === 'card' ? (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h3 className="text-lg font-bold text-white">Card Details</h3>
-                                    <div className="flex gap-2">
-                                        <div className="w-8 h-5 bg-neutral-800 rounded"></div>
-                                        <div className="w-8 h-5 bg-neutral-800 rounded"></div>
-                                        <div className="w-8 h-5 bg-neutral-800 rounded"></div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Card Number</label>
-                                        <div className="relative">
-                                            <input type="text" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-3 pl-10 text-white focus:border-primary/50 focus:outline-none font-mono placeholder-neutral-600" placeholder="0000 0000 0000 0000" />
-                                            <CreditCard size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Expiry Date</label>
-                                            <input type="text" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-white focus:border-primary/50 focus:outline-none font-mono placeholder-neutral-600" placeholder="MM/YY" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">CVC / CWW</label>
-                                            <div className="relative">
-                                                <input type="text" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-white focus:border-primary/50 focus:outline-none font-mono placeholder-neutral-600" placeholder="123" />
-                                                <Lock size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+                            <div className="animate-in fade-in slide-in-from-left-4 duration-300">
+                                {userProfile ? (
+                                    <DirectPaymentForm
+                                        userId={userProfile.id}
+                                        mode="payment"
+                                        items={items}
+                                        purchaseId={pendingPurchaseId || undefined}
+                                        total={total}
+                                        onSuccess={handleCardSuccess}
+                                    />
+                                ) : isGuest ? (
+                                    <div className="space-y-6">
+                                        {/* Benefits Notice */}
+                                        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex gap-4">
+                                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                                <ShieldCheck className="text-primary w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-bold text-white mb-1">Checking out as Guest</h4>
+                                                <p className="text-[11px] text-neutral-400 leading-relaxed">
+                                                    Making an account allows you to <strong className="text-primary">view purchase history</strong>,
+                                                    request <strong className="text-primary">refunds</strong>, and <strong className="text-primary">save purchased items</strong> to your library permanently.
+                                                    Guests will not have access to these features after purchase.
+                                                </p>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Cardholder Name</label>
-                                        <input type="text" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-white focus:border-primary/50 focus:outline-none placeholder-neutral-600" placeholder="Name on card" />
+                                        {!pendingPurchaseId ? (
+                                            <div className="space-y-4 pt-4 border-t border-white/5">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Receipt Email Address</label>
+                                                    <input
+                                                        type="email"
+                                                        value={guestEmail}
+                                                        onChange={(e) => setGuestEmail(e.target.value)}
+                                                        placeholder="you@example.com"
+                                                        className={`w-full bg-[#050505] border ${emailError ? 'border-red-500/50' : 'border-neutral-800'} rounded-xl px-4 py-3 text-white placeholder:text-neutral-700 focus:outline-none focus:border-primary/50 transition-colors`}
+                                                    />
+                                                    {emailError && <p className="text-[10px] text-red-500 font-bold">{emailError}</p>}
+                                                </div>
+                                                <button
+                                                    onClick={handleInitGuestPurchase}
+                                                    disabled={isProcessing}
+                                                    className="w-full py-4 bg-white text-black font-black text-sm uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <>Continue to Payment <ArrowRight size={16} /></>}
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4 animate-in fade-in zoom-in-95 duration-500">
+                                                <div className="flex items-center justify-between p-3 bg-neutral-900/50 rounded-lg border border-white/5">
+                                                    <div className="flex items-center gap-2">
+                                                        <CheckCircle size={14} className="text-green-500" />
+                                                        <span className="text-xs text-neutral-400">Buying as guest: <span className="text-white font-bold">{guestEmail}</span></span>
+                                                    </div>
+                                                    <button onClick={() => setPendingPurchaseId(null)} className="text-[10px] text-primary hover:underline font-bold">Change</button>
+                                                </div>
+                                                <DirectPaymentForm
+                                                    userId={null}
+                                                    guestEmail={guestEmail}
+                                                    mode="payment"
+                                                    items={items}
+                                                    purchaseId={pendingPurchaseId}
+                                                    total={total}
+                                                    onSuccess={handleCardSuccess}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-
-                                <div className="flex items-center gap-2 text-xs text-neutral-500 bg-neutral-900/50 p-3 rounded border border-neutral-800">
-                                    <ShieldCheck size={14} className="text-green-500" />
-                                    Payments are secure and encrypted.
-                                </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center p-12">
+                                        <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
+                                        <p className="text-neutral-500">Loading secure checkout...</p>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -216,17 +301,20 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                         )}
                     </div>
 
-                    <button
-                        onClick={handlePayment}
-                        disabled={isProcessing}
-                        className="w-full py-4 bg-primary text-black font-black text-sm uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(var(--primary),0.4)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-                    >
-                        {isProcessing ? (
-                            <>Processing...</>
-                        ) : (
-                            <>Pay ${total.toFixed(2)} <ArrowRight size={16} /></>
-                        )}
-                    </button>
+                    {paymentMethod !== 'card' && (
+                        <button
+                            onClick={handlePayment}
+                            disabled={isProcessing}
+                            className="w-full py-4 bg-primary text-black font-black text-sm uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(var(--primary),0.4)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                        >
+                            {isProcessing ? (
+                                <>Processing...</>
+                            ) : (
+                                <>Pay ${total.toFixed(2)} <ArrowRight size={16} /></>
+                            )}
+                        </button>
+                    )}
+
                 </div>
 
                 {/* Right Column: Order Summary */}

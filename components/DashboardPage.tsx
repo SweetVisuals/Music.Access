@@ -211,7 +211,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
     const SalesView = () => (
         <div className="w-full max-w-[1600px] mx-auto px-4 pt-6 pb-32 lg:p-8 animate-in fade-in duration-500">
-            <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Sales History</h1>
+            <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">Sales History</h1>
             <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed mb-8">Detailed overview of your marketplace transactions.</p>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <StatCard
@@ -347,7 +347,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
                 <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
                     <div>
-                        <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">My Purchases</h1>
+                        <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">My Purchases</h1>
                         <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Manage your orders, download files, and communicate with sellers.</p>
                     </div>
                     <div className="flex bg-neutral-900 p-1 rounded-lg border border-neutral-800 hidden md:flex">
@@ -541,7 +541,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
                 <div>
-                    <h1 className="text-3xl lg:text-5xl font-black text-white tracking-tighter mb-2">Dashboard</h1>
+                    <h1 className="text-3xl lg:text-5xl font-black text-white tracking-tighter mb-1">Dashboard</h1>
                     <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Overview of your studio performance.</p>
                 </div>
 

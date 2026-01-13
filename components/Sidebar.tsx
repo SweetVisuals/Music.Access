@@ -224,7 +224,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                         className="flex items-center gap-2 cursor-pointer group"
                         onClick={() => onNavigate('home')}
                     >
-                        <div className="relative h-[40px] flex items-start pt-[1px] transition-transform scale-100 min-[380px]:scale-[1.1] lg:scale-100 translate-x-[2px] lg:translate-x-0 lg:group-hover:scale-105 origin-center">
+                        <div className="relative h-[40px] flex items-start pt-[1px] transition-transform scale-100 min-[380px]:scale-[1.1] lg:scale-100 translate-x-[4px] lg:translate-x-[2px] lg:group-hover:scale-105 origin-center">
                             <img
                                 src="/images/MUSIC ACCESS-Photoroom.png"
                                 alt="Music Access"
@@ -291,7 +291,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             {/* Section: Dashboard */}
                             <div>
                                 <h3 className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.2em] mb-2 pl-3">Dashboard</h3>
-                                <nav className="space-y-px">
+                                <nav className="space-y-1">
                                     <SidebarItem icon={<LayoutDashboard size={15} />} label="Overview" active={currentView === 'dashboard-overview'} onClick={() => onNavigate('dashboard-overview')} />
                                     <SidebarItem icon={<Headphones size={15} />} label="My Studio" active={currentView === 'dashboard-studio'} onClick={() => onNavigate('dashboard-studio')} />
                                     <SidebarItem icon={<DollarSign size={15} />} label="Sales" active={currentView === 'dashboard-sales'} onClick={() => onNavigate('dashboard-sales')} badge={unreadCounts.sale} />
@@ -303,7 +303,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             {/* Section: Account */}
                             <div>
                                 <h3 className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.2em] mb-2 pl-3">Account</h3>
-                                <nav className="space-y-px">
+                                <nav className="space-y-1">
                                     <SidebarItem icon={<Users size={15} />} label="Profile" onClick={() => onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile')} />
                                     <SidebarItem icon={<Wallet size={15} />} label="Wallet" active={currentView === 'dashboard-wallet'} onClick={() => onNavigate('dashboard-wallet')} />
                                     <SidebarItem icon={<ShoppingBag size={15} />} label="Orders" active={currentView === 'dashboard-orders'} onClick={() => onNavigate('dashboard-orders')} badge={unreadCounts.order} />
@@ -314,7 +314,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             {/* Section: Tools */}
                             < div >
                                 <h3 className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.2em] mb-2 pl-3">Tools</h3>
-                                <nav className="space-y-px">
+                                <nav className="space-y-1">
                                     <SidebarItem icon={<FileText size={15} />} label="Contracts" active={currentView === 'contracts'} onClick={() => onNavigate('contracts')} />
                                     <SidebarItem icon={<PlusCircle size={15} />} label="Post Service" active={currentView === 'post-service'} onClick={() => onNavigate('post-service')} />
                                 </nav>
@@ -323,7 +323,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             {/* Section: Resources */}
                             < div className="pb-4" >
                                 <h3 className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.2em] mb-2 pl-3">Resources</h3>
-                                <nav className="space-y-px">
+                                <nav className="space-y-1">
                                     <SidebarItem icon={<Settings size={15} />} label="Settings" active={currentView === 'dashboard-settings'} onClick={() => onNavigate('dashboard-settings')} />
                                     <SidebarItem icon={<CreditCard size={15} />} label="Subscription" active={currentView === 'subscription'} onClick={() => onNavigate('subscription')} />
                                     <SidebarItem icon={<HelpCircle size={15} />} label="Get Help" active={currentView === 'dashboard-help' || currentView === 'help'} onClick={() => onNavigate('help')} />
@@ -350,7 +350,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             {/* Section: Explore */}
                             <div>
                                 <h3 className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.2em] mb-2 pl-3">Explore</h3>
-                                <nav className="space-y-px">
+                                <nav className="space-y-1">
                                     <SidebarItem icon={<Search size={15} />} label="Discover" active={currentView === 'home'} onClick={() => onNavigate('home')} />
                                     <SidebarItem icon={<Users size={15} />} label="Browse Talent" active={currentView === 'browse-talent'} onClick={() => onNavigate('browse-talent')} />
                                     <SidebarItem icon={<MessageSquare size={15} />} label="Collaborate" active={currentView === 'collaborate'} onClick={() => onNavigate('collaborate')} />
@@ -368,7 +368,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                         <span className="text-[9px] font-mono text-neutral-500">{following.length}</span>
                                     </div>
 
-                                    <div className="space-y-px">
+                                    <div className="space-y-1">
                                         {loadingFollowing ? (
                                             <div className="flex items-center justify-center py-2">
                                                 <div className="w-3 h-3 border border-primary/20 border-t-primary rounded-full animate-spin"></div>
@@ -379,7 +379,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                                     <div
                                                         key={talent.id}
                                                         onClick={() => onNavigate(`@${talent.handle}`)}
-                                                        className="group flex items-center gap-2.5 px-3 py-1.5 rounded-md hover:bg-white/5 transition-all cursor-pointer"
+                                                        className="group flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-white/5 transition-all cursor-pointer"
                                                     >
                                                         <div className="relative shrink-0">
                                                             <img src={talent.avatar} alt={talent.username} className="w-5 h-5 rounded-md object-cover ring-1 ring-black group-hover:ring-white/10 transition-all" />
@@ -405,7 +405,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                                 ))}
                                                 <button
                                                     onClick={() => onNavigate('following')}
-                                                    className="w-full flex items-center gap-2 pl-3 py-1.5 mt-1 text-[9px] font-bold text-neutral-500 hover:text-white transition-colors group"
+                                                    className="w-full flex items-center gap-2 pl-3 py-2 mt-1 text-[9px] font-bold text-neutral-500 hover:text-white transition-colors group"
                                                 >
                                                     <span>View All</span>
                                                     <ChevronRight size={10} className="group-hover:translate-x-1 transition-transform" />
@@ -424,7 +424,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             {isLoggedIn && (
                                 <div>
                                     <h3 className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.2em] mb-2 pl-3">Library</h3>
-                                    <nav className="space-y-px">
+                                    <nav className="space-y-1">
                                         <SidebarItem icon={<LayoutGrid size={15} />} label="My Library" active={currentView === 'library'} onClick={() => onNavigate('library')} />
                                         <SidebarItem icon={<FileText size={15} />} label="Contracts" onClick={() => onNavigate('contracts')} />
                                         <SidebarItem icon={<Clipboard size={15} />} label="Notes" onClick={() => onNavigate('notes')} />
@@ -436,7 +436,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             {isLoggedIn && (
                                 <div className="pb-4">
                                     <h3 className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.2em] mb-2 pl-3">Resources</h3>
-                                    <nav className="space-y-px">
+                                    <nav className="space-y-1">
                                         <SidebarItem icon={<Settings size={15} />} label="Settings" active={currentView === 'settings'} onClick={() => onNavigate('settings')} />
                                         <SidebarItem icon={<CreditCard size={15} />} label="Subscription" active={currentView === 'subscription'} onClick={() => onNavigate('subscription')} />
                                         <SidebarItem icon={<HelpCircle size={15} />} label="Get Help" active={currentView === 'help'} onClick={() => onNavigate('help')} />
@@ -503,6 +503,22 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                         <div className="text-xs font-bold text-white truncate group-hover:text-primary transition-colors leading-tight mb-0.5">{userProfile.username}</div>
                                         <div className="text-[10px] text-neutral-500 truncate font-medium leading-tight">{userProfile.email}</div>
                                     </div>
+
+                                    {/* Plan Badge */}
+                                    {userProfile.plan && (
+                                        <div className={`
+                                            px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider mr-1
+                                            ${userProfile.plan === 'Pro'
+                                                ? 'bg-primary/20 text-primary border border-primary/20'
+                                                : userProfile.plan === 'Studio+'
+                                                    ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20'
+                                                    : 'bg-white/10 text-neutral-400 border border-white/5'
+                                            }
+                                        `}>
+                                            {userProfile.plan}
+                                        </div>
+                                    )}
+
                                     <MoreVertical size={16} className="text-neutral-600 group-hover:text-white transition-colors opacity-0 group-hover:opacity-100" />
                                 </div>
                             ) : (
@@ -527,7 +543,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                 </div>
                                 <button
                                     onClick={onOpenAuth}
-                                    className="w-full py-1.5 bg-white text-black font-bold rounded-md text-[10px] flex items-center justify-center gap-2 hover:bg-neutral-200 transition-colors"
+                                    className="w-full py-2 bg-white text-black font-bold rounded-md text-[10px] flex items-center justify-center gap-2 hover:bg-neutral-200 transition-colors"
                                 >
                                     <LogIn size={10} /> Log In
                                 </button>
@@ -553,7 +569,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, onClick,
         <button
             onClick={onClick}
             className={`
-                w-full flex items-center gap-3 px-3 py-1.5 rounded-md transition-all group relative overflow-hidden
+                w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all group relative overflow-hidden
                 ${active
                     ? 'text-primary'
                     : 'text-neutral-500 hover:text-white hover:bg-white/5'

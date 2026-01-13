@@ -238,6 +238,47 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                 badge = 'Pro Choice';
                             }
 
+
+                            // Label & Style Determination
+                            const nameUpper = (license.name || '').toUpperCase();
+                            const typeUpper = (license.type || '').toUpperCase();
+
+                            // Default Label based on Hierarchy (Heuristic)
+                            let label = 'STANDARD LEASE';
+                            let Icon = Disc;
+
+                            // 1. Keyword Overrides (Strongest signal)
+                            if (nameUpper.includes('UNLIMITED') || typeUpper === 'UNLIMITED') label = 'UNLIMITED LEASE';
+                            else if (nameUpper.includes('TRACKOUT')) label = 'TRACKOUT LEASE';
+                            else if (nameUpper.includes('STEMS')) label = 'STEMS LEASE';
+                            else if (nameUpper.includes('PREMIUM')) label = 'PREMIUM LEASE';
+                            else if (nameUpper.includes('BASIC') || nameUpper.includes('STARTER')) label = 'BASIC LEASE';
+                            else if (nameUpper.includes('EXCLUSIVE')) label = 'EXCLUSIVE LEASE';
+                            else {
+                                // 2. Position Heuristic (Fallback if names are generic like "Lease 1")
+                                const total = project.licenses?.length || 0;
+                                if (i === 0) label = 'STARTER LEASE';
+                                else if (i === total - 1 && total > 1) label = 'UNLIMITED LEASE';
+                                else if (i === 1) label = 'PROFESSIONAL LEASE';
+                            }
+
+                            // Styling based on determined label
+                            const isUnlimited = ['UNLIMITED', 'TRACKOUT', 'STEMS', 'EXCLUSIVE'].some(k => label.includes(k));
+                            const isPro = ['PREMIUM', 'PROFESSIONAL'].some(k => label.includes(k));
+
+                            let styleClass = 'bg-neutral-800 text-neutral-400 border border-neutral-700';
+
+                            if (isUnlimited) {
+                                styleClass = 'bg-purple-500/10 text-purple-400 border border-purple-500/20';
+                                Icon = Box;
+                            } else if (isPro) {
+                                styleClass = 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
+                            }
+
+                            if (isSelected) {
+                                styleClass = 'bg-white text-black border border-white'; // High contrast for selection
+                            }
+
                             return (
                                 <div
                                     key={licenseId}
@@ -261,63 +302,29 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                     )}
 
                                     <div className="p-4">
-                                        <div className="flex justify-between items-start mb-3">
+                                        <div className="flex justify-between items-center mb-4 relative z-10">
                                             <div className="flex-1 mr-4">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    {(() => {
-                                                        const nameUpper = (license.name || '').toUpperCase();
-                                                        const typeUpper = (license.type || '').toUpperCase();
+                                                {/* Premium Left Border Accent */}
+                                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${isUnlimited ? 'bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' :
+                                                        isPro ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' :
+                                                            'bg-neutral-600'
+                                                    } ${isSelected ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`} />
 
-                                                        // Default Label based on Hierarchy (Heuristic)
-                                                        let label = 'STANDARD';
-                                                        let Icon = Disc;
-
-                                                        // 1. Keyword Overrides (Strongest signal)
-                                                        if (nameUpper.includes('UNLIMITED') || typeUpper === 'UNLIMITED') label = 'UNLIMITED';
-                                                        else if (nameUpper.includes('TRACKOUT')) label = 'TRACKOUT';
-                                                        else if (nameUpper.includes('STEMS')) label = 'STEMS';
-                                                        else if (nameUpper.includes('PREMIUM')) label = 'PREMIUM';
-                                                        else if (nameUpper.includes('BASIC') || nameUpper.includes('STARTER')) label = 'BASIC';
-                                                        else if (nameUpper.includes('EXCLUSIVE')) label = 'EXCLUSIVE';
-                                                        else {
-                                                            // 2. Position Heuristic (Fallback if names are generic like "Lease 1")
-                                                            const total = project.licenses?.length || 0;
-                                                            if (i === 0) label = 'STARTER';
-                                                            else if (i === total - 1 && total > 1) label = 'UNLIMITED';
-                                                            else if (i === 1) label = 'PROFESSIONAL';
-                                                        }
-
-                                                        // Styling based on determined label
-                                                        const isUnlimited = ['UNLIMITED', 'TRACKOUT', 'STEMS', 'EXCLUSIVE'].some(k => label.includes(k));
-                                                        const isPro = ['PREMIUM', 'PROFESSIONAL'].some(k => label.includes(k));
-
-                                                        let styleClass = 'bg-neutral-800 text-neutral-400 border border-neutral-700';
-
-                                                        if (isUnlimited) {
-                                                            styleClass = 'bg-purple-500/10 text-purple-400 border border-purple-500/20';
-                                                            Icon = Box;
-                                                        } else if (isPro) {
-                                                            styleClass = 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
-                                                        }
-
-                                                        if (isSelected) {
-                                                            styleClass = 'bg-white text-black border border-white'; // High contrast for selection
-                                                        }
-
-                                                        return (
-                                                            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-[9px] md:text-[10px] font-black tracking-wider uppercase ${styleClass}`}>
-                                                                <Icon size={10} className="fill-current" /> {label}
-                                                            </div>
-                                                        );
-                                                    })()}
+                                                <div className="pl-4">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <Icon size={18} className={`${isSelected ? 'text-current' : isUnlimited ? 'text-purple-400' : isPro ? 'text-blue-400' : 'text-neutral-500'}`} />
+                                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${isSelected ? 'opacity-80' : 'text-neutral-500'}`}>
+                                                            {label.replace(' LEASE', '')} TIER
+                                                        </span>
+                                                    </div>
+                                                    <h4 className={`text-xl md:text-2xl font-black uppercase tracking-tighter leading-none ${isSelected ? 'text-current' : 'text-white'}`}>
+                                                        {license.name || label}
+                                                    </h4>
                                                 </div>
-                                                <h4 className={`text-base font-bold uppercase tracking-tight ${isSelected ? 'text-white' : 'text-neutral-200'}`}>
-                                                    {license.name}
-                                                </h4>
                                             </div>
 
-                                            <div className="flex flex-col items-end">
-                                                <div className={`text-xl font-black font-mono tracking-tighter ${isSelected ? 'text-primary' : 'text-neutral-500'}`}>
+                                            <div className="flex flex-col items-end pl-4">
+                                                <div className={`text-2xl md:text-3xl font-black font-mono tracking-tighter ${isSelected ? 'text-current' : isUnlimited ? 'text-purple-400' : isPro ? 'text-blue-400' : 'text-white'}`}>
                                                     ${license.price}
                                                 </div>
                                             </div>
@@ -375,7 +382,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                                     // We probably want to return a new object but with the OLD ID if we are editing.
                                                     id: initialCartItem ? initialCartItem.id : `${project.id}-${trackId}-${effectiveLicense.id}-${Date.now()}`,
                                                     title: track ? `${track.title} (${project.title})` : project.title,
-                                                    type: 'Exclusive License',
+                                                    type: effectiveLicense.name?.toUpperCase().includes('EXCLUSIVE') ? 'Exclusive License' : 'Lease License',
                                                     price: effectiveLicense.price,
                                                     sellerName: project.producer,
                                                     sellerHandle: '@' + project.producer,

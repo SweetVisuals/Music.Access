@@ -98,6 +98,17 @@ const RightActions: React.FC<{
                             </button>
                         )}
 
+                        {/* Promo Credits */}
+                        <div
+                            onClick={isSpacer ? undefined : () => onNavigate('dashboard-wallet')}
+                            className="h-8 bg-neutral-900 border border-white/5 rounded-full flex items-center px-3 gap-2 cursor-pointer hover:bg-neutral-800 transition-colors"
+                        >
+                            <Star size={12} className="text-amber-400" fill="currentColor" fillOpacity={0.2} />
+                            <span className="text-[10px] font-bold text-white font-mono mt-0.5">
+                                {(userProfile?.promo_credits || 0).toLocaleString()}
+                            </span>
+                        </div>
+
                         {/* Gem Balance */}
                         <div
                             onClick={isSpacer ? undefined : () => onNavigate('dashboard-wallet')}
@@ -109,18 +120,7 @@ const RightActions: React.FC<{
                             </span>
                         </div>
 
-                        {/* Promotion Credits Balance */}
-                        <div
-                            onClick={isSpacer ? undefined : () => onNavigate('dashboard-wallet')}
-                            className="h-8 bg-neutral-900 border border-white/5 rounded-full flex items-center px-3 gap-2 cursor-pointer hover:bg-neutral-800 transition-colors"
-                        >
-                            <div className="w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center shrink-0">
-                                <Star size={9} strokeWidth={2.5} className="text-black fill-current" />
-                            </div>
-                            <span className="text-[10px] font-bold text-white font-mono mt-0.5">
-                                {userProfile?.promo_credits !== undefined ? userProfile.promo_credits.toLocaleString() : '0'}
-                            </span>
-                        </div>
+
 
 
                     </div>
@@ -359,35 +359,7 @@ const RightActions: React.FC<{
                                 <div className="p-3 border-b border-white/5">
                                     <div className="text-base font-bold text-white truncate">{userProfile?.username || 'User'}</div>
 
-                                    <div
-                                        onClick={(e) => {
-                                            if (isSpacer) return;
-                                            e.stopPropagation();
-                                            setIsProfileOpen(false);
-                                            onNavigate('dashboard-wallet');
-                                        }}
-                                        className="flex items-center justify-between bg-neutral-900/50 p-2 rounded-lg border border-white/5 cursor-pointer hover:bg-neutral-800 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <Wallet size={12} className="text-emerald-500" />
-                                            <span className="text-[10px] font-mono font-bold text-white">
-                                                {showBalance
-                                                    ? `$${(userProfile?.balance !== undefined ? userProfile.balance : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                                                    : '$••••••'}
-                                            </span>
-                                        </div>
-                                        <button
-                                            onClick={(e) => {
-                                                if (isSpacer) return;
-                                                e.stopPropagation();
-                                                setShowBalance(!showBalance);
-                                            }}
-                                            className="p-1 -mr-1 text-neutral-500 hover:text-primary transition-colors"
-                                            title={showBalance ? "Hide Balance" : "Show Balance"}
-                                        >
-                                            {showBalance ? <EyeOff size={10} /> : <Eye size={10} />}
-                                        </button>
-                                    </div>
+
                                 </div>
                                 <div className="p-1.5">
                                     <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
@@ -401,6 +373,40 @@ const RightActions: React.FC<{
                                     <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('settings'); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left">
                                         <Settings size={12} /> Settings
                                     </button>
+
+                                    <div className="space-y-1.5 mt-2">
+                                        <div
+                                            onClick={(e) => {
+                                                if (isSpacer) return;
+                                                e.stopPropagation();
+                                                setIsProfileOpen(false);
+                                                onNavigate('dashboard-wallet');
+                                            }}
+                                            className="flex items-center justify-between bg-neutral-900/50 p-2 rounded-lg border border-white/5 cursor-pointer hover:bg-neutral-800 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <Wallet size={12} className="text-emerald-500" />
+                                                <span className="text-[10px] font-mono font-bold text-white">
+                                                    {showBalance
+                                                        ? `$${(userProfile?.balance !== undefined ? userProfile.balance : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                                        : '$••••••'}
+                                                </span>
+                                            </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    if (isSpacer) return;
+                                                    e.stopPropagation();
+                                                    setShowBalance(!showBalance);
+                                                }}
+                                                className="p-1 -mr-1 text-neutral-500 hover:text-primary transition-colors"
+                                                title={showBalance ? "Hide Balance" : "Show Balance"}
+                                            >
+                                                {showBalance ? <EyeOff size={10} /> : <Eye size={10} />}
+                                            </button>
+                                        </div>
+
+
+                                    </div>
                                 </div>
                                 <div className="p-1.5 border-t border-white/5">
                                     <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onLogout(); }} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-red-400 hover:bg-red-500/10 transition-colors text-left">

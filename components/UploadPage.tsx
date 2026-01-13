@@ -573,27 +573,40 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
         // Check if files are being dropped from desktop
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            // TODO: adjust upload to support targetFolderId
-            // For now, it uploads to currentFolderId which might be different if dropped on a subfolder in grid view
-            // We should arguably update currentFolderId or pass target to handleFileUpload
             handleFileUpload(e.dataTransfer.files);
             return;
         }
 
         // Internal drag and drop (moving items between folders)
         if (draggedItemId && draggedItemId !== targetFolderId) {
-            const item = items.find(i => i.id === draggedItemId);
-            if (item) {
+            let itemsToMove: string[] = [];
+
+            if (selectedIds.has(draggedItemId)) {
+                // Moving selection
+                itemsToMove = Array.from(selectedIds);
+            } else {
+                // Moving single item
+                itemsToMove = [draggedItemId];
+            }
+
+            // Filter out the target folder itself if it's in the selection to prevent cycles
+            itemsToMove = itemsToMove.filter(id => id !== targetFolderId);
+
+            if (itemsToMove.length > 0) {
                 // Optimistic update
-                setItems(items.map(i => i.id === draggedItemId ? { ...i, parentId: targetFolderId } : i));
+                setItems(items.map(i => itemsToMove.includes(i.id) ? { ...i, parentId: targetFolderId } : i));
                 setDraggedItemId(null);
+                // Clear selection after move
+                setSelectedIds(new Set());
 
                 // Persist
-                try {
-                    await updateAsset(draggedItemId, { parentId: targetFolderId });
-                } catch (e) {
-                    console.error("Failed to move item", e);
-                    // Revert on fail?
+                for (const id of itemsToMove) {
+                    try {
+                        await updateAsset(id, { parentId: targetFolderId });
+                    } catch (e) {
+                        console.error("Failed to move item", id, e);
+                        // Revert optimistic update for this item? (Complex to handle partial failures, simplified for now)
+                    }
                 }
             }
         }
@@ -654,11 +667,11 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
     return (
         <div
-            className="w-full max-w-[1600px] mx-auto pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500 min-h-[80vh]"
+            className="w-full max-w-[1900px] mx-auto pb-12 pt-4 lg:pt-6 px-4 lg:px-10 xl:px-14 animate-in fade-in duration-500 min-h-[80vh]"
             onContextMenu={(e) => handleContextMenu(e, 'background')}
         >
             {/* Header & Breadcrumb */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 lg:mb-8">
                 <div className="flex items-center space-x-2 text-sm font-medium">
                     {viewMode === 'grid' ? (
                         <>

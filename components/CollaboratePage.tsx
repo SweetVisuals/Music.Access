@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Verified, MessageSquare, ExternalLink, Instagram, Youtube, Music, Radio, LayoutGrid } from 'lucide-react';
+import { Verified, MessageSquare, Instagram, Youtube, Music, Radio, LayoutGrid } from 'lucide-react';
 import { getCollabServices } from '../services/supabaseService';
 import { CollabService } from '../types';
 
@@ -157,36 +157,37 @@ const CollaboratePage: React.FC = () => {
                 ) : (
                     <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-gradient-to-b from-neutral-900/50 to-neutral-900/10 border border-neutral-800 border-dashed rounded-3xl animate-in fade-in zoom-in duration-500">
                         <div className="w-20 h-20 bg-neutral-900 rounded-2xl border border-neutral-800 flex items-center justify-center mb-6 shadow-2xl shadow-black/50 relative group overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent opacity-50"></div>
                             {activeTab === 'instagram' && <Instagram size={40} className="text-pink-500 relative z-10" />}
                             {activeTab === 'youtube' && <Youtube size={40} className="text-red-500 relative z-10" />}
-                            {activeTab === 'tiktok' && <span className="font-black text-2xl bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-pink-500 relative z-10">TikTok</span>}
+                            {activeTab === 'tiktok' && <span className="font-black text-2xl bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-pink-500 relative z-10 font-mono">TT</span>}
                             {activeTab === 'spotify' && <Music size={40} className="text-green-500 relative z-10" />}
                             {activeTab === 'all' && <LayoutGrid size={40} className="text-white relative z-10" />}
                         </div>
 
-                        <h3 className="text-2xl font-black text-white mb-3 max-w-md">
-                            {activeTab === 'all'
-                                ? "Advertise your services here"
-                                : `Advertise your ${activeTab === 'tiktok' ? 'TikTok' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} services`}
+                        <h3 className="text-2xl lg:text-3xl font-black text-white mb-3 max-w-md tracking-tight">
+                            List Your Platform
                         </h3>
 
-                        <p className="text-neutral-400 text-sm max-w-md mb-8 leading-relaxed">
+                        <p className="text-neutral-500 text-sm max-w-md mb-8 leading-relaxed">
                             {activeTab === 'all'
-                                ? "Be the first to offer your services on our platform. Reach thousands of artists looking for promotion."
-                                : `No ${activeTab === 'tiktok' ? 'TikTok' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} services listed yet. This is your chance to dominate this category and get noticed by artists!`}
+                                ? "Are you a curator, influencer, or platform? Advertise your reach and help artists promote their music."
+                                : `Connect with artists on ${activeTab === 'tiktok' ? 'TikTok' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}. Only verified Platform Accounts can advertise here.`}
                         </p>
 
-                        <button
-                            onClick={() => navigate('/post-service')}
-                            className="group relative px-8 py-3 bg-white text-black font-bold rounded-xl overflow-hidden transition-transform hover:scale-105 active:scale-95"
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-r from-primary to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            <span className="relative z-10 flex items-center gap-2">
-                                <ExternalLink size={16} />
-                                Start Advertising Now
-                            </span>
-                        </button>
+                        <div className="flex flex-col items-center gap-4">
+                            <button
+                                onClick={() => navigate('/subscription')}
+                                className="group relative px-10 py-3.5 bg-primary text-black font-black rounded-xl overflow-hidden transition-all hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(var(--primary),0.3)]"
+                            >
+                                <span className="relative z-10 flex items-center gap-2 uppercase text-xs tracking-widest font-black">
+                                    Become a Platform Account
+                                </span>
+                            </button>
+                            <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-widest">
+                                Requires Studio+ or Pro Subscription
+                            </p>
+                        </div>
                     </div>
                 )}
             </div>

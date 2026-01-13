@@ -5,6 +5,8 @@ import ProjectCard from './ProjectCard';
 import CreateProjectModal from './CreateProjectModal'; // Imported
 import EditProjectModal from './EditProjectModal';     // Imported
 import { getUserProfile, getSavedProjects, getUserAssets, getPlaylists, createPlaylist, updateProject, deleteProject, Playlist, Asset } from '../services/supabaseService';
+import ConfirmationModal from './ConfirmationModal';
+import { useToast } from '../contexts/ToastContext';
 
 interface LibraryPageProps {
     currentTrackId: string | null;
@@ -48,6 +50,8 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
     const [loadingTracks, setLoadingTracks] = useState(false);
     const [creatingPlaylist, setCreatingPlaylist] = useState(false);
     const [trackSourceTab, setTrackSourceTab] = useState<'uploads' | 'purchased'>('uploads');
+    const { showToast } = useToast();
+    const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
 
     // Editing state
     const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -193,15 +197,20 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
         }
     };
 
-    const handleDeleteProject = async (project: Project) => {
+    const handleDeleteProject = async () => {
+        if (!projectToDelete) return;
+
         try {
-            await deleteProject(project.id);
+            await deleteProject(projectToDelete.id);
             // Update UI
-            setSavedProjects(prev => prev.filter(p => p.id !== project.id));
+            setSavedProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
             if (activeTab === 'playlists') fetchPlaylists(); // Refresh if needed
+            showToast("Project deleted successfully", "success");
         } catch (error) {
             console.error("Failed to delete project:", error);
-            alert("Failed to delete project");
+            showToast("Failed to delete project", "error");
+        } finally {
+            setProjectToDelete(null);
         }
     };
 
@@ -379,7 +388,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 lg:mb-8 gap-4">
                 <div>
-                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">My Library</h1>
+                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">My Library</h1>
                     <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Your collection of beats, songs, and playlists.</p>
                 </div>
 
@@ -549,7 +558,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                                 onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
                                 onTogglePlay={onTogglePlay}
                                 onEdit={handleEditProject}
-                                onDelete={handleDeleteProject}
+                                onDelete={(p) => setProjectToDelete(p)}
                             />
                         </div>
                     )) : (
@@ -591,11 +600,22 @@ const LibraryPage: React.FC<LibraryPageProps> = ({
                         project={editingProject}
                         onClose={() => setEditingProject(null)}
                         onSave={handleSaveProjectUpdates}
-                        onDelete={handleDeleteProject}
+                        onDelete={(p) => setProjectToDelete(p)}
                     />
                 )
             )}
 
+            {/* Project Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={!!projectToDelete}
+                onClose={() => setProjectToDelete(null)}
+                onConfirm={handleDeleteProject}
+                title="Delete Project"
+                message={`Are you sure you want to delete "${projectToDelete?.title}"? This action cannot be undone.`}
+                confirmLabel="Delete Project"
+                cancelLabel="Cancel"
+                isDestructive={true}
+            />
         </div>
     );
 };

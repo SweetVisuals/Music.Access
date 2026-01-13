@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { Note, Project, UserProfile } from '../types';
 import { getNotes, createNote, updateNote, deleteNote, getUserFiles, uploadFile, getDeletedNotes, restoreNote, cleanupOldNotes, emptyTrashNotes } from '../services/supabaseService';
 import ConfirmationModal from './ConfirmationModal';
+import { useToast } from '../contexts/ToastContext';
 import {
     Plus,
     Copy,
@@ -535,8 +536,10 @@ const NotesPage: React.FC<NotesPageProps> = ({
         }
     };
 
+    const { showToast } = useToast();
+
     const handleExport = () => {
-        alert("Export feature coming soon to Studio+!");
+        showToast("Export feature coming soon to Studio+!", 'info');
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1244,11 +1247,12 @@ const NotesPage: React.FC<NotesPageProps> = ({
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => handleCreateNote()}
-                                className="lg:hidden text-neutral-400 hover:text-white transition-colors"
+                                className="text-neutral-400 hover:text-white transition-all p-1.5 hover:bg-white/5 rounded-lg"
+                                title="Create New Note"
                             >
                                 <Plus size={16} />
                             </button>
-                            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-neutral-500 hover:text-white">
+                            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-neutral-500 hover:text-white p-1.5 hover:bg-white/5 rounded-lg">
                                 <X size={16} />
                             </button>
                         </div>
@@ -1331,14 +1335,23 @@ const NotesPage: React.FC<NotesPageProps> = ({
                             <div className="hidden lg:flex h-20 border-b border-white/5 items-center justify-between px-6 bg-neutral-900/30 z-20 shrink-0">
                                 <div className="flex items-center gap-4">
                                     {viewMode === 'browser' && (
-                                        <button onClick={() => setViewMode('editor')} className="p-1.5 hover:bg-white/5 rounded text-neutral-400 hover:text-white"><ChevronLeft size={16} /></button>
+                                        <button onClick={() => setViewMode('editor')} className="p-1.5 hover:bg-white/5 rounded text-neutral-400 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
                                     )}
-                                    <input
-                                        value={activeNote.title}
-                                        onChange={(e) => handleUpdateTitle(e.target.value)}
-                                        className="bg-transparent border-none text-sm font-bold text-white focus:outline-none p-0 w-64"
-                                        placeholder="Untitled Note"
-                                    />
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            value={activeNote.title}
+                                            onChange={(e) => handleUpdateTitle(e.target.value)}
+                                            className="bg-transparent border-none text-sm font-bold text-white focus:outline-none p-0 w-64"
+                                            placeholder="Untitled Note"
+                                        />
+                                        <button
+                                            onClick={() => handleCreateNote()}
+                                            className="p-1.5 text-neutral-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
+                                            title="New Note"
+                                        >
+                                            <Plus size={16} />
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     {viewMode === 'editor' && (

@@ -451,11 +451,11 @@ const App: React.FC = () => {
                 onMenuClick={() => setIsMobileMenuOpen(true)}
               />
 
-              <main ref={mainRef} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[56px]' : currentView === 'dashboard-messages' ? 'overflow-hidden pt-[56px] pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pt-0 lg:pb-0' : 'overflow-y-auto overscroll-y-contain pt-[80px] lg:pt-[80px] pb-24 lg:pb-8'} ${currentTrackId && currentView !== 'notes' && currentView !== 'dashboard-messages' ? 'pb-40' : ''} scroll-smooth`}>
+              <main ref={mainRef} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[56px]' : currentView === 'dashboard-messages' ? 'overflow-hidden pt-[56px] pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pt-0 lg:pb-0' : 'overflow-y-auto overscroll-y-contain pt-[80px] lg:pt-[80px] pb-32 lg:pb-8'} ${currentTrackId && currentView !== 'notes' && currentView !== 'dashboard-messages' ? 'pb-48' : ''} scroll-smooth`}>
 
                 {currentView === 'home' && (
                   <PullToRefresh onRefresh={fetchProjects}>
-                    <div className="max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="w-full max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 pt-4 lg:pt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                       {isLoggedIn && !gemsClaimedToday && !profileLoading && userProfile && (
                         <div className="mb-4 mt-3 lg:mt-0 p-3 bg-gradient-to-r from-primary/20 to-transparent border border-primary/20 rounded-xl flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -610,7 +610,7 @@ const App: React.FC = () => {
                 )}
 
                 {currentView === 'checkout' && (
-                  isLoggedIn ? <CheckoutPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+                  <CheckoutPage />
                 )}
 
                 {currentView === 'dashboard-messages' && (

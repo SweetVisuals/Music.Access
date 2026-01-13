@@ -127,26 +127,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
 
                 {/* Header */}
                 <div className="pt-8 px-8 pb-6 flex flex-col items-center">
-                    <div className="relative h-8 w-auto flex items-center mb-8">
+                    <div className="relative h-[40px] flex items-center mb-8 scale-110">
                         <img
-                            src="/images/musicaccesslogowhite.png"
+                            src="/images/MUSIC ACCESS-Photoroom.png"
                             alt="Music Access"
-                            className="h-full w-auto"
-                        />
-                        <div
-                            className="absolute inset-0 bg-primary"
-                            style={{
-                                clipPath: 'inset(0 calc(100% - 27px) 0 0)',
-                                WebkitClipPath: 'inset(0 calc(100% - 27px) 0 0)',
-                                maskImage: 'url("/images/musicaccesslogowhite.png")',
-                                WebkitMaskImage: 'url("/images/musicaccesslogowhite.png")',
-                                maskSize: 'contain',
-                                WebkitMaskSize: 'contain',
-                                maskRepeat: 'no-repeat',
-                                WebkitMaskRepeat: 'no-repeat',
-                                maskPosition: 'center',
-                                WebkitMaskPosition: 'center'
-                            }}
+                            className="h-[42px] w-auto object-contain"
                         />
                     </div>
 

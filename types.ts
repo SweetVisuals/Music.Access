@@ -68,6 +68,7 @@ export interface Service {
   price: number;
   rateType: 'hourly' | 'flat';
   features: string[];
+  deliveryDays?: number;
 }
 
 export interface SoundPack {
@@ -102,8 +103,13 @@ export interface UserProfile {
   services: Service[];
   soundPacks: SoundPack[];
   stripe_account_id?: string;
+  stripe_customer_id?: string;
   stripe_onboarding_completed?: boolean;
   stripe_charges_enabled?: boolean;
+  subscription_status?: 'active' | 'canceled' | 'past_due' | 'incomplete' | 'trialing';
+  subscription_id?: string;
+  current_period_end?: string;
+  cancel_at_period_end?: boolean;
 }
 
 export interface TalentProfile {

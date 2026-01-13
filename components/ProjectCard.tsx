@@ -178,7 +178,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 style={{ zoom: '110%' }}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
-                onClick={() => openPurchaseModal(project)}
+                onClick={() => {
+                    if (!isOwnProject) openPurchaseModal(project);
+                }}
             >
                 {/* Top Gradient Line */}
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/0 to-transparent group-hover:via-primary/50 transition-all duration-700"></div>
@@ -442,15 +444,26 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                             }
                         >
                             <Gem size={12} fill={hasGivenGem ? "currentColor" : "none"} />
-                            <span className={`text-[9px] font-mono font-bold ${hasGivenGem ? 'text-primary' : 'hidden group-hover:inline-block'}`}>
+                            <span className={`text-[9px] font-mono font-bold ${hasGivenGem ? 'text-primary' : 'text-neutral-500'}`}>
                                 {showUndo ? "UNDO" : localGems}
                             </span>
                         </button>
 
                         {!isPurchased && (
                             <button
-                                onClick={(e) => { e.stopPropagation(); openPurchaseModal(project); }}
-                                className="p-1.5 text-neutral-500 hover:text-primary hover:bg-white/5 rounded transition-colors"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!isOwnProject) openPurchaseModal(project);
+                                }}
+                                disabled={isOwnProject}
+                                className={`
+                                    p-1.5 rounded transition-all active:scale-75
+                                    ${isOwnProject
+                                        ? 'text-neutral-600 cursor-not-allowed opacity-50'
+                                        : 'text-neutral-500 hover:text-primary hover:bg-white/5'
+                                    }
+                                `}
+                                title={isOwnProject ? "Cannot purchase own project" : "Add to Cart"}
                             >
                                 <ShoppingCart size={12} />
                             </button>

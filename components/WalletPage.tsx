@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import * as supabaseService from '../services/supabaseService';
 import * as stripeService from '../services/stripeService';
+import { useToast } from '../contexts/ToastContext';
 
 interface WalletPageProps {
     userProfile: UserProfile | null;
@@ -49,6 +50,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
     // Stripe Connect State
     const [stripeStatus, setStripeStatus] = useState<stripeService.StripeAccountStatus | null>(null);
     const [isStripeLoading, setIsStripeLoading] = useState(false);
+    const { showToast } = useToast();
 
     useEffect(() => {
         if (userProfile?.stripe_account_id) {
@@ -72,9 +74,9 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
         try {
             const url = await stripeService.createConnectAccount(userProfile.id, userProfile.email || '');
             window.location.href = url;
-        } catch (e) {
+        } catch (e: any) {
             console.error("Failed to connect Stripe", e);
-            alert("Failed to connect Stripe");
+            showToast(e.message || "Failed to connect Stripe", "error");
         } finally {
             setIsStripeLoading(false);
         }
@@ -85,10 +87,10 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
         setIsStripeLoading(true);
         try {
             await stripeService.executePayout(userProfile.stripe_account_id, stripeStatus.balance.available);
-            alert("Payout initiated! Funds will arrive in 2-3 business days.");
+            showToast("Payout initiated! Funds will arrive in 2-3 business days.", "success");
             loadStripeStatus(); // Refresh balance
         } catch (e) {
-            alert("Payout failed.");
+            showToast("Payout failed.", "error");
         } finally {
             setIsStripeLoading(false);
         }
@@ -131,7 +133,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
             setIsProcessing(false);
             setIsBuyGemsOpen(false);
             // In a real app, this would redirect to checkout or refresh gems
-            alert(`Demo: Successfully purchased ${amount} Gems!`);
+            showToast(`Demo: Successfully purchased ${amount} Gems!`, 'success');
             window.dispatchEvent(new CustomEvent('profile-updated'));
         }, 1500);
     };

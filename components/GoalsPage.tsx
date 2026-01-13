@@ -29,6 +29,8 @@ import { Goal } from '../types';
 import { getGoals, createGoal, updateGoal, deleteGoal } from '../services/supabaseService';
 import CustomDropdown from './CustomDropdown';
 import CustomInput from './CustomInput';
+import ConfirmationModal from './ConfirmationModal';
+import { useToast } from '../contexts/ToastContext';
 
 const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNavigate }) => {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -36,6 +38,8 @@ const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNaviga
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [filter, setFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
+  const [goalToDelete, setGoalToDelete] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const fetchGoals = async () => {
     setLoading(true);
@@ -121,15 +125,17 @@ const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNaviga
   const totalTargetValue = goals.reduce((sum, goal) => sum + Number(goal.target), 0);
   const totalCurrentValue = goals.reduce((sum, goal) => sum + Number(goal.current), 0);
 
-  const handleDeleteGoal = async (goalId: string) => {
-    if (window.confirm('Are you sure you want to delete this goal?')) {
-      try {
-        await deleteGoal(goalId);
-        setGoals(goals.filter(g => g.id !== goalId));
-      } catch (error) {
-        console.error('Error deleting goal:', error);
-        alert('Failed to delete goal');
-      }
+  const handleDeleteGoal = async () => {
+    if (!goalToDelete) return;
+    try {
+      await deleteGoal(goalToDelete);
+      setGoals(goals.filter(g => g.id !== goalToDelete));
+      showToast('Goal deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      showToast('Failed to delete goal', 'error');
+    } finally {
+      setGoalToDelete(null);
     }
   };
 
@@ -140,7 +146,7 @@ const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNaviga
       setGoals(goals.map(g => g.id === goal.id ? updated : g));
     } catch (error) {
       console.error('Error updating goal status:', error);
-      alert('Failed to update goal status');
+      showToast('Failed to update goal status', 'error');
     }
   };
 
@@ -151,7 +157,7 @@ const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNaviga
       setShowCreateModal(false);
     } catch (error) {
       console.error('Error creating goal:', error);
-      alert('Failed to create goal');
+      showToast('Failed to create goal', 'error');
     }
   };
 
@@ -162,7 +168,7 @@ const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNaviga
       setSelectedGoal(null);
     } catch (error) {
       console.error('Error updating goal:', error);
-      alert('Failed to update goal');
+      showToast('Failed to update goal', 'error');
     }
   };
 
@@ -381,7 +387,7 @@ const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNaviga
                   {goal.status === 'active' ? 'Pause' : 'Resume'}
                 </button>
                 <button
-                  onClick={() => handleDeleteGoal(goal.id)}
+                  onClick={() => setGoalToDelete(goal.id)}
                   className="py-2 px-3 bg-red-500/10 text-red-400 font-bold rounded-lg text-xs hover:bg-red-500/20 transition-colors flex items-center justify-center"
                 >
                   <Trash2 size={12} />
@@ -418,6 +424,18 @@ const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNaviga
           onGoalUpdated={handleUpdateGoal}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={!!goalToDelete}
+        onClose={() => setGoalToDelete(null)}
+        onConfirm={handleDeleteGoal}
+        title="Delete Goal"
+        message="Are you sure you want to delete this goal? This action cannot be undone."
+        confirmLabel="Delete Goal"
+        cancelLabel="Cancel"
+        isDestructive={true}
+      />
     </div>
   );
 };

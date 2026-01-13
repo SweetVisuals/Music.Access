@@ -29,6 +29,7 @@ import {
     User
 } from 'lucide-react';
 import ProjectCard, { ProjectSkeleton } from './ProjectCard';
+import ServiceCard from './ServiceCard';
 import CreateProjectModal from './CreateProjectModal';
 import CreateSoundpackModal from './CreateSoundpackModal';
 import CreateServiceModal from './CreateServiceModal';
@@ -483,12 +484,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 )
             )}
 
-            <div className="w-full max-w-[1600px] mx-auto px-6 lg:px-8 pb-20 lg:pb-12 pt-[30px]">
+            <div className="w-full max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 pb-20 lg:pb-12 pt-[30px]">
 
                 {/* EDIT PROFILE MODAL - RESPONSIVE */}
                 {isEditModalOpen && (
                     <div className="fixed inset-0 z-[100] flex flex-col lg:items-center lg:justify-center bg-black lg:bg-black/80 lg:backdrop-blur-sm lg:p-4 animate-in fade-in duration-200">
-                        <div className="flex-1 lg:flex-none w-full lg:max-w-lg bg-black lg:bg-[#0a0a0a] lg:border border-white/5 lg:rounded-xl lg:shadow-2xl overflow-hidden flex flex-col h-full lg:max-h-[90vh]">
+                        <div className="flex-1 lg:flex-none w-full lg:max-w-3xl bg-black lg:bg-[#0a0a0a] lg:border border-white/5 lg:rounded-xl lg:shadow-2xl overflow-hidden flex flex-col h-full lg:max-h-[90vh]">
 
                             {/* HEADER */}
                             <div className="p-4 border-b border-white/5 flex justify-between items-center bg-neutral-900/50 backdrop-blur-md shrink-0">
@@ -516,7 +517,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Banner Image</label>
                                             <div
                                                 onClick={() => bannerInputRef.current?.click()}
-                                                className="h-28 w-full rounded-lg bg-neutral-900/50 border border-white/5 flex flex-col items-center justify-center text-neutral-500 hover:text-white hover:border-primary/30 hover:bg-white/5 transition-all cursor-pointer overflow-hidden relative group"
+                                                className="h-48 w-full rounded-lg bg-neutral-900/50 border border-white/5 flex flex-col items-center justify-center text-neutral-500 hover:text-white hover:border-primary/30 hover:bg-white/5 transition-all cursor-pointer overflow-hidden relative group"
                                             >
                                                 {userProfile.banner ? (
                                                     <img src={userProfile.banner} className="w-full h-full object-cover opacity-50 group-hover:opacity-30 transition-opacity" alt="Banner Preview" />
@@ -554,15 +555,37 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="space-y-5">
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Display Name</label>
-                                            <input
-                                                value={editForm.username}
-                                                onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                                                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
-                                                placeholder="Your Artist Name"
-                                            />
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Display Name</label>
+                                                <input
+                                                    value={editForm.username}
+                                                    onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                                                    className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                                    placeholder="Your Artist Name"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Role</label>
+                                                <div className="relative">
+                                                    <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+                                                    <select
+                                                        value={editForm.role}
+                                                        onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                                                        className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg pl-10 pr-10 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900 appearance-none cursor-pointer"
+                                                    >
+                                                        <option value="" className="bg-neutral-900">Select your role...</option>
+                                                        <option value="artist" className="bg-neutral-900">Artist</option>
+                                                        <option value="producer" className="bg-neutral-900">Producer</option>
+                                                        <option value="engineer" className="bg-neutral-900">Engineer</option>
+                                                        <option value="professional" className="bg-neutral-900">Professional / Other</option>
+                                                        <option value="listener" className="bg-neutral-900">Listener</option>
+                                                    </select>
+                                                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div className="space-y-1.5">
@@ -577,37 +600,31 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             </div>
                                         </div>
 
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Role</label>
-                                            <div className="relative">
-                                                <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
-                                                <select
-                                                    value={editForm.role}
-                                                    onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                                                    className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg pl-10 pr-10 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900 appearance-none cursor-pointer"
-                                                >
-                                                    <option value="" className="bg-neutral-900">Select your role...</option>
-                                                    <option value="artist" className="bg-neutral-900">Artist</option>
-                                                    <option value="producer" className="bg-neutral-900">Producer</option>
-                                                    <option value="engineer" className="bg-neutral-900">Engineer</option>
-                                                    <option value="professional" className="bg-neutral-900">Professional / Other</option>
-                                                    <option value="listener" className="bg-neutral-900">Listener</option>
-                                                </select>
-                                                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Location</label>
+                                                <div className="relative">
+                                                    <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+                                                    <input
+                                                        value={editForm.location}
+                                                        onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                                                        className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                                        placeholder="City, Country"
+                                                    />
+                                                </div>
                                             </div>
-                                            <p className="text-[10px] text-neutral-600">This determines how you appear in Browse Talent</p>
-                                        </div>
 
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Location</label>
-                                            <div className="relative">
-                                                <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                                <input
-                                                    value={editForm.location}
-                                                    onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                                                    className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
-                                                    placeholder="City, Country"
-                                                />
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Website</label>
+                                                <div className="relative">
+                                                    <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+                                                    <input
+                                                        value={editForm.website}
+                                                        onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
+                                                        className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                                        placeholder="https://your-site.com"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
 
@@ -624,19 +641,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                 className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none resize-none transition-colors focus:bg-neutral-900 custom-scrollbar"
                                                 placeholder="Tell your story..."
                                             />
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Website</label>
-                                            <div className="relative">
-                                                <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                                <input
-                                                    value={editForm.website}
-                                                    onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
-                                                    className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
-                                                    placeholder="https://your-site.com"
-                                                />
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -755,7 +759,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
                             {/* Text Info */}
                             <div className="w-full md:w-auto mt-2 md:mt-0">
-                                <div className="flex items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                                <div className="flex items-center gap-2 md:gap-3 mb-1">
                                     <h1 className="text-2xl md:text-5xl font-black text-white tracking-tight">{userProfile.username}</h1>
                                     {/* Dynamic Plan Badge */}
                                     {userProfile.plan && userProfile.plan !== 'Basic' && (
@@ -770,7 +774,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     )}
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-x-4 md:gap-x-6 gap-y-2 text-sm text-neutral-400 mt-2 md:mt-3">
+                                <div className="flex flex-wrap items-center gap-x-4 md:gap-x-6 gap-y-2 text-sm text-neutral-400 mt-1 md:mt-2">
                                     <span className="font-mono text-neutral-300 font-bold text-sm md:text-base">{userProfile.handle}</span>
 
                                     {userProfile.location && (
@@ -1025,38 +1029,15 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     </div>
                                 ) : (
                                     userProfile.services.map(service => (
-                                        <div key={service.id} className="glass-panel p-6 rounded-xl border border-white/5 hover:border-primary/30 transition-all group hover:shadow-[0_0_30px_rgb(var(--primary)/0.1)] relative overflow-hidden flex flex-col">
-                                            <div className="flex justify-between items-start mb-6 relative z-10">
-                                                <div className="p-3 bg-neutral-900 rounded-xl text-primary border border-primary/20 group-hover:bg-primary group-hover:text-black transition-colors shadow-lg">
-                                                    <Mic2 size={24} />
-                                                </div>
-                                                <div className="flex flex-col items-end">
-                                                    <span className="text-2xl font-bold text-white font-mono tracking-tight">
-                                                        ${service.price}
-                                                        {service.rateType === 'hourly' && <span className="text-sm text-neutral-500 font-normal ml-1">/hr</span>}
-                                                    </span>
-                                                    <span className="text-[10px] text-neutral-500 font-mono uppercase bg-neutral-900 px-1.5 rounded">
-                                                        {service.rateType === 'hourly' ? 'Hourly Rate' : 'Starting at'}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <h3 className="text-lg font-bold text-white mb-3 relative z-10">{service.title}</h3>
-                                            <p className="text-neutral-400 text-sm mb-6 leading-relaxed relative z-10 line-clamp-3">{service.description}</p>
-
-                                            <div className="space-y-3 mb-8 relative z-10 flex-1">
-                                                {service.features.map((feat, i) => (
-                                                    <div key={i} className="flex items-center text-xs text-neutral-300 font-medium">
-                                                        <CheckCircle size={12} className="text-primary mr-3 shrink-0" />
-                                                        {feat}
-                                                    </div>
-                                                ))}
-                                            </div>
-
-                                            <button className="w-full py-3.5 bg-white text-black font-bold rounded-lg hover:bg-primary transition-all relative z-10 text-[10px] tracking-widest uppercase shadow-lg">
-                                                Book Service
-                                            </button>
-                                        </div>
+                                        <ServiceCard
+                                            key={service.id}
+                                            service={service}
+                                            user={userProfile}
+                                            onClick={() => {
+                                                // Handle booking logic or navigation
+                                                console.log('Book service', service.id);
+                                            }}
+                                        />
                                     ))
                                 )}
                             </div>

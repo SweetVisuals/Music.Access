@@ -422,7 +422,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan')
+    .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, subscription_status, subscription_id, current_period_end, cancel_at_period_end, stripe_account_id, stripe_customer_id')
     .eq('id', targetUserId)
     .single();
 
@@ -472,7 +472,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
         gems: userData.gems || 0,
         balance: userData.balance || 0,
         promo_credits: userData.promo_credits || 0,
-        plan: userData.plan || 'Basic',
+        plan: userData.plan,
         lastGemClaimDate: userData.last_gem_claim_date,
         bio: userData.bio,
         website: userData.website,
@@ -485,7 +485,13 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
           price: p.price,
           fileSize: '0 MB', // Placeholder
           itemCount: p.tracks.length
-        }))
+        })),
+        subscription_status: userData.subscription_status,
+        subscription_id: userData.subscription_id,
+        current_period_end: userData.current_period_end,
+        cancel_at_period_end: userData.cancel_at_period_end,
+        stripe_account_id: userData.stripe_account_id,
+        stripe_customer_id: userData.stripe_customer_id
       };
     } catch (err) {
       console.error('Error fetching related profile data:', err);
@@ -503,7 +509,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
         gems: userData.gems || 0,
         balance: userData.balance || 0,
         promo_credits: userData.promo_credits || 0,
-        plan: userData.plan || 'Basic',
+        plan: userData.plan,
         lastGemClaimDate: userData.last_gem_claim_date,
         bio: userData.bio,
         website: userData.website,
@@ -557,7 +563,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
         gems: 0,
         balance: 0,
         promo_credits: 0,
-        plan: 'Basic',
+        plan: undefined,
         bio: '',
         website: '',
         projects: [],
@@ -602,7 +608,7 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
       gems: userData.gems,
       balance: userData.balance,
       promo_credits: userData.promo_credits || 0,
-      plan: userData.plan || 'Basic',
+      plan: userData.plan,
       lastGemClaimDate: userData.last_gem_claim_date,
       bio: userData.bio,
       website: userData.website,
@@ -644,6 +650,12 @@ export const updateUserProfile = async (userId: string, updates: Partial<UserPro
   if (updates.is_public !== undefined) updateObj.is_public = updates.is_public;
   if (updates.role !== undefined) updateObj.role = updates.role;
   if (updates.plan !== undefined) updateObj.plan = updates.plan;
+  if (updates.subscription_status !== undefined) updateObj.subscription_status = updates.subscription_status;
+  if (updates.subscription_id !== undefined) updateObj.subscription_id = updates.subscription_id;
+  if (updates.current_period_end !== undefined) updateObj.current_period_end = updates.current_period_end;
+  if (updates.cancel_at_period_end !== undefined) updateObj.cancel_at_period_end = updates.cancel_at_period_end;
+  if (updates.stripe_account_id !== undefined) updateObj.stripe_account_id = updates.stripe_account_id;
+  if (updates.stripe_customer_id !== undefined) updateObj.stripe_customer_id = updates.stripe_customer_id;
 
   const { error } = await supabase
     .from('users')
@@ -807,7 +819,8 @@ export const createService = async (service: Partial<Service>) => {
       description: service.description,
       price: service.price,
       features: service.features,
-      rate_type: service.rateType || 'flat'
+      rate_type: service.rateType || 'flat',
+      delivery_days: service.deliveryDays || 3
     })
     .select()
     .single();
@@ -819,7 +832,8 @@ export const createService = async (service: Partial<Service>) => {
     description: data.description,
     price: data.price,
     features: data.features,
-    rateType: data.rate_type
+    rateType: data.rate_type,
+    deliveryDays: data.delivery_days
   };
 };
 
@@ -1854,7 +1868,7 @@ export const createContract = async (contract: Partial<Contract>): Promise<Contr
       royalty_split: contract.royaltySplit || 50,
       revenue_split: contract.revenueSplit || 50,
       notes: contract.notes || '',
-      // dist_notes: contract.distNotes || '', // Column missing in DB
+      dist_notes: contract.distNotes || '',
       pub_notes: contract.pubNotes || '',
       publisher_name: contract.publisherName || '',
       producer_signature: contract.producerSignature || '',
@@ -1898,8 +1912,7 @@ export const updateContract = async (contractId: string, updates: Partial<Contra
   if (updates.royaltySplit !== undefined) updateObj.royalty_split = updates.royaltySplit;
   if (updates.revenueSplit !== undefined) updateObj.revenue_split = updates.revenueSplit;
   if (updates.notes !== undefined) updateObj.notes = updates.notes;
-
-
+  if (updates.distNotes !== undefined) updateObj.dist_notes = updates.distNotes;
   if (updates.pubNotes !== undefined) updateObj.pub_notes = updates.pubNotes;
   if (updates.publisherName !== undefined) updateObj.publisher_name = updates.publisherName;
   if (updates.producerSignature !== undefined) updateObj.producer_signature = updates.producerSignature;
@@ -3243,27 +3256,30 @@ export const cleanupOldNotes = async () => {
 // ... existing code ...
 
 // Define types for clarity
-type PurchaseStatus = 'Pending' | 'Completed' | 'Failed';
+type PurchaseStatus = 'Processing' | 'Completed' | 'Failed';
 
 export const createPurchase = async (
   items: any[],
   total: number,
   paymentMethod: string,
   transactionId?: string,
-  initialStatus: PurchaseStatus = 'Completed'
+  initialStatus: PurchaseStatus = 'Completed',
+  guestEmail?: string
 ) => {
-  const currentUser = await ensureUserExists();
-  if (!currentUser) throw new Error('User not authenticated');
+  const currentUser = await getCurrentUser().catch(() => null);
+  // We allow null currentUser for guest checkout
 
   // 1. Create Purchase Record
   const { data: purchaseData, error: purchaseError } = await supabase
     .from('purchases')
     .insert({
-      buyer_id: currentUser.id,
+      buyer_id: currentUser?.id || null,
       amount: total,
+      total_amount: total, // Sync both for compatibility
       status: initialStatus,
       stripe_payment_id: transactionId || (paymentMethod === 'crypto' ? 'crypto_txn' : 'pending_stripe'),
-      payment_method: paymentMethod
+      payment_method: paymentMethod,
+      guest_email: guestEmail
     })
     .select()
     .single();
@@ -3288,7 +3304,7 @@ export const createPurchase = async (
         purchase_id: purchaseId,
         project_id: projectId ? (typeof projectId === 'string' && projectId.length > 20 ? projectId : null) : null,
         service_id: serviceId ? (typeof serviceId === 'string' && serviceId.length > 20 ? serviceId : null) : null,
-        seller_id: item.sellerId || currentUser.id, // Fallback
+        seller_id: item.sellerId || item.seller_id || (currentUser?.id), // Fallback
         item_name: item.title || 'Unknown Item',
         price: item.price
       };
@@ -3309,7 +3325,7 @@ export const createPurchase = async (
     const itemsBySeller: Record<string, any[]> = {};
     items.forEach(item => {
       const sellerId = item.sellerId || item.seller_id; // Check both just in case
-      if (sellerId && sellerId !== currentUser.id) { // Don't notify if buying own item (testing)
+      if (sellerId && (!currentUser || sellerId !== currentUser.id)) { // Don't notify if buying own item (testing)
         if (!itemsBySeller[sellerId]) itemsBySeller[sellerId] = [];
         itemsBySeller[sellerId].push(item);
       }

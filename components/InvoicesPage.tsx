@@ -25,6 +25,7 @@ import { getPurchases } from '../services/supabaseService';
 import { Purchase, Goal } from '../types';
 import CustomDropdown from './CustomDropdown';
 import CustomInput from './CustomInput';
+import { useToast } from '../contexts/ToastContext';
 
 interface Invoice {
   id: string;
@@ -56,6 +57,7 @@ const InvoicesPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     clientName: '',
     description: '',
@@ -428,7 +430,7 @@ Status: ${invoice.status.toUpperCase()}
                 onClick={() => {
                   // Mock create invoice
                   setShowCreateModal(false);
-                  alert('Invoice created successfully!');
+                  showToast('Invoice created successfully!', 'success');
                 }}
                 className="flex-1 py-2 px-4 bg-primary text-black font-bold rounded-lg hover:bg-primary/90 transition-colors"
               >

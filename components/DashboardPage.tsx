@@ -414,11 +414,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                 {/* Info */}
                                 <div className="flex-1 min-w-0 text-center md:text-left">
                                     <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
-                                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border ${purchase.type.includes('Service') || purchase.type === 'Mixing' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border ${(purchase.type || '').includes('Service') || purchase.type === 'Mixing' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                                             purchase.type === 'Sound Kit' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
                                                 'bg-green-500/10 text-green-400 border-green-500/20'
                                             }`}>
-                                            {purchase.type}
+                                            {purchase.type || 'Unknown'}
                                         </span>
                                         <span className="text-[10px] text-neutral-500 font-mono">{purchase.date}</span>
                                     </div>
@@ -441,7 +441,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
                                 {/* Actions */}
                                 <div className="flex flex-col gap-2 w-full md:w-auto min-w-[140px]">
-                                    {purchase.type.includes('Service') || purchase.type === 'Mixing' ? (
+                                    {(purchase.type || '').includes('Service') || purchase.type === 'Mixing' ? (
                                         // Services don't expand for downloads in this view
                                         <>
                                             <button
@@ -492,7 +492,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                             </div>
 
                             {/* Expanded Content */}
-                            {expandedOrderId === purchase.id && !purchase.type.includes('Service') && (
+                            {expandedOrderId === purchase.id && !(purchase.type || '').includes('Service') && (
                                 <div className="border-t border-neutral-800 bg-[#050505] p-6 animate-in slide-in-from-top-2 duration-300">
                                     <div className="w-full max-w-md">
                                         <ProjectCard

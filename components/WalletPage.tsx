@@ -24,12 +24,6 @@ interface WalletPageProps {
     userProfile: UserProfile | null;
 }
 
-// Mock Payment Methods for UI demo
-const MOCK_PAYMENT_METHODS = [
-    { id: '1', type: 'visa', last4: '4242', expiry: '12/28', isDefault: true },
-    { id: '2', type: 'paypal', email: 'user@example.com', isDefault: false }
-];
-
 const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
     const [activeTab, setActiveTab] = useState<'balance' | 'methods'>('balance');
     const [isAddMethodOpen, setIsAddMethodOpen] = useState(false);
@@ -41,6 +35,9 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
     const [purchaseSuccess, setPurchaseSuccess] = useState(false);
     const [isBuyGemsOpen, setIsBuyGemsOpen] = useState(false);
     const [activeGemPack, setActiveGemPack] = useState<number | null>(null);
+
+    // Form States
+
 
     // Form States
     const [cardNumber, setCardNumber] = useState('');
@@ -73,9 +70,10 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
         if (!userProfile?.id) return;
         setIsStripeLoading(true);
         try {
-            const url = await stripeService.createConnectAccount(userProfile.id);
+            const url = await stripeService.createConnectAccount(userProfile.id, userProfile.email || '');
             window.location.href = url;
         } catch (e) {
+            console.error("Failed to connect Stripe", e);
             alert("Failed to connect Stripe");
         } finally {
             setIsStripeLoading(false);
@@ -226,77 +224,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                         </div>
                     </div>
 
-                    {/* Earnings Wallet (Stripe Connect) */}
-                    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] group">
-                        {/* Abstract Background Art - Distinct from Main Wallet */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-black to-black opacity-50 group-hover:opacity-70 transition-opacity duration-700"></div>
 
-                        <div className="relative p-6 flex flex-col justify-between h-auto">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500">
-                                            <TrendingUp size={12} />
-                                        </div>
-                                        <span className="text-[10px] lg:text-xs font-mono uppercase tracking-widest text-emerald-500 font-bold">Seller Earnings</span>
-                                    </div>
-
-                                    {userProfile?.stripe_account_id && stripeStatus ? (
-                                        <h2 className="text-3xl lg:text-4xl font-black text-white tracking-tighter">
-                                            {formatCurrency((stripeStatus.balance?.available || 0) / 100)}
-                                        </h2>
-                                    ) : (
-                                        <div className="text-white text-lg font-medium opacity-80">
-                                            Start selling your beats & packs
-                                        </div>
-                                    )}
-                                </div>
-                                {userProfile?.stripe_account_id && (
-                                    <div className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
-                                        Connected
-                                    </div>
-                                )}
-                            </div>
-
-                            {!userProfile?.stripe_account_id ? (
-                                <div className="mt-2">
-                                    <p className="text-neutral-500 text-xs mb-4">Connect a bank account to receive 90% of your sales instantly.</p>
-                                    <button
-                                        onClick={handleConnectStripe}
-                                        disabled={isStripeLoading}
-                                        className="w-full bg-[#635BFF] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#635BFF]/90 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-[#635BFF]/20"
-                                    >
-                                        {isStripeLoading ? 'Connecting...' : 'Setup Payouts with Stripe'}
-                                        <ArrowUpRight size={16} />
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="mt-4">
-                                    <div className="flex gap-4 text-xs text-neutral-500 mb-4 border-t border-white/5 pt-4">
-                                        <div>
-                                            <span className="block font-bold text-white">{formatCurrency((stripeStatus?.balance?.pending || 0) / 100)}</span>
-                                            Pending
-                                        </div>
-                                        <div>
-                                            <span className="block font-bold text-white font-mono">{userProfile?.stripe_account_id}</span>
-                                            Account ID
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={handleWithdraw}
-                                        disabled={isStripeLoading || !(stripeStatus?.balance?.available && stripeStatus.balance.available > 0)}
-                                        className={`w-full py-3 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2
-                                            ${(stripeStatus?.balance?.available && stripeStatus.balance.available > 0)
-                                                ? 'bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/5'
-                                                : 'bg-white/5 text-neutral-500 cursor-not-allowed border border-white/5'
-                                            }`}
-                                    >
-                                        {isStripeLoading ? 'Processing...' : 'Withdraw Funds'}
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
 
                     {/* Gems Card */}
                     <div className="bg-neutral-900/50 border border-white/5 rounded-2xl p-5 flex items-center justify-between">
@@ -370,36 +298,88 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                         </div>
 
                         <div className="p-4 space-y-4 flex-1 overflow-y-auto">
-                            {MOCK_PAYMENT_METHODS.map(method => (
-                                <div key={method.id} className="group relative p-4 rounded-xl border border-white/5 bg-neutral-900/50 hover:bg-neutral-900 hover:border-white/10 transition-all duration-300">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-7 bg-white rounded flex items-center justify-center shadow-sm">
-                                                {method.type === 'visa' ? (
-                                                    <CreditCard size={16} className="text-blue-600" />
-                                                ) : (
-                                                    <Globe size={16} className="text-[#003087]" />
-                                                )}
-                                            </div>
-                                            <div>
-                                                <div className="text-sm font-bold text-white flex items-center gap-2">
-                                                    {method.type === 'visa' ? `•••• ${method.last4}` : 'PayPal'}
-                                                    {method.isDefault && (
-                                                        <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20">DEFAULT</span>
-                                                    )}
+                            {/* Earnings Wallet (Stripe Connect) - Moved Here */}
+                            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] group mb-4">
+                                {/* Abstract Background Art - Distinct from Main Wallet */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-black to-black opacity-50 group-hover:opacity-70 transition-opacity duration-700"></div>
+
+                                <div className="relative p-6 flex flex-col justify-between h-auto">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+                                                    <TrendingUp size={12} />
                                                 </div>
-                                                <div className="text-[10px] text-neutral-500 font-mono mt-0.5">
-                                                    {method.type === 'visa' ? `Expires ${method.expiry}` : method.email}
-                                                </div>
+                                                <span className="text-[10px] lg:text-xs font-mono uppercase tracking-widest text-emerald-500 font-bold">Seller Earnings</span>
                                             </div>
+
+                                            {userProfile?.stripe_account_id && stripeStatus ? (
+                                                <h2 className="text-3xl lg:text-4xl font-black text-white tracking-tighter">
+                                                    {formatCurrency((stripeStatus.balance?.available || 0) / 100)}
+                                                </h2>
+                                            ) : (
+                                                <div className="text-white text-lg font-medium opacity-80">
+                                                    Start selling your beats & packs
+                                                </div>
+                                            )}
                                         </div>
-                                        <button className="text-neutral-600 hover:text-white transition-colors opacity-0 group-hover:opacity-100">
-                                            <MoreHorizontal size={16} />
-                                        </button>
+                                        {userProfile?.stripe_account_id && (
+                                            <div className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
+                                                Connected
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                                    {!userProfile?.stripe_account_id ? (
+                                        <div className="mt-2">
+                                            <p className="text-neutral-500 text-xs mb-4">Connect a bank account to receive 90% of your sales instantly.</p>
+                                            <button
+                                                onClick={handleConnectStripe}
+                                                disabled={isStripeLoading}
+                                                className="w-full bg-[#635BFF] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#635BFF]/90 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-[#635BFF]/20"
+                                            >
+                                                {isStripeLoading ? 'Connecting...' : 'Setup Payouts with Stripe'}
+                                                <ArrowUpRight size={16} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-4">
+                                            <div className="flex gap-4 text-xs text-neutral-500 mb-4 border-t border-white/5 pt-4">
+                                                <div>
+                                                    <span className="block font-bold text-white">{formatCurrency((stripeStatus?.balance?.pending || 0) / 100)}</span>
+                                                    Pending
+                                                </div>
+                                                <div>
+                                                    <span className="block font-bold text-white font-mono">{userProfile?.stripe_account_id}</span>
+                                                    Account ID
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={handleWithdraw}
+                                                disabled={isStripeLoading || !(stripeStatus?.balance?.available && stripeStatus.balance.available > 0)}
+                                                className={`w-full py-3 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2
+                                                    ${(stripeStatus?.balance?.available && stripeStatus.balance.available > 0)
+                                                        ? 'bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/5'
+                                                        : 'bg-white/5 text-neutral-500 cursor-not-allowed border border-white/5'
+                                                    }`}
+                                            >
+                                                {isStripeLoading ? 'Processing...' : 'Withdraw Funds'}
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            ))}
+                            </div>
+
+                            {/* Payment Methods List (Currently Empty) */}
+                            <div className="flex flex-col items-center justify-center py-10 text-center space-y-3">
+                                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-neutral-500">
+                                    <CreditCard size={20} />
+                                </div>
+                                <div>
+                                    <p className="text-white font-bold text-sm">No Payment Methods</p>
+                                    <p className="text-neutral-500 text-xs">Add a card to purchase items quickly.</p>
+                                </div>
+                            </div>
 
                             <button
                                 onClick={() => setIsAddMethodOpen(true)}

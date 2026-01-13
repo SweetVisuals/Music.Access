@@ -29,8 +29,28 @@ async function callStripeAction<T>(action: string, payload: any): Promise<T> {
             throw error;
         }
         return data as T;
-    } catch (e) {
-        console.warn(`[Stripe] Failed to call backend for ${action}. Falling back to mock logic if available.`, e);
+    } catch (e: any) {
+        console.warn(`[Stripe] Failed to call backend for ${action}. Falling back to mock logic if available.`);
+        // Try to dig out the actual error message from Supabase response if it exists
+        if (e && e.context && typeof e.context.json === 'function') {
+            try {
+                const errBody = await e.context.json();
+                console.error(`[Stripe] Backend Error Details for ${action}:`, errBody);
+                if (errBody.error) {
+                    console.error(`[Stripe] API Error: ${errBody.error}`);
+                }
+            } catch (opt) {
+                console.error("[Stripe] Raw Error:", e);
+            }
+        } else {
+            console.error("[Stripe] Raw Error:", e);
+            if (e.message) {
+                // Often "Edge Function returned a non-2xx status code" - let's try to be helpful
+                console.error("Message:", e.message);
+                // If we have access to the Response object in some way... 
+                // (supabase-js often hides it inside `context` or similar)
+            }
+        }
         throw e; // Let caller decide to catch and mock
     }
 }
@@ -49,10 +69,10 @@ export interface StripeAccountStatus {
 /**
  * Creates a Stripe Connect Express account for the user and returns the onboarding URL.
  */
-export const createConnectAccount = async (userId: string): Promise<string> => {
+export const createConnectAccount = async (userId: string, email: string): Promise<string> => {
     try {
         const origin = window.location.origin;
-        const result = await callStripeAction<{ url: string }>('create-connect-account', { userId, origin, email: 'user@example.com' });
+        const result = await callStripeAction<{ url: string }>('create-connect-account', { userId, origin, email });
         return result.url;
     } catch (e) {
         // Fallback Mock

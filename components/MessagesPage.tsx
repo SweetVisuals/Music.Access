@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { createPortal } from 'react-dom';
+
 import { Conversation } from '../types';
 import {
     Search, Send, Paperclip, MoreVertical,
@@ -20,18 +20,7 @@ import {
     supabase
 } from '../services/supabaseService';
 
-const StaticFab = ({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) => {
-    return createPortal(
-        <button
-            onClick={onClick}
-            className="fixed z-[100] right-6 w-14 h-14 bg-black border-2 border-primary text-primary rounded-full shadow-[0_0_20px_rgba(var(--primary),0.3)] flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 lg:hidden"
-            style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
-        >
-            {isOpen ? <X size={24} /> : <MessageCircle size={24} fill="currentColor" />}
-        </button>,
-        document.body
-    );
-};
+
 
 interface SwipeableProps {
     conv: Conversation;
@@ -61,7 +50,9 @@ const SwipeableConversationItem: React.FC<SwipeableProps> = ({
     const handleTouchMove = (e: React.TouchEvent) => {
         const currentX = e.touches[0].clientX;
         const diff = currentX - startX;
-        if (diff > 0) setOffset(diff);
+        // Only start swiping if meaningful horizontal movement
+        if (diff > 10 && !isDragging) setIsDragging(true);
+        if (isDragging && diff > 0) setOffset(diff);
     };
 
     const handleTouchEnd = async () => {
@@ -337,19 +328,27 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
 
     const activeConv = conversations.find(c => c.id === activeId);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
+        messagesEndRef.current?.scrollIntoView({ behavior });
     };
 
+    // Scroll on conversation change (instant)
     useEffect(() => {
-        scrollToBottom();
-    }, [activeConv?.messages, activeId]);
+        scrollToBottom('auto');
+    }, [activeId]);
+
+    // Scroll on new messages (smooth)
+    useEffect(() => {
+        if (activeConv?.messages?.length) {
+            scrollToBottom('smooth');
+        }
+    }, [activeConv?.messages]);
 
     return (
-        <div className={`w-full relative flex-1 ${isSidebarOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-full lg:bg-transparent overflow-hidden flex flex-col`}>
-            <StaticFab isOpen={isSidebarOpen} onClick={() => setIsSidebarOpen(!isSidebarOpen)} />
+        <div className={`w-full relative flex-1 ${isSidebarOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-full lg:bg-transparent overflow-hidden flex flex-col min-h-0 h-full`}>
 
-            <div className="flex-1 flex bg-[#0a0a0a] overflow-hidden relative">
+
+            <div className="flex-1 flex bg-[#0a0a0a] overflow-hidden relative min-h-0">
                 <div className={`
                     absolute lg:static inset-y-0 left-0 z-[60] w-full lg:w-80 lg:border-r border-white/5 flex flex-col bg-black lg:bg-[#080808] transition-all duration-300
                     ${isSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 lg:translate-x-0 lg:opacity-100'}
@@ -381,15 +380,21 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
                     <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1 custom-scrollbar">
                         {activeTab === 'messages' ? (
                             loading ? <div className="p-8 text-center text-xs text-neutral-500">Loading...</div> :
-                                filteredConversations.map(conv => (
-                                    <SwipeableConversationItem
-                                        key={conv.id}
-                                        conv={conv}
-                                        activeId={activeId}
-                                        onClick={() => { setActiveId(conv.id); setIsCreatingNew(false); setIsSidebarOpen(false); }}
-                                        onDelete={() => handleDeleteConvo(conv.id)}
-                                    />
-                                ))
+                                filteredConversations.length > 0 ? (
+                                    filteredConversations.map(conv => (
+                                        <SwipeableConversationItem
+                                            key={conv.id}
+                                            conv={conv}
+                                            activeId={activeId}
+                                            onClick={() => { setActiveId(conv.id); setIsCreatingNew(false); setIsSidebarOpen(false); }}
+                                            onDelete={() => handleDeleteConvo(conv.id)}
+                                        />
+                                    ))
+                                ) : (
+                                    <div className="p-8 text-center text-neutral-500">
+                                        <p className="text-sm">No conversations found</p>
+                                    </div>
+                                )
                         ) : (
                             <div className="space-y-1">
                                 {loadingNotifications ? <div className="p-8 text-center text-xs text-neutral-500">Loading...</div> :
@@ -407,7 +412,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
                     </div>
                 </div>
 
-                <div className="flex-1 flex flex-col bg-[#050505] relative overflow-hidden">
+                <div className="flex-1 flex flex-col bg-[#050505] relative overflow-hidden min-h-0">
                     {isCreatingNew ? (
                         <div className="flex flex-col h-full bg-black/20">
                             <div className="h-16 lg:h-24 border-b border-white/5 flex items-center px-4 gap-3 bg-neutral-900/30">
@@ -448,7 +453,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
                                 </div>
                                 <button className="p-2 lg:p-3 text-neutral-400 hover:text-white transition-colors"><MoreVertical size={20} className="lg:w-6 lg:h-6" /></button>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar min-h-0 overscroll-contain pb-32 lg:pb-4">
                                 {activeConv.messages.map(msg => (
                                     <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
                                         <div

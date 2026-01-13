@@ -101,6 +101,9 @@ export interface UserProfile {
   projects: Project[];
   services: Service[];
   soundPacks: SoundPack[];
+  stripe_account_id?: string;
+  stripe_onboarding_completed?: boolean;
+  stripe_charges_enabled?: boolean;
 }
 
 export interface TalentProfile {

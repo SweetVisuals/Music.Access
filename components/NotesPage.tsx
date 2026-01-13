@@ -786,8 +786,8 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                 <div
                                     ref={backdropRef}
                                     className={`
-                                        col-start-1 row-start-1 p-5 lg:p-10 lg:px-10 xl:px-12 mx-auto max-w-6xl w-full whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono leading-relaxed text-transparent
-                                        ${textSize === 'xs' ? 'text-[1.05rem]' : textSize === 'sm' ? 'text-[1.25rem]' : textSize === 'base' ? 'text-[1.45rem]' : 'text-[1.75rem]'}
+                                        col-start-1 row-start-1 p-5 pb-64 lg:p-10 lg:pb-10 lg:px-10 xl:px-12 mx-auto max-w-6xl w-full whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono leading-relaxed text-transparent
+                                        ${textSize === 'xs' ? 'text-[11px] lg:text-[1.2rem]' : textSize === 'sm' ? 'text-[13px] lg:text-[1.4rem]' : textSize === 'base' ? 'text-[15px] lg:text-[1.6rem]' : 'text-[17px] lg:text-[1.9rem]'}
                                     `}
                                 >
                                     {activeNote && renderHighlightedText(activeNote.content + ' ')}
@@ -796,8 +796,8 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                 <textarea
                                     ref={textareaRef}
                                     className={`
-                                        col-start-1 row-start-1 w-full h-full bg-transparent p-5 lg:p-10 lg:px-10 xl:px-12 mx-auto max-w-6xl resize-none overflow-hidden focus:outline-none z-10 font-mono leading-relaxed whitespace-pre-wrap break-words
-                                        ${textSize === 'xs' ? 'text-[1.05rem]' : textSize === 'sm' ? 'text-[1.25rem]' : textSize === 'base' ? 'text-[1.45rem]' : 'text-[1.75rem]'}
+                                        col-start-1 row-start-1 w-full h-full bg-transparent p-5 pb-64 lg:p-10 lg:pb-10 lg:px-10 xl:px-12 mx-auto max-w-6xl resize-none overflow-hidden focus:outline-none z-10 font-mono leading-relaxed whitespace-pre-wrap break-words
+                                        ${textSize === 'xs' ? 'text-[11px] lg:text-[1.2rem]' : textSize === 'sm' ? 'text-[13px] lg:text-[1.4rem]' : textSize === 'base' ? 'text-[15px] lg:text-[1.6rem]' : 'text-[17px] lg:text-[1.9rem]'}
                                         ${rhymeMode ? 'text-transparent caret-white' : 'text-neutral-300 caret-white'}
                                     `}
                                     value={activeNote ? activeNote.content : ''}
@@ -848,7 +848,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                 </div>
                             )}
 
-                            <div className="h-16 flex items-center justify-between px-2 w-full max-sm MX-auto">
+                            <div className="h-16 flex items-center justify-between px-2 w-full max-sm mx-auto">
                                 <button
                                     onClick={() => handleCreateNote()}
                                     className="flex-1 group flex flex-col items-center gap-1 transition-all py-1"
@@ -1222,7 +1222,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
         </div>
     );
 
-    const isOverlayOpen = isSidebarOpen || isMobileAssistantOpen || isSizeExpanded;
+    const isOverlayOpen = isSidebarOpen || isMobileAssistantOpen || isToolkitOpen || isSizeExpanded;
 
     return (
         <div className={`
@@ -1277,7 +1277,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
                         )}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto p-2 pb-24 lg:pb-2 space-y-1 custom-scrollbar">
                         {notes.map(note => (
                             <div
                                 key={note.id}

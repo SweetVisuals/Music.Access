@@ -4,7 +4,7 @@ import { Project } from '../types';
 import { generateCreativeDescription } from '../services/geminiService';
 import { usePurchaseModal } from '../contexts/PurchaseModalContext';
 import { useToast } from '../contexts/ToastContext';
-import { checkIsProjectSaved, saveProject, unsaveProject, giveGemToProject, undoGiveGem } from '../services/supabaseService';
+import { checkIsProjectSaved, saveProject, unsaveProject, giveGemToProject, undoGiveGem, getCurrentUser } from '../services/supabaseService';
 import { Gem } from 'lucide-react';
 
 interface ProjectCardProps {
@@ -19,6 +19,7 @@ interface ProjectCardProps {
     onDelete?: (project: Project) => void;
     showStatusTags?: boolean;
 }
+
 
 const ProjectCard: React.FC<ProjectCardProps> = ({
     project,
@@ -41,6 +42,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     const [showUndo, setShowUndo] = useState(false);
     const undoTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
     // Menu State
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -49,13 +52,20 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     const { showToast } = useToast();
 
     useEffect(() => {
-        const checkSavedStatus = async () => {
+        const fetchUserAndStatus = async () => {
+            try {
+                const user = await getCurrentUser();
+                setCurrentUserId(user?.id || null);
+            } catch (error) {
+                console.error('Error fetching user:', error);
+            }
+
             if (project.id) {
                 const saved = await checkIsProjectSaved(project.id);
                 setIsSaved(saved);
             }
         };
-        checkSavedStatus();
+        fetchUserAndStatus();
     }, [project.id]);
 
     // Close menu when clicking outside
@@ -97,15 +107,17 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         }
     };
 
+    const isOwnProject = currentUserId && project.userId === currentUserId;
+
     const handleGiveGem = async (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!project.id || hasGivenGem) return;
+        if (!project.id || hasGivenGem || isOwnProject) return;
 
         // Optimistic update
         setLocalGems(prev => prev + 1);
         setHasGivenGem(true);
         setShowUndo(true);
-        showToast("Gem sent! You're awesome.", 'success');
+        // Toast removed as requested
 
         // Start 1 minute timer to remove undo option
         if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
@@ -411,14 +423,23 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                         {/* Gem Button */}
                         <button
                             onClick={showUndo ? handleUndoGem : handleGiveGem}
+                            disabled={isOwnProject && !showUndo}
                             className={`
                                 flex items-center gap-1 p-1.5 rounded transition-all active:scale-75
-                                ${hasGivenGem
-                                    ? 'text-primary bg-primary/10 border border-primary/20'
-                                    : 'text-neutral-500 hover:text-primary hover:bg-primary/5'
+                                ${isOwnProject
+                                    ? 'text-neutral-600 cursor-not-allowed opacity-50'
+                                    : hasGivenGem
+                                        ? 'text-primary bg-primary/10 border border-primary/20'
+                                        : 'text-neutral-500 hover:text-primary hover:bg-primary/5'
                                 }
                             `}
-                            title={showUndo ? "Take Gem Back (1m)" : "Give Gem"}
+                            title={
+                                isOwnProject
+                                    ? "Cannot give gems to own project"
+                                    : showUndo
+                                        ? "Take Gem Back (1m)"
+                                        : "Give Gem"
+                            }
                         >
                             <Gem size={12} fill={hasGivenGem ? "currentColor" : "none"} />
                             <span className={`text-[9px] font-mono font-bold ${hasGivenGem ? 'text-primary' : 'hidden group-hover:inline-block'}`}>

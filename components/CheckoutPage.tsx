@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { CreditCard, Bitcoin, Lock, CheckCircle, Copy, QrCode, AlertTriangle, ShieldCheck, ArrowRight, Music, Package, Mic, ShoppingBag } from 'lucide-react';
+import { CreditCard, Bitcoin, Lock, CheckCircle, Copy, QrCode, AlertTriangle, ShieldCheck, ArrowRight, Music, Package, Mic, ShoppingBag, Wallet } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { createPurchase } from '../services/supabaseService';
+import * as stripeService from '../services/stripeService';
 
 interface CheckoutPageProps {
     isEmbedded?: boolean;
@@ -21,26 +22,41 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
         setIsProcessing(true);
         setError(null);
         try {
-            // For each item in the cart, create a purchase record
-            // In a real app we'd likely batch this or have a 'cart' checkout endpoint
-            // For now, let's just create individual purchases or one multi-item purchase
-            // The schema supports purchase_items so we should probably create one Purchase with multiple Items.
-            // But wait, createPurchase (which I need to check/add) might be simple.
-            // Let's assume createPurchase handles a list or we call it once per item.
-            // Actually, I haven't added createPurchase yet! I need to do that next. 
-            // I'll assume createPurchase takes (items, paymentMethod, total).
+            // 1. Create PENDING Purchase Record in Supabase
+            // We do this FIRST so we have an ID to pass to Stripe
+            const purchase = await createPurchase(items, total, paymentMethod, undefined, 'Pending');
 
-            await createPurchase(items, total, paymentMethod);
+            if (!purchase || !purchase.id) throw new Error("Failed to initialize purchase");
 
-            clearCart();
-            setIsComplete(true);
-        } catch (err) {
+            // 2. Process Payment via Stripe (or Crypto/Gems) using the Purchase ID
+            const result = await stripeService.processMarketplacePayment(items, total, paymentMethod, purchase.id);
+
+            if (!result.success) {
+                throw new Error(result.error || "Payment failed");
+            }
+
+            // If we are redirecting (Stripe), the code stops here.
+            // If instant (Gems/Crypto mock), we finish up.
+            if (result.transactionId !== 'pending_redirect') {
+                clearCart();
+                setIsComplete(true);
+            }
+
+        } catch (err: any) {
             console.error("Checkout failed", err);
-            setError("Payment processing failed. Please try again.");
-        } finally {
+            setError(err.message || "Payment processing failed. Please try again.");
             setIsProcessing(false);
         }
     };
+
+    // Check for success URL param (returning from Stripe)
+    React.useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('success') === 'true') {
+            clearCart();
+            setIsComplete(true);
+        }
+    }, [clearCart]);
 
     if (items.length === 0 && !isComplete) {
         return (

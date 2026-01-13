@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import {
     CreditCard,
@@ -18,6 +18,7 @@ import {
     Star
 } from 'lucide-react';
 import * as supabaseService from '../services/supabaseService';
+import * as stripeService from '../services/stripeService';
 
 interface WalletPageProps {
     userProfile: UserProfile | null;
@@ -45,7 +46,55 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
     const [cardNumber, setCardNumber] = useState('');
     const [expiry, setExpiry] = useState('');
     const [cvc, setCvc] = useState('');
+
     const [cardName, setCardName] = useState('');
+
+    // Stripe Connect State
+    const [stripeStatus, setStripeStatus] = useState<stripeService.StripeAccountStatus | null>(null);
+    const [isStripeLoading, setIsStripeLoading] = useState(false);
+
+    useEffect(() => {
+        if (userProfile?.stripe_account_id) {
+            loadStripeStatus();
+        }
+    }, [userProfile?.stripe_account_id]);
+
+    const loadStripeStatus = async () => {
+        if (!userProfile?.stripe_account_id) return;
+        try {
+            const status = await stripeService.getAccountStatus(userProfile.stripe_account_id);
+            setStripeStatus(status);
+        } catch (e) {
+            console.error("Failed to load stripe status", e);
+        }
+    };
+
+    const handleConnectStripe = async () => {
+        if (!userProfile?.id) return;
+        setIsStripeLoading(true);
+        try {
+            const url = await stripeService.createConnectAccount(userProfile.id);
+            window.location.href = url;
+        } catch (e) {
+            alert("Failed to connect Stripe");
+        } finally {
+            setIsStripeLoading(false);
+        }
+    };
+
+    const handleWithdraw = async () => {
+        if (!userProfile?.stripe_account_id || !stripeStatus?.balance?.available) return;
+        setIsStripeLoading(true);
+        try {
+            await stripeService.executePayout(userProfile.stripe_account_id, stripeStatus.balance.available);
+            alert("Payout initiated! Funds will arrive in 2-3 business days.");
+            loadStripeStatus(); // Refresh balance
+        } catch (e) {
+            alert("Payout failed.");
+        } finally {
+            setIsStripeLoading(false);
+        }
+    };
 
     const handleExchangeGems = async () => {
         if (!userProfile) return;
@@ -107,7 +156,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
     };
 
     return (
-        <div className="w-full max-w-5xl mx-auto pb-4 lg:pb-32 pt-6 px-4 lg:px-8 animate-in fade-in duration-500 relative">
+        <div className="w-full max-w-5xl mx-auto pb-32 pt-6 px-4 lg:px-8 animate-in fade-in duration-500 relative">
 
             {/* Header / Title */}
             <div className="flex items-center justify-between mb-6">
@@ -177,6 +226,78 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                         </div>
                     </div>
 
+                    {/* Earnings Wallet (Stripe Connect) */}
+                    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] group">
+                        {/* Abstract Background Art - Distinct from Main Wallet */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-black to-black opacity-50 group-hover:opacity-70 transition-opacity duration-700"></div>
+
+                        <div className="relative p-6 flex flex-col justify-between h-auto">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+                                            <TrendingUp size={12} />
+                                        </div>
+                                        <span className="text-[10px] lg:text-xs font-mono uppercase tracking-widest text-emerald-500 font-bold">Seller Earnings</span>
+                                    </div>
+
+                                    {userProfile?.stripe_account_id && stripeStatus ? (
+                                        <h2 className="text-3xl lg:text-4xl font-black text-white tracking-tighter">
+                                            {formatCurrency((stripeStatus.balance?.available || 0) / 100)}
+                                        </h2>
+                                    ) : (
+                                        <div className="text-white text-lg font-medium opacity-80">
+                                            Start selling your beats & packs
+                                        </div>
+                                    )}
+                                </div>
+                                {userProfile?.stripe_account_id && (
+                                    <div className="px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
+                                        Connected
+                                    </div>
+                                )}
+                            </div>
+
+                            {!userProfile?.stripe_account_id ? (
+                                <div className="mt-2">
+                                    <p className="text-neutral-500 text-xs mb-4">Connect a bank account to receive 90% of your sales instantly.</p>
+                                    <button
+                                        onClick={handleConnectStripe}
+                                        disabled={isStripeLoading}
+                                        className="w-full bg-[#635BFF] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#635BFF]/90 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-[#635BFF]/20"
+                                    >
+                                        {isStripeLoading ? 'Connecting...' : 'Setup Payouts with Stripe'}
+                                        <ArrowUpRight size={16} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="mt-4">
+                                    <div className="flex gap-4 text-xs text-neutral-500 mb-4 border-t border-white/5 pt-4">
+                                        <div>
+                                            <span className="block font-bold text-white">{formatCurrency((stripeStatus?.balance?.pending || 0) / 100)}</span>
+                                            Pending
+                                        </div>
+                                        <div>
+                                            <span className="block font-bold text-white font-mono">{userProfile?.stripe_account_id}</span>
+                                            Account ID
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleWithdraw}
+                                        disabled={isStripeLoading || !(stripeStatus?.balance?.available && stripeStatus.balance.available > 0)}
+                                        className={`w-full py-3 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2
+                                            ${(stripeStatus?.balance?.available && stripeStatus.balance.available > 0)
+                                                ? 'bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/5'
+                                                : 'bg-white/5 text-neutral-500 cursor-not-allowed border border-white/5'
+                                            }`}
+                                    >
+                                        {isStripeLoading ? 'Processing...' : 'Withdraw Funds'}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Gems Card */}
                     <div className="bg-neutral-900/50 border border-white/5 rounded-2xl p-5 flex items-center justify-between">
                         <div className="flex items-center gap-4">
@@ -205,7 +326,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                 </div>
                             </div>
                             <div>
-                                <h3 className="text-white font-bold text-lg">{userProfile?.promo_credits || 0} Promotion Credits</h3>
+                                <h3 className="text-white font-bold text-sm sm:text-lg">{userProfile?.promo_credits || 0} Promotion Credits</h3>
                                 <p className="text-neutral-500 text-xs">Used to boost visibility & ads</p>
                             </div>
                         </div>

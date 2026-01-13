@@ -9,20 +9,15 @@ import {
     Database,
     Users,
     ArrowRight,
-    CheckCircle,
-    Copy,
-    QrCode,
-    AlertTriangle,
     ShieldCheck,
-    CreditCard,
     Lock,
     X,
-    Bitcoin,
     Layout,
     Star
 } from 'lucide-react';
 import { View, UserProfile } from '../types';
 import { updateUserProfile } from '../services/supabaseService';
+import * as stripeService from '../services/stripeService';
 import { Gem } from 'lucide-react';
 
 interface SubscriptionPageProps {
@@ -279,6 +274,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
 
                         <div className="p-0">
                             <PaymentForm
+                                userId={userProfile.id}
                                 total={targetPlan.price}
                                 planName={targetPlan.name}
                                 billingCycle={billingCycle}
@@ -294,114 +290,76 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
 };
 
 // Internal Payment Form Component
-const PaymentForm = ({ total, planName, billingCycle, onConfirm }: { total: number, planName: string, billingCycle: string, onConfirm: () => void }) => {
-    const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto'>('card');
+const PaymentForm = ({ userId, total, planName, billingCycle, onConfirm }: { userId: string, total: number, planName: string, billingCycle: string, onConfirm: () => void }) => {
     const [isProcessing, setIsProcessing] = useState(false);
-    const [selectedCoin, setSelectedCoin] = useState('BTC');
 
     const handlePay = async () => {
         setIsProcessing(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        await onConfirm();
-        setIsProcessing(false);
+        try {
+            // Create Subscription Session via Stripe Edge Function
+            // This will return an object with { url: string }
+            const result = await stripeService.createSubscription(userId, planName, billingCycle as 'monthly' | 'yearly');
+
+            if (result.success && result.transactionId === 'pending_redirect') {
+                // The service layer handles the redirect, but if it returned success/pending, we can just wait.
+                // If it returned a direct URL in result (if we modified the service), we would use it here.
+                // Based on current service logic window.location.href happens inside createSubscription if URL is present.
+                // So we mostly just wait here or show a 'Redirecting...' state.
+            } else if (result.success) {
+                // Fallback for mock mode or instant success
+                await onConfirm();
+            } else {
+                alert("Payment failed: " + result.error);
+                setIsProcessing(false);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Payment initialization failed");
+            setIsProcessing(false);
+        }
     };
 
     return (
-        <div className="flex flex-col md:flex-row min-h-[500px] md:min-h-0">
-            {/* Payment Methods */}
-            <div className="w-full md:w-1/3 border-r border-white/5 bg-neutral-900/30 p-4 space-y-2">
-                <button
-                    onClick={() => setPaymentMethod('card')}
-                    className={`w-full p-4 rounded-xl border flex items-center gap-3 transition-all text-left ${paymentMethod === 'card' ? 'bg-primary/10 border-primary text-white' : 'bg-transparent border-transparent text-neutral-500 hover:bg-white/5'}`}
-                >
-                    <CreditCard size={20} />
-                    <span className="font-bold text-sm">Credit Card</span>
-                </button>
-                <button
-                    onClick={() => setPaymentMethod('crypto')}
-                    className={`w-full p-4 rounded-xl border flex items-center gap-3 transition-all text-left ${paymentMethod === 'crypto' ? 'bg-primary/10 border-primary text-white' : 'bg-transparent border-transparent text-neutral-500 hover:bg-white/5'}`}
-                >
-                    <Bitcoin size={20} />
-                    <span className="font-bold text-sm">Crypto</span>
-                </button>
-            </div>
+        <div className="flex flex-col min-h-[300px] bg-[#0a0a0a]">
+            <div className="p-8 flex flex-col items-center justify-center flex-1 text-center">
 
-            {/* Form Area */}
-            <div className="flex-1 p-6 md:p-8 flex flex-col">
-                <div className="flex-1">
-                    <div className="mb-6 pb-6 border-b border-white/5">
-                        <div className="flex justify-between items-end mb-1">
-                            <span className="text-neutral-400 text-xs font-bold uppercase tracking-wider">Total due today</span>
-                            <span className="text-2xl font-black text-white font-mono">${total}</span>
-                        </div>
-                        <p className="text-xs text-neutral-600">Billed {billingCycle}</p>
-                    </div>
-
-                    {paymentMethod === 'card' ? (
-                        <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Card Number</label>
-                                <div className="relative">
-                                    <input type="text" className="w-full bg-black border border-neutral-800 rounded-lg p-3 pl-10 text-white text-sm focus:border-primary/50 focus:outline-none font-mono placeholder-neutral-700" placeholder="0000 0000 0000 0000" />
-                                    <CreditCard size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600" />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Expiry</label>
-                                    <input type="text" className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white text-sm focus:border-primary/50 focus:outline-none font-mono placeholder-neutral-700" placeholder="MM/YY" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">CVC</label>
-                                    <div className="relative">
-                                        <input type="text" className="w-full bg-black border border-neutral-800 rounded-lg p-3 text-white text-sm focus:border-primary/50 focus:outline-none font-mono placeholder-neutral-700" placeholder="123" />
-                                        <Lock size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 text-[10px] text-neutral-500 mt-2">
-                                <ShieldCheck size={12} className="text-green-500" />
-                                Fully encrypted & secure transaction.
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                            <div className="flex gap-1 mb-4">
-                                {['BTC', 'ETH', 'USDC', 'SOL'].map(coin => (
-                                    <button
-                                        key={coin}
-                                        onClick={() => setSelectedCoin(coin)}
-                                        className={`px-3 py-1 rounded border text-[10px] font-bold ${selectedCoin === coin ? 'bg-white text-black border-white' : 'bg-black border-neutral-800 text-neutral-500 hover:text-white'}`}
-                                    >
-                                        {coin}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="text-center p-4 bg-black border border-neutral-800 rounded-xl relative overflow-hidden group cursor-pointer hover:border-white/20 transition-colors">
-                                <QrCode size={80} className="mx-auto text-white mb-2" />
-                                <p className="text-[10px] text-neutral-500">Scan to Pay</p>
-                            </div>
-
-                            <div className="flex items-center gap-2 bg-black border border-neutral-800 rounded px-3 py-2 text-xs font-mono text-neutral-500">
-                                <span className="truncate flex-1">0x71C7...B5f6d8976F</span>
-                                <Copy size={12} className="shrink-0 hover:text-white cursor-pointer" />
-                            </div>
-                        </div>
-                    )}
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary animate-bounce">
+                    <ShieldCheck size={32} />
                 </div>
 
-                <div className="pt-6 mt-2">
+                <h3 className="text-xl font-black text-white mb-2">Secure Checkout</h3>
+                <p className="text-neutral-400 max-w-sm mx-auto mb-8 text-sm leading-relaxed">
+                    You will be redirected to Stripe's secure checkout page to complete your subscription for <span className="text-white font-bold">{planName}</span>.
+                </p>
+
+                <div className="w-full max-w-sm space-y-4">
+                    <div className="flex justify-between items-center p-4 bg-black/50 rounded-xl border border-white/5">
+                        <span className="text-sm text-neutral-400">Total due today</span>
+                        <span className="text-xl font-black text-white font-mono">${total}</span>
+                    </div>
+
                     <button
                         onClick={handlePay}
                         disabled={isProcessing}
-                        className="w-full py-3 bg-primary text-black font-black text-xs uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all shadow-[0_0_20px_rgba(var(--primary),0.2)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-primary text-black font-black text-xs uppercase tracking-widest rounded-xl hover:bg-primary/90 transition-all shadow-[0_0_30px_rgba(var(--primary),0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                     >
-                        {isProcessing ? 'Processing Payment...' : `Confirm Upgrade ($${total})`}
+                        {isProcessing ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                                <span>Redirecting...</span>
+                            </>
+                        ) : (
+                            <>
+                                <span>Proceed to Stripe</span>
+                                <ArrowRight size={16} />
+                            </>
+                        )}
                     </button>
+
+                    <div className="flex items-center justify-center gap-2 text-[10px] text-neutral-600">
+                        <Lock size={10} />
+                        <span>SSL Encrypted • PCI Compliant</span>
+                    </div>
                 </div>
             </div>
         </div>

@@ -3242,7 +3242,16 @@ export const cleanupOldNotes = async () => {
 
 // ... existing code ...
 
-export const createPurchase = async (items: any[], total: number, paymentMethod: string) => {
+// Define types for clarity
+type PurchaseStatus = 'Pending' | 'Completed' | 'Failed';
+
+export const createPurchase = async (
+  items: any[],
+  total: number,
+  paymentMethod: string,
+  transactionId?: string,
+  initialStatus: PurchaseStatus = 'Completed'
+) => {
   const currentUser = await ensureUserExists();
   if (!currentUser) throw new Error('User not authenticated');
 
@@ -3252,8 +3261,8 @@ export const createPurchase = async (items: any[], total: number, paymentMethod:
     .insert({
       buyer_id: currentUser.id,
       amount: total,
-      status: 'Completed',
-      stripe_payment_id: paymentMethod === 'crypto' ? 'crypto_txn' : 'mock_id_' + Math.floor(Math.random() * 100000),
+      status: initialStatus,
+      stripe_payment_id: transactionId || (paymentMethod === 'crypto' ? 'crypto_txn' : 'pending_stripe'),
       payment_method: paymentMethod
     })
     .select()
@@ -4105,5 +4114,7 @@ export const createNotification = async (notification: Partial<Notification>) =>
 
   if (error) console.error('Error creating notification:', error);
 };
+
+
 
 

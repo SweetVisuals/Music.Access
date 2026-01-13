@@ -934,12 +934,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 {/* Create Project Card - Only for Owner */}
                                 {!isViewerMode && isOwnProfile && (
                                     <div
                                         onClick={() => setIsCreateModalOpen(true)}
-                                        className="border border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                        className="border border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[255px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                     >
                                         <div className="h-16 w-16 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                             <Box size={24} />
@@ -953,7 +953,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     if (hidePrivate) return project.status === 'published';
                                     return true;
                                 }).length === 0 && (isViewerMode || !isOwnProfile) ? (
-                                    <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4">
+                                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
                                         <EmptyStateCard
                                             icon={Music}
                                             title="No Projects Found"
@@ -1004,12 +1004,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 {/* Create Service Card - Only for Owner */}
                                 {!isViewerMode && isOwnProfile && (
                                     <div
                                         onClick={() => setIsCreateServiceModalOpen(true)}
-                                        className="border border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center h-full min-h-[220px] md:min-h-[255px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                        className="border border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[255px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                     >
                                         <div className="h-16 w-16 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                             <Mic2 size={24} />
@@ -1019,7 +1019,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 )}
 
                                 {userProfile.services.length === 0 && (isViewerMode || !isOwnProfile) ? (
-                                    <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
                                         <EmptyStateCard
                                             icon={Mic2}
                                             title="No Services Available"

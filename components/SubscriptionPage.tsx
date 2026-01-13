@@ -357,7 +357,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
             {/* Payment Modal */}
             {selectedPlan && targetPlan && createPortal(
                 <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full h-full sm:h-auto max-w-4xl bg-[#0a0a0a] border-0 sm:border border-neutral-800 rounded-none sm:rounded-3xl overflow-y-auto shadow-2xl animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+                    <div className="w-full h-full sm:h-auto sm:max-h-[90vh] max-w-4xl bg-[#0a0a0a] border-0 sm:border border-neutral-800 rounded-none sm:rounded-3xl overflow-y-auto shadow-2xl animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
                         <div className="sticky top-0 z-10 bg-[#0a0a0a] p-4 border-b border-white/5 flex items-center justify-between">
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                 Upgrade to <span className={targetPlan.color === 'primary' ? 'text-primary' : 'text-amber-400'}>{targetPlan.name}</span>

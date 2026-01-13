@@ -3296,16 +3296,33 @@ export const createPurchase = async (
       let projectId = null;
       let serviceId = null;
 
-      if (item.type && (item.type.includes('Service') || item.type.includes('Mixing') || item.type.includes('Mastering'))) {
-        serviceId = item.id;
-      } else {
-        projectId = item.id;
+      // Extract raw ID (sometimes items can have composite IDs, so we need to be careful)
+      let rawId = item.id;
+      // If the ID looks like it has a suffix (like timestamp), try to extract the UUID part
+      // UUID is 36 chars. If longer, maybe split?
+      // But usually item.id SHOULD be the UUID. If it's composite, we need to know the format.
+      // Based on the error "35245daa...-undefined-1768309832051", it looks like `${uuid}-${undefined}-${timestamp}`.
+      // We should try to extract the first 36 characters if it looks like a UUID start.
+
+      let cleanId = rawId;
+      if (typeof rawId === 'string' && rawId.length > 36 && rawId[36] === '-') {
+        cleanId = rawId.substring(0, 36);
+      }
+
+      const isValidUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+
+      if (isValidUuid(cleanId)) {
+        if (item.type && (item.type.includes('Service') || item.type.includes('Mixing') || item.type.includes('Mastering'))) {
+          serviceId = cleanId;
+        } else {
+          projectId = cleanId;
+        }
       }
 
       return {
         purchase_id: purchaseId,
-        project_id: projectId ? (typeof projectId === 'string' && projectId.length > 20 ? projectId : null) : null,
-        service_id: serviceId ? (typeof serviceId === 'string' && serviceId.length > 20 ? serviceId : null) : null,
+        project_id: projectId,
+        service_id: serviceId,
         seller_id: item.sellerId || item.seller_id || (currentUser?.id), // Fallback
         item_name: item.title || 'Unknown Item',
         price: item.price

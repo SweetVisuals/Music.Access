@@ -3371,7 +3371,7 @@ export const createPurchase = async (
       // Also notify seller to manage the new order
       await createNotification({
         userId: sellerId,
-        type: 'manage_order',
+        type: 'system', // Changed from 'manage_order' to 'system' to avoid check constraint violation
         title: 'New Order Assignment',
         message: `You have a new order to manage: ${firstItemName}`,
         link: '/dashboard/manage',
@@ -3448,7 +3448,7 @@ export const getSales = async (): Promise<Purchase[]> => {
     if (p.purchase_items && p.purchase_items.length > 0) {
       const myItems = p.purchase_items.filter((i: any) => i.seller_id === currentUser.id);
       amount = myItems.reduce((sum: number, item: any) => sum + (Number(item.price) || 0), 0);
-      if (myItems.length > 0) itemName = myItems[0].item_name;
+      if (myItems.length > 0) itemName = myItems[0].item_name || 'Item';
     }
 
     const buyer = buyersMap[p.buyer_id];
@@ -3456,7 +3456,7 @@ export const getSales = async (): Promise<Purchase[]> => {
     return {
       id: p.id,
       date: formatDate(new Date(p.created_at)),
-      item: itemName,
+      item: itemName || 'Unknown Item', // Ensure string
       seller: sellerProfile.username,
       sellerAvatar: sellerProfile.avatar_url,
       buyer: buyer?.username || 'Unknown',
@@ -3524,7 +3524,7 @@ export const getPurchases = async (): Promise<Purchase[]> => {
     if (p.purchase_items && p.purchase_items.length > 0) {
       amount = p.purchase_items.reduce((sum: number, item: any) => sum + (Number(item.price) || 0), 0);
       mainSellerId = p.purchase_items[0].seller_id; // Assume primary seller from first item
-      itemName = p.purchase_items[0].item_name;
+      itemName = p.purchase_items[0].item_name || 'Unknown Item';
     } else if (p.amount !== undefined) {
       amount = Number(p.amount);
       // Fallback if item column existed previously but we know it doesn't now. 
@@ -3536,7 +3536,7 @@ export const getPurchases = async (): Promise<Purchase[]> => {
     return {
       id: p.id,
       date: formatDate(new Date(p.created_at)),
-      item: itemName,
+      item: itemName || 'Unknown Item', // Double safety
       seller: seller?.username || 'Unknown',
       sellerAvatar: seller?.avatar_url,
       amount: amount,

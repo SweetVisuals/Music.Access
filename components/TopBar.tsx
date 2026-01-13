@@ -358,7 +358,7 @@ const RightActions: React.FC<{
 
                         {/* Profile Dropdown */}
                         {isLoggedIn && isProfileOpen && !isSpacer && (
-                            <div className="absolute right-0 top-full mt-3 w-64 bg-[#0a0a0a] border border-white/10 rounded-2x shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                            <div className="absolute right-0 top-full mt-6 lg:mt-3 w-64 bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                                 <div className="p-4 border-b border-white/5 bg-white/[0.02]">
                                     <div className="text-lg font-bold text-white truncate tracking-tight">{userProfile?.username || 'User'}</div>
                                 </div>
@@ -615,6 +615,11 @@ const TopBar: React.FC<TopBarProps> = ({
                 setIsNotificationsOpen(false);
             }
             if (cartRef.current && !cartRef.current.contains(event.target as Node)) {
+                // Check if the click is inside the mobile cart portal
+                const mobileCart = document.getElementById('mobile-cart-root');
+                if (mobileCart && mobileCart.contains(event.target as Node)) {
+                    return;
+                }
                 setIsCartOpen(false);
             }
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {

@@ -150,7 +150,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                             <div
                                 key={talent.id}
                                 onClick={() => navigate(`/@${talent.handle}`)}
-                                className="bg-[#0a0a0a] border border-white/5 rounded-xl p-5 hover:border-neutral-600 transition-all group hover:-translate-y-1 flex flex-col h-full cursor-pointer"
+                                className="bg-[#0a0a0a] border border-white/5 rounded-xl p-5 transition-all group hover:-translate-y-1 flex flex-col h-full cursor-pointer"
                             >
                                 <div className="flex-1">
                                     {/* Header: User Info & Top Right Role */}

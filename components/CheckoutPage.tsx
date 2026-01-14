@@ -12,6 +12,14 @@ interface CheckoutPageProps {
     isEmbedded?: boolean;
 }
 
+interface TransactionReceipt {
+    id: string;
+    total: number;
+    date: Date;
+    method: string;
+    items: any[]; // Using any[] for simplicity based on CartItem type, or could import CartItem
+}
+
 const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
     const { items, cartTotal, clearCart } = useCart();
     const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto' | 'test'>('card');
@@ -24,6 +32,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
     const [emailError, setEmailError] = useState<string | null>(null);
     const [pendingPurchaseId, setPendingPurchaseId] = useState<string | null>(null);
     const [isGuest, setIsGuest] = useState(false);
+    const [receipt, setReceipt] = useState<TransactionReceipt | null>(null);
 
     React.useEffect(() => {
         const fetchUserAndInitialize = async () => {
@@ -93,6 +102,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
             const result = await stripeService.processMarketplacePayment(items, total, paymentMethod, purchase.id);
             if (!result.success) throw new Error(result.error || "Payment failed");
 
+            // Set receipt before clearing
+            setReceipt({
+                id: purchase.id,
+                total: total,
+                date: new Date(),
+                method: paymentMethod,
+                items: [...items]
+            });
             clearCart();
             setIsComplete(true);
         } catch (err: any) {
@@ -104,6 +121,13 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
     const handleCardSuccess = async () => {
         // The webhook will handle marking it as 'Completed' via Metadata
         // But we can optimistically clear and move to success screen
+        setReceipt({
+            id: pendingPurchaseId || `ORD-${Date.now()}`,
+            total: total,
+            date: new Date(),
+            method: 'card',
+            items: [...items]
+        });
         clearCart();
         setIsComplete(true);
     };
@@ -131,7 +155,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
         );
     }
 
-    if (isComplete) {
+    if (isComplete && receipt) {
         return (
             <div className="w-full max-w-3xl mx-auto py-20 px-6 animate-in fade-in duration-500 text-center">
                 <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/30">
@@ -139,22 +163,56 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                 </div>
                 <h1 className="text-3xl font-black text-white mb-2">Payment Successful!</h1>
                 <p className="text-neutral-500 mb-8">Your order has been processed. Check your email for receipt and download links.</p>
-                <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-8 max-w-md mx-auto">
-                    <p className="text-xs font-mono text-neutral-500 uppercase mb-4">Order #ORD-{new Date().getFullYear()}-{Math.floor(Math.random() * 1000)}</p>
-                    <div className="space-y-2 text-sm text-neutral-300 mb-6">
-                        <div className="flex justify-between"><span>Total Paid:</span> <span className="text-white font-bold">${total.toFixed(2)}</span></div>
-                        <div className="flex justify-between"><span>Method:</span> <span className="text-white uppercase">{paymentMethod}</span></div>
+                <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-8 max-w-md mx-auto relative overflow-hidden">
+                    {/* Decorative top border */}
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
+
+                    <p className="text-xs font-mono text-neutral-500 uppercase mb-6 tracking-widest">Order #{receipt.id.slice(0, 8)}</p>
+
+                    <div className="space-y-4 text-sm text-neutral-300 mb-8 text-left bg-neutral-900/30 p-4 rounded-lg border border-white/5">
+                        <div className="border-b border-white/5 pb-3 mb-3">
+                            <span className="text-xs text-neutral-500 uppercase tracking-wider font-bold block mb-2">Items Purchased</span>
+                            <ul className="space-y-2">
+                                {receipt.items.map((item: any, idx: number) => (
+                                    <li key={idx} className="flex justify-between items-center text-xs">
+                                        <span className="text-white truncate max-w-[200px]">{item.title}</span>
+                                        <span className="font-mono text-neutral-500">${item.price.toFixed(2)}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <div className="flex justify-between"><span>Date:</span> <span className="text-white">{receipt.date.toLocaleDateString()}</span></div>
+                        <div className="flex justify-between"><span>Method:</span> <span className="text-white uppercase">{receipt.method}</span></div>
+                        <div className="flex justify-between pt-2 border-t border-white/10 mt-2">
+                            <span className="font-bold text-white">Total Paid:</span>
+                            <span className="text-primary font-black font-mono text-lg">${receipt.total.toFixed(2)}</span>
+                        </div>
                     </div>
-                    <button onClick={() => window.location.href = '/dashboard/orders'} className="w-full py-3 bg-white/5 hover:bg-white/10 text-white font-bold rounded-lg border border-white/10 transition-colors">
+                    <button onClick={() => window.location.href = '/dashboard/orders'} className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-neutral-200 transition-colors">
                         View Order History
                     </button>
                 </div>
             </div>
         );
+    } else if (isComplete) {
+        // Fallback if receipt is missing for some reason (e.g. url param return without state)
+        return (
+            <div className="w-full max-w-3xl mx-auto py-20 px-6 animate-in fade-in duration-500 text-center">
+                <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/30">
+                    <CheckCircle size={40} className="text-green-500" />
+                </div>
+                <h1 className="text-3xl font-black text-white mb-2">Payment Successful!</h1>
+                <p className="text-neutral-500 mb-8">Your order has been processed.</p>
+                <button onClick={() => window.location.href = '/dashboard/orders'} className="px-8 py-3 bg-white text-black font-bold rounded-lg hover:bg-neutral-200 transition-colors">
+                    View Orders
+                </button>
+            </div>
+        );
     }
 
     return (
-        <div className={isEmbedded ? "w-full pb-32 pt-2 px-4 animate-in fade-in duration-500" : "w-full max-w-[1600px] mx-auto pb-32 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500"}>
+        <div className={isEmbedded ? "w-full pb-24 pt-2 px-4 animate-in fade-in duration-500" : "w-full max-w-[1200px] mx-auto pb-24 pt-6 px-4 lg:px-6 animate-in fade-in duration-500"}>
             {!isEmbedded && <h1 className="text-3xl font-black text-white mb-8">Secure Checkout</h1>}
 
             {error && (
@@ -164,7 +222,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column: Payment Details */}
                 <div className="lg:col-span-2 space-y-6">
 
@@ -172,29 +230,29 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                     <div className="grid grid-cols-2 gap-4">
                         <button
                             onClick={() => setPaymentMethod('card')}
-                            className={`p-4 rounded-xl border flex items-center justify-center gap-3 transition-all ${paymentMethod === 'card' ? 'bg-primary/10 border-primary text-white ring-1 ring-primary/50' : 'bg-[#0a0a0a] border-neutral-800 text-neutral-500 hover:bg-white/5'}`}
+                            className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === 'card' ? 'bg-primary/10 border-primary text-white ring-1 ring-primary/50' : 'bg-[#0a0a0a] border-neutral-800 text-neutral-500 hover:bg-white/5'}`}
                         >
-                            <CreditCard size={20} />
-                            <span className="font-bold">Credit Card</span>
+                            <CreditCard size={18} />
+                            <span className="font-bold text-sm">Credit Card</span>
                         </button>
                         <button
                             onClick={() => setPaymentMethod('crypto')}
-                            className={`p-4 rounded-xl border flex items-center justify-center gap-3 transition-all ${paymentMethod === 'crypto' ? 'bg-primary/10 border-primary text-white ring-1 ring-primary/50' : 'bg-[#0a0a0a] border-neutral-800 text-neutral-500 hover:bg-white/5'}`}
+                            className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === 'crypto' ? 'bg-primary/10 border-primary text-white ring-1 ring-primary/50' : 'bg-[#0a0a0a] border-neutral-800 text-neutral-500 hover:bg-white/5'}`}
                         >
-                            <Bitcoin size={20} />
-                            <span className="font-bold">Crypto</span>
+                            <Bitcoin size={18} />
+                            <span className="font-bold text-sm">Crypto</span>
                         </button>
                         <button
                             onClick={() => setPaymentMethod('test')}
-                            className={`p-4 rounded-xl border flex items-center justify-center gap-3 transition-all ${paymentMethod === 'test' ? 'bg-primary/10 border-primary text-white ring-1 ring-primary/50' : 'bg-[#0a0a0a] border-neutral-800 text-neutral-500 hover:bg-white/5'}`}
+                            className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === 'test' ? 'bg-primary/10 border-primary text-white ring-1 ring-primary/50' : 'bg-[#0a0a0a] border-neutral-800 text-neutral-500 hover:bg-white/5'}`}
                         >
-                            <Beaker size={20} />
-                            <span className="font-bold">Test Pay</span>
+                            <Beaker size={18} />
+                            <span className="font-bold text-sm">Test Pay</span>
                         </button>
                     </div>
 
                     {/* Payment Form */}
-                    <div className={`bg-[#0a0a0a] border border-neutral-800 rounded-xl ${paymentMethod === 'card' ? 'p-0 overflow-hidden' : 'p-6 lg:p-8'}`}>
+                    <div className={`bg-[#0a0a0a] border border-neutral-800 rounded-xl ${paymentMethod === 'card' ? 'p-0 overflow-hidden' : 'p-4 lg:p-6'}`}>
                         {paymentMethod === 'card' ? (
                             <div className="animate-in fade-in slide-in-from-left-4 duration-300">
                                 {userProfile ? (
@@ -349,6 +407,14 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                                             // Simulate processing time
                                             await new Promise(resolve => setTimeout(resolve, 1500));
 
+                                            // Validate items have titles
+                                            for (const item of items) {
+                                                if (!item.title) {
+                                                    console.error("Item processing error: Missing title", item);
+                                                    throw new Error(`Cart item missing title: ${item.id}`);
+                                                }
+                                            }
+
                                             // Create a COMPLETED purchase directly (mocking success)
                                             // We create a new "test" purchase regardless of whether a pending one exists,
                                             // so that we get a fresh "Completed" record and notifications.
@@ -364,6 +430,13 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                                             if (!purchase) throw new Error("Failed to record simulated purchase");
 
                                             // Success
+                                            setReceipt({
+                                                id: purchase.id,
+                                                total: total,
+                                                date: new Date(),
+                                                method: 'Test Payment',
+                                                items: [...items]
+                                            });
                                             clearCart();
                                             setIsComplete(true);
                                         } catch (err: any) {

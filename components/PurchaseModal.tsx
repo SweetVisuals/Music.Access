@@ -168,7 +168,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                                     {isSelected && <Check size={10} className="text-black" />}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-neutral-400'}`}>
+                                                    <div className={`text-xs md:text-base font-bold truncate ${isSelected ? 'text-white' : 'text-neutral-400'}`}>
                                                         {track.title}
                                                     </div>
                                                 </div>
@@ -387,10 +387,12 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                                     sellerName: project.producer,
                                                     sellerHandle: '@' + project.producer,
                                                     sellerAvatar: project.producerAvatar,
+                                                    sellerId: project.userId, // Correctly populate sellerId
                                                     licenseType: effectiveLicense.name,
                                                     projectId: project.id,
                                                     trackId: trackId,
-                                                    licenseId: effectiveLicense.id || undefined
+                                                    licenseId: effectiveLicense.id || undefined,
+                                                    contractId: effectiveLicense.contractId // Map contractId from license
                                                 });
                                             });
                                         } else {
@@ -402,9 +404,11 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                                 sellerName: project.producer,
                                                 sellerHandle: '@' + project.producer,
                                                 sellerAvatar: project.producerAvatar,
+                                                sellerId: project.userId, // Correctly populate sellerId
                                                 licenseType: selectedLicense.name,
                                                 projectId: project.id,
-                                                licenseId: selectedLicenseId || undefined
+                                                licenseId: selectedLicenseId || undefined,
+                                                contractId: selectedLicense.contractId // Map contractId from license
                                             });
                                         }
 
@@ -435,7 +439,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                     </>
                                 )}
                             </button>
-                            );
+
                         </div>
                     </div>
                 </div>

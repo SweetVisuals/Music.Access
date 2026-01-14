@@ -220,6 +220,14 @@ export interface Purchase {
       stems?: string;
     };
   }[];
+  purchaseItems?: {
+    name: string;
+    price: number;
+    type: string;
+    seller: string;
+    sellerId?: string;
+    contractId?: string;
+  }[];
 }
 
 export interface CartItem {

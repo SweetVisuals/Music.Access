@@ -79,14 +79,21 @@ const InvoicesPage: React.FC = () => {
           dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
           clientName: purchase.seller,
           clientEmail: `${purchase.seller.toLowerCase().replace(/\s+/g, '.')}@example.com`,
-          items: [
-            {
-              description: purchase.item,
+          items: purchase.purchaseItems && purchase.purchaseItems.length > 0
+            ? purchase.purchaseItems.map(pi => ({
+              description: pi.name,
               quantity: 1,
-              rate: purchase.amount,
-              amount: purchase.amount
-            }
-          ],
+              rate: pi.price,
+              amount: pi.price
+            }))
+            : [
+              {
+                description: purchase.item,
+                quantity: 1,
+                rate: purchase.amount,
+                amount: purchase.amount
+              }
+            ],
           subtotal: purchase.amount,
           tax: 0,
           total: purchase.amount,

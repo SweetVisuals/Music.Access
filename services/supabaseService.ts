@@ -3300,8 +3300,6 @@ export const createPurchase = async (
       let rawId = item.id;
       // If the ID looks like it has a suffix (like timestamp), try to extract the UUID part
       // UUID is 36 chars. If longer, maybe split?
-      // But usually item.id SHOULD be the UUID. If it's composite, we need to know the format.
-      // Based on the error "35245daa...-undefined-1768309832051", it looks like `${uuid}-${undefined}-${timestamp}`.
       // We should try to extract the first 36 characters if it looks like a UUID start.
 
       let cleanId = rawId;
@@ -3319,15 +3317,24 @@ export const createPurchase = async (
         }
       }
 
+      const itemName = item.title || item.name || 'Unknown Item';
+      const sellerId = item.sellerId || item.seller_id || (currentUser?.id);
+
+      if (!sellerId && !currentUser?.id) {
+        console.error(`[createPurchase] Critical: Missing seller_id for item: "${itemName}". This may cause insert failure.`);
+      }
+
       return {
         purchase_id: purchaseId,
         project_id: projectId,
         service_id: serviceId,
-        seller_id: item.sellerId || item.seller_id || (currentUser?.id), // Fallback
-        item_name: item.title || 'Unknown Item',
+        seller_id: sellerId,
+        item_name: itemName,
         price: item.price
       };
     });
+
+    console.log('[createPurchase] Inserting items payload:', purchaseItems);
 
     const { error: itemsError } = await supabase
       .from('purchase_items')
@@ -3335,6 +3342,7 @@ export const createPurchase = async (
 
     if (itemsError) {
       console.error("Error creating purchase items:", itemsError);
+      throw new Error(`Failed to create purchase items: ${itemsError.message}`);
     }
   }
 
@@ -3533,6 +3541,20 @@ export const getPurchases = async (): Promise<Purchase[]> => {
 
     const seller = mainSellerId ? sellersMap[mainSellerId] : null;
 
+    const purchaseItems = p.purchase_items?.map((pi: any) => ({
+      name: pi.item_name || 'Unknown Item',
+      price: pi.price,
+      type: 'Item',
+      seller: sellersMap[pi.seller_id]?.username || 'Unknown',
+      sellerId: pi.seller_id,
+      contractId: pi.contract_id
+    })) || [];
+
+    // Debug logging for verified items
+    if (purchaseItems.length > 0) {
+      console.log(`[getPurchases] Mapped items for ${p.id}:`, purchaseItems);
+    }
+
     return {
       id: p.id,
       date: formatDate(new Date(p.created_at)),
@@ -3544,7 +3566,8 @@ export const getPurchases = async (): Promise<Purchase[]> => {
       image: p.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop',
       type: p.type,
       projectId: p.project_id,
-      contractId: p.purchase_items?.[0]?.contract_id
+      contractId: p.purchase_items?.[0]?.contract_id,
+      purchaseItems: purchaseItems
     };
   });
 };

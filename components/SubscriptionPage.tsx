@@ -184,7 +184,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
                 </p>
 
                 {/* Billing Toggle */}
-                <div className="mt-4 flex items-center justify-center gap-4">
+                <div className="mt-4 pb-[5px] flex items-center justify-center gap-4">
                     <span className={`text-sm font-bold ${billingCycle === 'monthly' ? 'text-white' : 'text-neutral-500'}`}>Monthly</span>
                     <button
                         onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
@@ -204,7 +204,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
                     <div
                         key={plan.name}
                         className={`
-                            relative flex flex-col p-6 lg:p-8 rounded-3xl border transition-all duration-500 hover:scale-[1.02]
+                            relative flex flex-col p-5 lg:p-6 rounded-3xl border transition-all duration-500 hover:scale-[1.02]
                             ${plan.popular
                                 ? 'bg-[#0a0a0a] border-primary/30 shadow-[0_20px_40px_rgba(var(--primary),0.05)]'
                                 : plan.color === 'premium'
@@ -219,8 +219,8 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
                             </div>
                         )}
 
-                        <div className="mb-6 lg:mb-8">
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 ${plan.color === 'primary' ? 'bg-primary/10' : plan.color === 'premium' ? 'bg-amber-400/10' : 'bg-white/5'
+                        <div className="mb-4 lg:mb-6">
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${plan.color === 'primary' ? 'bg-primary/10' : plan.color === 'premium' ? 'bg-amber-400/10' : 'bg-white/5'
                                 }`}>
                                 {plan.icon}
                             </div>
@@ -228,14 +228,14 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
                             <p className="text-neutral-500 text-sm leading-relaxed">{plan.description}</p>
                         </div>
 
-                        <div className="mb-6 lg:mb-8">
+                        <div className="mb-4 lg:mb-6">
                             <div className="flex items-baseline gap-1">
                                 <span className="text-4xl font-black text-white font-mono">${plan.price}</span>
                                 <span className="text-neutral-500 text-sm font-bold uppercase tracking-widest">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
                             </div>
                         </div>
 
-                        <div className="flex-1 space-y-4 mb-8">
+                        <div className="flex-1 space-y-3 mb-6">
                             {plan.features.map((feature, idx) => {
                                 const isCredits = feature.toLowerCase().includes('promotion credits') || feature.toLowerCase().includes('credits');
                                 const isGems = feature.toLowerCase().includes('gem');
@@ -266,7 +266,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
                                 onClick={() => handleUpgradeClick(plan.name)}
                                 disabled={userProfile?.plan === plan.name}
                                 className={`
-                                    w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all
+                                    w-full py-3 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all
                                     ${userProfile?.plan === plan.name
                                         ? 'bg-neutral-800 text-neutral-500 cursor-default'
                                         : plan.color === 'primary'

@@ -141,15 +141,11 @@ const DirectPaymentContent: React.FC<DirectPaymentFormProps> = ({
     }
 
     return (
-        <form onSubmit={handleSubmit} className="p-6 lg:p-8 space-y-8 bg-[#0a0a0a]">
+        <form onSubmit={handleSubmit} className="p-4 lg:p-5 space-y-5 bg-[#0a0a0a]">
             {/* Express Checkout (Apple/Google Pay) */}
             <div className="space-y-4 animate-in fade-in duration-500">
                 <div className="flex items-center justify-between">
                     <p className="text-[10px] text-neutral-500 font-black uppercase tracking-widest">Express Checkout</p>
-                    <div className="flex gap-2">
-                        <div className="h-4 w-6 bg-neutral-900 rounded border border-white/5 opacity-50 flex items-center justify-center"><span className="text-[8px] font-black">GPay</span></div>
-                        <div className="h-4 w-6 bg-neutral-900 rounded border border-white/5 opacity-50 flex items-center justify-center"><span className="text-[10px]"></span></div>
-                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3">
@@ -195,7 +191,7 @@ const DirectPaymentContent: React.FC<DirectPaymentFormProps> = ({
                                 type="button"
                                 onClick={() => setSelectedMethodId(pm.id)}
                                 className={`
-                                    flex items-center justify-between p-4 rounded-xl border transition-all
+                                    flex items-center justify-between p-3 rounded-xl border transition-all
                                     ${selectedMethodId === pm.id
                                         ? 'bg-primary/10 border-primary text-white'
                                         : 'bg-neutral-900 border-white/5 text-neutral-400 hover:border-white/10'
@@ -216,10 +212,10 @@ const DirectPaymentContent: React.FC<DirectPaymentFormProps> = ({
                             type="button"
                             onClick={() => setSelectedMethodId('new')}
                             className={`
-                                flex items-center gap-3 p-4 rounded-xl border transition-all
+                                flex items-center gap-3 p-3 rounded-xl border transition-all
                                 ${selectedMethodId === 'new'
-                                    ? 'bg-primary/10 border-primary text-white'
-                                    : 'bg-neutral-900 border-white/5 text-neutral-400 hover:border-white/10'
+                                    ? 'bg-primary/10 border-primary text-white py-3 px-4'
+                                    : 'bg-neutral-900 border-white/5 text-neutral-400 hover:border-white/10 py-3 px-4'
                                 }
                             `}
                         >
@@ -236,7 +232,7 @@ const DirectPaymentContent: React.FC<DirectPaymentFormProps> = ({
             {(selectedMethodId === 'new' || savedMethods.length === 0) && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                     <p className="text-xs font-black text-white uppercase tracking-widest">Payment Method</p>
-                    <div className="p-4 bg-neutral-900 rounded-xl border border-white/5">
+                    <div className="p-3 bg-neutral-900 rounded-xl border border-white/5">
                         <PaymentElement options={{
                             layout: 'tabs',
                         }} />

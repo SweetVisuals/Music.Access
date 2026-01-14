@@ -224,7 +224,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                         className="flex items-center gap-2 cursor-pointer group"
                         onClick={() => onNavigate('home')}
                     >
-                        <div className="relative h-[40px] flex items-start pt-[1px] transition-transform scale-100 min-[380px]:scale-[1.1] lg:scale-100 translate-x-[4px] lg:translate-x-[2px] lg:group-hover:scale-105 origin-center">
+                        <div className="relative h-[40px] flex items-start pt-[1px] transition-transform scale-100 min-[380px]:scale-[1.1] lg:scale-100 translate-x-[4px] lg:translate-x-[4px] lg:group-hover:scale-105 origin-center">
                             <img
                                 src="/images/MUSIC ACCESS-Photoroom.png"
                                 alt="Music Access"

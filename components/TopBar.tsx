@@ -91,9 +91,9 @@ const RightActions: React.FC<{
                         {!gemsClaimedToday && !profileLoading && userProfile && (
                             <button
                                 onClick={isSpacer ? undefined : onClaimGems}
-                                className="flex items-center gap-1.5 px-2 py-1 bg-white/5 text-primary border border-primary/30 rounded-lg text-[10px] font-bold hover:bg-primary/10 transition-colors shadow-[0_0_15px_rgb(var(--primary)/0.2)] animate-pulse h-8"
+                                className="flex items-center gap-2 px-4 bg-white/5 text-primary border border-primary/30 rounded-lg text-xs font-bold hover:bg-primary/10 transition-colors shadow-[0_0_15px_rgb(var(--primary)/0.2)] animate-pulse h-9"
                             >
-                                <Gem size={10} />
+                                <Gem size={14} />
                                 <span className="font-mono tracking-tight">CLAIM</span>
                             </button>
                         )}
@@ -173,7 +173,7 @@ const RightActions: React.FC<{
                             >
                                 <Bell size={16} />
                                 {notifications.some(n => !n.read) && (
-                                    <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)] animate-pulse border border-[#050505]"></span>
+                                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)] animate-pulse border border-[#050505]"></span>
                                 )}
                             </button>
 
@@ -239,7 +239,7 @@ const RightActions: React.FC<{
                         >
                             <ShoppingBag size={16} className={`${isCartAnimating ? 'text-primary scale-110' : ''} transition-all duration-300`} />
                             {cartItems.length > 0 && (
-                                <span className={`absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_6px_rgb(var(--primary)/0.6)] border border-[#050505] ${isCartAnimating ? 'scale-150' : ''} transition-transform duration-300`}></span>
+                                <span className={`absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary shadow-[0_0_6px_rgb(var(--primary)/0.6)] border border-[#050505] ${isCartAnimating ? 'scale-150' : ''} transition-transform duration-300`}></span>
                             )}
                         </button>
 

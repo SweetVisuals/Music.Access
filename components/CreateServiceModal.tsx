@@ -95,8 +95,8 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
             <div className={`w-full h-full bg-[#0a0a0a] border-0 flex flex-col lg:flex-row shadow-2xl overflow-hidden relative ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
 
                 {/* LEFT SIDE - FORM */}
-                <div className="flex-1 flex flex-col border-r border-neutral-800 min-w-0 md:min-w-[50%]">
-                    <div className="h-14 md:h-20 border-b border-neutral-800 flex items-center justify-between px-4 md:px-8 bg-neutral-900/30 shrink-0">
+                <div className="flex-1 flex flex-col border-r border-white/10 min-w-0 md:min-w-[50%]">
+                    <div className="h-14 md:h-20 border-b border-white/10 flex items-center justify-between px-4 md:px-8 bg-neutral-900/30 shrink-0">
                         <div>
                             <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-3">
                                 <div className="p-1.5 md:p-2 bg-primary/10 rounded-lg">
@@ -125,14 +125,14 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                                 <textarea
                                     value={serviceData.description}
                                     onChange={(e) => setServiceData({ ...serviceData, description: e.target.value })}
-                                    className="w-full h-24 md:h-32 bg-neutral-900/50 border border-neutral-800 rounded-xl px-5 py-2.5 md:py-4 text-base md:text-sm text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 resize-none transition-all placeholder:text-neutral-700 leading-relaxed"
+                                    className="w-full h-24 md:h-32 bg-neutral-900/50 border border-white/10 rounded-xl px-5 py-2.5 md:py-4 text-base md:text-sm text-white focus:border-primary/50 focus:outline-none focus:bg-neutral-900 resize-none transition-all placeholder:text-neutral-700 leading-relaxed"
                                     placeholder="Describe exactly what the client gets..."
                                 />
                             </div>
 
                             <div className="space-y-4">
                                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Pricing Model</label>
-                                <div className="flex bg-neutral-900 p-1.5 rounded-xl border border-neutral-800 w-full sm:w-2/3">
+                                <div className="flex bg-neutral-900 p-1.5 rounded-xl border border-white/10 w-full sm:w-2/3">
                                     <button
                                         onClick={() => setServiceData({ ...serviceData, rateType: 'flat' })}
                                         className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold rounded-lg transition-all ${serviceData.rateType === 'flat' ? 'bg-neutral-800 text-white shadow-lg ring-1 ring-white/10' : 'text-neutral-500 hover:text-white hover:bg-white/5'}`}
@@ -169,7 +169,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
                                             value={serviceData.deliveryDays || ''}
                                             onChange={(e) => setServiceData({ ...serviceData, deliveryDays: parseInt(e.target.value) || 0 })}
                                             placeholder="3"
-                                            className="w-full h-12 bg-neutral-900 border border-neutral-800 rounded-xl pl-10 pr-4 text-white font-mono text-sm font-bold focus:border-primary/50 focus:outline-none transition-all placeholder:text-neutral-700"
+                                            className="w-full h-12 bg-neutral-900 border border-white/10 rounded-xl pl-10 pr-4 text-white font-mono text-sm font-bold focus:border-primary/50 focus:outline-none transition-all placeholder:text-neutral-700"
                                             min="1"
                                         />
                                         <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
@@ -200,7 +200,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
 
                                 <div className="space-y-2 pr-2">
                                     {serviceData.features?.length === 0 && (
-                                        <div className="text-center py-6 border-2 border-dashed border-neutral-800 rounded-xl text-neutral-600 text-sm">
+                                        <div className="text-center py-6 border-2 border-dashed border-white/10 rounded-xl text-neutral-600 text-sm">
                                             No features added yet
                                         </div>
                                     )}
@@ -226,7 +226,7 @@ const CreateServiceModal: React.FC<CreateServiceModalProps> = ({ isOpen, onClose
 
                     </div>
 
-                    <div className="p-4 md:p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-between items-center shrink-0">
+                    <div className="p-4 md:p-6 border-t border-white/10 bg-neutral-900/30 flex justify-between items-center shrink-0">
                         <button onClick={handleInternalClose} className="px-6 py-3 rounded-xl text-xs font-bold text-neutral-500 hover:text-white transition-colors uppercase tracking-wider">Cancel</button>
                         <button
                             onClick={handleSave}

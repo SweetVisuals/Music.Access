@@ -155,7 +155,7 @@ const MobileNotifications: React.FC<MobileNotificationsProps> = ({
             `}
         >
             {/* Header */}
-            <div className="relative h-16 flex items-center justify-between px-4 border-b border-white/10 bg-black/80 backdrop-blur-xl shrink-0">
+            <div className="relative h-[calc(4rem+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] flex items-center justify-between px-4 border-b border-white/10 bg-black/80 backdrop-blur-xl shrink-0">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={onClose}

@@ -86,9 +86,9 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                 onClick={toggleDropdown}
                 className={`
                     w-full flex items-center justify-between ${paddingClass} 
-                    bg-neutral-900 border ${isOpen ? 'border-primary/50 bg-[#0c0c0c]' : 'border-neutral-800'} 
+                    bg-neutral-900/50 border ${isOpen ? 'border-primary/50 bg-[#0c0c0c]' : 'border-white/10'} 
                     rounded-xl text-sm font-medium text-white transition-all duration-200
-                    hover:border-neutral-700 hover:bg-[#0c0c0c]
+                    hover:border-white/20 hover:bg-[#0c0c0c]
                     ${error ? 'border-red-500/50' : ''}
                     focus:outline-none focus:ring-1 focus:ring-primary/20
                 `}

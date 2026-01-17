@@ -291,6 +291,42 @@ const App: React.FC = () => {
     }
   };
 
+  const handleNextTrack = () => {
+    if (!currentProject || !currentTrackId) return;
+
+    const currentIndex = currentProject.tracks.findIndex(t => (t.id || `track-${currentProject.tracks.indexOf(t)}`) === currentTrackId);
+    if (currentIndex === -1) return;
+
+    if (currentIndex < currentProject.tracks.length - 1) {
+      const nextTrack = currentProject.tracks[currentIndex + 1];
+      setCurrentTrackId(nextTrack.id || `track-${currentIndex + 1}`);
+      setIsPlaying(true);
+    } else {
+      // Loop back to start or stop? Let's loop for now as it's friendlier
+      const firstTrack = currentProject.tracks[0];
+      setCurrentTrackId(firstTrack.id || `track-0`);
+      setIsPlaying(true);
+    }
+  };
+
+  const handlePrevTrack = () => {
+    if (!currentProject || !currentTrackId) return;
+
+    const currentIndex = currentProject.tracks.findIndex(t => (t.id || `track-${currentProject.tracks.indexOf(t)}`) === currentTrackId);
+    if (currentIndex === -1) return;
+
+    if (currentIndex > 0) {
+      const prevTrack = currentProject.tracks[currentIndex - 1];
+      setCurrentTrackId(prevTrack.id || `track-${currentIndex - 1}`);
+      setIsPlaying(true);
+    } else {
+      // Go to last track if at start (loop)
+      const lastTrack = currentProject.tracks[currentProject.tracks.length - 1];
+      setCurrentTrackId(lastTrack.id || `track-${currentProject.tracks.length - 1}`);
+      setIsPlaying(true);
+    }
+  };
+
   const handleSearch = (query: string) => {
     setFilters(prev => ({ ...prev, searchQuery: query }));
     if (currentView !== 'home') setCurrentView('home');
@@ -451,25 +487,25 @@ const App: React.FC = () => {
                 onMenuClick={() => setIsMobileMenuOpen(true)}
               />
 
-              <main ref={mainRef} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[56px]' : currentView === 'dashboard-messages' ? 'overflow-hidden pt-[56px] pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pt-0 lg:pb-0' : 'overflow-y-auto overscroll-y-contain pt-[80px] lg:pt-[80px] pb-32 lg:pb-8'} ${currentTrackId && currentView !== 'notes' && currentView !== 'dashboard-messages' ? 'pb-48' : ''} scroll-smooth`}>
+              <main ref={mainRef} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[calc(56px+env(safe-area-inset-top))]' : currentView === 'dashboard-messages' ? 'overflow-hidden pt-[calc(56px+env(safe-area-inset-top))] pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pt-0 lg:pb-0' : 'overflow-y-auto overscroll-y-contain pt-[calc(80px+env(safe-area-inset-top))] lg:pt-[80px] pb-32 lg:pb-8'} ${currentTrackId && currentView !== 'notes' && currentView !== 'dashboard-messages' ? 'pb-48' : ''} scroll-smooth`}>
 
                 {currentView === 'home' && (
                   <PullToRefresh onRefresh={fetchProjects}>
                     <div className="w-full max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 pt-4 lg:pt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                       {isLoggedIn && !gemsClaimedToday && !profileLoading && userProfile && (
-                        <div className="mb-4 mt-3 lg:mt-0 p-3 bg-gradient-to-r from-primary/20 to-transparent border border-primary/20 rounded-xl flex items-center justify-between">
+                        <div className="mb-4 mt-6 lg:mt-0 pt-3 pb-4 px-5 bg-gradient-to-r from-primary/20 to-transparent border border-primary/20 rounded-xl flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-primary animate-pulse">
+                            <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary animate-pulse">
                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z" /></svg>
                             </div>
                             <div>
-                              <h3 className="font-bold text-white text-sm">Daily Reward Available!</h3>
-                              <p className="text-xs text-neutral-300 hidden sm:block">Claim your 10 free Gems for today.</p>
+                              <h3 className="font-bold text-white text-base">Daily Reward Available!</h3>
+                              <p className="text-sm text-neutral-300 hidden sm:block">Claim your 10 free Gems for today.</p>
                             </div>
                           </div>
                           <button
                             onClick={handleClaimDailyGems}
-                            className="px-3 py-1.5 bg-primary text-black font-bold rounded-lg text-xs hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
+                            className="px-4 py-2 bg-primary text-black font-bold rounded-lg text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
                           >
                             Claim 10 Gems
                           </button>
@@ -692,6 +728,8 @@ const App: React.FC = () => {
               }}
               onNavigate={handleNavigate}
               isSidebarOpen={isMobileMenuOpen}
+              onNext={handleNextTrack}
+              onPrev={handlePrevTrack}
             />
 
             <BottomNav

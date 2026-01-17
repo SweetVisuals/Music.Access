@@ -80,10 +80,10 @@ const CustomInput: React.FC<CustomInputProps> = ({
                     onChange={onChange}
                     id={id}
                     className={`
-                        w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3
+                        w-full bg-neutral-900 border border-white/10 rounded-xl px-4 py-3
                         text-sm font-semibold text-white placeholder-neutral-600
                         transition-all duration-200
-                        hover:border-neutral-700 hover:bg-[#0c0c0c]
+                        hover:border-white/20 hover:bg-[#0c0c0c]
                         focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20
                         ${icon ? 'pl-11' : ''}
                         ${type === 'number' && !hideControls ? 'pr-20' : ''}

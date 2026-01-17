@@ -646,7 +646,59 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         return cols;
     };
 
-    const handleColumnItemClick = (item: FileSystemItem, depth: number) => {
+    const handleColumnItemClick = (item: FileSystemItem, depth: number, e: React.MouseEvent) => {
+        // Handle Multi-Select Logic for Column View
+        if (e.ctrlKey || e.metaKey || e.shiftKey) {
+            e.preventDefault();
+            let newSelected = new Set(selectedIds);
+            const currentId = item.id;
+
+            // Get all items in this specific column to calculate ranges
+            const currentColumnItems = getColumns()[depth]?.items || [];
+
+            if (e.shiftKey) {
+                // Check if we have a valid anchor in THIS column
+                const anchorInColumn = anchorSelectedId && currentColumnItems.find(i => i.id === anchorSelectedId);
+
+                if (anchorInColumn) {
+                    // Range Selection
+                    const lastIdx = currentColumnItems.findIndex(i => i.id === anchorSelectedId);
+                    const currIdx = currentColumnItems.findIndex(i => i.id === currentId);
+
+                    if (lastIdx !== -1 && currIdx !== -1) {
+                        const start = Math.min(lastIdx, currIdx);
+                        const end = Math.max(lastIdx, currIdx);
+
+                        // Select range
+                        const rangeItems = currentColumnItems.slice(start, end + 1);
+                        rangeItems.forEach(i => newSelected.add(i.id));
+                    }
+                } else {
+                    // Fallback: If anchor is missing or in another column, treat as new anchor
+                    // Selecting just this item (or adding it? Standard is select just this and anchor)
+                    // We will add this item and make it the anchor, keeping existing selection if Ctrl held? 
+                    // No, Shift usually implies contiguous. If we jump columns, we just select this one.
+                    newSelected.add(currentId);
+                    setAnchorSelectedId(currentId);
+                }
+            } else {
+                // Ctrl/Cmd Toggle
+                if (newSelected.has(currentId)) {
+                    newSelected.delete(currentId);
+                } else {
+                    newSelected.add(currentId);
+                    setAnchorSelectedId(currentId);
+                }
+            }
+            setSelectedIds(newSelected);
+            // Do NOT navigate if we are just selecting multiple files
+            return;
+        }
+
+        // Standard Single Click (Navigation / Selection)
+        setSelectedIds(new Set([item.id]));
+        setAnchorSelectedId(item.id);
+
         // Update path: truncate at depth, append new item
         const newPath = selectedPath.slice(0, depth);
         newPath.push(item.id);
@@ -789,7 +841,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
             {/* Main Content Area */}
             <div
-                className={`min-h-[500px] bg-[#050505] border rounded-xl overflow-hidden relative transition-all ${isDraggingFiles ? 'border-primary border-2 bg-primary/5' : 'border-white/5'}`}
+                className={`min-h-[500px] w-full bg-[#050505] border rounded-xl overflow-hidden relative transition-all ${isDraggingFiles ? 'border-primary border-2 bg-primary/5' : 'border-white/5'}`}
                 onDragOver={(e) => {
                     e.preventDefault();
                     // Check if dragging files from desktop
@@ -953,41 +1005,45 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                             onDoubleClick={() => handleNavigate(folder.id)}
                                             onContextMenu={(e) => handleContextMenu(e, 'folder', folder.id)}
                                             className={`
-                                     group p-4 bg-neutral-900/30 border rounded-xl transition-all cursor-pointer flex flex-col items-center justify-center relative aspect-square
+                                     group p-4 rounded-xl transition-all cursor-pointer flex flex-col relative aspect-square justify-between
                                      ${isSelected
-                                                    ? 'border-primary/50 bg-primary/10 shadow-[0_0_15px_rgba(var(--primary),0.1)]'
-                                                    : 'border-transparent hover:bg-white/5 hover:scale-[1.02] hover:shadow-lg'
+                                                    ? 'bg-primary/20 border-2 border-primary shadow-[0_0_20px_rgba(var(--primary),0.15)]'
+                                                    : 'bg-[#0f0f0f] border border-white/5 hover:bg-neutral-800'
                                                 }
                                      ${dragOverFolderId === folder.id
-                                                    ? 'border-primary bg-primary/10 scale-105 shadow-[0_0_20px_rgba(var(--primary),0.2)]'
+                                                    ? 'scale-105 border-primary bg-primary/10 ring-2 ring-primary ring-offset-2 ring-offset-black z-10'
                                                     : ''
                                                 }
                                  `}
                                         >
-                                            <Folder
-                                                size={32}
-                                                className={`mb-3 transition-colors ${dragOverFolderId === folder.id || isSelected ? 'text-primary' : 'text-neutral-500 group-hover:text-white'}`}
-                                            />
-                                            {renamingId === folder.id ? (
-                                                <input
-                                                    autoFocus={window.innerWidth >= 768}
-                                                    value={renameValue}
-                                                    onChange={(e) => setRenameValue(e.target.value)}
-                                                    onBlur={handleFinishRename}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
-                                                    className="w-full bg-black border border-primary text-white text-xs px-1 rounded text-center"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                />
-                                            ) : (
-                                                <div className={`text-xs font-bold text-center truncate w-full px-2 ${isSelected ? 'text-white' : 'group-hover:text-white text-neutral-300'}`}>{folder.name}</div>
-                                            )}
+                                            <div className="flex justify-between items-start">
+                                                <div className={`p-2.5 rounded-lg ${isSelected ? 'bg-primary text-black' : 'bg-neutral-900 text-neutral-400 group-hover:text-white group-hover:bg-neutral-800 transition-colors'}`}>
+                                                    <Folder size={20} fill={isSelected ? "currentColor" : "none"} />
+                                                </div>
+                                                <button
+                                                    onClick={(e) => handleContextMenu(e, 'folder', folder.id)}
+                                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-neutral-500 hover:text-white"
+                                                >
+                                                    <MoreVertical size={16} />
+                                                </button>
+                                            </div>
 
-                                            <button
-                                                onClick={(e) => handleContextMenu(e, 'folder', folder.id)}
-                                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-neutral-500 hover:text-white"
-                                            >
-                                                <MoreVertical size={14} />
-                                            </button>
+                                            <div>
+                                                {renamingId === folder.id ? (
+                                                    <input
+                                                        autoFocus={window.innerWidth >= 768}
+                                                        value={renameValue}
+                                                        onChange={(e) => setRenameValue(e.target.value)}
+                                                        onBlur={handleFinishRename}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
+                                                        className="w-full bg-black border border-primary text-white text-sm font-bold px-1 rounded"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                ) : (
+                                                    <div className={`text-sm font-bold truncate w-full ${isSelected ? 'text-white' : 'text-neutral-300 group-hover:text-white'}`}>{folder.name}</div>
+                                                )}
+                                                <div className="text-[10px] text-neutral-500 mt-1">Folder</div>
+                                            </div>
                                         </div>
                                     )
                                 })}
@@ -997,13 +1053,79 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                     const isPlayingFile = currentProject?.id === 'upload_browser_proj' && currentTrackId === file.id && isPlaying;
                                     const isSelected = selectedIds.has(file.id);
 
+                                    // Special Compact Audio Card
+                                    if (file.type === 'audio') {
+                                        return (
+                                            <div
+                                                key={file.id}
+                                                draggable
+                                                onDragStart={() => setDraggedItemId(file.id)}
+                                                onClick={(e) => handleItemClick(file, e)}
+                                                onDoubleClick={() => handlePlay(file)}
+                                                onContextMenu={(e) => handleContextMenu(e, 'file', file.id)}
+                                                className={`
+                                                    group relative border rounded-xl overflow-hidden cursor-pointer transition-all duration-200 select-none
+                                                    ${isSelected
+                                                        ? 'bg-primary/20 border-primary shadow-[0_0_20px_rgba(var(--primary),0.2)]'
+                                                        : 'bg-[#0A0A0A] border-white/5 hover:bg-neutral-900 hover:border-white/10 hover:shadow-xl hover:-translate-y-1'
+                                                    }
+                                                    ${draggedItemId === file.id ? 'opacity-30' : ''}
+                                                `}
+                                            >
+                                                {/* Top Image/Icon Area (Panoramic) */}
+                                                <div className="w-full h-24 relative overflow-hidden bg-neutral-900">
+                                                    <div className={`absolute inset-0 flex items-center justify-center transition-colors ${isPlayingFile ? 'bg-primary' : 'bg-neutral-800'}`}>
+                                                        {isPlayingFile ? (
+                                                            <div className="flex gap-1 items-end h-8">
+                                                                {[...Array(5)].map((_, i) => (
+                                                                    <div key={i} className="w-1.5 bg-black animate-[music-bar_1s_ease-in-out_infinite]" style={{ animationDelay: `${i * 0.1}s`, height: '40%' }} />
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <Music size={32} className={`${isSelected ? 'text-primary' : 'text-neutral-600'}`} />
+                                                        )}
+                                                    </div>
+
+                                                    {/* Play Overlay */}
+                                                    <div
+                                                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]"
+                                                        onClick={(e) => { e.stopPropagation(); handlePlay(file); }}
+                                                    >
+                                                        <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform shadow-lg">
+                                                            {isPlayingFile ? <Pause size={18} fill="black" /> : <Play size={18} fill="black" className="ml-0.5" />}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Details */}
+                                                <div className="p-3">
+                                                    <div className="flex items-start justify-between gap-2 mb-1">
+                                                        <h4 className={`text-xs font-bold truncate flex-1 leading-tight ${isSelected ? 'text-white' : 'text-neutral-300'}`}>{file.name}</h4>
+                                                    </div>
+                                                    <div className="flex items-center justify-between text-[10px] text-neutral-500 font-mono">
+                                                        <span>{file.size}</span>
+                                                        <span>{Math.floor((file.duration || 180) / 60)}:{((file.duration || 180) % 60).toString().padStart(2, '0')}</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Context Menu Button */}
+                                                <button
+                                                    onClick={(e) => handleContextMenu(e, 'file', file.id)}
+                                                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black"
+                                                >
+                                                    <MoreVertical size={12} />
+                                                </button>
+                                            </div>
+                                        )
+                                    }
+
                                     return (
                                         <div
                                             key={file.id}
                                             draggable
                                             onDragStart={() => setDraggedItemId(file.id)}
                                             onClick={(e) => handleItemClick(file, e)}
-                                            onDoubleClick={() => file.type === 'audio' ? handlePlay(file) : file.type === 'text' ? openTextEditor(file) : null}
+                                            onDoubleClick={() => file.type === 'text' ? openTextEditor(file) : null}
                                             onContextMenu={(e) => handleContextMenu(e, 'file', file.id)}
                                             className={`
                                          group bg-neutral-900/30 border rounded-xl p-3 flex flex-col items-center relative select-none transition-all duration-200
@@ -1094,7 +1216,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
                 {viewMode === 'column' && (
                     // --- COLUMN VIEW ---
-                    <div className="flex h-[600px] overflow-x-auto custom-scrollbar divide-x divide-white/5">
+                    <div className="flex w-full overflow-x-auto custom-scrollbar divide-x divide-white/5">
                         {(() => {
                             const allColumns = getColumns();
                             const MAX_NAV_COLS = 4;
@@ -1139,7 +1261,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                             handleDrop(e, item.id);
                                                         }
                                                     }}
-                                                    onClick={() => handleColumnItemClick(item, realIndex)}
+                                                    onClick={(e) => handleColumnItemClick(item, realIndex, e)}
                                                     onContextMenu={(e) => handleContextMenu(e, item.type === 'folder' ? 'folder' : 'file', item.id)}
                                                     className={`
                                                     flex items-center gap-2 px-4 py-2 text-sm cursor-pointer whitespace-nowrap border-b border-white/5

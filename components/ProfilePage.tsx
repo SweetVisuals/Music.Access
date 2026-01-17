@@ -26,7 +26,8 @@ import {
     CheckCircle,
     Calendar,
     ChevronDown,
-    User
+    User,
+    Lock
 } from 'lucide-react';
 import ProjectCard, { ProjectSkeleton } from './ProjectCard';
 import ServiceCard from './ServiceCard';
@@ -36,6 +37,7 @@ import CreateServiceModal from './CreateServiceModal';
 import EditProjectModal from './EditProjectModal';
 import { getUserProfile, getUserProfileByHandle, updateUserProfile, getCurrentUser, uploadFile, followUser, unfollowUser, checkIsFollowing, deleteProject, updateProject } from '../services/supabaseService';
 import EmptyStateCard from './EmptyStateCard';
+import CustomDropdown from './CustomDropdown';
 
 
 interface ProfilePageProps {
@@ -48,7 +50,7 @@ interface ProfilePageProps {
     onTogglePlay: () => void;
 }
 
-type Tab = 'beat_tapes' | 'services' | 'sound_packs' | 'about';
+type Tab = 'beat_tapes' | 'releases' | 'services' | 'sound_packs' | 'about' | 'private';
 
 const ProfilePage: React.FC<ProfilePageProps> = ({
     profile,
@@ -243,7 +245,45 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         if (!userProfile?.id) return;
         navigate(`/dashboard/messages?uid=${userProfile.id}`);
     };
-    // I want `/dashboard/messages?uid=${userProfile.id}`
+
+    // Helper to determine available tabs based on role
+    const getAvailableTabs = () => {
+        const role = userProfile?.role?.toLowerCase() || 'producer';
+        const isOwner = !isViewerMode && isOwnProfile;
+
+        let tabs: Tab[] = [];
+
+        if (role === 'artist') {
+            tabs = ['releases', 'services'];
+        } else if (role === 'producer' || role === 'engineer') {
+            tabs = ['beat_tapes', 'sound_packs', 'services'];
+        } else if (role === 'platform') {
+            tabs = ['services'];
+        } else {
+            // Fallback
+            tabs = ['beat_tapes', 'sound_packs', 'services'];
+        }
+
+        tabs.push('about');
+
+        if (isOwner) {
+            tabs.push('private');
+        }
+
+        return tabs;
+    };
+
+    const availableTabs = getAvailableTabs();
+
+    // Effect to reset active tab if not available for current role
+    useEffect(() => {
+        if (!userProfile) return;
+        const tabs = getAvailableTabs();
+        if (!tabs.includes(activeTab)) {
+            setActiveTab(tabs[0]);
+        }
+    }, [userProfile?.role, isViewerMode, isOwnProfile]);
+
 
 
     if (loading) {
@@ -384,8 +424,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     // Dispatch custom event to notify sidebar to refresh storage
                     window.dispatchEvent(new CustomEvent('storage-updated'));
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Error uploading file:', error);
+                alert(`Failed to upload image: ${error.message || 'Unknown error'}`);
                 // Revert to previous state on error
                 setUserProfile(prev => prev ? ({ ...prev, [field]: userProfile?.[field] || '' }) : null);
             }
@@ -442,6 +483,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         } catch (error) {
             console.error("Failed to update project:", error);
         }
+    };
+
+    const handleProjectStatusChange = (project: Project, newStatus: string) => {
+        setLocalProjects(prev => prev.map(p => p.id === project.id ? { ...p, status: newStatus as any } : p));
     };
 
     return (
@@ -562,7 +607,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                 <input
                                                     value={editForm.username}
                                                     onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                                                    className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                                    className="w-full bg-neutral-900/50 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
                                                     placeholder="Your Artist Name"
                                                 />
                                             </div>
@@ -570,20 +615,19 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             <div className="space-y-1.5">
                                                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Role</label>
                                                 <div className="relative">
-                                                    <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
-                                                    <select
+                                                    <CustomDropdown
                                                         value={editForm.role}
-                                                        onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                                                        className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg pl-10 pr-10 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900 appearance-none cursor-pointer"
-                                                    >
-                                                        <option value="" className="bg-neutral-900">Select your role...</option>
-                                                        <option value="artist" className="bg-neutral-900">Artist</option>
-                                                        <option value="producer" className="bg-neutral-900">Producer</option>
-                                                        <option value="engineer" className="bg-neutral-900">Engineer</option>
-                                                        <option value="professional" className="bg-neutral-900">Professional / Other</option>
-                                                        <option value="listener" className="bg-neutral-900">Listener</option>
-                                                    </select>
-                                                    <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none" />
+                                                        onChange={(val) => setEditForm({ ...editForm, role: val })}
+                                                        options={[
+                                                            { value: 'artist', label: 'Artist' },
+                                                            { value: 'producer', label: 'Producer' },
+                                                            { value: 'engineer', label: 'Engineer' },
+                                                            { value: 'professional', label: 'Professional / Other' },
+                                                            { value: 'listener', label: 'Listener' }
+                                                        ]}
+                                                        placeholder="Select your role..."
+                                                        className="z-[110]"
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
@@ -594,7 +638,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                 <input
                                                     value={userProfile.handle}
                                                     disabled
-                                                    className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-sm text-neutral-400 cursor-not-allowed"
+                                                    className="w-full bg-neutral-900 border border-white/10 rounded-lg px-4 py-3 text-sm text-neutral-400 cursor-not-allowed"
                                                 />
                                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-neutral-600 font-mono">Read-only</div>
                                             </div>
@@ -608,7 +652,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                     <input
                                                         value={editForm.location}
                                                         onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                                                        className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                                        className="w-full bg-neutral-900/50 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
                                                         placeholder="City, Country"
                                                     />
                                                 </div>
@@ -621,7 +665,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                     <input
                                                         value={editForm.website}
                                                         onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
-                                                        className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                                        className="w-full bg-neutral-900/50 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
                                                         placeholder="https://your-site.com"
                                                     />
                                                 </div>
@@ -638,7 +682,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                     e.target.style.height = `${Math.min(e.target.scrollHeight, 400)}px`;
                                                 }}
                                                 style={{ height: 'auto', minHeight: '128px' }}
-                                                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none resize-none transition-colors focus:bg-neutral-900 custom-scrollbar"
+                                                className="w-full bg-neutral-900/50 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:bg-neutral-900 custom-scrollbar"
                                                 placeholder="Tell your story..."
                                             />
                                         </div>
@@ -748,7 +792,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                             </div>
                             {/* Only show Verified tick if plan is Pro or Studio+ */}
                             {(userProfile.plan === 'Pro' || userProfile.plan === 'Studio+') && (
-                                <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 bg-[#0a0a0a] p-1 md:p-1.5 rounded-full border border-neutral-800 z-40 pointer-events-none">
+                                <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 bg-[#0a0a0a] p-1 md:p-1.5 rounded-full border border-white/10 z-40 pointer-events-none">
                                     <Verified className="text-blue-400 fill-blue-400/10 w-4 h-4 md:w-6 md:h-6" />
                                 </div>
                             )}
@@ -804,7 +848,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                 onClick={handleToggleFollow}
                                                 disabled={isFollowLoading || isOwnProfile}
                                                 className={`px-4 md:px-10 py-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all border flex-1 md:flex-auto ${isOwnProfile
-                                                    ? 'bg-neutral-800 border-neutral-800 text-neutral-500 cursor-not-allowed opacity-50'
+                                                    ? 'bg-neutral-800 border-white/10 text-neutral-500 cursor-not-allowed opacity-50'
                                                     : isFollowing
                                                         ? 'bg-transparent border-neutral-600 text-neutral-300 hover:border-red-500 hover:text-red-500'
                                                         : 'bg-primary border-primary text-black hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)]'
@@ -846,65 +890,56 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 </div>
 
                 {/* TABS NAVIGATION */}
-                {/* Fix: Removed sticky on mobile if it causes issues, or ensured top offset is correct. 
-                Using explicit z-index and background to ensure visibility without pushing content.
-            */}
-                <div className="relative bg-[#050505] lg:border-b lg:border-neutral-800 -mx-6 px-6 lg:-mx-8 lg:px-8 mb-4 lg:mb-6 py-2 transition-all">
+                <div className="relative bg-[#050505] lg:border-b lg:border-white/10 -mx-6 px-6 lg:-mx-8 lg:px-8 mb-4 lg:mb-6 py-2 transition-all">
 
-                    {/* Mobile Tabs Layout (Single Row Grid) */}
+                    {/* Mobile Tabs Layout */}
                     <div className="lg:hidden relative pb-2">
-                        <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5">
-                            <button
-                                onClick={() => setActiveTab('beat_tapes')}
-                                className={`
-                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
-                                ${activeTab === 'beat_tapes' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
-                            `}
-                            >
-                                <Disc size={14} className={activeTab === 'beat_tapes' ? 'text-primary' : ''} />
-                                <span className="text-[9px] font-bold uppercase tracking-tight">Projects</span>
-                            </button>
+                        <div className={`grid grid-cols-${Math.min(availableTabs.length, 5)} gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5`}>
+                            {availableTabs.map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`
+                                        flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
+                                        ${activeTab === tab ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
+                                    `}
+                                >
+                                    {tab === 'beat_tapes' && <Disc size={14} className={activeTab === 'beat_tapes' ? 'text-primary' : ''} />}
+                                    {tab === 'releases' && <Disc size={14} className={activeTab === 'releases' ? 'text-primary' : ''} />}
+                                    {tab === 'sound_packs' && <Box size={14} className={activeTab === 'sound_packs' ? 'text-primary' : ''} />}
+                                    {tab === 'services' && <LayoutList size={14} className={activeTab === 'services' ? 'text-primary' : ''} />}
+                                    {tab === 'about' && <Info size={14} className={activeTab === 'about' ? 'text-primary' : ''} />}
+                                    {tab === 'private' && <Lock size={14} className={activeTab === 'private' ? 'text-primary' : ''} />}
 
-                            <button
-                                onClick={() => setActiveTab('sound_packs')}
-                                className={`
-                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
-                                ${activeTab === 'sound_packs' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
-                            `}
-                            >
-                                <Box size={14} className={activeTab === 'sound_packs' ? 'text-primary' : ''} />
-                                <span className="text-[9px] font-bold uppercase tracking-tight">Sounds</span>
-                            </button>
-
-                            <button
-                                onClick={() => setActiveTab('services')}
-                                className={`
-                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
-                                ${activeTab === 'services' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
-                            `}
-                            >
-                                <LayoutList size={14} className={activeTab === 'services' ? 'text-primary' : ''} />
-                                <span className="text-[9px] font-bold uppercase tracking-tight">Services</span>
-                            </button>
-
-                            <button
-                                onClick={() => setActiveTab('about')}
-                                className={`
-                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
-                                ${activeTab === 'about' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
-                            `}
-                            >
-                                <Info size={14} className={activeTab === 'about' ? 'text-primary' : ''} />
-                                <span className="text-[9px] font-bold uppercase tracking-tight">About</span>
-                            </button>
+                                    <span className="text-[9px] font-bold uppercase tracking-tight">
+                                        {tab === 'beat_tapes' ? 'Projects' :
+                                            tab === 'releases' ? 'Releases' :
+                                                tab === 'sound_packs' ? 'Sounds' :
+                                                    tab === 'services' ? 'Services' :
+                                                        tab === 'private' ? 'Private' : 'About'}
+                                    </span>
+                                </button>
+                            ))}
                         </div>
                     </div>
 
                     {/* Desktop Horizontal Layout */}
                     <div className="hidden lg:flex items-center gap-8 overflow-x-auto no-scrollbar whitespace-nowrap">
-                        <TabButton active={activeTab === 'beat_tapes'} onClick={() => setActiveTab('beat_tapes')} icon={<Disc size={18} />} label="Projects" count={localProjects.length} />
-                        <TabButton active={activeTab === 'sound_packs'} onClick={() => setActiveTab('sound_packs')} icon={<Box size={18} />} label="Sound Packs" count={userProfile.soundPacks.length} />
-                        <TabButton active={activeTab === 'services'} onClick={() => setActiveTab('services')} icon={<LayoutList size={18} />} label="Services" count={userProfile.services.length} />
+                        {availableTabs.includes('beat_tapes') && (
+                            <TabButton active={activeTab === 'beat_tapes'} onClick={() => setActiveTab('beat_tapes')} icon={<Disc size={18} />} label="Projects" count={localProjects.filter(p => p.status === 'published').length} />
+                        )}
+                        {availableTabs.includes('releases') && (
+                            <TabButton active={activeTab === 'releases'} onClick={() => setActiveTab('releases')} icon={<Disc size={18} />} label="Releases" count={localProjects.filter(p => p.status === 'published').length} />
+                        )}
+                        {availableTabs.includes('sound_packs') && (
+                            <TabButton active={activeTab === 'sound_packs'} onClick={() => setActiveTab('sound_packs')} icon={<Box size={18} />} label="Sound Packs" count={userProfile.soundPacks.length} />
+                        )}
+                        {availableTabs.includes('services') && (
+                            <TabButton active={activeTab === 'services'} onClick={() => setActiveTab('services')} icon={<LayoutList size={18} />} label="Services" count={userProfile.services.length} />
+                        )}
+                        {availableTabs.includes('private') && (
+                            <TabButton active={activeTab === 'private'} onClick={() => setActiveTab('private')} icon={<Lock size={18} />} label="Private" count={localProjects.filter(p => p.status !== 'published').length} />
+                        )}
                         <TabButton active={activeTab === 'about'} onClick={() => setActiveTab('about')} icon={<Info size={18} />} label="About" />
                     </div>
                 </div>
@@ -919,15 +954,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     <Music size={18} className="text-primary" /> Latest Projects
                                 </h2>
                                 <div className="flex items-center gap-2">
-                                    {!isViewerMode && isOwnProfile && (
-                                        <button
-                                            onClick={() => setHidePrivate(!hidePrivate)}
-                                            className={`flex items-center gap-2 text-[10px] font-mono px-3 py-1.5 rounded border transition-all uppercase ${hidePrivate ? 'bg-primary/20 border-primary/30 text-primary shadow-[0_0_10px_rgba(var(--primary),0.1)]' : 'text-neutral-500 border-white/10 hover:text-white hover:bg-white/5'}`}
-                                        >
-                                            {hidePrivate ? <Eye size={12} /> : <EyeOff size={12} />}
-                                            {hidePrivate ? 'Show Private' : 'Hide Private'}
-                                        </button>
-                                    )}
                                     <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
                                         Sort By: Newest
                                     </button>
@@ -939,20 +965,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 {!isViewerMode && isOwnProfile && (
                                     <div
                                         onClick={() => setIsCreateModalOpen(true)}
-                                        className="border border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[255px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                        className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                     >
-                                        <div className="h-16 w-16 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
+                                        <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                             <Box size={24} />
                                         </div>
                                         <span className="font-mono text-xs font-bold uppercase tracking-widest relative z-10">Create Project</span>
                                     </div>
                                 )}
 
-                                {localProjects.filter(project => {
-                                    if (!isOwnProfile || isViewerMode) return project.status === 'published';
-                                    if (hidePrivate) return project.status === 'published';
-                                    return true;
-                                }).length === 0 && (isViewerMode || !isOwnProfile) ? (
+                                {localProjects.filter(project => project.status === 'published').length === 0 && (isViewerMode || !isOwnProfile) ? (
                                     <div className="col-span-1 md:col-span-2 lg:col-span-4">
                                         <EmptyStateCard
                                             icon={Music}
@@ -962,17 +984,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     </div>
                                 ) : (
                                     localProjects
-                                        .filter(project => {
-                                            // If not owner (or viewing as visitor), only show published projects
-                                            if (!isOwnProfile || isViewerMode) {
-                                                return project.status === 'published';
-                                            }
-                                            // If owner and hidePrivate is active, also only show published
-                                            if (hidePrivate) {
-                                                return project.status === 'published';
-                                            }
-                                            return true; // Owner sees all by default
-                                        })
+                                        .filter(project => project.status === 'published')
                                         .map(project => (
                                             <div key={project.id} className="h-auto md:h-[282px]">
                                                 <ProjectCard
@@ -983,6 +995,64 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                     onTogglePlay={onTogglePlay}
                                                     onEdit={!isViewerMode && isOwnProfile ? handleEditProject : undefined}
                                                     onDelete={!isViewerMode && isOwnProfile ? handleDeleteProject : undefined}
+                                                    onStatusChange={handleProjectStatusChange}
+                                                />
+                                            </div>
+                                        ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'releases' && (
+                        <div>
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                    <Disc size={18} className="text-primary" /> Latest Releases
+                                </h2>
+                                <div className="flex items-center gap-2">
+                                    <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
+                                        Sort By: Newest
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {/* Create Project Card - Only for Owner */}
+                                {!isViewerMode && isOwnProfile && (
+                                    <div
+                                        onClick={() => setIsCreateModalOpen(true)}
+                                        className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                    >
+                                        <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
+                                            <Disc size={24} />
+                                        </div>
+                                        <span className="font-mono text-xs font-bold uppercase tracking-widest relative z-10">Add Release</span>
+                                    </div>
+                                )}
+
+                                {localProjects.filter(project => project.status === 'published').length === 0 && (isViewerMode || !isOwnProfile) ? (
+                                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
+                                        <EmptyStateCard
+                                            icon={Disc}
+                                            title="No Releases Found"
+                                            description="This artist hasn't published any releases yet."
+                                        />
+                                    </div>
+                                ) : (
+                                    localProjects
+                                        .filter(project => project.status === 'published')
+                                        .map(project => (
+                                            <div key={project.id} className="h-auto md:h-[282px]">
+                                                <ProjectCard
+                                                    project={project}
+                                                    currentTrackId={currentTrackId}
+                                                    isPlaying={currentProject?.id === project.id && isPlaying}
+                                                    onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
+                                                    onTogglePlay={onTogglePlay}
+                                                    onEdit={!isViewerMode && isOwnProfile ? handleEditProject : undefined}
+                                                    onDelete={!isViewerMode && isOwnProfile ? handleDeleteProject : undefined}
+                                                    onStatusChange={handleProjectStatusChange}
                                                 />
                                             </div>
                                         ))
@@ -1009,9 +1079,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 {!isViewerMode && isOwnProfile && (
                                     <div
                                         onClick={() => setIsCreateServiceModalOpen(true)}
-                                        className="border border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[255px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                        className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                     >
-                                        <div className="h-16 w-16 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
+                                        <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                             <Mic2 size={24} />
                                         </div>
                                         <span className="font-mono text-xs font-bold uppercase tracking-widest relative z-10">Create Service</span>
@@ -1062,9 +1132,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 {!isViewerMode && isOwnProfile && (
                                     <div
                                         onClick={() => setIsCreateSoundpackModalOpen(true)}
-                                        className="border border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[255px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                        className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                     >
-                                        <div className="h-16 w-16 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
+                                        <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                             <Box size={24} />
                                         </div>
                                         <span className="font-mono text-xs font-bold uppercase tracking-widest relative z-10">Create Soundpack</span>
@@ -1111,6 +1181,50 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             </div>
                                         </div>
                                     ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'private' && (
+                        <div className="animate-in fade-in duration-500">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                    <Lock size={18} className="text-primary" /> Private Projects
+                                </h2>
+                                <div className="flex items-center gap-2">
+                                    <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
+                                        Sort By: Newest
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {localProjects.filter(p => p.status !== 'published').length === 0 ? (
+                                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
+                                        <EmptyStateCard
+                                            icon={Lock}
+                                            title="No Private Projects"
+                                            description="You don't have any private or draft projects."
+                                        />
+                                    </div>
+                                ) : (
+                                    localProjects
+                                        .filter(p => p.status !== 'published')
+                                        .map(project => (
+                                            <div key={project.id} className="h-auto md:h-[282px]">
+                                                <ProjectCard
+                                                    project={project}
+                                                    currentTrackId={currentTrackId}
+                                                    isPlaying={currentProject?.id === project.id && isPlaying}
+                                                    onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
+                                                    onTogglePlay={onTogglePlay}
+                                                    onEdit={!isViewerMode && isOwnProfile ? handleEditProject : undefined}
+                                                    onDelete={!isViewerMode && isOwnProfile ? handleDeleteProject : undefined}
+                                                    onStatusChange={handleProjectStatusChange}
+                                                />
+                                            </div>
+                                        ))
                                 )}
                             </div>
                         </div>
@@ -1176,7 +1290,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-4">Skills & Tools</h3>
                                     <div className="flex flex-wrap gap-2">
                                         {['FL Studio', 'Pro Tools', 'Mixing', 'Mastering', 'Piano', 'Guitar', 'Sound Design', 'Vocal Tuning'].map(tag => (
-                                            <span key={tag} className="px-3 py-1.5 bg-neutral-900 border border-neutral-800 rounded-lg text-xs font-medium text-neutral-300 hover:text-white hover:border-neutral-700 transition-colors cursor-default">
+                                            <span key={tag} className="px-3 py-1.5 bg-neutral-900 border border-white/10 rounded-lg text-xs font-medium text-neutral-300 hover:text-white hover:border-neutral-700 transition-colors cursor-default">
                                                 {tag}
                                             </span>
                                         ))}
@@ -1186,7 +1300,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
         </div >
     );
 };
@@ -1213,7 +1327,7 @@ const MobileTabButton: React.FC<TabButtonProps> = ({ active, onClick, icon, labe
             flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold border transition-all whitespace-nowrap shrink-0
             ${active
                 ? 'bg-white text-black border-white shadow-lg scale-105'
-                : 'bg-neutral-900/50 text-neutral-400 border-neutral-800 hover:text-white hover:border-neutral-700'
+                : 'bg-neutral-900/50 text-neutral-400 border-white/10 hover:text-white hover:border-neutral-700'
             }
         `}
     >
@@ -1234,7 +1348,7 @@ const TabButton: React.FC<TabButtonProps> = ({ active, onClick, icon, label, cou
             pb-4 flex items-center gap-2 text-sm font-medium border-b-2 transition-all relative whitespace-nowrap px-2
             ${active
                 ? 'border-primary text-white'
-                : 'border-neutral-800 text-neutral-500 hover:text-neutral-300 hover:border-neutral-500'
+                : 'border-white/10 text-neutral-500 hover:text-neutral-300 hover:border-neutral-500'
             }
         `}
     >
@@ -1252,7 +1366,7 @@ export default ProfilePage;
 
 const ProfileSkeleton = () => (
     <div className="w-full max-w-[1600px] mx-auto pb-0 -mt-6 px-6 lg:px-8 animate-in fade-in duration-500">
-        <div className="relative rounded-3xl overflow-hidden bg-[#0a0a0a] border border-neutral-800 mb-8 shadow-2xl animate-pulse">
+        <div className="relative rounded-3xl overflow-hidden bg-[#0a0a0a] border border-white/10 mb-8 shadow-2xl animate-pulse">
             <div className="h-16 md:h-36 w-full bg-neutral-900 border-b border-white/5"></div>
             <div className="relative px-8 pb-8 -mt-12 flex flex-col md:flex-row items-end gap-8">
                 <div className="relative z-30 shrink-0 rounded-3xl p-1.5 bg-[#0a0a0a]">
@@ -1264,11 +1378,11 @@ const ProfileSkeleton = () => (
                 </div>
             </div>
         </div>
-        <div className="flex gap-8 mb-8 border-b border-neutral-800 pb-4">
+        <div className="flex gap-8 mb-8 border-b border-white/10 pb-4">
             {[...Array(4)].map((_, i) => <div key={i} className="h-6 w-24 bg-neutral-900 rounded"></div>)}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => <div key={i} className="h-auto md:h-[282px] bg-neutral-900/50 rounded-xl border border-neutral-800"><ProjectSkeleton /></div>)}
+            {[...Array(4)].map((_, i) => <div key={i} className="h-auto md:h-[282px] bg-neutral-900/50 rounded-xl border border-white/10"><ProjectSkeleton /></div>)}
         </div>
     </div>
 );

@@ -4,7 +4,7 @@ import { Project } from '../types';
 import { generateCreativeDescription } from '../services/geminiService';
 import { usePurchaseModal } from '../contexts/PurchaseModalContext';
 import { useToast } from '../contexts/ToastContext';
-import { checkIsProjectSaved, saveProject, unsaveProject, giveGemToProject, undoGiveGem, getCurrentUser } from '../services/supabaseService';
+import { checkIsProjectSaved, saveProject, unsaveProject, giveGemToProject, undoGiveGem, getCurrentUser, updateProjectStatus } from '../services/supabaseService';
 import { Gem } from 'lucide-react';
 
 interface ProjectCardProps {
@@ -18,6 +18,7 @@ interface ProjectCardProps {
     onEdit?: (project: Project) => void;
     onDelete?: (project: Project) => void;
     showStatusTags?: boolean;
+    onStatusChange?: (project: Project, newStatus: string) => void;
 }
 
 
@@ -31,7 +32,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     isPurchased,
     onEdit,
     onDelete,
-    showStatusTags = true
+    showStatusTags = true,
+    onStatusChange
 }) => {
     const [description, setDescription] = useState<string | null>(null);
     const [loadingDesc, setLoadingDesc] = useState(false);
@@ -84,11 +86,25 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         };
     }, [showMenu]);
 
-    const handleMenuAction = (action: 'edit' | 'delete', e: React.MouseEvent) => {
+    const handleMenuAction = async (action: 'edit' | 'delete' | 'make_private', e: React.MouseEvent) => {
         e.stopPropagation();
         setShowMenu(false);
         if (action === 'edit' && onEdit) onEdit(project);
         if (action === 'delete' && onDelete) onDelete(project);
+
+        if (action === 'make_private') {
+            try {
+                if (!project.id) return;
+                await updateProjectStatus(project.id, 'draft');
+                showToast('Project made private', 'success');
+                if (onStatusChange) {
+                    onStatusChange(project, 'draft');
+                }
+            } catch (error) {
+                console.error('Failed to make private:', error);
+                showToast('Failed to make private', 'error');
+            }
+        }
     };
 
     const handleToggleSave = async (e: React.MouseEvent) => {
@@ -252,6 +268,16 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                                         <span>Delete Project</span>
                                                     </button>
                                                 )}
+                                                {/* Make Private Option */}
+                                                {isOwnProject && project.status !== 'draft' && (
+                                                    <button
+                                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition-colors text-left"
+                                                        onClick={(e) => handleMenuAction('make_private', e)}
+                                                    >
+                                                        <Lock size={14} />
+                                                        <span>Make Private</span>
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -275,8 +301,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                             <Sparkles size={10} className="text-primary animate-pulse" />
                         </div>
                         <div className="flex-1">
-                            <div className="text-[9px] text-primary/50 font-mono uppercase tracking-widest mb-0.5">System Analysis</div>
-                            <p className="text-[11px] text-neutral-200 font-mono leading-relaxed line-clamp-2">
+                            <div className="text-[8px] text-primary/50 font-mono uppercase tracking-wider mb-0.5">System Analysis</div>
+                            <p className="text-[10px] text-neutral-200 font-mono leading-relaxed line-clamp-2">
                                 {description}
                             </p>
                         </div>

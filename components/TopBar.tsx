@@ -91,38 +91,28 @@ const RightActions: React.FC<{
                         {!gemsClaimedToday && !profileLoading && userProfile && (
                             <button
                                 onClick={isSpacer ? undefined : onClaimGems}
-                                className="flex items-center gap-2 px-4 bg-white/5 text-primary border border-primary/30 rounded-lg text-xs font-bold hover:bg-primary/10 transition-colors shadow-[0_0_15px_rgb(var(--primary)/0.2)] animate-pulse h-9"
+                                className="group relative h-9 px-4 flex items-center gap-2.5 bg-primary/5 hover:bg-primary/10 border border-primary/20 hover:border-primary/30 rounded-xl transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_0_20px_rgb(var(--primary)/0.05)] hover:shadow-[0_0_25px_rgb(var(--primary)/0.15)]"
                             >
-                                <Gem size={14} />
-                                <span className="font-mono tracking-tight">CLAIM</span>
+                                <div className="absolute inset-0 bg-primary/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                <Gem size={13} className="text-primary relative z-10 animate-[pulse_3s_infinite]" />
+                                <span className="text-[10px] font-black tracking-widest text-primary font-mono uppercase relative z-10 ml-0.5">CLAIM</span>
                             </button>
                         )}
 
-                        {/* Promo Credits */}
-                        <div
-                            onClick={isSpacer ? undefined : () => onNavigate('dashboard-wallet')}
-                            className="h-8 bg-neutral-900 border border-white/5 rounded-full flex items-center px-3 gap-2 cursor-pointer hover:bg-neutral-800 transition-colors"
-                        >
-                            <Star size={12} className="text-amber-400" fill="currentColor" fillOpacity={0.2} />
-                            <span className="text-[10px] font-bold text-white font-mono mt-0.5">
-                                {(userProfile?.promo_credits || 0).toLocaleString()}
-                            </span>
-                        </div>
+
 
                         {/* Gem Balance */}
                         <div
                             onClick={isSpacer ? undefined : () => onNavigate('dashboard-wallet')}
-                            className="h-8 bg-neutral-900 border border-white/5 rounded-full flex items-center px-3 gap-2 cursor-pointer hover:bg-neutral-800 transition-colors"
+                            className="group h-9 px-3.5 flex items-center gap-2.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 rounded-xl transition-all duration-300 cursor-pointer"
                         >
-                            <Gem size={12} className="text-primary" />
-                            <span className="text-[10px] font-bold text-white font-mono mt-0.5">
-                                {userProfile?.gems !== undefined ? userProfile.gems.toLocaleString() : '0'}
-                            </span>
+                            <Gem size={13} className="text-primary/70 group-hover:text-primary transition-colors" />
+                            <div className="flex flex-col items-start justify-center h-full pt-0.5">
+                                <span className="text-[10px] sm:text-[11px] font-bold text-neutral-300 group-hover:text-white font-mono leading-none transition-colors">
+                                    {userProfile?.gems !== undefined ? userProfile.gems.toLocaleString() : '0'}
+                                </span>
+                            </div>
                         </div>
-
-
-
-
                     </div>
                 )}
 
@@ -634,7 +624,7 @@ const TopBar: React.FC<TopBarProps> = ({
     }, [setIsCartOpen]);
 
     return (
-        <header className="h-[56px] fixed top-0 right-0 left-0 lg:left-[260px] z-[90] bg-[#050505]/90 backdrop-blur-lg border-b border-white/5 flex items-center pr-3 lg:pr-6 pl-3 lg:pl-0 justify-between gap-4">
+        <header className="h-[calc(56px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] fixed top-0 right-0 left-0 lg:left-[260px] z-[90] bg-[#050505]/90 backdrop-blur-lg border-b border-white/5 flex items-center pr-3 lg:pr-6 pl-3 lg:pl-0 justify-between gap-4">
 
 
 
@@ -654,7 +644,7 @@ const TopBar: React.FC<TopBarProps> = ({
                 className={`
                 transition-all duration-400
                 ${mobileSearchOpen
-                        ? 'absolute inset-0 bg-[#050505] flex items-center px-4 opacity-100 pointer-events-auto translate-x-0 z-[70]'
+                        ? 'absolute inset-0 bg-[#050505] flex items-center px-4 pt-[env(safe-area-inset-top)] opacity-100 pointer-events-auto translate-x-0 z-[70]'
                         : 'opacity-0 pointer-events-none absolute inset-0 translate-x-4 lg:absolute lg:inset-x-0 lg:flex lg:justify-center lg:items-center lg:pointer-events-auto lg:opacity-100 lg:translate-x-0 mx-auto z-50'
                     }
                 ${!mobileSearchOpen && isFocused ? 'lg:max-w-[35rem] xl:max-w-[45rem] w-full' : 'lg:max-w-[24rem] xl:max-w-[32rem] w-full'}

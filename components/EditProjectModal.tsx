@@ -110,7 +110,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
                             <input
                                 value={title}
                                 onChange={e => setTitle(e.target.value)}
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none"
+                                className="w-full bg-neutral-900 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none"
                                 placeholder="Project Title"
                             />
                         </div>
@@ -120,7 +120,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
                             <textarea
                                 value={description}
                                 onChange={e => setDescription(e.target.value)}
-                                className="w-full h-24 bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none resize-none text-sm"
+                                className="w-full h-24 bg-neutral-900 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-primary/50 focus:outline-none resize-none text-sm"
                                 placeholder="Add a description..."
                             />
                         </div>

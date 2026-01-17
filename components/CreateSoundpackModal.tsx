@@ -198,7 +198,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
             <div className="absolute inset-0 bg-black/40 -z-10" />
             <div className={`w-full h-full bg-[#0a0a0a] border-0 flex flex-col shadow-2xl overflow-hidden relative ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
 
-                <div className="h-14 md:h-16 border-b border-neutral-800 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
+                <div className="h-14 md:h-16 border-b border-white/10 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
                     <h2 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
                         <Box size={18} className="text-primary" />
                         Create New Sound Pack
@@ -214,7 +214,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                         {[1, 2, 3].map((s) => (
                             <div
                                 key={s}
-                                className={`flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full border transition-all ${step === s ? 'bg-primary text-black border-primary font-bold' : step > s ? 'bg-green-500 text-black border-green-500' : 'bg-neutral-900 text-neutral-500 border-neutral-800'}`}
+                                className={`flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full border transition-all ${step === s ? 'bg-primary text-black border-primary font-bold' : step > s ? 'bg-green-500 text-black border-green-500' : 'bg-neutral-900 text-neutral-500 border-white/10'}`}
                             >
                                 <span className="w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full bg-black/20 text-[10px] md:text-xs">{step > s ? <Check size={12} md:size={14} /> : s}</span>
                                 <span className="text-[10px] md:text-xs uppercase tracking-wider hidden md:inline">{s === 1 ? 'Details' : s === 2 ? 'Content' : 'Pricing'}</span>
@@ -265,7 +265,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                     <textarea
                                         value={projectData.description}
                                         onChange={(e) => setProjectData({ ...projectData, description: e.target.value })}
-                                        className="w-full h-24 md:h-32 bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none resize-none"
+                                        className="w-full h-24 md:h-32 bg-neutral-900 border border-white/10 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none resize-none"
                                         placeholder="Describe your sound pack, what's included, and any special features..."
                                     />
                                 </div>
@@ -276,7 +276,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                             <label className="text-xs font-bold text-neutral-400 uppercase">Genre (Max 3)</label>
                                             <span className="text-[10px] text-primary">{selectedGenres.length}/3</span>
                                         </div>
-                                        <div className={`flex flex-wrap gap-2 p-2 border border-neutral-800 rounded-lg bg-neutral-900 overflow-hidden transition-all ${showAllGenres ? 'max-h-[500px]' : 'max-h-[82px]'}`}>
+                                        <div className={`flex flex-wrap gap-2 p-2 border border-white/10 rounded-lg bg-neutral-900 overflow-hidden transition-all ${showAllGenres ? 'max-h-[500px]' : 'max-h-[82px]'}`}>
                                             {GENRE_LIST.map(g => (
                                                 <button
                                                     key={g}
@@ -289,7 +289,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                         </div>
                                         <button
                                             onClick={() => setShowAllGenres(!showAllGenres)}
-                                            className="text-[10px] uppercase font-bold text-neutral-500 hover:text-white w-full text-center py-1 mt-1 border-t border-transparent hover:border-neutral-800"
+                                            className="text-[10px] uppercase font-bold text-neutral-500 hover:text-white w-full text-center py-1 mt-1 border-t border-transparent hover:border-white/10"
                                         >
                                             {showAllGenres ? 'Show Less' : 'Show More'}
                                         </button>
@@ -299,7 +299,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                             <label className="text-xs font-bold text-neutral-400 uppercase">Sub-Genre (Max 3)</label>
                                             <span className="text-[10px] text-primary">{selectedSubGenres.length}/3</span>
                                         </div>
-                                        <div className={`flex flex-wrap gap-2 p-2 border border-neutral-800 rounded-lg bg-neutral-900 overflow-hidden transition-all ${showAllSubGenres ? 'max-h-[500px]' : 'max-h-[82px]'}`}>
+                                        <div className={`flex flex-wrap gap-2 p-2 border border-white/10 rounded-lg bg-neutral-900 overflow-hidden transition-all ${showAllSubGenres ? 'max-h-[500px]' : 'max-h-[82px]'}`}>
                                             {SUB_GENRES.map(g => (
                                                 <button
                                                     key={g}
@@ -312,7 +312,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                         </div>
                                         <button
                                             onClick={() => setShowAllSubGenres(!showAllSubGenres)}
-                                            className="text-[10px] uppercase font-bold text-neutral-500 hover:text-white w-full text-center py-1 mt-1 border-t border-transparent hover:border-neutral-800"
+                                            className="text-[10px] uppercase font-bold text-neutral-500 hover:text-white w-full text-center py-1 mt-1 border-t border-transparent hover:border-white/10"
                                         >
                                             {showAllSubGenres ? 'Show Less' : 'Show More'}
                                         </button>
@@ -321,7 +321,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
 
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-neutral-400 uppercase">Additional Tags (Max 5)</label>
-                                    <div className="flex flex-wrap items-center gap-2 p-2 bg-neutral-900 border border-neutral-800 rounded-lg min-h-[50px]">
+                                    <div className="flex flex-wrap items-center gap-2 p-2 bg-neutral-900 border border-white/10 rounded-lg min-h-[50px]">
                                         {projectData.tags?.map(tag => (
                                             <span key={tag} className="px-2 py-1 bg-neutral-800 rounded flex items-center gap-1 text-xs text-white border border-neutral-700">
                                                 #{tag} <button onClick={() => removeTag(tag)} className="hover:text-red-500"><X size={10} /></button>
@@ -351,7 +351,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
 
                             <div className="space-y-3">
                                 {tracks.map((track, idx) => (
-                                    <div key={idx} className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 animate-in slide-in-from-bottom-2">
+                                    <div key={idx} className="bg-neutral-900/50 border border-white/10 rounded-xl p-4 animate-in slide-in-from-bottom-2">
                                         <div className="flex items-start gap-4">
                                             <div className="w-8 h-8 bg-neutral-800 rounded-full flex items-center justify-center text-sm font-mono font-bold text-neutral-500">
                                                 {idx + 1}
@@ -361,7 +361,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                                     <input
                                                         value={track.title}
                                                         onChange={(e) => updateTrack(idx, 'title', e.target.value)}
-                                                        className="flex-1 bg-black border border-neutral-800 rounded px-3 py-2 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
+                                                        className="flex-1 bg-black border border-white/10 rounded px-3 py-2 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
                                                         placeholder="Sample Name"
                                                     />
                                                     <button onClick={() => { const nt = [...tracks]; nt.splice(idx, 1); setTracks(nt); }} className="p-2 text-neutral-500 hover:text-red-500">
@@ -399,7 +399,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                     </div>
                                 ))}
                                 {tracks.length === 0 && (
-                                    <div className="text-center py-12 border-2 border-dashed border-neutral-800 rounded-xl text-neutral-500">
+                                    <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-xl text-neutral-500">
                                         <Box size={32} className="mx-auto mb-2 opacity-50" />
                                         <p className="text-sm">No samples added. Click "Add Sample" to begin building your pack.</p>
                                     </div>
@@ -420,8 +420,8 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
 
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 {projectData.licenses?.map((license, idx) => (
-                                    <div key={license.id} className="bg-neutral-900/40 border border-neutral-800 rounded-xl overflow-hidden flex flex-col">
-                                        <div className="p-4 border-b border-neutral-800 bg-neutral-900/50 flex justify-between items-center">
+                                    <div key={license.id} className="bg-neutral-900/40 border border-white/10 rounded-xl overflow-hidden flex flex-col">
+                                        <div className="p-4 border-b border-white/10 bg-neutral-900/50 flex justify-between items-center">
                                             <span className="text-xs font-bold uppercase text-neutral-400">{license.type} License</span>
                                             <div className="w-2 h-2 rounded-full bg-primary"></div>
                                         </div>
@@ -452,7 +452,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                                 }))}
                                                 searchable
                                             />
-                                            <div className="pt-2 border-t border-neutral-800">
+                                            <div className="pt-2 border-t border-white/10">
                                                 <div className="text-[10px] font-bold text-neutral-500 uppercase mb-2">Included Files</div>
                                                 <div className="flex flex-wrap gap-1">
                                                     {license.fileTypesIncluded.map(ft => (
@@ -468,7 +468,7 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                     )}
                 </div>
 
-                <div className="h-auto py-4 border-t border-neutral-800 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 bg-neutral-900/50 gap-4 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                <div className="h-auto py-4 border-t border-white/10 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 bg-neutral-900/50 gap-4 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                     <div className="text-xs text-neutral-500 hidden md:block">
                         {step === 3 && "Review details before publishing your sound pack."}
                     </div>
@@ -504,8 +504,8 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
 
                 {fileSelectorOpen && (
                     <div className="absolute inset-0 z-50 bg-black/90 flex items-center justify-center p-8 animate-in fade-in duration-100">
-                        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl w-full max-w-lg shadow-2xl flex flex-col max-h-[500px]">
-                            <div className="p-4 border-b border-neutral-800 flex justify-between items-center">
+                        <div className="bg-[#0a0a0a] border border-white/10 rounded-xl w-full max-w-lg shadow-2xl flex flex-col max-h-[500px]">
+                            <div className="p-4 border-b border-white/10 flex justify-between items-center">
                                 <h3 className="text-sm font-bold text-white">Select {fileSelectorOpen.toUpperCase()} File</h3>
                                 <button onClick={() => setFileSelectorOpen(null)}><X size={16} className="text-neutral-500 hover:text-white" /></button>
                             </div>

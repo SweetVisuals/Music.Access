@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, Music, Plus, Trash2, FileText, DollarSign, Check, FileAudio, Folder, LayoutTemplate, Box, FileSignature, Type } from 'lucide-react';
+import { X, Upload, Music, Plus, Trash2, FileText, DollarSign, Check, FileAudio, Folder, LayoutTemplate, Box, FileSignature, Type, Lock, Globe, Archive } from 'lucide-react';
 import CustomDropdown from './CustomDropdown';
 import CustomInput from './CustomInput';
 import { Project, Track, LicenseInfo } from '../types';
@@ -48,6 +48,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
         title: initialData?.title || '',
         description: initialData?.description || '',
         type: initialData?.type || 'beat_tape',
+        status: initialData?.status || 'published',
         tags: initialData?.tags || [],
         genre: initialData?.genre || '',
         subGenre: initialData?.subGenre || '',
@@ -279,7 +280,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
             <div className="absolute inset-0 bg-black/40 -z-10" />
             <div className={`w-full h-full bg-[#0a0a0a] border-0 flex flex-col shadow-2xl overflow-hidden relative ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
 
-                <div className="h-14 md:h-16 border-b border-neutral-800 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
+                <div className="h-14 md:h-16 border-b border-white/10 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
                     <h2 className="text-base md:text-lg font-bold text-white">Create New Project</h2>
                     <button onClick={handleInternalClose} className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white">
                         <X size={20} />
@@ -292,7 +293,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                         {[1, 2, 3].map((s) => (
                             <div
                                 key={s}
-                                className={`flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full border transition-all ${step === s ? 'bg-primary text-black border-primary font-bold' : step > s ? 'bg-green-500 text-black border-green-500' : 'bg-neutral-900 text-neutral-500 border-neutral-800'}`}
+                                className={`flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full border transition-all ${step === s ? 'bg-primary text-black border-primary font-bold' : step > s ? 'bg-green-500 text-black border-green-500' : 'bg-neutral-900 text-neutral-500 border-white/10'}`}
                             >
                                 <span className="w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full bg-black/20 text-[10px] md:text-xs">{step > s ? <Check size={12} md:size={14} /> : s}</span>
                                 <span className="text-[10px] md:text-xs uppercase tracking-wider hidden md:inline">{s === 1 ? 'Details' : s === 2 ? 'Content' : 'Pricing'}</span>
@@ -354,7 +355,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                             e.target.style.height = 'auto';
                                             e.target.style.height = `${Math.min(e.target.scrollHeight, 300)}px`;
                                         }}
-                                        className="w-full min-h-[96px] md:min-h-[128px] h-auto bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none resize-none custom-scrollbar"
+                                        className="w-full min-h-[96px] md:min-h-[128px] h-auto bg-neutral-900 border border-white/10 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none resize-none custom-scrollbar"
                                         placeholder="Tell us about this project..."
                                     />
                                 </div>
@@ -365,7 +366,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                             <label className="text-xs font-bold text-neutral-400 uppercase">Genre (Max 3)</label>
                                             <span className="text-[10px] text-primary">{selectedGenres.length}/3</span>
                                         </div>
-                                        <div className={`flex flex-wrap gap-2 p-2 border border-neutral-800 rounded-lg bg-neutral-900 overflow-hidden transition-all ${showAllGenres ? 'max-h-[500px]' : 'max-h-[82px]'}`}>
+                                        <div className={`flex flex-wrap gap-2 p-2 border border-white/10 rounded-lg bg-neutral-900 overflow-hidden transition-all ${showAllGenres ? 'max-h-[500px]' : 'max-h-[82px]'}`}>
                                             {GENRE_LIST.map(g => (
                                                 <button
                                                     key={g}
@@ -378,7 +379,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                         </div>
                                         <button
                                             onClick={() => setShowAllGenres(!showAllGenres)}
-                                            className="text-[10px] uppercase font-bold text-neutral-500 hover:text-white w-full text-center py-1 mt-1 border-t border-transparent hover:border-neutral-800"
+                                            className="text-[10px] uppercase font-bold text-neutral-500 hover:text-white w-full text-center py-1 mt-1 border-t border-transparent hover:border-white/10"
                                         >
                                             {showAllGenres ? 'Show Less' : 'Show More'}
                                         </button>
@@ -388,7 +389,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                             <label className="text-xs font-bold text-neutral-400 uppercase">Sub-Genre (Max 3)</label>
                                             <span className="text-[10px] text-primary">{selectedSubGenres.length}/3</span>
                                         </div>
-                                        <div className={`flex flex-wrap gap-2 p-2 border border-neutral-800 rounded-lg bg-neutral-900 overflow-hidden transition-all ${showAllSubGenres ? 'max-h-[500px]' : 'max-h-[82px]'}`}>
+                                        <div className={`flex flex-wrap gap-2 p-2 border border-white/10 rounded-lg bg-neutral-900 overflow-hidden transition-all ${showAllSubGenres ? 'max-h-[500px]' : 'max-h-[82px]'}`}>
                                             {SUB_GENRES.map(g => (
                                                 <button
                                                     key={g}
@@ -401,7 +402,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                         </div>
                                         <button
                                             onClick={() => setShowAllSubGenres(!showAllSubGenres)}
-                                            className="text-[10px] uppercase font-bold text-neutral-500 hover:text-white w-full text-center py-1 mt-1 border-t border-transparent hover:border-neutral-800"
+                                            className="text-[10px] uppercase font-bold text-neutral-500 hover:text-white w-full text-center py-1 mt-1 border-t border-transparent hover:border-white/10"
                                         >
                                             {showAllSubGenres ? 'Show Less' : 'Show More'}
                                         </button>
@@ -410,7 +411,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
 
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-neutral-400 uppercase">Additional Tags (Max 5)</label>
-                                    <div className="flex flex-wrap items-center gap-2 p-2 bg-neutral-900 border border-neutral-800 rounded-lg min-h-[50px]">
+                                    <div className="flex flex-wrap items-center gap-2 p-2 bg-neutral-900 border border-white/10 rounded-lg min-h-[50px]">
                                         {projectData.tags?.map(tag => (
                                             <span key={tag} className="px-2 py-1 bg-neutral-800 rounded flex items-center gap-1 text-xs text-white border border-neutral-700">
                                                 #tag <button onClick={() => removeTag(tag)} className="hover:text-red-500"><X size={10} /></button>
@@ -440,7 +441,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
 
                             <div className="space-y-3">
                                 {tracks.map((track, idx) => (
-                                    <div key={idx} className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 animate-in slide-in-from-bottom-2">
+                                    <div key={idx} className="bg-neutral-900/50 border border-white/10 rounded-xl p-4 animate-in slide-in-from-bottom-2">
                                         <div className="flex items-start gap-4">
                                             <div className="w-8 h-8 bg-neutral-800 rounded-full flex items-center justify-center text-sm font-mono font-bold text-neutral-500">
                                                 {idx + 1}
@@ -450,7 +451,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                     <input
                                                         value={track.title}
                                                         onChange={(e) => updateTrack(idx, 'title', e.target.value)}
-                                                        className="flex-1 bg-black border border-neutral-800 rounded px-3 py-2 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
+                                                        className="flex-1 bg-black border border-white/10 rounded px-3 py-2 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
                                                         placeholder="Track Title"
                                                     />
                                                     <button onClick={() => { const nt = [...tracks]; nt.splice(idx, 1); setTracks(nt); }} className="p-2 text-neutral-500 hover:text-red-500">
@@ -488,7 +489,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                     </div>
                                 ))}
                                 {tracks.length === 0 && (
-                                    <div className="text-center py-12 border-2 border-dashed border-neutral-800 rounded-xl text-neutral-500">
+                                    <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-xl text-neutral-500">
                                         <Music size={32} className="mx-auto mb-2 opacity-50" />
                                         <p className="text-sm">No tracks added. Click "Add Track" to begin.</p>
                                     </div>
@@ -509,8 +510,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
 
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 {projectData.licenses?.map((license, idx) => (
-                                    <div key={license.id} className="bg-neutral-900/40 border border-neutral-800 rounded-xl flex flex-col">
-                                        <div className="p-4 md:p-6 border-t border-neutral-800 bg-neutral-900/30 flex justify-between items-center shrink-0 rounded-t-xl">
+                                    <div key={license.id} className="bg-neutral-900/40 border border-white/10 rounded-xl flex flex-col">
+                                        <div className="p-4 md:p-6 border-t border-white/10 bg-neutral-900/30 flex justify-between items-center shrink-0 rounded-t-xl">
                                             <span className="text-xs font-bold uppercase text-neutral-400">{license.type} Lease</span>
                                             <div className="w-2 h-2 rounded-full bg-primary"></div>
                                         </div>
@@ -520,7 +521,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                 <input
                                                     value={license.name}
                                                     onChange={(e) => updateLicense(idx, 'name', e.target.value)}
-                                                    className="w-full bg-black border border-neutral-800 rounded px-2 py-2 text-sm text-white focus:border-primary/50 focus:outline-none"
+                                                    className="w-full bg-black border border-white/10 rounded px-2 py-2 text-sm text-white focus:border-primary/50 focus:outline-none"
                                                 />
                                             </div>
                                             <div className="space-y-1">
@@ -531,7 +532,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                         type="number"
                                                         value={license.price}
                                                         onChange={(e) => updateLicense(idx, 'price', parseFloat(e.target.value))}
-                                                        className="w-full bg-black border border-neutral-800 rounded px-2 py-2 pl-8 text-lg font-mono font-bold text-white focus:border-primary/50 focus:outline-none"
+                                                        className="w-full bg-black border border-white/10 rounded px-2 py-2 pl-8 text-lg font-mono font-bold text-white focus:border-primary/50 focus:outline-none"
                                                     />
                                                 </div>
                                             </div>
@@ -547,7 +548,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                 }))}
                                                 searchable
                                             />
-                                            <div className="pt-2 border-t border-neutral-800">
+                                            <div className="pt-2 border-t border-white/10">
                                                 <div className="text-[10px] font-bold text-neutral-500 uppercase mb-2">Included Files</div>
                                                 <div className="flex flex-wrap gap-1">
                                                     {license.fileTypesIncluded.map(ft => (
@@ -559,11 +560,47 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                     </div>
                                 ))}
                             </div>
+
+                            <div className="space-y-4 pt-6 border-t border-white/10">
+                                <h4 className="text-sm font-bold text-white uppercase tracking-wider">Project Visibility</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {[
+                                        { id: 'published', label: 'Public', icon: Globe, desc: 'Visible to everyone in the marketplace.' },
+                                        { id: 'private', label: 'Private', icon: Lock, desc: 'Only visible to you. Not listed publicly.' },
+                                        { id: 'draft', label: 'Draft', icon: Archive, desc: 'Save for later. Not finalized.' }
+                                    ].map((option) => (
+                                        <div
+                                            key={option.id}
+                                            onClick={() => setProjectData({ ...projectData, status: option.id as any })}
+                                            className={`
+                                                relative p-4 rounded-xl border cursor-pointer transition-all
+                                                ${projectData.status === option.id
+                                                    ? 'bg-primary border-primary text-black'
+                                                    : 'bg-neutral-900/40 border-white/10 text-neutral-400 hover:bg-neutral-800 hover:border-neutral-600'
+                                                }
+                                            `}
+                                        >
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <option.icon size={18} className={projectData.status === option.id ? 'text-black' : 'text-primary'} />
+                                                <span className={`font-bold ${projectData.status === option.id ? 'text-black' : 'text-white'}`}>{option.label}</span>
+                                            </div>
+                                            <p className={`text-xs ${projectData.status === option.id ? 'text-black/70' : 'text-neutral-500'}`}>
+                                                {option.desc}
+                                            </p>
+                                            {projectData.status === option.id && (
+                                                <div className="absolute top-3 right-3">
+                                                    <Check size={14} className="text-black" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
 
-                <div className="h-auto py-4 border-t border-neutral-800 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 bg-neutral-900/50 gap-4 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                <div className="h-auto py-4 border-t border-white/10 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 bg-neutral-900/50 gap-4 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                     <div className="text-xs text-neutral-500 hidden md:block">
                         {step === 3 && "Review details before publishing."}
                     </div>
@@ -599,8 +636,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
 
                 {fileSelectorOpen && (
                     <div className="absolute inset-0 z-50 bg-black/90 flex items-center justify-center p-8 animate-in fade-in duration-100">
-                        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl w-full max-w-lg shadow-2xl flex flex-col max-h-[500px]">
-                            <div className="p-4 border-b border-neutral-800 flex justify-between items-center">
+                        <div className="bg-[#0a0a0a] border border-white/10 rounded-xl w-full max-w-lg shadow-2xl flex flex-col max-h-[500px]">
+                            <div className="p-4 border-b border-white/10 flex justify-between items-center">
                                 <h3 className="text-sm font-bold text-white">Select {fileSelectorOpen.toUpperCase()} File</h3>
                                 <button onClick={() => setFileSelectorOpen(null)}><X size={16} className="text-neutral-500 hover:text-white" /></button>
                             </div>

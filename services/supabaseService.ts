@@ -1153,6 +1153,21 @@ export const renameProject = async (projectId: string, newTitle: string) => {
   if (error) throw error;
 };
 
+export const updateProjectStatus = async (projectId: string, status: Project['status']) => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+  if (!projectId || !isUuid(projectId)) throw new Error('Invalid project ID');
+
+  const { error } = await supabase
+    .from('projects')
+    .update({ status: status, updated_at: new Date().toISOString() })
+    .eq('id', projectId)
+    .eq('user_id', currentUser.id);
+
+  if (error) throw error;
+};
+
+
 export const addTrackToProject = async (projectId: string, trackTitle: string, assetId: string) => {
   const currentUser = await ensureUserExists();
   if (!currentUser) throw new Error('User not authenticated');
@@ -3330,6 +3345,7 @@ export const createPurchase = async (
         service_id: serviceId,
         seller_id: sellerId,
         item_name: itemName,
+        item_type: item.type || 'Unknown',
         price: item.price
       };
     });

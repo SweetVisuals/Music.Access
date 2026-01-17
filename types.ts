@@ -45,7 +45,7 @@ export interface Project {
   key?: string;
   genre: string;
   subGenre?: string;
-  type: 'beat_tape' | 'sound_pack'; // Distinguished type
+  type: 'beat_tape' | 'sound_pack' | 'release'; // Distinguished type
   tags: string[];
   tracks: Track[];
   description?: string;
@@ -97,6 +97,10 @@ export interface UserProfile {
   plan?: 'Basic' | 'Pro' | 'Studio+';
   promo_credits?: number;
   lastGemClaimDate?: string;
+  yearsExperience?: string;
+  projectsSold?: number;
+  satisfactionRate?: string;
+  avgTurnaround?: string;
   bio: string;
   website?: string;
   projects: Project[];

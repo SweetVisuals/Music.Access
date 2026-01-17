@@ -92,7 +92,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
 
             <div className="space-y-8">
                 {/* Profile Settings */}
-                <section className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden relative group">
+                <section className="bg-[#0a0a0a] border border-transparent rounded-xl overflow-hidden relative group">
                     <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
                     <div className="p-6 border-b border-neutral-800 bg-neutral-900/30 flex items-center gap-3 backdrop-blur-sm">
                         <User size={18} className="text-primary" />
@@ -119,7 +119,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                                             <input
                                                 value={displayProfile.username}
                                                 onChange={(e) => setProfile({ ...displayProfile, username: e.target.value })}
-                                                className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-sm font-bold text-white focus:border-primary/50 focus:bg-neutral-900 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all duration-300 placeholder:text-neutral-700"
+                                                className="w-full bg-neutral-900/50 border border-transparent rounded-lg px-4 py-3 text-sm font-bold text-white focus:border-primary/50 focus:bg-neutral-900 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all duration-300 placeholder:text-neutral-700"
                                                 placeholder="Enter your name"
                                             />
                                         </div>
@@ -130,7 +130,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                                                 <input
                                                     value={displayProfile.handle}
                                                     onChange={(e) => setProfile({ ...displayProfile, handle: e.target.value })}
-                                                    className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg pl-8 pr-4 py-3 text-sm font-bold text-white focus:border-primary/50 focus:bg-neutral-900 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all duration-300"
+                                                    className="w-full bg-neutral-900/50 border border-transparent rounded-lg pl-8 pr-4 py-3 text-sm font-bold text-white focus:border-primary/50 focus:bg-neutral-900 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all duration-300"
                                                 />
                                             </div>
                                         </div>
@@ -140,7 +140,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                                         <textarea
                                             value={displayProfile.bio || ''}
                                             onChange={(e) => setProfile({ ...displayProfile, bio: e.target.value })}
-                                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none h-24 resize-none"
+                                            className="w-full bg-neutral-900 border border-transparent rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none h-24 resize-none"
                                         />
                                     </div>
                                 </div>
@@ -159,7 +159,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                 </section>
 
                 {/* Privacy Settings */}
-                <section className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden">
+                <section className="bg-[#0a0a0a] border border-transparent rounded-xl overflow-hidden">
                     <div className="p-6 border-b border-neutral-800 bg-neutral-900/30 flex items-center gap-3">
                         <Lock size={18} className="text-purple-400" />
                         <h2 className="text-xs font-black text-white uppercase tracking-[0.2em]">Privacy & Visibility</h2>
@@ -184,7 +184,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                 </section>
 
                 {/* Preferences */}
-                <section className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden">
+                <section className="bg-[#0a0a0a] border border-transparent rounded-xl overflow-hidden">
                     <div className="p-6 border-b border-neutral-800 bg-neutral-900/30 flex items-center gap-3">
                         <Palette size={18} className="text-blue-400" />
                         <h2 className="text-xs font-black text-white uppercase tracking-[0.2em]">Preferences</h2>
@@ -196,15 +196,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                                     <Bell size={14} /> Notifications
                                 </h3>
                                 <div className="space-y-3">
-                                    <label className="flex items-center justify-between p-3 rounded-lg border border-neutral-800 bg-neutral-900/50 cursor-pointer hover:bg-neutral-900">
+                                    <label className="flex items-center justify-between p-3 rounded-lg border border-transparent bg-neutral-900/50 cursor-pointer hover:bg-neutral-900">
                                         <span className="text-sm text-neutral-300">Email Notifications</span>
                                         <input type="checkbox" checked={notifications.email} onChange={() => setNotifications(p => ({ ...p, email: !p.email }))} className="accent-primary" />
                                     </label>
-                                    <label className="flex items-center justify-between p-3 rounded-lg border border-neutral-800 bg-neutral-900/50 cursor-pointer hover:bg-neutral-900">
+                                    <label className="flex items-center justify-between p-3 rounded-lg border border-transparent bg-neutral-900/50 cursor-pointer hover:bg-neutral-900">
                                         <span className="text-sm text-neutral-300">Push Notifications</span>
                                         <input type="checkbox" checked={notifications.push} onChange={() => setNotifications(p => ({ ...p, push: !p.push }))} className="accent-primary" />
                                     </label>
-                                    <label className="flex items-center justify-between p-3 rounded-lg border border-neutral-800 bg-neutral-900/50 cursor-pointer hover:bg-neutral-900">
+                                    <label className="flex items-center justify-between p-3 rounded-lg border border-transparent bg-neutral-900/50 cursor-pointer hover:bg-neutral-900">
                                         <span className="text-sm text-neutral-300">Marketing Emails</span>
                                         <input type="checkbox" checked={notifications.marketing} onChange={() => setNotifications(p => ({ ...p, marketing: !p.marketing }))} className="accent-primary" />
                                     </label>
@@ -235,20 +235,20 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                 </section>
 
                 {/* Security */}
-                <section className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden">
+                <section className="bg-[#0a0a0a] border border-transparent rounded-xl overflow-hidden">
                     <div className="p-6 border-b border-neutral-800 bg-neutral-900/30 flex items-center gap-3">
                         <Shield size={18} className="text-green-400" />
                         <h2 className="text-xs font-black text-white uppercase tracking-[0.2em]">Security</h2>
                     </div>
                     <div className="p-8 space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-neutral-900/30 border border-neutral-800 rounded-lg">
+                        <div className="flex items-center justify-between p-4 bg-neutral-900/30 border border-transparent rounded-lg">
                             <div>
                                 <h3 className="text-base font-bold text-white">Password</h3>
                                 <p className="text-sm text-neutral-400">Last changed 3 months ago</p>
                             </div>
                             <button className="px-4 py-2 border border-neutral-700 rounded-lg text-xs font-bold text-white hover:bg-white/5">Change Password</button>
                         </div>
-                        <div className="flex items-center justify-between p-4 bg-neutral-900/30 border border-neutral-800 rounded-lg">
+                        <div className="flex items-center justify-between p-4 bg-neutral-900/30 border border-transparent rounded-lg">
                             <div>
                                 <h3 className="text-base font-bold text-white">Two-Factor Authentication</h3>
                                 <p className="text-sm text-neutral-400">Add an extra layer of security to your account</p>

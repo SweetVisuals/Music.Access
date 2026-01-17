@@ -19,6 +19,7 @@ interface CustomDropdownProps {
     error?: string;
     fullWidth?: boolean;
     size?: 'default' | 'compact';
+    buttonClassName?: string;
 }
 
 const CustomDropdown: React.FC<CustomDropdownProps> = ({
@@ -28,6 +29,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     placeholder = "Select an option",
     label,
     className = "",
+    buttonClassName = "",
     searchable = false,
     error,
     fullWidth = true,
@@ -86,11 +88,12 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                 onClick={toggleDropdown}
                 className={`
                     w-full flex items-center justify-between ${paddingClass} 
-                    bg-neutral-900/50 border ${isOpen ? 'border-primary/50 bg-[#0c0c0c]' : 'border-white/10'} 
+                    bg-neutral-900/50 border ${isOpen ? 'border-primary/50 bg-[#0c0c0c]' : 'border-transparent'} 
                     rounded-xl text-sm font-medium text-white transition-all duration-200
                     hover:border-white/20 hover:bg-[#0c0c0c]
                     ${error ? 'border-red-500/50' : ''}
                     focus:outline-none focus:ring-1 focus:ring-primary/20
+                    ${buttonClassName}
                 `}
             >
                 <div className="flex items-center gap-2 overflow-hidden">

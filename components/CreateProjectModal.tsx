@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { X, Upload, Music, Plus, Trash2, FileText, DollarSign, Check, FileAudio, Folder, LayoutTemplate, Box, FileSignature, Type, Lock, Globe, Archive } from 'lucide-react';
+import { X, Upload, Music, Plus, Trash2, FileText, DollarSign, Check, FileAudio, Folder, LayoutTemplate, Box, FileSignature, Type, Lock, Globe, Archive, Disc, Image as ImageIcon } from 'lucide-react';
 import CustomDropdown from './CustomDropdown';
 import CustomInput from './CustomInput';
 import { Project, Track, LicenseInfo } from '../types';
 import { MOCK_CONTRACTS } from '../constants';
-import { createProject, updateProject, getUserFiles } from '../services/supabaseService';
+import { createProject, updateProject, getUserFiles, uploadFile } from '../services/supabaseService';
 
 interface CreateProjectModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSave: (project: Partial<Project>) => void;
     initialData?: Project; // Support editing
+    initialType?: 'beat_tape' | 'sound_pack' | 'release'; // Default type for new projects
 }
 
 const GENRE_LIST = [
@@ -32,7 +33,7 @@ const formatFileSize = (bytes: number): string => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 };
 
-const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose, onSave, initialData }) => {
+const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose, onSave, initialData, initialType }) => {
     const [step, setStep] = useState(1);
 
     const [selectedGenres, setSelectedGenres] = useState<string[]>(
@@ -47,7 +48,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     const [projectData, setProjectData] = useState<Partial<Project>>({
         title: initialData?.title || '',
         description: initialData?.description || '',
-        type: initialData?.type || 'beat_tape',
+        coverImage: initialData?.coverImage || '',
+        type: initialData?.type || initialType || 'beat_tape',
         status: initialData?.status || 'published',
         tags: initialData?.tags || [],
         genre: initialData?.genre || '',
@@ -93,6 +95,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
     const [fileSelectorOpen, setFileSelectorOpen] = useState<'mp3' | 'wav' | 'stems' | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploadingCover, setIsUploadingCover] = useState(false);
+    const coverInputRef = React.useRef<HTMLInputElement>(null);
 
     // File Selection State
     const [userFiles, setUserFiles] = useState<any[]>([]);
@@ -160,6 +164,10 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     };
 
     const addTrack = () => {
+        if (projectData.type === 'release' && tracks.length >= 1) {
+            // Shake effect or notification that limit reached could go here
+            return;
+        }
         setTracks([...tracks, { id: `new_${Date.now()} `, title: 'Untitled Track', duration: 0, files: {} }]);
     };
 
@@ -196,6 +204,21 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
         const newLicenses = [...(projectData.licenses || [])];
         newLicenses[index] = { ...newLicenses[index], [field]: value };
         setProjectData({ ...projectData, licenses: newLicenses });
+    };
+
+    const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setIsUploadingCover(true);
+            try {
+                const file = e.target.files[0];
+                const { publicUrl } = await uploadFile(file);
+                setProjectData(prev => ({ ...prev, coverImage: publicUrl }));
+            } catch (error) {
+                console.error("Cover upload failed", error);
+            } finally {
+                setIsUploadingCover(false);
+            }
+        }
     };
 
     const handleFinalSave = async () => {
@@ -280,7 +303,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
             <div className="absolute inset-0 bg-black/40 -z-10" />
             <div className={`w-full h-full bg-[#0a0a0a] border-0 flex flex-col shadow-2xl overflow-hidden relative ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
 
-                <div className="h-14 md:h-16 border-b border-white/10 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
+                <div className="h-14 md:h-16 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
                     <h2 className="text-base md:text-lg font-bold text-white">Create New Project</h2>
                     <button onClick={handleInternalClose} className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white">
                         <X size={20} />
@@ -312,295 +335,348 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                     onChange={(e) => setProjectData({ ...projectData, title: e.target.value })}
                                     placeholder="Project Title"
                                     icon={<Type size={16} />}
+                                    className="border-0 focus:ring-0"
                                 />
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <CustomDropdown
-                                        label="Type"
-                                        value={projectData.type || ''}
-                                        onChange={(val) => setProjectData({ ...projectData, type: val as any })}
-                                        options={[
-                                            { value: 'beat_tape', label: 'Beat Tape / Project', icon: <LayoutTemplate size={14} />, description: 'A collection of beats or songs' },
-                                            { value: 'sound_pack', label: 'Sound Pack / Kit', icon: <Box size={14} />, description: 'Drums, loops, or presets' }
-                                        ]}
-                                    />
-
-                                    <div className="flex flex-col gap-1.5">
-                                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1">BPM Range</label>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <CustomInput
-                                                type="number"
-                                                value={minBpm}
-                                                onChange={(e) => setMinBpm(e.target.value)}
-                                                placeholder="Min"
-                                                className="text-center"
-                                            />
-                                            <CustomInput
-                                                type="number"
-                                                value={maxBpm}
-                                                onChange={(e) => setMaxBpm(e.target.value)}
-                                                placeholder="Max"
-                                                className="text-center"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-neutral-400 uppercase">Description</label>
-                                    <textarea
-                                        value={projectData.description}
-                                        onChange={(e) => {
-                                            setProjectData({ ...projectData, description: e.target.value });
-                                            e.target.style.height = 'auto';
-                                            e.target.style.height = `${Math.min(e.target.scrollHeight, 300)}px`;
-                                        }}
-                                        className="w-full min-h-[96px] md:min-h-[128px] h-auto bg-neutral-900 border border-white/10 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none resize-none custom-scrollbar"
-                                        placeholder="Tell us about this project..."
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                                {projectData.type === 'release' && (
                                     <div className="space-y-2">
-                                        <div className="flex justify-between items-center">
-                                            <label className="text-xs font-bold text-neutral-400 uppercase">Genre (Max 3)</label>
-                                            <span className="text-[10px] text-primary">{selectedGenres.length}/3</span>
-                                        </div>
-                                        <div className={`flex flex-wrap gap-2 p-2 border border-white/10 rounded-lg bg-neutral-900 overflow-hidden transition-all ${showAllGenres ? 'max-h-[500px]' : 'max-h-[82px]'}`}>
-                                            {GENRE_LIST.map(g => (
-                                                <button
-                                                    key={g}
-                                                    onClick={() => toggleGenre(g)}
-                                                    className={`px-3 py-1 rounded text-xs border transition-all ${selectedGenres.includes(g) ? 'bg-primary text-black border-primary font-bold shadow-[0_0_10px_rgba(var(--primary),0.3)]' : 'border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500'}`}
-                                                >
-                                                    {g}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <button
-                                            onClick={() => setShowAllGenres(!showAllGenres)}
-                                            className="text-[10px] uppercase font-bold text-neutral-500 hover:text-white w-full text-center py-1 mt-1 border-t border-transparent hover:border-white/10"
-                                        >
-                                            {showAllGenres ? 'Show Less' : 'Show More'}
-                                        </button>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center">
-                                            <label className="text-xs font-bold text-neutral-400 uppercase">Sub-Genre (Max 3)</label>
-                                            <span className="text-[10px] text-primary">{selectedSubGenres.length}/3</span>
-                                        </div>
-                                        <div className={`flex flex-wrap gap-2 p-2 border border-white/10 rounded-lg bg-neutral-900 overflow-hidden transition-all ${showAllSubGenres ? 'max-h-[500px]' : 'max-h-[82px]'}`}>
-                                            {SUB_GENRES.map(g => (
-                                                <button
-                                                    key={g}
-                                                    onClick={() => toggleSubGenre(g)}
-                                                    className={`px-3 py-1 rounded text-xs border transition-all ${selectedSubGenres.includes(g) ? 'bg-white text-black border-white font-bold shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500'}`}
-                                                >
-                                                    {g}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <button
-                                            onClick={() => setShowAllSubGenres(!showAllSubGenres)}
-                                            className="text-[10px] uppercase font-bold text-neutral-500 hover:text-white w-full text-center py-1 mt-1 border-t border-transparent hover:border-white/10"
-                                        >
-                                            {showAllSubGenres ? 'Show Less' : 'Show More'}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-xs font-bold text-neutral-400 uppercase">Additional Tags (Max 5)</label>
-                                    <div className="flex flex-wrap items-center gap-2 p-2 bg-neutral-900 border border-white/10 rounded-lg min-h-[50px]">
-                                        {projectData.tags?.map(tag => (
-                                            <span key={tag} className="px-2 py-1 bg-neutral-800 rounded flex items-center gap-1 text-xs text-white border border-neutral-700">
-                                                #tag <button onClick={() => removeTag(tag)} className="hover:text-red-500"><X size={10} /></button>
-                                            </span>
-                                        ))}
-                                        {(!projectData.tags || projectData.tags.length < 5) && (
-                                            <input
-                                                onKeyDown={handleTagInput}
-                                                className="bg-transparent text-xs text-white focus:outline-none min-w-[100px] p-1"
-                                                placeholder="Type and press enter..."
-                                            />
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {step === 2 && (
-                        <div className="space-y-6">
-                            <div className="flex justify-between items-center">
-                                <h3 className="text-lg font-bold text-white">Project Tracks</h3>
-                                <button onClick={addTrack} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold text-white">
-                                    <Plus size={14} /> Add Track
-                                </button>
-                            </div>
-
-                            <div className="space-y-3">
-                                {tracks.map((track, idx) => (
-                                    <div key={idx} className="bg-neutral-900/50 border border-white/10 rounded-xl p-4 animate-in slide-in-from-bottom-2">
-                                        <div className="flex items-start gap-4">
-                                            <div className="w-8 h-8 bg-neutral-800 rounded-full flex items-center justify-center text-sm font-mono font-bold text-neutral-500">
-                                                {idx + 1}
-                                            </div>
-                                            <div className="flex-1 space-y-4">
-                                                <div className="flex gap-4">
-                                                    <input
-                                                        value={track.title}
-                                                        onChange={(e) => updateTrack(idx, 'title', e.target.value)}
-                                                        className="flex-1 bg-black border border-white/10 rounded px-3 py-2 text-white text-base md:text-sm focus:border-primary/50 focus:outline-none"
-                                                        placeholder="Track Title"
-                                                    />
-                                                    <button onClick={() => { const nt = [...tracks]; nt.splice(idx, 1); setTracks(nt); }} className="p-2 text-neutral-500 hover:text-red-500">
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4">
-                                                    {['mp3', 'wav', 'stems'].map((type: any) => (
-                                                        <div
-                                                            key={type}
-                                                            onClick={() => openFileSelector(idx, type)}
-                                                            className={`
-                                                                border border-dashed rounded-lg p-3 flex items-center justify-between cursor-pointer transition-colors
-                                                                ${track.files?.[type as 'mp3' | 'wav' | 'stems']
-                                                                    ? 'border-green-500/30 bg-green-500/5'
-                                                                    : 'border-neutral-700 hover:border-neutral-500 hover:bg-white/5'
-                                                                }
-`}
-                                                        >
-                                                            <div className="flex items-center gap-2">
-                                                                {track.files?.[type as 'mp3' | 'wav' | 'stems'] ? <Check size={14} className="text-green-500" /> : <Upload size={14} className="text-neutral-500" />}
-                                                                <span className="text-xs font-bold uppercase text-neutral-400">{type}</span>
-                                                            </div>
-                                                            {track.files?.[type as 'mp3' | 'wav' | 'stems'] && (
-                                                                <span className="text-[9px] font-mono text-neutral-500 truncate max-w-[80px]">
-                                                                    {userFiles.find(f => f.id === track.files?.[type as 'mp3' | 'wav' | 'stems'])?.name || 'Unknown File'}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                                {tracks.length === 0 && (
-                                    <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-xl text-neutral-500">
-                                        <Music size={32} className="mx-auto mb-2 opacity-50" />
-                                        <p className="text-sm">No tracks added. Click "Add Track" to begin.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {step === 3 && (
-                        <div className="space-y-8">
-                            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-start gap-3">
-                                <FileText size={16} className="text-blue-400 mt-0.5" />
-                                <div>
-                                    <h4 className="text-sm font-bold text-blue-400">Global Project Licenses</h4>
-                                    <p className="text-xs text-blue-200/70 mt-1">These licenses will apply to all tracks in this project. Customers can select which file version they want to purchase.</p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                {projectData.licenses?.map((license, idx) => (
-                                    <div key={license.id} className="bg-neutral-900/40 border border-white/10 rounded-xl flex flex-col">
-                                        <div className="p-4 md:p-6 border-t border-white/10 bg-neutral-900/30 flex justify-between items-center shrink-0 rounded-t-xl">
-                                            <span className="text-xs font-bold uppercase text-neutral-400">{license.type} Lease</span>
-                                            <div className="w-2 h-2 rounded-full bg-primary"></div>
-                                        </div>
-                                        <div className="p-6 space-y-4 flex-1">
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-bold text-neutral-500 uppercase">License Name</label>
-                                                <input
-                                                    value={license.name}
-                                                    onChange={(e) => updateLicense(idx, 'name', e.target.value)}
-                                                    className="w-full bg-black border border-white/10 rounded px-2 py-2 text-sm text-white focus:border-primary/50 focus:outline-none"
-                                                />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-bold text-neutral-500 uppercase">Price</label>
-                                                <div className="relative">
-                                                    <DollarSign size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                                    <input
-                                                        type="number"
-                                                        value={license.price}
-                                                        onChange={(e) => updateLicense(idx, 'price', parseFloat(e.target.value))}
-                                                        className="w-full bg-black border border-white/10 rounded px-2 py-2 pl-8 text-lg font-mono font-bold text-white focus:border-primary/50 focus:outline-none"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <CustomDropdown
-                                                label="Contract Template"
-                                                value={license.contractId || ''}
-                                                onChange={(val) => updateLicense(idx, 'contractId', val)}
-                                                placeholder="Select Contract..."
-                                                options={MOCK_CONTRACTS.map(c => ({
-                                                    value: c.id,
-                                                    label: c.title,
-                                                    icon: <FileSignature size={14} className="text-primary" />
-                                                }))}
-                                                searchable
-                                            />
-                                            <div className="pt-2 border-t border-white/10">
-                                                <div className="text-[10px] font-bold text-neutral-500 uppercase mb-2">Included Files</div>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {license.fileTypesIncluded.map(ft => (
-                                                        <span key={ft} className="px-1.5 py-0.5 bg-neutral-800 rounded text-[9px] text-neutral-300 border border-neutral-700">{ft}</span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="space-y-4 pt-6 border-t border-white/10">
-                                <h4 className="text-sm font-bold text-white uppercase tracking-wider">Project Visibility</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    {[
-                                        { id: 'published', label: 'Public', icon: Globe, desc: 'Visible to everyone in the marketplace.' },
-                                        { id: 'private', label: 'Private', icon: Lock, desc: 'Only visible to you. Not listed publicly.' },
-                                        { id: 'draft', label: 'Draft', icon: Archive, desc: 'Save for later. Not finalized.' }
-                                    ].map((option) => (
+                                        <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1">Cover Art <span className="text-red-500">*</span></label>
                                         <div
-                                            key={option.id}
-                                            onClick={() => setProjectData({ ...projectData, status: option.id as any })}
+                                            onClick={() => coverInputRef.current?.click()}
                                             className={`
-                                                relative p-4 rounded-xl border cursor-pointer transition-all
-                                                ${projectData.status === option.id
-                                                    ? 'bg-primary border-primary text-black'
-                                                    : 'bg-neutral-900/40 border-white/10 text-neutral-400 hover:bg-neutral-800 hover:border-neutral-600'
-                                                }
+                                                relative w-full h-40 md:h-48 rounded-xl border border-dashed flex flex-col items-center justify-center cursor-pointer overflow-hidden group transition-all
+                                                ${projectData.coverImage ? 'border-transparent' : 'border-neutral-700 hover:border-neutral-500 hover:bg-white/5'}
                                             `}
                                         >
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <option.icon size={18} className={projectData.status === option.id ? 'text-black' : 'text-primary'} />
-                                                <span className={`font-bold ${projectData.status === option.id ? 'text-black' : 'text-white'}`}>{option.label}</span>
-                                            </div>
-                                            <p className={`text-xs ${projectData.status === option.id ? 'text-black/70' : 'text-neutral-500'}`}>
-                                                {option.desc}
-                                            </p>
-                                            {projectData.status === option.id && (
-                                                <div className="absolute top-3 right-3">
-                                                    <Check size={14} className="text-black" />
+                                            <input
+                                                type="file"
+                                                ref={coverInputRef}
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={handleCoverUpload}
+                                            />
+
+                                            {projectData.coverImage ? (
+                                                <>
+                                                    <img src={projectData.coverImage} className="w-full h-full object-cover" alt="Cover" />
+                                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                                        <ImageIcon size={24} className="text-white" />
+                                                        <span className="text-xs font-bold text-white">Change Cover</span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="flex flex-col items-center gap-2 text-neutral-500 group-hover:text-neutral-300">
+                                                    {isUploadingCover ? (
+                                                        <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+                                                    ) : (
+                                                        <ImageIcon size={32} />
+                                                    )}
+                                                    <span className="text-xs font-bold uppercase tracking-wider">Upload Cover Art</span>
                                                 </div>
                                             )}
                                         </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <CustomDropdown
+                                    label="Type"
+                                    value={projectData.type || ''}
+                                    onChange={(val) => setProjectData({ ...projectData, type: val as any })}
+                                    options={[
+                                        { value: 'beat_tape', label: 'Beat Tape / Project', icon: <LayoutTemplate size={14} />, description: 'A collection of beats or songs' },
+                                        { value: 'sound_pack', label: 'Sound Pack / Kit', icon: <Box size={14} />, description: 'Drums, loops, or presets' },
+                                        { value: 'release', label: 'Release (Single)', icon: <Disc size={14} />, description: 'Single track release with cover art' }
+                                    ]}
+                                    buttonClassName="border-0 focus:ring-0"
+                                />
+
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1">BPM Range</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <CustomInput
+                                            type="number"
+                                            value={minBpm}
+                                            onChange={(e) => setMinBpm(e.target.value)}
+                                            placeholder="Min"
+                                            className="text-center border-0 focus:ring-0"
+                                        />
+                                        <CustomInput
+                                            type="number"
+                                            value={maxBpm}
+                                            onChange={(e) => setMaxBpm(e.target.value)}
+                                            placeholder="Max"
+                                            className="text-center border-0 focus:ring-0"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-neutral-400 uppercase">Description</label>
+                                <textarea
+                                    value={projectData.description}
+                                    onChange={(e) => {
+                                        setProjectData({ ...projectData, description: e.target.value });
+                                        e.target.style.height = 'auto';
+                                        e.target.style.height = `${Math.min(e.target.scrollHeight, 300)}px`;
+                                    }}
+                                    className="w-full min-h-[96px] md:min-h-[128px] h-auto bg-neutral-900 rounded-lg px-4 py-2.5 md:py-3 text-white text-base md:text-sm focus:outline-none resize-none custom-scrollbar"
+                                    placeholder="Tell us about this project..."
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-xs font-bold text-neutral-400 uppercase">Genre (Max 3)</label>
+                                        <span className="text-[10px] text-primary">{selectedGenres.length}/3</span>
+                                    </div>
+                                    <div className={`flex flex-wrap gap-2 p-2 border border-white/10 rounded-lg bg-neutral-900 overflow-hidden transition-all ${showAllGenres ? 'max-h-[500px]' : 'max-h-[82px]'}`}>
+                                        {GENRE_LIST.map(g => (
+                                            <button
+                                                key={g}
+                                                onClick={() => toggleGenre(g)}
+                                                className={`px-3 py-1 rounded text-xs border transition-all ${selectedGenres.includes(g) ? 'bg-primary text-black border-primary font-bold shadow-[0_0_10px_rgba(var(--primary),0.3)]' : 'border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500'}`}
+                                            >
+                                                {g}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={() => setShowAllGenres(!showAllGenres)}
+                                        className="text-[10px] uppercase font-bold text-neutral-500 hover:text-white w-full text-center py-1 mt-1 border-t border-transparent hover:border-white/10"
+                                    >
+                                        {showAllGenres ? 'Show Less' : 'Show More'}
+                                    </button>
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <label className="text-xs font-bold text-neutral-400 uppercase">Sub-Genre (Max 3)</label>
+                                        <span className="text-[10px] text-primary">{selectedSubGenres.length}/3</span>
+                                    </div>
+                                    <div className={`flex flex-wrap gap-2 p-2 border border-white/10 rounded-lg bg-neutral-900 overflow-hidden transition-all ${showAllSubGenres ? 'max-h-[500px]' : 'max-h-[82px]'}`}>
+                                        {SUB_GENRES.map(g => (
+                                            <button
+                                                key={g}
+                                                onClick={() => toggleSubGenre(g)}
+                                                className={`px-3 py-1 rounded text-xs border transition-all ${selectedSubGenres.includes(g) ? 'bg-white text-black border-white font-bold shadow-[0_0_10px_rgba(255,255,255,0.3)]' : 'border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500'}`}
+                                            >
+                                                {g}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={() => setShowAllSubGenres(!showAllSubGenres)}
+                                        className="text-[10px] uppercase font-bold text-neutral-500 hover:text-white w-full text-center py-1 mt-1 border-t border-transparent hover:border-white/10"
+                                    >
+                                        {showAllSubGenres ? 'Show Less' : 'Show More'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-neutral-400 uppercase">Additional Tags (Max 5)</label>
+                                <div className="flex flex-wrap items-center gap-2 p-2 bg-neutral-900 rounded-lg min-h-[50px]">
+                                    {projectData.tags?.map(tag => (
+                                        <span key={tag} className="px-2 py-1 bg-neutral-800 rounded flex items-center gap-1 text-xs text-white border border-neutral-700">
+                                            #tag <button onClick={() => removeTag(tag)} className="hover:text-red-500"><X size={10} /></button>
+                                        </span>
                                     ))}
+                                    {(!projectData.tags || projectData.tags.length < 5) && (
+                                        <input
+                                            onKeyDown={handleTagInput}
+                                            className="bg-transparent text-xs text-white focus:outline-none min-w-[100px] p-1"
+                                            placeholder="Type and press enter..."
+                                        />
+                                    )}
                                 </div>
                             </div>
                         </div>
-                    )}
-                </div>
+                    )
+                    }
 
-                <div className="h-auto py-4 border-t border-white/10 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 bg-neutral-900/50 gap-4 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                    {
+                        step === 2 && (
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-lg font-bold text-white">
+                                        {projectData.type === 'release' ? 'Single Track' : 'Project Tracks'}
+                                    </h3>
+                                    {(projectData.type !== 'release' || tracks.length === 0) && (
+                                        <button onClick={addTrack} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold text-white">
+                                            <Plus size={14} /> Add Track
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="space-y-3">
+                                    {tracks.map((track, idx) => (
+                                        <div key={idx} className="bg-neutral-900/50 border border-white/10 rounded-xl p-4 animate-in slide-in-from-bottom-2">
+                                            <div className="flex items-start gap-4">
+                                                <div className="w-8 h-8 bg-neutral-800 rounded-full flex items-center justify-center text-sm font-mono font-bold text-neutral-500">
+                                                    {projectData.type === 'release' ? <Disc size={14} /> : (idx + 1)}
+                                                </div>
+                                                <div className="flex-1 space-y-4">
+                                                    <div className="flex gap-4">
+                                                        <input
+                                                            value={track.title}
+                                                            onChange={(e) => updateTrack(idx, 'title', e.target.value)}
+                                                            className="flex-1 bg-black rounded px-3 py-2 text-white text-base md:text-sm focus:outline-none"
+                                                            placeholder="Track Title"
+                                                        />
+                                                        <button onClick={() => { const nt = [...tracks]; nt.splice(idx, 1); setTracks(nt); }} className="p-2 text-neutral-500 hover:text-red-500">
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4">
+                                                        {['mp3', 'wav', 'stems'].map((type: any) => (
+                                                            <div
+                                                                key={type}
+                                                                onClick={() => openFileSelector(idx, type)}
+                                                                className={`
+                                                                border border-dashed rounded-lg p-3 flex items-center justify-between cursor-pointer transition-colors
+                                                                ${track.files?.[type as 'mp3' | 'wav' | 'stems']
+                                                                        ? 'border-green-500/30 bg-green-500/5'
+                                                                        : 'border-neutral-700 hover:border-neutral-500 hover:bg-white/5'
+                                                                    }
+`}
+                                                            >
+                                                                <div className="flex items-center gap-2">
+                                                                    {track.files?.[type as 'mp3' | 'wav' | 'stems'] ? <Check size={14} className="text-green-500" /> : <Upload size={14} className="text-neutral-500" />}
+                                                                    <span className="text-xs font-bold uppercase text-neutral-400">{type}</span>
+                                                                </div>
+                                                                {track.files?.[type as 'mp3' | 'wav' | 'stems'] && (
+                                                                    <span className="text-[9px] font-mono text-neutral-500 truncate max-w-[80px]">
+                                                                        {userFiles.find(f => f.id === track.files?.[type as 'mp3' | 'wav' | 'stems'])?.name || 'Unknown File'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {tracks.length === 0 && (
+                                        <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-xl text-neutral-500">
+                                            <Music size={32} className="mx-auto mb-2 opacity-50" />
+                                            <p className="text-sm">No tracks added. Click "Add Track" to begin.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )
+                    }
+
+                    {
+                        step === 3 && (
+                            <div className="space-y-8">
+                                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-start gap-3">
+                                    <FileText size={16} className="text-blue-400 mt-0.5" />
+                                    <div>
+                                        <h4 className="text-sm font-bold text-blue-400">Global Project Licenses</h4>
+                                        <p className="text-xs text-blue-200/70 mt-1">These licenses will apply to all tracks in this project. Customers can select which file version they want to purchase.</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    {projectData.licenses?.map((license, idx) => (
+                                        <div key={license.id} className="bg-neutral-900/40 border border-white/10 rounded-xl flex flex-col">
+                                            <div className="p-4 md:p-6 border-t border-white/10 bg-neutral-900/30 flex justify-between items-center shrink-0 rounded-t-xl">
+                                                <span className="text-xs font-bold uppercase text-neutral-400">{license.type} Lease</span>
+                                                <div className="w-2 h-2 rounded-full bg-primary"></div>
+                                            </div>
+                                            <div className="p-6 space-y-4 flex-1">
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-bold text-neutral-500 uppercase">License Name</label>
+                                                    <input
+                                                        value={license.name}
+                                                        onChange={(e) => updateLicense(idx, 'name', e.target.value)}
+                                                        className="w-full bg-black rounded px-2 py-2 text-sm text-white focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Price</label>
+                                                    <div className="relative">
+                                                        <DollarSign size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-500" />
+                                                        <input
+                                                            type="number"
+                                                            value={license.price}
+                                                            onChange={(e) => updateLicense(idx, 'price', parseFloat(e.target.value))}
+                                                            className="w-full bg-black rounded px-2 py-2 pl-8 text-lg font-mono font-bold text-white focus:outline-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <CustomDropdown
+                                                    label="Contract Template"
+                                                    value={license.contractId || ''}
+                                                    onChange={(val) => updateLicense(idx, 'contractId', val)}
+                                                    placeholder="Select Contract..."
+                                                    options={MOCK_CONTRACTS.map(c => ({
+                                                        value: c.id,
+                                                        label: c.title,
+                                                        icon: <FileSignature size={14} className="text-primary" />
+                                                    }))}
+                                                    searchable
+                                                    buttonClassName="border-0 focus:ring-0"
+                                                />
+                                                <div className="pt-2 border-t border-white/10">
+                                                    <div className="text-[10px] font-bold text-neutral-500 uppercase mb-2">Included Files</div>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {license.fileTypesIncluded.map(ft => (
+                                                            <span key={ft} className="px-1.5 py-0.5 bg-neutral-800 rounded text-[9px] text-neutral-300 border border-neutral-700">{ft}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="space-y-4 pt-6 border-t border-white/10">
+                                    <h4 className="text-sm font-bold text-white uppercase tracking-wider">Project Visibility</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        {[
+                                            { id: 'published', label: 'Public', icon: Globe, desc: 'Visible to everyone in the marketplace.' },
+                                            { id: 'private', label: 'Private', icon: Lock, desc: 'Only visible to you. Not listed publicly.' },
+                                            { id: 'draft', label: 'Draft', icon: Archive, desc: 'Save for later. Not finalized.' }
+                                        ].map((option) => (
+                                            <div
+                                                key={option.id}
+                                                onClick={() => setProjectData({ ...projectData, status: option.id as any })}
+                                                className={`
+                                                relative p-4 rounded-xl border cursor-pointer transition-all
+                                                ${projectData.status === option.id
+                                                        ? 'bg-primary border-primary text-black'
+                                                        : 'bg-neutral-900/40 border-white/10 text-neutral-400 hover:bg-neutral-800 hover:border-neutral-600'
+                                                    }
+                                            `}
+                                            >
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <option.icon size={18} className={projectData.status === option.id ? 'text-black' : 'text-primary'} />
+                                                    <span className={`font-bold ${projectData.status === option.id ? 'text-black' : 'text-white'}`}>{option.label}</span>
+                                                </div>
+                                                <p className={`text-xs ${projectData.status === option.id ? 'text-black/70' : 'text-neutral-500'}`}>
+                                                    {option.desc}
+                                                </p>
+                                                {projectData.status === option.id && (
+                                                    <div className="absolute top-3 right-3">
+                                                        <Check size={14} className="text-black" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )
+                    }
+                </div >
+
+                <div className="h-auto py-4 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 bg-neutral-900/50 gap-4 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                     <div className="text-xs text-neutral-500 hidden md:block">
                         {step === 3 && "Review details before publishing."}
                     </div>
@@ -634,55 +710,58 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                     </div>
                 </div>
 
-                {fileSelectorOpen && (
-                    <div className="absolute inset-0 z-50 bg-black/90 flex items-center justify-center p-8 animate-in fade-in duration-100">
-                        <div className="bg-[#0a0a0a] border border-white/10 rounded-xl w-full max-w-lg shadow-2xl flex flex-col max-h-[500px]">
-                            <div className="p-4 border-b border-white/10 flex justify-between items-center">
-                                <h3 className="text-sm font-bold text-white">Select {fileSelectorOpen.toUpperCase()} File</h3>
-                                <button onClick={() => setFileSelectorOpen(null)}><X size={16} className="text-neutral-500 hover:text-white" /></button>
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-2">
-                                {isLoadingFiles ? (
-                                    <div className="flex items-center justify-center h-40 text-neutral-500">
-                                        <div className="animate-spin mr-2 h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
-                                        Loading files...
-                                    </div>
-                                ) : userFiles.length === 0 ? (
-                                    <div className="text-center py-8 text-neutral-500">
-                                        <p>No files found.</p>
-                                        <p className="text-xs mt-1">Upload files in the "Uploads" page first.</p>
-                                    </div>
-                                ) : (
-                                    userFiles
-                                        .filter(f => {
-                                            if (fileSelectorOpen === 'mp3') return f.type === 'MP3' || f.name.toLowerCase().endsWith('.mp3');
-                                            if (fileSelectorOpen === 'wav') return f.type === 'WAV' || f.name.toLowerCase().endsWith('.wav');
-                                            if (fileSelectorOpen === 'stems') return f.type === 'ZIP' || f.name.toLowerCase().endsWith('.zip');
-                                            return true;
-                                        })
-                                        .map(file => (
-                                            <div
-                                                key={file.id}
-                                                onClick={() => selectFile(file.id)}
-                                                className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-lg cursor-pointer border border-transparent hover:border-white/10 group"
-                                            >
-                                                <div className="w-8 h-8 bg-neutral-900 rounded flex items-center justify-center text-neutral-500 group-hover:text-primary">
-                                                    {file.type === 'ZIP' ? <Folder size={16} /> : <FileAudio size={16} />}
+                {
+                    fileSelectorOpen && (
+                        <div className="absolute inset-0 z-50 bg-black/90 flex items-center justify-center p-8 animate-in fade-in duration-100">
+                            <div className="bg-[#0a0a0a] border border-white/10 rounded-xl w-full max-w-lg shadow-2xl flex flex-col max-h-[500px]">
+                                <div className="p-4 border-b border-white/10 flex justify-between items-center">
+                                    <h3 className="text-sm font-bold text-white">Select {fileSelectorOpen.toUpperCase()} File</h3>
+                                    <button onClick={() => setFileSelectorOpen(null)}><X size={16} className="text-neutral-500 hover:text-white" /></button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-2">
+                                    {isLoadingFiles ? (
+                                        <div className="flex items-center justify-center h-40 text-neutral-500">
+                                            <div className="animate-spin mr-2 h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+                                            Loading files...
+                                        </div>
+                                    ) : userFiles.length === 0 ? (
+                                        <div className="text-center py-8 text-neutral-500">
+                                            <p>No files found.</p>
+                                            <p className="text-xs mt-1">Upload files in the "Uploads" page first.</p>
+                                        </div>
+                                    ) : (
+                                        userFiles
+                                            .filter(f => {
+                                                if (fileSelectorOpen === 'mp3') return f.type === 'MP3' || f.name.toLowerCase().endsWith('.mp3');
+                                                if (fileSelectorOpen === 'wav') return f.type === 'WAV' || f.name.toLowerCase().endsWith('.wav');
+                                                if (fileSelectorOpen === 'stems') return f.type === 'ZIP' || f.name.toLowerCase().endsWith('.zip');
+                                                return true;
+                                            })
+                                            .map(file => (
+                                                <div
+                                                    key={file.id}
+                                                    onClick={() => selectFile(file.id)}
+                                                    className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-lg cursor-pointer border border-transparent hover:border-white/10 group"
+                                                >
+                                                    <div className="w-8 h-8 bg-neutral-900 rounded flex items-center justify-center text-neutral-500 group-hover:text-primary">
+                                                        {file.type === 'ZIP' ? <Folder size={16} /> : <FileAudio size={16} />}
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="text-sm font-bold text-neutral-300 group-hover:text-white">{file.name}</div>
+                                                        <div className="text-[10px] text-neutral-500">{file.size} • {file.type}</div>
+                                                    </div>
                                                 </div>
-                                                <div className="flex-1">
-                                                    <div className="text-sm font-bold text-neutral-300 group-hover:text-white">{file.name}</div>
-                                                    <div className="text-[10px] text-neutral-500">{file.size} • {file.type}</div>
-                                                </div>
-                                            </div>
-                                        ))
-                                )}
+                                            ))
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )
+                }
 
-            </div>
+            </div >
         </div>
+
     );
 };
 

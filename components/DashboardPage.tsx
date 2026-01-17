@@ -64,7 +64,7 @@ interface DashboardPageProps {
 
 
 const DownloadCard = ({ title, type, purchase, isPackage }: any) => (
-    <div className="bg-neutral-900 border border-white/5 rounded-xl p-4 flex flex-col gap-4 hover:border-white/10 transition-colors group relative overflow-hidden">
+    <div className="bg-neutral-900 border border-transparent rounded-xl p-4 flex flex-col gap-4 hover:border-white/10 transition-colors group relative overflow-hidden">
         {/* Background Image Effect */}
         {purchase.image && (
             <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay">
@@ -239,7 +239,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     bgColor="bg-orange-400/10"
                     className="hidden md:block" />
             </div>
-            <div className="bg-[#0a0a0a] border border-white/5 rounded-xl overflow-hidden">
+            <div className="bg-[#0a0a0a] border border-transparent rounded-xl overflow-hidden">
                 <div className="p-6 border-b border-white/5">
                     <h3 className="text-sm font-bold text-white">Transactions</h3>
                 </div>
@@ -409,7 +409,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
                 <div className="grid grid-cols-1 gap-4">
                     {filteredPurchases.map(purchase => (
-                        <div key={purchase.id} className="bg-[#0a0a0a] border border-white/5 rounded-xl overflow-hidden hover:border-white/10 transition-colors group">
+                        <div key={purchase.id} className="bg-[#0a0a0a] border border-transparent rounded-xl overflow-hidden hover:border-white/10 transition-colors group">
                             <div className="p-4 flex flex-col md:flex-row items-center gap-6">
                                 {/* Info */}
                                 <div className="flex-1 min-w-0 text-center md:text-left">
@@ -634,7 +634,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
                 {/* Chart Section */}
-                <div className="lg:col-span-2 bg-[#0a0a0a] border border-white/5 rounded-xl p-6 min-h-[300px] flex flex-col relative overflow-hidden transition-all duration-500">
+                <div className="lg:col-span-2 bg-[#0a0a0a] border border-transparent rounded-xl p-6 min-h-[300px] flex flex-col relative overflow-hidden transition-all duration-500">
                     <div className="flex justify-between items-center mb-6 z-10">
                         <div>
                             <h3 className="text-sm font-bold text-white transition-all">{currentChart[selectedStat as keyof typeof currentChart]?.label || 'Analytics'}</h3>
@@ -673,7 +673,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
 
                 {/* Recent Activity */}
-                <div className="lg:col-span-1 bg-[#0a0a0a] border border-white/5 rounded-xl p-6 flex flex-col">
+                <div className="lg:col-span-1 bg-[#0a0a0a] border border-transparent rounded-xl p-6 flex flex-col">
                     <div className="mb-6">
                         <h3 className="text-sm font-bold text-white">Recent Activity</h3>
                         <p className="text-[10px] text-neutral-500 font-mono">Latest notifications</p>
@@ -711,7 +711,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Recent Orders Table */}
-                <div className="lg:col-span-2 bg-[#0a0a0a] border border-white/5 rounded-xl overflow-hidden flex flex-col">
+                <div className="lg:col-span-2 bg-[#0a0a0a] border border-transparent rounded-xl overflow-hidden flex flex-col">
                     <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
                         <div>
                             <h3 className="text-sm font-bold text-white">Recent Orders</h3>
@@ -788,7 +788,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
 
                 {/* Quick Actions */}
-                <div className="lg:col-span-1 bg-[#0a0a0a] border border-white/5 rounded-xl p-6">
+                <div className="lg:col-span-1 bg-[#0a0a0a] border border-transparent rounded-xl p-6">
                     <div className="mb-6">
                         <h3 className="text-sm font-bold text-white">Quick Actions</h3>
                         <p className="text-[10px] text-neutral-500 font-mono">Shortcuts</p>
@@ -862,7 +862,7 @@ const StatCard = ({ title, value, icon, trend, positive, live, subtext, color, b
         onClick={onClick}
         className={`
             bg-[#0a0a0a] border rounded-xl p-4 md:p-5 transition-all duration-300 hover:shadow-lg group relative overflow-hidden cursor-pointer
-            ${isActive ? 'border-primary ring-1 ring-primary/50' : 'border-white/5 hover:border-white/20'}
+            ${isActive ? 'border-primary ring-1 ring-primary/50' : 'border-transparent hover:border-white/20'}
             ${className || ''}
         `}
     >
@@ -967,7 +967,7 @@ const CustomerOrderDetail = ({ purchase, onBack }: { purchase: Purchase, onBack:
                 {/* Main Content */}
                 <div className="flex-1 space-y-6">
                     {/* Header Card */}
-                    <div className="bg-[#0a0a0a] border border-white/5 rounded-xl p-6 relative overflow-hidden">
+                    <div className="bg-[#0a0a0a] border border-transparent rounded-xl p-6 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-20 bg-blue-500/5 rounded-full blur-3xl"></div>
                         <div className="relative z-10 flex justify-between items-start">
                             <div className="flex gap-4">
@@ -986,7 +986,7 @@ const CustomerOrderDetail = ({ purchase, onBack }: { purchase: Purchase, onBack:
                     </div>
 
                     {/* Timeline & Requirements */}
-                    <div className="bg-[#0a0a0a] border border-white/5 rounded-xl p-6">
+                    <div className="bg-[#0a0a0a] border border-transparent rounded-xl p-6">
                         <h3 className="text-sm font-bold text-white mb-6 uppercase tracking-wider">Order Status</h3>
                         <div className="relative pl-4 border-l border-neutral-800 space-y-8">
                             {timeline.map((step, idx) => (
@@ -1001,7 +1001,7 @@ const CustomerOrderDetail = ({ purchase, onBack }: { purchase: Purchase, onBack:
 
                     {/* Delivery Files (If Completed) */}
                     {purchase.status === 'Completed' && (
-                        <div className="bg-[#0a0a0a] border border-white/5 rounded-xl p-6">
+                        <div className="bg-[#0a0a0a] border border-transparent rounded-xl p-6">
                             <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center gap-2">
                                 <Package size={16} className="text-primary" /> Delivered Files
                             </h3>
@@ -1024,7 +1024,7 @@ const CustomerOrderDetail = ({ purchase, onBack }: { purchase: Purchase, onBack:
                 </div>
 
                 {/* Sidebar Chat */}
-                <div className="w-full lg:w-96 bg-[#0a0a0a] border border-white/5 rounded-xl flex flex-col h-[600px]">
+                <div className="w-full lg:w-96 bg-[#0a0a0a] border border-transparent rounded-xl flex flex-col h-[600px]">
                     <div className="p-4 border-b border-neutral-800 bg-neutral-900/30">
                         <h3 className="text-sm font-bold text-white flex items-center gap-2">
                             <MessageSquare size={16} /> Chat with {purchase.seller}
@@ -1060,7 +1060,7 @@ const CustomerOrderDetail = ({ purchase, onBack }: { purchase: Purchase, onBack:
 const FileDownloadModal = ({ purchase, onClose }: { purchase: Purchase, onClose: () => void }) => {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-[#0a0a0a] border border-white/5 rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl scale-100 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-[#0a0a0a] border border-transparent rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl scale-100 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
                 <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                     <h3 className="text-lg font-bold text-white">Download Files</h3>
                     <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white transition-colors">
@@ -1135,7 +1135,7 @@ const FileDownloadModal = ({ purchase, onClose }: { purchase: Purchase, onClose:
 
 const ReceiptModal = ({ purchase, onClose }: { purchase: Purchase, onClose: () => void }) => (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
-        <div className="w-full max-w-md bg-[#111] text-white border border-white/5 rounded-xl shadow-2xl overflow-hidden relative flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="w-full max-w-md bg-[#111] text-white border border-transparent rounded-xl shadow-2xl overflow-hidden relative flex flex-col" onClick={e => e.stopPropagation()}>
 
             {/* Receipt Header */}
             <div className="p-6 border-b border-white/10 text-center bg-white/5 relative">

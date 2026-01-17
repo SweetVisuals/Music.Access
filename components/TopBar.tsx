@@ -91,7 +91,7 @@ const RightActions: React.FC<{
                         {!gemsClaimedToday && !profileLoading && userProfile && (
                             <button
                                 onClick={isSpacer ? undefined : onClaimGems}
-                                className="group relative h-9 px-4 flex items-center gap-2.5 bg-primary/5 hover:bg-primary/10 border border-primary/20 hover:border-primary/30 rounded-xl transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_0_20px_rgb(var(--primary)/0.05)] hover:shadow-[0_0_25px_rgb(var(--primary)/0.15)]"
+                                className="group relative h-9 px-4 flex items-center gap-2.5 bg-primary/5 hover:bg-primary/10 border border-transparent hover:border-primary/30 rounded-xl transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_0_20px_rgb(var(--primary)/0.05)] hover:shadow-[0_0_25px_rgb(var(--primary)/0.15)]"
                             >
                                 <div className="absolute inset-0 bg-primary/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                                 <Gem size={13} className="text-primary relative z-10 animate-[pulse_3s_infinite]" />
@@ -104,7 +104,7 @@ const RightActions: React.FC<{
                         {/* Gem Balance */}
                         <div
                             onClick={isSpacer ? undefined : () => onNavigate('dashboard-wallet')}
-                            className="group h-9 px-3.5 flex items-center gap-2.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 rounded-xl transition-all duration-300 cursor-pointer"
+                            className="group h-9 px-3.5 flex items-center gap-2.5 bg-white/[0.03] hover:bg-white/[0.06] border border-transparent hover:border-white/10 rounded-xl transition-all duration-300 cursor-pointer"
                         >
                             <Gem size={13} className="text-primary/70 group-hover:text-primary transition-colors" />
                             <div className="flex flex-col items-start justify-center h-full pt-0.5">
@@ -137,7 +137,7 @@ const RightActions: React.FC<{
                             <Palette size={16} />
                         </button>
                         {isThemeOpen && !isSpacer && (
-                            <div className="absolute right-0 top-full mt-3 w-56 p-4 rounded-2xl border border-white/10 bg-[#0a0a0a] shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
+                            <div className="absolute right-0 top-full mt-3 w-56 p-4 rounded-2xl border border-transparent bg-[#0a0a0a] shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
                                 <div className="text-[10px] font-black font-mono text-neutral-500 uppercase mb-3 px-1 tracking-widest">Accent Color</div>
                                 <div className="grid grid-cols-5 gap-3 px-1">
                                     {THEMES.map(theme => (
@@ -170,7 +170,7 @@ const RightActions: React.FC<{
                             {isNotificationsOpen && !isSpacer && (
                                 <>
                                     {/* Desktop Dropdown */}
-                                    <div className="hidden lg:block absolute right-0 top-full mt-3 w-96 bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="hidden lg:block absolute right-0 top-full mt-3 w-96 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                                         <div className="p-4 border-b border-white/5 flex justify-between items-center">
                                             <h3 className="text-sm font-bold text-white tracking-tight">Notifications</h3>
                                             <button
@@ -182,8 +182,14 @@ const RightActions: React.FC<{
                                         </div>
                                         <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                                             {notifications.length === 0 ? (
-                                                <div className="p-8 text-center text-neutral-500 text-sm">
-                                                    No notifications yet
+                                                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                                                    <div className="w-12 h-12 bg-neutral-900 rounded-full flex items-center justify-center text-neutral-600 mb-3 border border-white/5">
+                                                        <Bell size={20} />
+                                                    </div>
+                                                    <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-1">All Caught Up</h4>
+                                                    <p className="text-[10px] text-neutral-500 max-w-[150px] leading-relaxed">
+                                                        You have no new notifications at the moment.
+                                                    </p>
                                                 </div>
                                             ) : (
                                                 notifications.map(notif => (
@@ -234,7 +240,7 @@ const RightActions: React.FC<{
                         </button>
 
                         {isCartOpen && !isSpacer && (
-                            <div className="hidden lg:block absolute right-0 top-full mt-3 w-96 bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                            <div className="hidden lg:block absolute right-0 top-full mt-3 w-96 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                                 <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                                     <h3 className="text-sm font-bold text-white tracking-tight">Your Cart ({cartItems.length})</h3>
                                     <div className="flex flex-col items-end">
@@ -333,7 +339,7 @@ const RightActions: React.FC<{
                             className="flex items-center gap-3 pl-2 group"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-xl bg-neutral-800 border border-white/5 overflow-hidden group-hover:border-primary/50 transition-all shadow-lg">
+                                <div className="w-8 h-8 rounded-xl bg-neutral-800 border border-transparent overflow-hidden group-hover:border-primary/50 transition-all shadow-lg">
                                     {isLoggedIn && userProfile ? (
                                         <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
                                     ) : (
@@ -348,7 +354,7 @@ const RightActions: React.FC<{
 
                         {/* Profile Dropdown */}
                         {isLoggedIn && isProfileOpen && !isSpacer && (
-                            <div className="absolute right-0 top-full mt-6 lg:mt-3 w-64 bg-[#0a0a0a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                            <div className="absolute right-0 top-full mt-6 lg:mt-3 w-64 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                                 <div className="p-4 border-b border-white/5 bg-white/[0.02]">
                                     <div className="text-lg font-bold text-white truncate tracking-tight">{userProfile?.username || 'User'}</div>
                                 </div>
@@ -373,7 +379,7 @@ const RightActions: React.FC<{
                                                 setIsProfileOpen(false);
                                                 onNavigate('dashboard-wallet');
                                             }}
-                                            className="flex items-center justify-between bg-neutral-900/80 p-3 rounded-xl border border-white/5 cursor-pointer hover:bg-neutral-800 transition-colors shadow-inner"
+                                            className="flex items-center justify-between bg-neutral-900/80 p-3 rounded-xl border border-transparent cursor-pointer hover:bg-neutral-800 transition-colors shadow-inner"
                                         >
                                             <div className="flex items-center gap-3">
                                                 <Wallet size={16} className="text-emerald-500" />
@@ -495,7 +501,10 @@ const TopBar: React.FC<TopBarProps> = ({
 
         fetchNotifications();
 
-        // Optional: Set up real-time subscription here later if needed
+        // Listen for refresh events
+        const handleRefresh = () => fetchNotifications();
+        window.addEventListener('notifications-updated', handleRefresh);
+        return () => window.removeEventListener('notifications-updated', handleRefresh);
     }, [isLoggedIn, userProfile?.id]);
 
     // Initialize Theme
@@ -624,7 +633,7 @@ const TopBar: React.FC<TopBarProps> = ({
     }, [setIsCartOpen]);
 
     return (
-        <header className="h-[calc(56px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] fixed top-0 right-0 left-0 lg:left-[260px] z-[90] bg-[#050505]/90 backdrop-blur-lg border-b border-white/5 flex items-center pr-3 lg:pr-6 pl-3 lg:pl-0 justify-between gap-4">
+        <header className="h-[calc(56px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] fixed top-0 right-0 left-0 lg:left-[260px] z-[90] bg-[#050505]/90 backdrop-blur-lg border-b border-transparent flex items-center pr-3 lg:pr-6 pl-3 lg:pl-0 justify-between gap-4">
 
 
 
@@ -662,7 +671,7 @@ const TopBar: React.FC<TopBarProps> = ({
                     className={`relative group rounded-xl transition-all duration-300 w-full ${isFocused ? 'lg:shadow-[0_0_40px_rgb(var(--primary)/0.15)]' : ''}`}
                 >
                     {/* Input Background */}
-                    <div className={`absolute inset-0 rounded-xl border transition-all duration-300 ${isFocused || aiResponse ? 'border-primary/50 bg-black' : 'border-white/5 bg-black/40'}`}></div>
+                    <div className={`absolute inset-0 rounded-xl border transition-all duration-300 ${isFocused || aiResponse ? 'border-primary/50 bg-black' : 'border-transparent bg-black/40'}`}></div>
 
                     {/* Main Input Area */}
                     <div className="relative flex items-center pl-1.5 pr-3 py-2">
@@ -732,7 +741,7 @@ const TopBar: React.FC<TopBarProps> = ({
 
                     {/* AI Response Panel */}
                     {(aiResponse || (aiLoading && searchMode === 'ai')) && (
-                        <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-xl border border-white/5 rounded-xl shadow-2xl overflow-hidden z-50">
+                        <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-xl border border-transparent rounded-xl shadow-2xl overflow-hidden z-50">
                             <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-white/[0.02]">
                                 <div className="flex items-center gap-2">
                                     <Terminal size={10} className="text-primary" />

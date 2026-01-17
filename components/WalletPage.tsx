@@ -170,7 +170,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
             </div>
 
             {/* Mobile Tabs */}
-            <div className="flex lg:hidden bg-neutral-900/50 p-1 rounded-xl mb-6 border border-white/5 relative">
+            <div className="flex lg:hidden bg-neutral-900/50 p-1 rounded-xl mb-6 border border-transparent relative">
                 <button
                     onClick={() => setActiveTab('balance')}
                     className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'balance' ? 'bg-white text-black shadow-lg' : 'text-neutral-500'}`}
@@ -191,7 +191,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                 <div className={`lg:col-span-7 space-y-6 ${activeTab === 'balance' ? 'block' : 'hidden lg:block'}`}>
 
                     {/* Main Balance Card */}
-                    <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl border border-white/10 bg-[#0a0a0a] group">
+                    <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl border border-transparent bg-[#0a0a0a] group">
                         {/* Abstract Background Art */}
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-black to-black opacity-50 group-hover:opacity-70 transition-opacity duration-700"></div>
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
@@ -229,7 +229,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
 
 
                     {/* Gems Card */}
-                    <div className="bg-neutral-900/50 border border-white/5 rounded-2xl p-5 flex items-center justify-between">
+                    <div className="bg-neutral-900/50 border border-transparent rounded-2xl p-5 flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-400"><path d="M6 3h12l4 6-10 13L2 9Z" /></svg>
@@ -248,7 +248,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                     </div>
 
                     {/* Promotion Credits Card */}
-                    <div className="bg-neutral-900/50 border border-white/5 rounded-2xl p-5 flex items-center justify-between group">
+                    <div className="bg-neutral-900/50 border border-transparent rounded-2xl p-5 flex items-center justify-between group">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 group-hover:bg-amber-500/20 transition-colors">
                                 <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center shrink-0">
@@ -288,7 +288,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
 
                 {/* RIGHT COLUMN: Payment Methods (Always visible on Desktop, Tabbed on Mobile) */}
                 <div className={`lg:col-span-5 ${activeTab === 'methods' ? 'block' : 'hidden lg:block'}`}>
-                    <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl lg:h-full lg:min-h-[500px] flex flex-col">
+                    <div className="bg-[#0a0a0a] border border-transparent rounded-2xl lg:h-full lg:min-h-[500px] flex flex-col">
                         <div className="p-6 border-b border-white/5 flex items-center justify-between">
                             <h3 className="font-bold text-white">Payment Methods</h3>
                             <button
@@ -301,7 +301,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
 
                         <div className="p-4 space-y-4 flex-1 overflow-y-auto">
                             {/* Earnings Wallet (Stripe Connect) - Moved Here */}
-                            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a0a] group mb-4">
+                            <div className="relative overflow-hidden rounded-2xl border border-transparent bg-[#0a0a0a] group mb-4">
                                 {/* Abstract Background Art - Distinct from Main Wallet */}
                                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-black to-black opacity-50 group-hover:opacity-70 transition-opacity duration-700"></div>
 
@@ -403,7 +403,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
             {isAddMethodOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
                     <div
-                        className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-5 duration-300"
+                        className="bg-[#0a0a0a] border border-transparent rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-5 duration-300"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header */}
@@ -446,7 +446,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                                 placeholder="0000 0000 0000 0000"
                                                 value={cardNumber}
                                                 onChange={(e) => setCardNumber(e.target.value)}
-                                                className="w-full bg-black border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors placeholder:text-neutral-700 font-mono"
+                                                className="w-full bg-black border border-transparent rounded-lg py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors placeholder:text-neutral-700 font-mono"
                                             />
                                         </div>
                                     </div>
@@ -459,7 +459,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                                 placeholder="MM/YY"
                                                 value={expiry}
                                                 onChange={(e) => setExpiry(e.target.value)}
-                                                className="w-full bg-black border border-white/10 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors placeholder:text-neutral-700 font-mono"
+                                                className="w-full bg-black border border-transparent rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors placeholder:text-neutral-700 font-mono"
                                             />
                                         </div>
                                         <div className="space-y-1">
@@ -470,7 +470,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                                     placeholder="123"
                                                     value={cvc}
                                                     onChange={(e) => setCvc(e.target.value)}
-                                                    className="w-full bg-black border border-white/10 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors placeholder:text-neutral-700 font-mono"
+                                                    className="w-full bg-black border border-transparent rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors placeholder:text-neutral-700 font-mono"
                                                 />
                                                 <ShieldCheck size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600" />
                                             </div>
@@ -484,7 +484,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                             placeholder="John Doe"
                                             value={cardName}
                                             onChange={(e) => setCardName(e.target.value)}
-                                            className="w-full bg-black border border-white/10 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors placeholder:text-neutral-700"
+                                            className="w-full bg-black border border-transparent rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors placeholder:text-neutral-700"
                                         />
                                     </div>
                                 </div>
@@ -531,7 +531,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
             {isBuyPromoOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
                     <div
-                        className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-5 duration-300"
+                        className="bg-[#0a0a0a] border border-transparent rounded-2xl w-full max-w-sm shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-5 duration-300"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header */}
@@ -560,7 +560,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                         </div>
                                     </div>
 
-                                    <div className="bg-neutral-900/50 rounded-xl p-4 border border-white/5">
+                                    <div className="bg-neutral-900/50 rounded-xl p-4 border border-transparent">
                                         <div className="flex justify-between items-center mb-2">
                                             <span className="text-neutral-400 text-xs font-medium">Price</span>
                                             <div className="flex items-center gap-1.5 font-bold text-white">
@@ -615,7 +615,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
             {isBuyGemsOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setIsBuyGemsOpen(false)}>
                     <div
-                        className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-5 duration-300"
+                        className="bg-[#0a0a0a] border border-transparent rounded-2xl w-full max-w-sm shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-5 duration-300"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header */}
@@ -641,7 +641,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                         <button
                                             key={pack.amount}
                                             onClick={() => setActiveGemPack(pack.amount)}
-                                            className={`relative p-4 rounded-xl border text-center transition-all ${activeGemPack === pack.amount ? 'border-purple-500 bg-purple-500/10' : 'border-white/5 bg-white/5 hover:border-white/10'}`}
+                                            className={`relative p-4 rounded-xl border text-center transition-all ${activeGemPack === pack.amount ? 'border-purple-500 bg-purple-500/10' : 'border-transparent bg-white/5 hover:border-white/10'}`}
                                         >
                                             {pack.popular && (
                                                 <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-purple-500 text-[8px] font-black text-white px-2 py-0.5 rounded-full uppercase tracking-tighter shadow-lg">Popular</span>

@@ -652,8 +652,6 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
             e.preventDefault();
             let newSelected = new Set(selectedIds);
             const currentId = item.id;
-
-            // Get all items in this specific column to calculate ranges
             const currentColumnItems = getColumns()[depth]?.items || [];
 
             if (e.shiftKey) {
@@ -669,20 +667,16 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                         const start = Math.min(lastIdx, currIdx);
                         const end = Math.max(lastIdx, currIdx);
 
-                        // Select range
                         const rangeItems = currentColumnItems.slice(start, end + 1);
                         rangeItems.forEach(i => newSelected.add(i.id));
                     }
                 } else {
-                    // Fallback: If anchor is missing or in another column, treat as new anchor
-                    // Selecting just this item (or adding it? Standard is select just this and anchor)
-                    // We will add this item and make it the anchor, keeping existing selection if Ctrl held? 
-                    // No, Shift usually implies contiguous. If we jump columns, we just select this one.
+                    // Fallback: Start new range
                     newSelected.add(currentId);
                     setAnchorSelectedId(currentId);
                 }
             } else {
-                // Ctrl/Cmd Toggle
+                // Ctrl/Cmd Toggle (No Shift)
                 if (newSelected.has(currentId)) {
                     newSelected.delete(currentId);
                 } else {
@@ -690,8 +684,9 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                     setAnchorSelectedId(currentId);
                 }
             }
+
             setSelectedIds(newSelected);
-            // Do NOT navigate if we are just selecting multiple files
+            // Do NOT navigate
             return;
         }
 
@@ -704,11 +699,10 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         newPath.push(item.id);
         setSelectedPath(newPath);
 
-        // Sync with currentFolderId for consistency actions (Create, Upload, etc.)
+        // Sync with currentFolderId
         if (item.type === 'folder') {
             setCurrentFolderId(item.id);
         } else {
-            // If file, the context remains the parent of this file
             setCurrentFolderId(item.parentId);
         }
     };
@@ -748,7 +742,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 <div className="flex items-center space-x-3">
                     <button
                         onClick={handleCreateFolder}
-                        className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-white/10 text-neutral-300 hover:bg-white/5 hover:text-white transition-colors text-xs font-bold"
+                        className="flex items-center space-x-2 px-4 py-2 rounded-lg border border-transparent text-neutral-300 hover:bg-white/5 hover:text-white transition-colors text-xs font-bold"
                     >
                         <Plus size={14} />
                         <span>New Folder</span>
@@ -772,7 +766,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
             </div>
 
             {/* Toolbar */}
-            <div className="flex items-center justify-between mb-6 bg-neutral-900/30 border border-white/5 p-1.5 rounded-xl backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-6 bg-neutral-900/30 border border-transparent p-1.5 rounded-xl backdrop-blur-sm">
                 <div className="relative flex-1 max-w-md">
                     <Search size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500" />
                     <input
@@ -783,7 +777,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 </div>
 
                 <div className="flex items-center gap-3 px-2">
-                    <div className="flex items-center bg-neutral-900 rounded-lg border border-white/5 p-0.5">
+                    <div className="flex items-center bg-neutral-900 rounded-lg border border-transparent p-0.5">
                         {/* Mobile: List vs Grid */}
                         <button
                             onClick={() => setViewMode('list')}
@@ -811,6 +805,26 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
                     <div className="h-4 w-px bg-white/10"></div>
 
+                    {/* Desktop Filters - Integrated into Toolbar */}
+                    <div className="hidden md:flex items-center gap-1 bg-neutral-900 rounded-lg border border-white/5 p-0.5">
+                        {(['all', 'audio', 'image', 'text'] as FilterType[]).map(type => (
+                            <button
+                                key={type}
+                                onClick={() => setActiveFilter(type)}
+                                className={`
+                                    px-3 py-1.5 rounded-md text-[10px] uppercase font-bold tracking-wider transition-all
+                                    ${activeFilter === type
+                                        ? 'bg-white/10 text-white shadow-sm border border-white/10'
+                                        : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/5 border border-transparent'}
+                                `}
+                            >
+                                {type === 'all' ? 'All' : type}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="h-4 w-px bg-white/10"></div>
+
                     <button className="flex items-center space-x-2 px-3 py-1.5 rounded hover:bg-white/5 text-neutral-400 hover:text-white transition-colors text-xs font-mono border border-transparent hover:border-white/5">
                         <ArrowUpDown size={12} />
                         <span className="hidden md:inline">Sort: Date</span>
@@ -819,8 +833,8 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 </div>
             </div>
 
-            {/* Mobile Filter Bar (Standardized Grid) */}
-            <div className="lg:hidden relative pb-2 px-2 md:px-0">
+            {/* Mobile Filter Bar (Only show if not on desktop, double check done via hidden md:flex above) */}
+            <div className="lg:hidden md:hidden relative pb-2 px-2 md:px-0">
                 <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5">
                     {(['all', 'audio', 'image', 'text'] as FilterType[]).map(type => (
                         <button
@@ -841,7 +855,8 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
             {/* Main Content Area */}
             <div
-                className={`min-h-[500px] w-full bg-[#050505] border rounded-xl overflow-hidden relative transition-all ${isDraggingFiles ? 'border-primary border-2 bg-primary/5' : 'border-white/5'}`}
+                className={`min-h-[500px] w-full bg-[#050505] border rounded-xl relative transition-all flex flex-col ${isDraggingFiles ? 'border-primary border-2 bg-primary/5' : 'border-white/5'}`}
+                style={{ overflow: 'hidden' }} // Ensure overflow hidden for column view containment
                 onDragOver={(e) => {
                     e.preventDefault();
                     // Check if dragging files from desktop
@@ -987,8 +1002,8 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                         )}
 
                         {viewMode === 'grid' && (
-                            /* Grid View - Now Visible on Mobile too */
-                            <div className="p-3 md:p-6 grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
+                            /* Grid View - Terminal Inspired Redesign */
+                            <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-2 content-start">
 
                                 {/* FOLDERS */}
                                 {currentItems.filter(i => i.type === 'folder').map(folder => {
@@ -1005,45 +1020,28 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                             onDoubleClick={() => handleNavigate(folder.id)}
                                             onContextMenu={(e) => handleContextMenu(e, 'folder', folder.id)}
                                             className={`
-                                     group p-4 rounded-xl transition-all cursor-pointer flex flex-col relative aspect-square justify-between
-                                     ${isSelected
-                                                    ? 'bg-primary/20 border-2 border-primary shadow-[0_0_20px_rgba(var(--primary),0.15)]'
-                                                    : 'bg-[#0f0f0f] border border-white/5 hover:bg-neutral-800'
+                                                group flex items-center gap-2.5 p-2.5 rounded-lg border transition-all cursor-pointer font-mono select-none
+                                                ${isSelected
+                                                    ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]'
+                                                    : 'bg-neutral-900/40 border-white/5 hover:bg-neutral-800 hover:border-white/10 text-neutral-400 hover:text-white'
                                                 }
-                                     ${dragOverFolderId === folder.id
-                                                    ? 'scale-105 border-primary bg-primary/10 ring-2 ring-primary ring-offset-2 ring-offset-black z-10'
-                                                    : ''
-                                                }
-                                 `}
+                                                ${dragOverFolderId === folder.id ? 'ring-2 ring-primary bg-primary/20' : ''}
+                                            `}
                                         >
-                                            <div className="flex justify-between items-start">
-                                                <div className={`p-2.5 rounded-lg ${isSelected ? 'bg-primary text-black' : 'bg-neutral-900 text-neutral-400 group-hover:text-white group-hover:bg-neutral-800 transition-colors'}`}>
-                                                    <Folder size={20} fill={isSelected ? "currentColor" : "none"} />
-                                                </div>
-                                                <button
-                                                    onClick={(e) => handleContextMenu(e, 'folder', folder.id)}
-                                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-neutral-500 hover:text-white"
-                                                >
-                                                    <MoreVertical size={16} />
-                                                </button>
-                                            </div>
-
-                                            <div>
-                                                {renamingId === folder.id ? (
-                                                    <input
-                                                        autoFocus={window.innerWidth >= 768}
-                                                        value={renameValue}
-                                                        onChange={(e) => setRenameValue(e.target.value)}
-                                                        onBlur={handleFinishRename}
-                                                        onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
-                                                        className="w-full bg-black border border-primary text-white text-sm font-bold px-1 rounded"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
-                                                ) : (
-                                                    <div className={`text-sm font-bold truncate w-full ${isSelected ? 'text-white' : 'text-neutral-300 group-hover:text-white'}`}>{folder.name}</div>
-                                                )}
-                                                <div className="text-[10px] text-neutral-500 mt-1">Folder</div>
-                                            </div>
+                                            <Folder size={14} className={isSelected ? 'text-black' : 'text-neutral-500 group-hover:text-white'} fill={isSelected ? "currentColor" : "none"} />
+                                            {renamingId === folder.id ? (
+                                                <input
+                                                    autoFocus
+                                                    value={renameValue}
+                                                    onChange={(e) => setRenameValue(e.target.value)}
+                                                    onBlur={handleFinishRename}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
+                                                    className="w-full bg-black text-white text-xs border border-white/20 px-1 py-0.5 rounded"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            ) : (
+                                                <span className="text-xs font-bold truncate">{folder.name}</span>
+                                            )}
                                         </div>
                                     )
                                 })}
@@ -1053,159 +1051,59 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                     const isPlayingFile = currentProject?.id === 'upload_browser_proj' && currentTrackId === file.id && isPlaying;
                                     const isSelected = selectedIds.has(file.id);
 
-                                    // Special Compact Audio Card
-                                    if (file.type === 'audio') {
-                                        return (
-                                            <div
-                                                key={file.id}
-                                                draggable
-                                                onDragStart={() => setDraggedItemId(file.id)}
-                                                onClick={(e) => handleItemClick(file, e)}
-                                                onDoubleClick={() => handlePlay(file)}
-                                                onContextMenu={(e) => handleContextMenu(e, 'file', file.id)}
-                                                className={`
-                                                    group relative border rounded-xl overflow-hidden cursor-pointer transition-all duration-200 select-none
-                                                    ${isSelected
-                                                        ? 'bg-primary/20 border-primary shadow-[0_0_20px_rgba(var(--primary),0.2)]'
-                                                        : 'bg-[#0A0A0A] border-white/5 hover:bg-neutral-900 hover:border-white/10 hover:shadow-xl hover:-translate-y-1'
-                                                    }
-                                                    ${draggedItemId === file.id ? 'opacity-30' : ''}
-                                                `}
-                                            >
-                                                {/* Top Image/Icon Area (Panoramic) */}
-                                                <div className="w-full h-24 relative overflow-hidden bg-neutral-900">
-                                                    <div className={`absolute inset-0 flex items-center justify-center transition-colors ${isPlayingFile ? 'bg-primary' : 'bg-neutral-800'}`}>
-                                                        {isPlayingFile ? (
-                                                            <div className="flex gap-1 items-end h-8">
-                                                                {[...Array(5)].map((_, i) => (
-                                                                    <div key={i} className="w-1.5 bg-black animate-[music-bar_1s_ease-in-out_infinite]" style={{ animationDelay: `${i * 0.1}s`, height: '40%' }} />
-                                                                ))}
-                                                            </div>
-                                                        ) : (
-                                                            <Music size={32} className={`${isSelected ? 'text-primary' : 'text-neutral-600'}`} />
-                                                        )}
-                                                    </div>
-
-                                                    {/* Play Overlay */}
-                                                    <div
-                                                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]"
-                                                        onClick={(e) => { e.stopPropagation(); handlePlay(file); }}
-                                                    >
-                                                        <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform shadow-lg">
-                                                            {isPlayingFile ? <Pause size={18} fill="black" /> : <Play size={18} fill="black" className="ml-0.5" />}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Details */}
-                                                <div className="p-3">
-                                                    <div className="flex items-start justify-between gap-2 mb-1">
-                                                        <h4 className={`text-xs font-bold truncate flex-1 leading-tight ${isSelected ? 'text-white' : 'text-neutral-300'}`}>{file.name}</h4>
-                                                    </div>
-                                                    <div className="flex items-center justify-between text-[10px] text-neutral-500 font-mono">
-                                                        <span>{file.size}</span>
-                                                        <span>{Math.floor((file.duration || 180) / 60)}:{((file.duration || 180) % 60).toString().padStart(2, '0')}</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Context Menu Button */}
-                                                <button
-                                                    onClick={(e) => handleContextMenu(e, 'file', file.id)}
-                                                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black"
-                                                >
-                                                    <MoreVertical size={12} />
-                                                </button>
-                                            </div>
-                                        )
-                                    }
-
                                     return (
                                         <div
                                             key={file.id}
                                             draggable
                                             onDragStart={() => setDraggedItemId(file.id)}
                                             onClick={(e) => handleItemClick(file, e)}
-                                            onDoubleClick={() => file.type === 'text' ? openTextEditor(file) : null}
+                                            onDoubleClick={() => file.type === 'audio' ? handlePlay(file) : file.type === 'text' ? openTextEditor(file) : openInfo(file)}
                                             onContextMenu={(e) => handleContextMenu(e, 'file', file.id)}
                                             className={`
-                                         group bg-neutral-900/30 border rounded-xl p-3 flex flex-col items-center relative select-none transition-all duration-200
-                                         ${draggedItemId === file.id ? 'opacity-50 border-dashed' : ''}
-                                         ${isSelected
-                                                    ? 'border-primary/50 bg-primary/10 shadow-[0_0_15px_rgba(var(--primary),0.1)]'
-                                                    : 'border-transparent'
+                                                group flex items-center gap-2.5 p-2.5 rounded-lg border transition-all cursor-pointer font-mono select-none overflow-hidden relative
+                                                ${isSelected
+                                                    ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]'
+                                                    : 'bg-[#0A0A0A] border-white/5 hover:bg-neutral-900 hover:border-white/10 text-neutral-400 hover:text-white'
                                                 }
-                                     `}
+                                                ${isPlayingFile ? 'border-primary/50' : ''}
+                                            `}
                                         >
-                                            <div className="w-full aspect-square rounded-lg bg-neutral-900 flex items-center justify-center mb-3 relative overflow-hidden border border-white/5">
-                                                {isPlayingFile ? (
-                                                    <div
-                                                        className="absolute inset-0 flex items-center justify-center bg-black/50 cursor-pointer"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handlePlay(file);
-                                                        }}
-                                                    >
-                                                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black animate-pulse">
-                                                            <Pause size={16} fill="black" />
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        {file.type === 'audio' && <Music size={24} className={`transition-colors ${isSelected ? 'text-primary' : 'text-neutral-600 group-hover:text-neutral-400'}`} />}
-                                                        {file.type === 'text' && <FileText size={24} className={`transition-colors ${isSelected ? 'text-white' : 'text-neutral-600 group-hover:text-neutral-400'}`} />}
-                                                        {file.type === 'image' && (
-                                                            <div className="w-full h-full relative group/img">
-                                                                {file.src ? (
-                                                                    <img
-                                                                        src={file.src}
-                                                                        className={`w-full h-full object-cover transition-transform duration-500 ${isSelected ? 'scale-110' : ''}`}
-                                                                        alt={file.name}
-                                                                    />
-                                                                ) : (
-                                                                    <LayoutGrid size={24} className="text-neutral-600" />
-                                                                )}
-                                                                <div className="absolute inset-0 bg-black/20 group-hover/img:bg-black/0 transition-colors" />
-                                                            </div>
-                                                        )}
-                                                    </>
-                                                )}
+                                            {/* Playing Indicator Background */}
+                                            {isPlayingFile && !isSelected && (
+                                                <div className="absolute inset-0 bg-primary/5 animate-pulse pointer-events-none" />
+                                            )}
 
-                                                {file.type === 'audio' && !isPlayingFile && (
-                                                    <div
-                                                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 cursor-pointer"
-                                                        onClick={(e) => { e.stopPropagation(); handlePlay(file); }}
-                                                    >
-                                                        <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform">
-                                                            <Play size={14} fill="black" className="ml-0.5" />
-                                                        </div>
-                                                    </div>
+                                            <div className="flex-shrink-0">
+                                                {file.type === 'audio' ? (
+                                                    isPlayingFile ? <div className="w-3.5 h-3.5 flex items-end gap-0.5"><div className="w-1 bg-primary h-full animate-[music-bar_0.5s_ease-in-out_infinite]" /><div className="w-1 bg-primary h-2/3 animate-[music-bar_0.5s_ease-in-out_infinite_0.1s]" /><div className="w-1 bg-primary h-1/2 animate-[music-bar_0.5s_ease-in-out_infinite_0.2s]" /></div> : <Music size={14} />
+                                                ) : file.type === 'image' ? (
+                                                    <LayoutGrid size={14} />
+                                                ) : (
+                                                    <FileText size={14} />
                                                 )}
                                             </div>
 
                                             {renamingId === file.id ? (
                                                 <input
-                                                    autoFocus={window.innerWidth >= 768}
+                                                    autoFocus
                                                     value={renameValue}
                                                     onChange={(e) => setRenameValue(e.target.value)}
                                                     onBlur={handleFinishRename}
                                                     onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
-                                                    className="w-full bg-black border border-primary text-white text-xs px-1 rounded text-center"
+                                                    className="w-full bg-black text-white text-xs border border-white/20 px-1 py-0.5 rounded"
                                                     onClick={(e) => e.stopPropagation()}
                                                 />
                                             ) : (
-                                                <div className={`text-[11px] md:text-xs font-bold text-center truncate w-full px-1 ${isPlayingFile || isSelected ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-200'}`}>
-                                                    {file.name}
+                                                <div className="flex flex-col min-w-0 flex-1">
+                                                    <span className={`text-xs font-bold truncate ${isPlayingFile && !isSelected ? 'text-primary' : ''}`}>{file.name}</span>
+                                                    <div className="flex items-center gap-2 text-[9px] opacity-50">
+                                                        <span>{file.size}</span>
+                                                        {file.duration && (
+                                                            <span>{Math.floor(file.duration / 60)}:{((file.duration % 60).toString().padStart(2, '0'))}</span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
-
-                                            <div className="text-[10px] text-neutral-600 mt-1">{file.size}</div>
-
-                                            <button
-                                                onClick={(e) => handleContextMenu(e, 'file', file.id)}
-                                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-white p-1 bg-black/50 rounded hover:bg-black/70"
-                                            >
-                                                <MoreVertical size={12} />
-                                            </button>
                                         </div>
                                     );
                                 })}
@@ -1216,93 +1114,100 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
                 {viewMode === 'column' && (
                     // --- COLUMN VIEW ---
-                    <div className="flex w-full overflow-x-auto custom-scrollbar divide-x divide-white/5">
-                        {(() => {
-                            const allColumns = getColumns();
-                            const MAX_NAV_COLS = 4;
-                            const startIndex = Math.max(0, allColumns.length - MAX_NAV_COLS);
-                            const visibleColsLines = allColumns.slice(startIndex);
+                    <div className="flex-1 w-full overflow-hidden flex flex-row">
+                        {/* Scrollable Columns Container */}
+                        <div className="flex-1 overflow-x-auto custom-scrollbar flex divide-x divide-white/5 h-full">
+                            {(() => {
+                                const allColumns = getColumns();
+                                const MAX_NAV_COLS = 10; // Increased since we have scroll now
+                                const displayCols = allColumns;
 
-                            // Pad with empty columns if needed
-                            const displayCols = [...visibleColsLines];
-                            while (displayCols.length < MAX_NAV_COLS) {
-                                displayCols.push({ items: [], selectedId: null });
-                            }
-
-                            return displayCols.map((col, i) => {
-                                const realIndex = startIndex + i;
-
-                                return (
-                                    <div key={i} className="flex-1 min-w-[200px] overflow-y-auto custom-scrollbar bg-neutral-900/20 relative border-r border-white/5 last:border-r-0">
-                                        {col.items.length === 0 && (
-                                            <div className="absolute inset-0 flex items-center justify-center text-neutral-800 pointer-events-none">
-                                                <span className="text-xs font-mono opacity-20">Column {i + 1}</span>
-                                            </div>
-                                        )}
-                                        {col.items.map(item => {
-                                            const isSelected = col.selectedId === item.id;
-                                            const isPlayingFile = currentProject?.id === 'upload_browser_proj' && currentTrackId === item.id && isPlaying;
-                                            const isDropTarget = dragOverFolderId === item.id;
-
-                                            return (
-                                                <div
-                                                    key={item.id}
-                                                    draggable
-                                                    onDragStart={() => setDraggedItemId(item.id)}
-                                                    onDragOver={(e) => {
-                                                        if (item.type === 'folder') {
-                                                            e.preventDefault();
-                                                            setDragOverFolderId(item.id);
-                                                        }
-                                                    }}
-                                                    onDragLeave={() => setDragOverFolderId(null)}
-                                                    onDrop={(e) => {
-                                                        if (item.type === 'folder') {
-                                                            handleDrop(e, item.id);
-                                                        }
-                                                    }}
-                                                    onClick={(e) => handleColumnItemClick(item, realIndex, e)}
-                                                    onContextMenu={(e) => handleContextMenu(e, item.type === 'folder' ? 'folder' : 'file', item.id)}
-                                                    className={`
-                                                    flex items-center gap-2 px-4 py-2 text-sm cursor-pointer whitespace-nowrap border-b border-white/5
-                                                    ${isSelected ? 'bg-primary text-black font-bold' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}
-                                                    ${isPlayingFile && !isSelected ? 'text-primary' : ''}
-                                                    ${isDropTarget ? 'bg-primary/20 ring-2 ring-inset ring-primary' : ''}
-                                                `}
-                                                >
-                                                    {item.type === 'folder' ? (
-                                                        <Folder size={14} className={isSelected ? 'text-black' : 'text-neutral-500'} />
-                                                    ) : item.type === 'audio' ? (
-                                                        <Music size={14} className={isSelected ? 'text-black' : 'text-neutral-500'} />
-                                                    ) : (
-                                                        <FileText size={14} className={isSelected ? 'text-black' : 'text-neutral-500'} />
-                                                    )}
-
-                                                    {renamingId === item.id ? (
-                                                        <input
-                                                            autoFocus={window.innerWidth >= 768}
-                                                            value={renameValue}
-                                                            onChange={(e) => setRenameValue(e.target.value)}
-                                                            onBlur={handleFinishRename}
-                                                            onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
-                                                            className={`
-                                                                flex-1 bg-transparent border-none outline-none text-sm px-0 py-0
-                                                                ${isSelected ? 'text-black placeholder:text-black/50 selection:bg-neutral-900 selection:text-white' : 'text-white placeholder:text-neutral-500 selection:bg-primary selection:text-black'}
-                                                            `}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                        />
-                                                    ) : (
-                                                        <span className="truncate flex-1">{item.name}</span>
-                                                    )}
-
-                                                    {item.type === 'folder' && <ChevronRight size={12} className={isSelected ? 'text-black' : 'text-neutral-600'} />}
+                                return displayCols.map((col, i) => {
+                                    // Ensure we have a key for every column
+                                    return (
+                                        <div key={i} className="min-w-[220px] max-w-[220px] md:min-w-[260px] md:max-w-[260px] flex-shrink-0 overflow-y-auto custom-scrollbar bg-neutral-900/10 relative h-full">
+                                            {col.items.length === 0 && (
+                                                <div className="absolute inset-0 flex items-center justify-center text-neutral-800 pointer-events-none">
+                                                    <span className="text-xs font-mono opacity-20">Empty</span>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                );
-                            });
-                        })()}
+                                            )}
+                                            <div className="p-1 space-y-0.5">
+                                                {col.items.map(item => {
+                                                    const isSelected = selectedIds.has(item.id);
+                                                    const isActivePath = selectedPath.includes(item.id);
+                                                    const isPlayingFile = currentProject?.id === 'upload_browser_proj' && currentTrackId === item.id && isPlaying;
+                                                    const isDropTarget = dragOverFolderId === item.id;
+                                                    const isRenaming = renamingId === item.id;
+
+                                                    return (
+                                                        <div
+                                                            key={item.id}
+                                                            draggable
+                                                            onDragStart={() => setDraggedItemId(item.id)}
+                                                            onDragOver={(e) => {
+                                                                if (item.type === 'folder') {
+                                                                    e.preventDefault();
+                                                                    setDragOverFolderId(item.id);
+                                                                }
+                                                            }}
+                                                            onDragLeave={() => setDragOverFolderId(null)}
+                                                            onDrop={(e) => {
+                                                                if (item.type === 'folder') {
+                                                                    handleDrop(e, item.id);
+                                                                }
+                                                            }}
+                                                            onClick={(e) => handleColumnItemClick(item, i, e)}
+                                                            onContextMenu={(e) => handleContextMenu(e, item.type === 'folder' ? 'folder' : 'file', item.id)}
+                                                            className={`
+                                                            flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer whitespace-nowrap rounded font-mono select-none transition-colors
+                                                            ${isSelected
+                                                                    ? 'bg-white text-black font-bold'
+                                                                    : isActivePath
+                                                                        ? 'bg-neutral-800 text-white'
+                                                                        : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'
+                                                                }
+                                                            ${isPlayingFile && !isSelected ? 'text-primary' : ''}
+                                                            ${isDropTarget ? 'bg-primary/20 ring-1 ring-inset ring-primary' : ''}
+                                                        `}
+                                                        >
+                                                            {item.type === 'folder' ? (
+                                                                <Folder size={12} className={isSelected ? 'text-black' : 'text-neutral-500'} fill={isSelected || isActivePath ? "currentColor" : "none"} />
+                                                            ) : item.type === 'audio' ? (
+                                                                <Music size={12} className={isSelected ? 'text-black' : 'text-neutral-500'} />
+                                                            ) : (
+                                                                <FileText size={12} className={isSelected ? 'text-black' : 'text-neutral-500'} />
+                                                            )}
+
+                                                            {isRenaming ? (
+                                                                <input
+                                                                    autoFocus
+                                                                    value={renameValue}
+                                                                    onChange={(e) => setRenameValue(e.target.value)}
+                                                                    onBlur={handleFinishRename}
+                                                                    onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
+                                                                    className={`
+                                                                    flex-1 bg-transparent border-none outline-none text-xs px-0 py-0
+                                                                    ${isSelected ? 'text-black decoration-black' : 'text-white decoration-primary'}
+                                                                `}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                />
+                                                            ) : (
+                                                                <span className="truncate flex-1">{item.name}</span>
+                                                            )}
+
+                                                            {item.type === 'folder' && <ChevronRight size={10} className={isSelected ? 'text-black' : 'text-neutral-600'} />}
+
+                                                            {/* Details show on hover for files? No, too cluttered. */}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            })()}
+                        </div>
+
 
                         {/* Preview Column (Always Visible - Last in Flex) */}
                         <div className="w-80 flex-shrink-0 bg-[#080808] p-8 flex flex-col items-center text-center overflow-y-auto custom-scrollbar border-l border-white/10">
@@ -1502,153 +1407,159 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
             </div>
 
             {/* TEXT EDITOR MODAL */}
-            {textEditorItem && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4 animate-in fade-in duration-200">
-                    <div className="w-full h-full md:h-auto md:max-w-2xl bg-[#0a0a0a] border-0 md:border border-neutral-700 rounded-none md:rounded-xl shadow-2xl flex flex-col max-h-none md:max-h-[80vh]">
-                        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-neutral-900/50">
-                            <div className="flex items-center gap-2">
-                                <FileText size={16} className="text-primary" />
-                                <span className="text-sm font-bold text-white">{textEditorItem.name}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={addToNotes}
-                                    className={`
+            {
+                textEditorItem && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4 animate-in fade-in duration-200">
+                        <div className="w-full h-full md:h-auto md:max-w-2xl bg-[#0a0a0a] border-0 md:border border-neutral-700 rounded-none md:rounded-xl shadow-2xl flex flex-col max-h-none md:max-h-[80vh]">
+                            <div className="flex items-center justify-between p-4 border-b border-white/10 bg-neutral-900/50">
+                                <div className="flex items-center gap-2">
+                                    <FileText size={16} className="text-primary" />
+                                    <span className="text-sm font-bold text-white">{textEditorItem.name}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={addToNotes}
+                                        className={`
                                     flex items-center gap-2 px-3 py-1.5 rounded text-xs font-bold transition-all
                                     ${noteSuccess ? 'bg-green-500/20 text-green-400' : 'bg-white/5 hover:bg-white/10 text-neutral-300'}
                                 `}
-                                >
-                                    {noteSuccess ? <Check size={14} /> : <Copy size={14} />}
-                                    {noteSuccess ? 'Saved to Notebook' : 'Add to Notes'}
-                                </button>
-                                <button onClick={() => setTextEditorItem(null)} className="p-1.5 hover:bg-white/10 rounded text-neutral-400 hover:text-white">
-                                    <X size={16} />
+                                    >
+                                        {noteSuccess ? <Check size={14} /> : <Copy size={14} />}
+                                        {noteSuccess ? 'Saved to Notebook' : 'Add to Notes'}
+                                    </button>
+                                    <button onClick={() => setTextEditorItem(null)} className="p-1.5 hover:bg-white/10 rounded text-neutral-400 hover:text-white">
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                            <textarea
+                                value={editorContent}
+                                onChange={(e) => setEditorContent(e.target.value)}
+                                className="flex-1 bg-[#050505] p-6 text-sm text-neutral-300 font-mono focus:outline-none resize-none"
+                                placeholder="Start typing..."
+                            />
+                            <div className="p-4 border-t border-white/10 flex justify-end gap-3">
+                                <button onClick={() => setTextEditorItem(null)} className="px-4 py-2 rounded text-xs font-bold text-neutral-500 hover:text-white">Cancel</button>
+                                <button onClick={saveTextFile} className="px-4 py-2 bg-primary text-black rounded text-xs font-bold hover:bg-primary/90 flex items-center gap-2">
+                                    <Save size={14} /> Save File
                                 </button>
                             </div>
                         </div>
-                        <textarea
-                            value={editorContent}
-                            onChange={(e) => setEditorContent(e.target.value)}
-                            className="flex-1 bg-[#050505] p-6 text-sm text-neutral-300 font-mono focus:outline-none resize-none"
-                            placeholder="Start typing..."
-                        />
-                        <div className="p-4 border-t border-white/10 flex justify-end gap-3">
-                            <button onClick={() => setTextEditorItem(null)} className="px-4 py-2 rounded text-xs font-bold text-neutral-500 hover:text-white">Cancel</button>
-                            <button onClick={saveTextFile} className="px-4 py-2 bg-primary text-black rounded text-xs font-bold hover:bg-primary/90 flex items-center gap-2">
-                                <Save size={14} /> Save File
-                            </button>
-                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* INFO MODAL */}
-            {infoItem && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="w-full max-w-md bg-[#0a0a0a] border border-neutral-700 rounded-xl shadow-2xl p-6 relative">
-                        <button onClick={() => setInfoItem(null)} className="absolute top-4 right-4 text-neutral-500 hover:text-white">
-                            <X size={16} />
-                        </button>
-                        <div className="flex flex-col items-center mb-6">
-                            <div className="w-20 h-20 bg-neutral-900 rounded-2xl border border-white/10 flex items-center justify-center mb-4 shadow-lg">
-                                {infoItem.type === 'folder' ? <Folder size={40} className="text-primary" /> : infoItem.type === 'text' ? <FileText size={40} className="text-neutral-400" /> : <Music size={40} className="text-neutral-400" />}
+            {
+                infoItem && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                        <div className="w-full max-w-md bg-[#0a0a0a] border border-neutral-700 rounded-xl shadow-2xl p-6 relative">
+                            <button onClick={() => setInfoItem(null)} className="absolute top-4 right-4 text-neutral-500 hover:text-white">
+                                <X size={16} />
+                            </button>
+                            <div className="flex flex-col items-center mb-6">
+                                <div className="w-20 h-20 bg-neutral-900 rounded-2xl border border-white/10 flex items-center justify-center mb-4 shadow-lg">
+                                    {infoItem.type === 'folder' ? <Folder size={40} className="text-primary" /> : infoItem.type === 'text' ? <FileText size={40} className="text-neutral-400" /> : <Music size={40} className="text-neutral-400" />}
+                                </div>
+                                <h3 className="text-lg font-bold text-white">{infoItem.name}</h3>
+                                <span className="text-xs text-neutral-500 font-mono uppercase">{infoItem.type}</span>
                             </div>
-                            <h3 className="text-lg font-bold text-white">{infoItem.name}</h3>
-                            <span className="text-xs text-neutral-500 font-mono uppercase">{infoItem.type}</span>
-                        </div>
 
-                        <div className="space-y-3 bg-white/5 rounded-xl p-4 border border-white/5">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-neutral-500">Size</span>
-                                <span className="text-white font-mono">{infoItem.size}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-neutral-500">Created</span>
-                                <span className="text-white font-mono">{infoItem.created}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-neutral-500">Format</span>
-                                <span className="text-white font-mono">{infoItem.format || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-neutral-500">Location</span>
-                                <span className="text-white font-mono">{infoItem.parentId ? 'Subfolder' : 'Root'}</span>
+                            <div className="space-y-3 bg-white/5 rounded-xl p-4 border border-white/5">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-neutral-500">Size</span>
+                                    <span className="text-white font-mono">{infoItem.size}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-neutral-500">Created</span>
+                                    <span className="text-white font-mono">{infoItem.created}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-neutral-500">Format</span>
+                                    <span className="text-white font-mono">{infoItem.format || 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-neutral-500">Location</span>
+                                    <span className="text-white font-mono">{infoItem.parentId ? 'Subfolder' : 'Root'}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* CONTEXT MENU */}
-            {contextMenu && (
-                <div
-                    ref={menuRef}
-                    className="fixed z-[100] w-48 bg-[#0a0a0a] border border-neutral-700 shadow-[0_10px_40px_rgba(0,0,0,0.8)] rounded-lg py-1.5 text-xs font-medium backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100 origin-top-left"
-                    style={{
-                        top: Math.min(contextMenu.y, (typeof window !== 'undefined' ? window.innerHeight : 0) - 220), // Prevent bottom overflow
-                        left: contextMenu.x > (typeof window !== 'undefined' ? window.innerWidth : 0) - 200
-                            ? 'auto'
-                            : contextMenu.x,
-                        right: contextMenu.x > (typeof window !== 'undefined' ? window.innerWidth : 0) - 200
-                            ? (typeof window !== 'undefined' ? window.innerWidth : 0) - contextMenu.x
-                            : 'auto'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    {/* FILE CONTEXT MENU */}
-                    {contextMenu.type === 'file' && (
-                        <>
-                            <div className="px-2 py-1 text-[10px] font-mono text-neutral-500 uppercase tracking-wider opacity-50 mb-1">
-                                {items.find(i => i.id === contextMenu.targetId)?.name}
-                            </div>
-                            {items.find(i => i.id === contextMenu.targetId)?.type === 'audio' && (
-                                <ContextMenuItem icon={<Play size={14} />} label="Play" onClick={() => { handlePlay(items.find(i => i.id === contextMenu.targetId)!); setContextMenu(null); }} />
-                            )}
-                            {items.find(i => i.id === contextMenu.targetId)?.type === 'text' && (
-                                <ContextMenuItem icon={<Edit size={14} />} label="Edit Text" onClick={() => { openTextEditor(items.find(i => i.id === contextMenu.targetId)!); }} />
-                            )}
+            {
+                contextMenu && (
+                    <div
+                        ref={menuRef}
+                        className="fixed z-[100] w-48 bg-[#0a0a0a] border border-neutral-700 shadow-[0_10px_40px_rgba(0,0,0,0.8)] rounded-lg py-1.5 text-xs font-medium backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100 origin-top-left"
+                        style={{
+                            top: Math.min(contextMenu.y, (typeof window !== 'undefined' ? window.innerHeight : 0) - 220), // Prevent bottom overflow
+                            left: contextMenu.x > (typeof window !== 'undefined' ? window.innerWidth : 0) - 200
+                                ? 'auto'
+                                : contextMenu.x,
+                            right: contextMenu.x > (typeof window !== 'undefined' ? window.innerWidth : 0) - 200
+                                ? (typeof window !== 'undefined' ? window.innerWidth : 0) - contextMenu.x
+                                : 'auto'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* FILE CONTEXT MENU */}
+                        {contextMenu.type === 'file' && (
+                            <>
+                                <div className="px-2 py-1 text-[10px] font-mono text-neutral-500 uppercase tracking-wider opacity-50 mb-1">
+                                    {items.find(i => i.id === contextMenu.targetId)?.name}
+                                </div>
+                                {items.find(i => i.id === contextMenu.targetId)?.type === 'audio' && (
+                                    <ContextMenuItem icon={<Play size={14} />} label="Play" onClick={() => { handlePlay(items.find(i => i.id === contextMenu.targetId)!); setContextMenu(null); }} />
+                                )}
+                                {items.find(i => i.id === contextMenu.targetId)?.type === 'text' && (
+                                    <ContextMenuItem icon={<Edit size={14} />} label="Edit Text" onClick={() => { openTextEditor(items.find(i => i.id === contextMenu.targetId)!); }} />
+                                )}
 
-                            <ContextMenuItem icon={<Copy size={14} />} label="Copy Link" />
-                            <div className="h-px bg-white/10 my-1 mx-2" />
-                            <ContextMenuItem icon={<Edit size={14} />} label="Rename" onClick={() => handleStartRename(items.find(i => i.id === contextMenu.targetId)!)} />
-                            <div className="h-px bg-white/10 my-1 mx-2" />
-                            <ContextMenuItem icon={<Info size={14} />} label="Get Info" onClick={() => openInfo(items.find(i => i.id === contextMenu.targetId)!)} />
-                            <ContextMenuItem icon={<Trash2 size={14} />} label="Delete" className="text-red-400 hover:bg-red-500/10 hover:text-red-400" onClick={() => handleDelete(contextMenu.targetId!)} />
-                        </>
-                    )}
+                                <ContextMenuItem icon={<Copy size={14} />} label="Copy Link" />
+                                <div className="h-px bg-white/10 my-1 mx-2" />
+                                <ContextMenuItem icon={<Edit size={14} />} label="Rename" onClick={() => handleStartRename(items.find(i => i.id === contextMenu.targetId)!)} />
+                                <div className="h-px bg-white/10 my-1 mx-2" />
+                                <ContextMenuItem icon={<Info size={14} />} label="Get Info" onClick={() => openInfo(items.find(i => i.id === contextMenu.targetId)!)} />
+                                <ContextMenuItem icon={<Trash2 size={14} />} label="Delete" className="text-red-400 hover:bg-red-500/10 hover:text-red-400" onClick={() => handleDelete(contextMenu.targetId!)} />
+                            </>
+                        )}
 
-                    {/* FOLDER CONTEXT MENU */}
-                    {contextMenu.type === 'folder' && (
-                        <>
-                            <div className="px-2 py-1 text-[10px] font-mono text-neutral-500 uppercase tracking-wider opacity-50 mb-1">
-                                Folder Actions
-                            </div>
-                            <ContextMenuItem icon={<Folder size={14} />} label="Open" onClick={() => handleNavigate(contextMenu.targetId!)} />
-                            <div className="h-px bg-white/10 my-1 mx-2" />
-                            <ContextMenuItem icon={<Edit size={14} />} label="Rename" onClick={() => handleStartRename(items.find(i => i.id === contextMenu.targetId)!)} />
-                            <div className="h-px bg-white/10 my-1 mx-2" />
-                            <ContextMenuItem icon={<Info size={14} />} label="Get Info" onClick={() => openInfo(items.find(i => i.id === contextMenu.targetId)!)} />
-                            <ContextMenuItem icon={<Trash2 size={14} />} label="Delete" className="text-red-400 hover:bg-red-500/10 hover:text-red-400" onClick={() => handleDelete(contextMenu.targetId!)} />
-                        </>
-                    )}
+                        {/* FOLDER CONTEXT MENU */}
+                        {contextMenu.type === 'folder' && (
+                            <>
+                                <div className="px-2 py-1 text-[10px] font-mono text-neutral-500 uppercase tracking-wider opacity-50 mb-1">
+                                    Folder Actions
+                                </div>
+                                <ContextMenuItem icon={<Folder size={14} />} label="Open" onClick={() => handleNavigate(contextMenu.targetId!)} />
+                                <div className="h-px bg-white/10 my-1 mx-2" />
+                                <ContextMenuItem icon={<Edit size={14} />} label="Rename" onClick={() => handleStartRename(items.find(i => i.id === contextMenu.targetId)!)} />
+                                <div className="h-px bg-white/10 my-1 mx-2" />
+                                <ContextMenuItem icon={<Info size={14} />} label="Get Info" onClick={() => openInfo(items.find(i => i.id === contextMenu.targetId)!)} />
+                                <ContextMenuItem icon={<Trash2 size={14} />} label="Delete" className="text-red-400 hover:bg-red-500/10 hover:text-red-400" onClick={() => handleDelete(contextMenu.targetId!)} />
+                            </>
+                        )}
 
-                    {/* BACKGROUND CONTEXT MENU */}
-                    {contextMenu.type === 'background' && (
-                        <>
-                            <ContextMenuItem icon={<Folder size={14} />} label="New Folder" onClick={handleCreateFolder} />
-                            <ContextMenuItem icon={<FileText size={14} />} label="New Text File" onClick={handleCreateTextFile} />
-                            <div className="h-px bg-white/10 my-1 mx-2" />
-                            <ContextMenuItem icon={<UploadIcon size={14} />} label="Upload Files" />
-                            {currentFolderId && (
-                                <ContextMenuItem icon={<CornerDownLeft size={14} />} label="Back Up" onClick={handleNavigateUp} />
-                            )}
-                        </>
-                    )}
-                </div>
-            )}
+                        {/* BACKGROUND CONTEXT MENU */}
+                        {contextMenu.type === 'background' && (
+                            <>
+                                <ContextMenuItem icon={<Folder size={14} />} label="New Folder" onClick={handleCreateFolder} />
+                                <ContextMenuItem icon={<FileText size={14} />} label="New Text File" onClick={handleCreateTextFile} />
+                                <div className="h-px bg-white/10 my-1 mx-2" />
+                                <ContextMenuItem icon={<UploadIcon size={14} />} label="Upload Files" />
+                                {currentFolderId && (
+                                    <ContextMenuItem icon={<CornerDownLeft size={14} />} label="Back Up" onClick={handleNavigateUp} />
+                                )}
+                            </>
+                        )}
+                    </div>
+                )
+            }
 
             {/* Toast Notifications - REMOVED */}
-        </div>
+        </div >
     );
 };
 

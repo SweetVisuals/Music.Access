@@ -53,7 +53,7 @@ const CollaboratePage: React.FC = () => {
             <div className="w-auto -mx-4 px-4 md:w-auto md:mx-0 md:px-0 mb-6 lg:mb-8">
                 {/* Mobile Tabs Layout (Grid) */}
                 <div className="md:hidden relative pb-2 overflow-x-auto no-scrollbar">
-                    <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5 min-w-[320px]">
+                    <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-transparent min-w-[320px]">
                         <button
                             onClick={() => setActiveTab('all')}
                             className={`
@@ -101,7 +101,7 @@ const CollaboratePage: React.FC = () => {
                 </div>
 
                 {/* Desktop Segmented Control */}
-                <div className="hidden md:flex md:flex-nowrap md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-neutral-800 gap-1 md:gap-0">
+                <div className="hidden md:flex md:flex-nowrap md:bg-neutral-900 md:p-1 md:rounded-lg md:border md:border-transparent gap-1 md:gap-0">
                     <TabButton active={activeTab === 'all'} onClick={() => setActiveTab('all')} label="All" mobileCompact />
                     <TabButton active={activeTab === 'instagram'} onClick={() => setActiveTab('instagram')} label="Instagram" icon={<Instagram size={10} />} mobileCompact />
                     <TabButton active={activeTab === 'spotify'} onClick={() => setActiveTab('spotify')} label="Spotify" icon={<Music size={10} />} mobileCompact />
@@ -112,14 +112,14 @@ const CollaboratePage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                 {filteredServices.length > 0 ? (
                     filteredServices.map(service => (
-                        <div key={service.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden hover:border-primary/30 transition-all group hover:-translate-y-1 shadow-lg">
+                        <div key={service.id} className="bg-[#0a0a0a] border border-transparent rounded-xl overflow-hidden hover:border-primary/30 transition-all group hover:-translate-y-1 shadow-lg">
                             <div className="p-6 relative">
-                                <div className="absolute top-4 right-4 p-2 bg-neutral-900 rounded-lg border border-neutral-800">
+                                <div className="absolute top-4 right-4 p-2 bg-neutral-900 rounded-lg border border-transparent">
                                     {getPlatformIcon(service.platform)}
                                 </div>
 
                                 <div className="flex items-center gap-3 mb-4">
-                                    <img src={service.avatar} alt={service.name} className="w-12 h-12 rounded-lg object-cover border border-white/10" />
+                                    <img src={service.avatar} alt={service.name} className="w-12 h-12 rounded-lg object-cover border border-transparent" />
                                     <div>
                                         <h3 className="text-sm font-bold text-white flex items-center gap-1">
                                             {service.name}
@@ -134,16 +134,16 @@ const CollaboratePage: React.FC = () => {
                                     <p className="text-xs text-neutral-400 leading-relaxed h-10 line-clamp-2">{service.description}</p>
                                 </div>
 
-                                <div className="flex items-center justify-between p-3 bg-neutral-900/50 rounded-lg mb-4 border border-neutral-800">
+                                <div className="flex items-center justify-between p-3 bg-neutral-900/50 rounded-lg mb-4 border border-transparent">
                                     {service.stats.map((stat, idx) => (
-                                        <div key={idx} className="text-center flex-1 first:border-r border-neutral-800">
+                                        <div key={idx} className="text-center flex-1 first:border-r border-transparent">
                                             <div className="text-xs font-bold text-white">{stat.value}</div>
                                             <div className="text-[8px] text-neutral-500 uppercase tracking-wider">{stat.label}</div>
                                         </div>
                                     ))}
                                 </div>
 
-                                <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                                <div className="flex items-center justify-between pt-2 border-t border-transparent">
                                     <div className="text-xs font-mono">
                                         <span className="text-neutral-500">Price:</span> <span className="text-white font-bold">{service.priceRange}</span>
                                     </div>
@@ -155,8 +155,8 @@ const CollaboratePage: React.FC = () => {
                         </div>
                     ))
                 ) : (
-                    <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-gradient-to-b from-neutral-900/50 to-neutral-900/10 border border-neutral-800 border-dashed rounded-3xl animate-in fade-in zoom-in duration-500">
-                        <div className="w-20 h-20 bg-neutral-900 rounded-2xl border border-neutral-800 flex items-center justify-center mb-6 shadow-2xl shadow-black/50 relative group overflow-hidden">
+                    <div className="col-span-full flex flex-col items-center justify-center py-20 px-4 text-center bg-gradient-to-b from-neutral-900/50 to-neutral-900/10 border border-transparent border-dashed rounded-3xl animate-in fade-in zoom-in duration-500">
+                        <div className="w-20 h-20 bg-neutral-900 rounded-2xl border border-transparent flex items-center justify-center mb-6 shadow-2xl shadow-black/50 relative group overflow-hidden">
                             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent opacity-50"></div>
                             {activeTab === 'instagram' && <Instagram size={40} className="text-pink-500 relative z-10" />}
                             {activeTab === 'youtube' && <Youtube size={40} className="text-red-500 relative z-10" />}
@@ -202,8 +202,8 @@ const TabButton = ({ active, onClick, label, icon, mobileCompact }: any) => (
             rounded-lg md:rounded-md font-bold flex items-center justify-center gap-1.5 transition-all border
             ${mobileCompact ? 'py-2 px-0 text-[10px] w-full' : 'px-4 py-2 md:py-1.5 text-xs'}
             ${active
-                ? 'bg-white text-black border-white md:bg-neutral-800 md:text-white md:border-transparent md:shadow'
-                : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:bg-neutral-800 hover:text-white md:bg-transparent md:border-transparent md:hover:bg-white/5'
+                ? 'bg-white text-black border-transparent md:bg-neutral-800 md:text-white md:border-transparent md:shadow'
+                : 'bg-neutral-900 text-neutral-400 border-transparent hover:bg-neutral-800 hover:text-white md:bg-transparent md:border-transparent md:hover:bg-white/5'
             }
         `}
     >

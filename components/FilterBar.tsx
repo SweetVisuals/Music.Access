@@ -38,7 +38,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
         </div>
       </div>
 
-      <div className="w-full glass-panel p-4 lg:p-2.5 rounded-xl flex flex-col lg:flex-row items-stretch lg:items-center gap-4 lg:gap-3 relative z-30 shadow-2xl">
+      <div className="w-full glass-panel !border-0 p-4 lg:p-2.5 rounded-xl flex flex-col lg:flex-row items-stretch lg:items-center gap-4 lg:gap-3 relative z-30 shadow-2xl">
         {/* Filters Container */}
 
         {/* Genre */}
@@ -50,6 +50,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
           className="w-full lg:w-48"
           searchable
           size="compact"
+          buttonClassName="!border-0"
         />
 
         {/* Key and Scale */}
@@ -62,6 +63,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
             className="w-full lg:w-32" // Increased width to fit "All Keys"
             searchable
             size="compact"
+            buttonClassName="!border-0"
           />
           <CustomDropdown
             value={filters.scaleType}
@@ -71,6 +73,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
             className="w-full lg:w-32"
             searchable={false}
             size="compact"
+            buttonClassName="!border-0"
           />
         </div>
 
@@ -83,7 +86,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
             value={filters.minBpm}
             onChange={(e) => onFilterChange({ ...filters, minBpm: e.target.value })}
             placeholder="Min"
-            className="w-full lg:w-24 !py-2 !px-3 font-mono text-center"
+            className="w-full lg:w-24 !py-2 !px-3 font-mono text-center !border-0"
             containerClassName="flex-1 lg:flex-none"
             noLabel
             hideControls
@@ -95,7 +98,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
             value={filters.maxBpm}
             onChange={(e) => onFilterChange({ ...filters, maxBpm: e.target.value })}
             placeholder="Max"
-            className="w-full lg:w-24 !py-2 !px-3 font-mono text-center"
+            className="w-full lg:w-24 !py-2 !px-3 font-mono text-center !border-0"
             containerClassName="flex-1 lg:flex-none"
             noLabel
             hideControls

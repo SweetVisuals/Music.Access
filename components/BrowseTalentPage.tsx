@@ -150,7 +150,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                             <div
                                 key={talent.id}
                                 onClick={() => navigate(`/@${talent.handle}`)}
-                                className="bg-[#0a0a0a] border border-white/5 rounded-xl p-5 transition-all group hover:-translate-y-1 flex flex-col h-full cursor-pointer"
+                                className="bg-[#0a0a0a] border border-transparent rounded-xl p-5 transition-all group hover:-translate-y-1 flex flex-col h-full cursor-pointer"
                             >
                                 <div className="flex-1">
                                     {/* Header: User Info & Top Right Role */}
@@ -171,7 +171,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                                         </div>
 
                                         {talent.role && (
-                                            <span className="px-2 py-0.5 rounded bg-white/5 border border-white/5 text-[9px] font-bold text-primary uppercase tracking-wide">
+                                            <span className="px-2 py-0.5 rounded bg-white/5 border border-transparent text-[9px] font-bold text-primary uppercase tracking-wide">
                                                 {talent.role}
                                             </span>
                                         )}
@@ -180,16 +180,16 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
 
 
                                     {/* Stats Grid - No bottom margin to align with footer spacing */}
-                                    <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2 border border-white/5">
+                                    <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2 border border-transparent">
                                         <div className="text-center">
                                             <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Followers</div>
                                             <div className="text-xs font-bold text-white">{talent.followers}</div>
                                         </div>
-                                        <div className="text-center border-l border-white/5">
+                                        <div className="text-center border-l border-transparent">
                                             <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Plays</div>
                                             <div className="text-xs font-bold text-white">{talent.streams ? talent.streams.toLocaleString() : '0'}</div>
                                         </div>
-                                        <div className="text-center border-l border-white/5">
+                                        <div className="text-center border-l border-transparent">
                                             <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Tracks</div>
                                             <div className="text-xs font-bold text-white">{talent.tracks || 0}</div>
                                         </div>
@@ -197,20 +197,20 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                                 </div>
 
                                 {/* Footer with symmetrical spacing (mt-4 / pt-4) */}
-                                <div className="flex items-center gap-2 pt-4 border-t border-white/5 mt-4">
+                                <div className="flex items-center gap-2 pt-4 border-t border-transparent mt-4">
                                     <button
                                         onClick={(e) => talent.id !== currentUserId && handleFollow(e, talent)}
                                         disabled={talent.id === currentUserId}
                                         className={`flex-1 text-xs font-bold flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors border ${talent.id === currentUserId
                                             ? 'bg-neutral-800 border-neutral-800 text-neutral-500 cursor-not-allowed opacity-50'
                                             : talent.isFollowing
-                                                ? 'bg-transparent border-white/5 text-neutral-400 hover:text-red-500 hover:border-red-900'
+                                                ? 'bg-transparent border-transparent text-neutral-400 hover:text-red-500 hover:border-red-900'
                                                 : 'text-white bg-primary/10 hover:bg-primary hover:text-black border-primary/20'
                                             }`}
                                     >
                                         <UserPlus size={14} /> {talent.isFollowing ? 'Following' : 'Follow'}
                                     </button>
-                                    <button className="text-neutral-400 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-white/5 hover:border-neutral-700 px-3 py-2 rounded-lg transition-colors" title="Message">
+                                    <button className="text-neutral-400 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-transparent hover:border-neutral-700 px-3 py-2 rounded-lg transition-colors" title="Message">
                                         <MessageCircle size={14} />
                                     </button>
                                 </div>
@@ -271,7 +271,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                         [...Array(3)].map((_, i) => <ServiceSkeleton key={i} />)
                     ) : (
                         services.slice(0, 3).map(service => (
-                            <div key={service.id} className="bg-neutral-900/50 border border-white/5 p-5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+                            <div key={service.id} className="bg-neutral-900/50 border border-transparent p-5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="p-2 bg-neutral-800 rounded-lg text-neutral-300">
                                         <Star size={16} />
@@ -303,7 +303,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
 };
 
 const TalentSkeleton = () => (
-    <div className="bg-[#0a0a0a] border border-white/5 rounded-xl p-5 flex flex-col h-full animate-pulse">
+    <div className="bg-[#0a0a0a] border border-transparent rounded-xl p-5 flex flex-col h-full animate-pulse">
         <div className="flex-1">
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
@@ -320,9 +320,9 @@ const TalentSkeleton = () => (
                 <div className="h-5 w-12 bg-neutral-800 rounded"></div>
                 <div className="h-5 w-12 bg-neutral-800 rounded"></div>
             </div>
-            <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2 border border-white/5 h-10"></div>
+            <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2 border border-transparent h-10"></div>
         </div>
-        <div className="flex items-center gap-2 pt-4 border-t border-white/5 mt-4">
+        <div className="flex items-center gap-2 pt-4 border-t border-transparent mt-4">
             <div className="h-9 w-full bg-neutral-800 rounded-lg"></div>
         </div>
     </div>
@@ -331,7 +331,7 @@ const TalentSkeleton = () => (
 
 
 const ServiceSkeleton = () => (
-    <div className="bg-neutral-900/50 border border-white/5 p-5 rounded-xl h-[130px] animate-pulse">
+    <div className="bg-neutral-900/50 border border-transparent p-5 rounded-xl h-[130px] animate-pulse">
         <div className="flex justify-between mb-4">
             <div className="w-8 h-8 bg-neutral-800 rounded"></div>
             <div className="w-12 h-6 bg-neutral-800 rounded"></div>

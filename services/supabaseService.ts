@@ -422,9 +422,15 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, subscription_status, subscription_id, current_period_end, cancel_at_period_end, stripe_account_id, stripe_customer_id')
+    .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, subscription_status, subscription_id, current_period_end, cancel_at_period_end, stripe_account_id, stripe_customer_id, years_experience, satisfaction_rate, avg_turnaround')
     .eq('id', targetUserId)
     .single();
+
+  // 1b. Get Projects Sold Count (Real Data)
+  const { count: projectsSoldCount, error: projectsSoldError } = await supabase
+    .from('purchase_items')
+    .select('*', { count: 'exact', head: true })
+    .eq('seller_id', targetUserId);
 
   if (error && error.code !== 'PGRST116') {
     console.error('Error fetching user from DB:', error);
@@ -474,6 +480,10 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
         promo_credits: userData.promo_credits || 0,
         plan: userData.plan,
         lastGemClaimDate: userData.last_gem_claim_date,
+        yearsExperience: userData.years_experience || '0',
+        projectsSold: projectsSoldCount || 0,
+        satisfactionRate: userData.satisfaction_rate || '100%',
+        avgTurnaround: userData.avg_turnaround || '24h',
         bio: userData.bio,
         website: userData.website,
         projects: projects,
@@ -578,9 +588,19 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
 export const getUserProfileByHandle = async (handle: string): Promise<UserProfile | null> => {
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, email, location, avatar_url, banner_url, bio, website, gems, balance, promo_credits, last_gem_claim_date, plan')
+    .select('id, username, handle, email, location, avatar_url, banner_url, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, years_experience, satisfaction_rate, avg_turnaround')
     .eq('handle', handle)
     .single();
+
+  // Get Projects Sold Count (Real Data)
+  let projectsSoldCount = 0;
+  if (data) {
+    const { count } = await supabase
+      .from('purchase_items')
+      .select('*', { count: 'exact', head: true })
+      .eq('seller_id', (data as any).id);
+    projectsSoldCount = count || 0;
+  }
 
   if (error && error.code !== 'PGRST116') throw error;
 
@@ -598,7 +618,7 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
       id: userData.id,
       username: userData.username,
       handle: userData.handle,
-      role: 'Producer',
+      role: userData.role || 'Producer',
       email: userData.email,
       location: userData.location,
       avatar: userData.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
@@ -610,6 +630,10 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
       promo_credits: userData.promo_credits || 0,
       plan: userData.plan,
       lastGemClaimDate: userData.last_gem_claim_date,
+      yearsExperience: userData.years_experience || '0',
+      projectsSold: projectsSoldCount,
+      satisfactionRate: userData.satisfaction_rate || '100%',
+      avgTurnaround: userData.avg_turnaround || '24h',
       bio: userData.bio,
       website: userData.website,
       projects: projects.filter(p => p.type === 'beat_tape'),
@@ -656,6 +680,9 @@ export const updateUserProfile = async (userId: string, updates: Partial<UserPro
   if (updates.cancel_at_period_end !== undefined) updateObj.cancel_at_period_end = updates.cancel_at_period_end;
   if (updates.stripe_account_id !== undefined) updateObj.stripe_account_id = updates.stripe_account_id;
   if (updates.stripe_customer_id !== undefined) updateObj.stripe_customer_id = updates.stripe_customer_id;
+  // if (updates.yearsExperience !== undefined) updateObj.years_experience = updates.yearsExperience;
+  // if (updates.satisfactionRate !== undefined) updateObj.satisfaction_rate = updates.satisfactionRate;
+  // if (updates.avgTurnaround !== undefined) updateObj.avg_turnaround = updates.avgTurnaround;
 
   const { error } = await supabase
     .from('users')
@@ -694,6 +721,7 @@ export const createProject = async (project: Partial<Project>) => {
       key: project.key,
       genre: project.genre,
       sub_genre: project.subGenre,
+      cover_image_url: project.coverImage, // Ensure cover image is saved
       status: project.status || 'published' // Default to published if not specified
     })
     .select()
@@ -714,7 +742,8 @@ export const createProject = async (project: Partial<Project>) => {
         title: track.title,
         duration_seconds: track.duration || 180, // Default duration
         track_number: index + 1,
-        assigned_file_id: assignedFileId
+        assigned_file_id: assignedFileId,
+        // For releases, we might want to flag the "main" track if needed, but for now 1 track logic suffices
       };
     });
 

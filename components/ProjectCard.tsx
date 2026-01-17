@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, MoreVertical, Cpu, ShoppingCart, Bookmark, Sparkles, Clock, BookmarkPlus, Lock, Edit, Trash2 } from 'lucide-react';
+import { Play, Pause, MoreVertical, Cpu, ShoppingCart, Bookmark, Sparkles, Clock, BookmarkPlus, Lock, Edit, Trash2, Globe, Disc } from 'lucide-react';
 import { Project } from '../types';
 import { generateCreativeDescription } from '../services/geminiService';
 import { usePurchaseModal } from '../contexts/PurchaseModalContext';
@@ -86,7 +86,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         };
     }, [showMenu]);
 
-    const handleMenuAction = async (action: 'edit' | 'delete' | 'make_private', e: React.MouseEvent) => {
+    const handleMenuAction = async (action: 'edit' | 'delete' | 'make_private' | 'publish', e: React.MouseEvent) => {
         e.stopPropagation();
         setShowMenu(false);
         if (action === 'edit' && onEdit) onEdit(project);
@@ -103,6 +103,20 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             } catch (error) {
                 console.error('Failed to make private:', error);
                 showToast('Failed to make private', 'error');
+            }
+        }
+
+        if (action === 'publish') {
+            try {
+                if (!project.id) return;
+                await updateProjectStatus(project.id, 'published');
+                showToast('Project published', 'success');
+                if (onStatusChange) {
+                    onStatusChange(project, 'published');
+                }
+            } catch (error) {
+                console.error('Failed to publish:', error);
+                showToast('Failed to publish', 'error');
             }
         }
     };
@@ -186,6 +200,140 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         setLoadingDesc(false);
     };
 
+    // Release Card Layout (Square, Cover Art Focus)
+    if (project.type === 'release') {
+        const releaseTrack = project.tracks[0] || { id: 'missing', duration: 0, title: 'Unknown' };
+        const isTrackPlaying = isPlaying && currentTrackId === releaseTrack.id;
+
+        return (
+            <div
+                className="group relative aspect-square bg-neutral-900 border border-white/5 rounded-xl overflow-hidden hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.1)] cursor-pointer"
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    isTrackPlaying ? onTogglePlay() : onPlayTrack(releaseTrack.id || '');
+                }}
+            >
+                {/* Full Cover Background */}
+                <div className="absolute inset-0 z-0">
+                    {project.coverImage ? (
+                        <img
+                            src={project.coverImage}
+                            alt={project.title}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-neutral-900 flex items-center justify-center">
+                            <Disc size={48} className="text-neutral-800" />
+                        </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
+
+                    {/* Play/Pause Overlay */}
+                    <div className={`absolute inset-0 flex items-center justify-center z-10 transition-all duration-300 ${isTrackPlaying ? 'bg-black/20 backdrop-blur-[1px]' : 'opacity-0 group-hover:opacity-100'}`}>
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 shadow-xl transition-all duration-300 ${isTrackPlaying ? 'bg-primary text-black scale-110' : 'bg-white/10 text-white hover:bg-white hover:text-black hover:scale-110'}`}>
+                            {isTrackPlaying ? (
+                                <Pause size={24} fill="currentColor" />
+                            ) : (
+                                <Play size={24} fill="currentColor" className="ml-1" />
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Top Actions */}
+                <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="flex gap-2">
+                        {project.status !== 'published' && (
+                            <div className="p-1 rounded-md bg-black/50 backdrop-blur border border-white/10 text-neutral-400">
+                                <Lock size={12} />
+                            </div>
+                        )}
+                    </div>
+
+                    {(onEdit || onDelete) && (
+                        <div className="relative" onClick={e => e.stopPropagation()}>
+                            <button
+                                className="p-1.5 rounded-full bg-black/50 backdrop-blur border border-white/10 text-white hover:bg-white hover:text-black transition-colors"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowMenu(!showMenu);
+                                }}
+                            >
+                                <MoreVertical size={14} />
+                            </button>
+                            {showMenu && (
+                                <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
+                                    <div className="p-1">
+                                        {onEdit && (
+                                            <button
+                                                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-neutral-300 hover:bg-white/10 rounded-lg transition-colors text-left"
+                                                onClick={(e) => handleMenuAction('edit', e)}
+                                            >
+                                                <Edit size={14} /> Edit Project
+                                            </button>
+                                        )}
+                                        {onDelete && (
+                                            <button
+                                                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-400 hover:bg-red-500/10 rounded-lg transition-colors text-left"
+                                                onClick={(e) => handleMenuAction('delete', e)}
+                                            >
+                                                <Trash2 size={14} /> Delete Project
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* Bottom Info */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 z-20 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                    <h3 className="text-xl font-bold text-white mb-1 truncate drop-shadow-md">{project.title}</h3>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-neutral-300 font-medium truncate max-w-[120px]">{project.producer}</span>
+                            {project.genre && (
+                                <span className="px-1.5 py-0.5 rounded-full bg-white/10 border border-white/5 text-[9px] text-neutral-400 backdrop-blur-sm">
+                                    {project.genre}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* Actions Row */}
+                        <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                            <button
+                                onClick={showUndo ? handleUndoGem : handleGiveGem}
+                                disabled={isOwnProject && !showUndo}
+                                className={`
+                                    flex items-center gap-1 px-2.5 py-1.5 rounded-full backdrop-blur-md border transition-all
+                                    ${hasGivenGem
+                                        ? 'bg-primary/20 border-primary/40 text-primary'
+                                        : 'bg-white/10 border-white/10 text-white hover:bg-white/20'
+                                    }
+                                    ${isOwnProject ? 'opacity-50 cursor-not-allowed' : ''}
+                                `}
+                            >
+                                <Gem size={12} fill={hasGivenGem ? "currentColor" : "none"} />
+                                <span className="text-[10px] font-bold">{localGems}</span>
+                            </button>
+
+                            <button
+                                onClick={handleToggleSave}
+                                className={`p-1.5 rounded-full backdrop-blur-md border transition-all ${isSaved ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-white/10 border-white/10 text-white hover:bg-white/20'}`}
+                            >
+                                <BookmarkPlus size={14} fill={isSaved ? "currentColor" : "none"} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Default Layout (Beat Tape / Sound Pack)
     return (
         <>
             <div
@@ -202,31 +350,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/0 to-transparent group-hover:via-primary/50 transition-all duration-700"></div>
 
                 {/* Header Section */}
-                <div className="p-4 pb-2 flex flex-col relative z-10 bg-gradient-to-b from-white/[0.02] to-transparent rounded-t-xl">
-                    <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-1.5">
-                            {project.genre && project.genre !== 'Uploads' && (
-                                <span className="px-1.5 py-0.5 rounded-[3px] bg-neutral-900 border border-white/10 text-[9px] font-mono font-bold text-neutral-400 uppercase tracking-wider">
-                                    {project.genre}
-                                </span>
-                            )}
-                            {(typeof project.bpm === 'string' ? project.bpm.length > 0 : project.bpm > 0) && project.genre !== 'Uploads' && (
-                                <span className="px-1.5 py-0.5 rounded-[3px] bg-neutral-900 border border-white/10 text-[9px] font-mono text-neutral-500">
-                                    {project.bpm} BPM
-                                </span>
-                            )}
-                            {project.key && project.key !== 'C' && project.genre !== 'Uploads' && (
-                                <span className="px-1.5 py-0.5 rounded-[3px] bg-neutral-900 border border-white/10 text-[9px] font-mono text-neutral-500">
-                                    {project.key}
-                                </span>
-                            )}
-                            {project.genre === 'Uploads' && (
-                                <span className="px-1.5 py-0.5 rounded-[3px] bg-primary/10 border border-primary/20 text-[9px] font-mono font-bold text-primary uppercase tracking-wider">
-                                    Upload
-                                </span>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2">
+                <div className="p-4 pb-3 flex flex-col relative z-10 bg-gradient-to-b from-white/[0.02] to-transparent rounded-t-xl">
+                    <div className="flex items-start justify-between gap-3 mb-1.5">
+                        <h3 className="text-base font-bold text-white truncate tracking-tight group-hover:text-primary transition-colors duration-300 flex-1 leading-tight">
+                            {project.title}
+                        </h3>
+
+                        <div className="flex items-center gap-2 shrink-0">
                             {project.status && project.status !== 'published' && showStatusTags && (
                                 <div className="p-1 rounded bg-neutral-900 border border-white/5 text-neutral-500" title="Private Project">
                                     <Lock size={12} />
@@ -269,13 +399,24 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                                     </button>
                                                 )}
                                                 {/* Make Private Option */}
-                                                {isOwnProject && project.status !== 'draft' && (
+                                                {isOwnProject && project.status === 'published' && (
                                                     <button
                                                         className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition-colors text-left"
                                                         onClick={(e) => handleMenuAction('make_private', e)}
                                                     >
                                                         <Lock size={14} />
                                                         <span>Make Private</span>
+                                                    </button>
+                                                )}
+
+                                                {/* Unprivate Option */}
+                                                {isOwnProject && project.status !== 'published' && (
+                                                    <button
+                                                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-green-400 hover:text-green-300 hover:bg-green-500/10 rounded-lg transition-colors text-left"
+                                                        onClick={(e) => handleMenuAction('publish', e)}
+                                                    >
+                                                        <Globe size={14} />
+                                                        <span>Unprivate</span>
                                                     </button>
                                                 )}
                                             </div>
@@ -286,9 +427,42 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                         </div>
                     </div>
 
-                    <h3 className="text-lg font-bold text-white truncate tracking-tight group-hover:text-primary transition-colors duration-300">
-                        {project.title}
-                    </h3>
+                    {/* Metadata Row */}
+                    <div className="flex items-center gap-2 text-[11px] font-medium text-neutral-500 font-mono">
+                        {project.genre === 'Uploads' ? (
+                            <span className="text-primary font-bold uppercase tracking-wider text-[10px]">
+                                Upload
+                            </span>
+                        ) : (
+                            <>
+                                {project.genre && (
+                                    <span className="text-neutral-400 hover:text-neutral-300 transition-colors">
+                                        {project.genre}
+                                    </span>
+                                )}
+
+                                {project.genre && ((typeof project.bpm === 'string' ? project.bpm.length > 0 : project.bpm > 0) || (project.key && project.key !== 'C')) && project.type !== 'release' && (
+                                    <div className="w-0.5 h-0.5 rounded-full bg-neutral-700" />
+                                )}
+
+                                {(typeof project.bpm === 'string' ? project.bpm.length > 0 : project.bpm > 0) && project.type !== 'release' && (
+                                    <span className="text-neutral-300">
+                                        {project.bpm} <span className="text-neutral-600">BPM</span>
+                                    </span>
+                                )}
+
+                                {project.key && project.key !== 'C' && ((typeof project.bpm === 'string' ? project.bpm.length > 0 : project.bpm > 0)) && (
+                                    <div className="w-0.5 h-0.5 rounded-full bg-neutral-700" />
+                                )}
+
+                                {project.key && project.key !== 'C' && (
+                                    <span className="text-neutral-400">
+                                        {project.key}
+                                    </span>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 {/* AI Analysis Overlay */}

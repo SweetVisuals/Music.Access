@@ -65,6 +65,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     const [activeTab, setActiveTab] = useState<Tab>('beat_tapes');
     const [isFollowing, setIsFollowing] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [createModalInitialType, setCreateModalInitialType] = useState<'beat_tape' | 'sound_pack' | 'release' | undefined>(undefined);
     const [isCreateSoundpackModalOpen, setIsCreateSoundpackModalOpen] = useState(false);
     const [isCreateServiceModalOpen, setIsCreateServiceModalOpen] = useState(false);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(profile);
@@ -83,7 +84,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         location: '',
         bio: '',
         website: '',
-        role: ''
+        role: '',
+        yearsExperience: '',
+        satisfactionRate: '',
+        avgTurnaround: ''
     });
 
     // Local projects state
@@ -256,7 +260,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         if (role === 'artist') {
             tabs = ['releases', 'services'];
         } else if (role === 'producer' || role === 'engineer') {
-            tabs = ['beat_tapes', 'sound_packs', 'services'];
+            tabs = ['beat_tapes', 'releases', 'sound_packs', 'services'];
         } else if (role === 'platform') {
             tabs = ['services'];
         } else {
@@ -363,7 +367,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             location: editForm.location,
             bio: editForm.bio,
             website: editForm.website,
-            role: editForm.role
+            role: editForm.role,
+            yearsExperience: editForm.yearsExperience,
+            satisfactionRate: editForm.satisfactionRate,
+            avgTurnaround: editForm.avgTurnaround
         };
         setUserProfile(updatedProfile);
         setIsEditModalOpen(false);
@@ -377,7 +384,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     location: editForm.location,
                     bio: editForm.bio,
                     website: editForm.website,
-                    role: editForm.role
+                    role: editForm.role,
+                    yearsExperience: editForm.yearsExperience,
+                    satisfactionRate: editForm.satisfactionRate,
+                    avgTurnaround: editForm.avgTurnaround
                 });
 
                 // Refetch to confirm the update
@@ -442,7 +452,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             location: userProfile.location || "",
             bio: userProfile.bio || "",
             website: userProfile.website || "",
-            role: userProfile.role || ""
+            role: userProfile.role || "",
+            yearsExperience: userProfile.yearsExperience || "",
+            satisfactionRate: userProfile.satisfactionRate || "",
+            avgTurnaround: userProfile.avgTurnaround || ""
         });
         setIsEditModalOpen(true);
     };
@@ -496,6 +509,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
                 onSave={handleSaveProject}
+                initialType={createModalInitialType}
             />
 
             <CreateSoundpackModal
@@ -534,10 +548,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 {/* EDIT PROFILE MODAL - RESPONSIVE */}
                 {isEditModalOpen && (
                     <div className="fixed inset-0 z-[100] flex flex-col lg:items-center lg:justify-center bg-black lg:bg-black/80 lg:backdrop-blur-sm lg:p-4 animate-in fade-in duration-200">
-                        <div className="flex-1 lg:flex-none w-full lg:max-w-3xl bg-black lg:bg-[#0a0a0a] lg:border border-white/5 lg:rounded-xl lg:shadow-2xl overflow-hidden flex flex-col h-full lg:max-h-[90vh]">
+                        <div className="flex-1 lg:flex-none w-full lg:max-w-3xl bg-black lg:bg-[#0a0a0a] lg:border border-transparent lg:rounded-xl lg:shadow-2xl overflow-hidden flex flex-col h-full lg:max-h-[90vh]">
 
                             {/* HEADER */}
-                            <div className="p-4 border-b border-white/5 flex justify-between items-center bg-neutral-900/50 backdrop-blur-md shrink-0">
+                            <div className="p-4 border-b border-transparent flex justify-between items-center bg-neutral-900/50 backdrop-blur-md shrink-0">
                                 <h3 className="font-bold text-white text-lg flex items-center gap-2">
                                     <Edit3 size={18} className="text-primary" /> Edit Profile
                                 </h3>
@@ -554,7 +568,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 <div className="p-6 space-y-6">
 
                                     {/* Image Uploads Section (Mobile Friendly) */}
-                                    <div className="space-y-4 pb-4 border-b border-white/5">
+                                    <div className="space-y-4 pb-4 border-b border-transparent">
                                         <h4 className="text-xs font-black text-white uppercase tracking-widest mb-3">Profile Assets</h4>
 
                                         {/* Banner Upload */}
@@ -562,7 +576,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Banner Image</label>
                                             <div
                                                 onClick={() => bannerInputRef.current?.click()}
-                                                className="h-48 w-full rounded-lg bg-neutral-900/50 border border-white/5 flex flex-col items-center justify-center text-neutral-500 hover:text-white hover:border-primary/30 hover:bg-white/5 transition-all cursor-pointer overflow-hidden relative group"
+                                                className="h-48 w-full rounded-lg bg-neutral-900/50 border border-transparent flex flex-col items-center justify-center text-neutral-500 hover:text-white hover:border-primary/30 hover:bg-white/5 transition-all cursor-pointer overflow-hidden relative group"
                                             >
                                                 {userProfile.banner ? (
                                                     <img src={userProfile.banner} className="w-full h-full object-cover opacity-50 group-hover:opacity-30 transition-opacity" alt="Banner Preview" />
@@ -582,7 +596,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             <div className="flex items-center gap-4">
                                                 <div
                                                     onClick={() => avatarInputRef.current?.click()}
-                                                    className="h-20 w-20 rounded-full bg-neutral-900 border border-white/5 overflow-hidden shrink-0 relative group cursor-pointer"
+                                                    className="h-20 w-20 rounded-full bg-neutral-900 border border-transparent overflow-hidden shrink-0 relative group cursor-pointer"
                                                 >
                                                     <img src={userProfile.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'} className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" alt="Avatar Preview" />
                                                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -591,7 +605,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                 </div>
                                                 <button
                                                     onClick={() => avatarInputRef.current?.click()}
-                                                    className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-white hover:bg-white/10 transition-colors flex items-center gap-2"
+                                                    className="px-4 py-2 bg-white/5 border border-transparent rounded-lg text-xs font-bold text-white hover:bg-white/10 transition-colors flex items-center gap-2"
                                                 >
                                                     <Camera size={14} />
                                                     Change Avatar
@@ -607,7 +621,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                 <input
                                                     value={editForm.username}
                                                     onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                                                    className="w-full bg-neutral-900/50 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                                    className="w-full bg-neutral-900/50 border border-transparent rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
                                                     placeholder="Your Artist Name"
                                                 />
                                             </div>
@@ -638,7 +652,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                 <input
                                                     value={userProfile.handle}
                                                     disabled
-                                                    className="w-full bg-neutral-900 border border-white/10 rounded-lg px-4 py-3 text-sm text-neutral-400 cursor-not-allowed"
+                                                    className="w-full bg-neutral-900 border border-transparent rounded-lg px-4 py-3 text-sm text-neutral-400 cursor-not-allowed"
                                                 />
                                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-neutral-600 font-mono">Read-only</div>
                                             </div>
@@ -652,7 +666,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                     <input
                                                         value={editForm.location}
                                                         onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                                                        className="w-full bg-neutral-900/50 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                                        className="w-full bg-neutral-900/50 border border-transparent rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
                                                         placeholder="City, Country"
                                                     />
                                                 </div>
@@ -665,10 +679,40 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                     <input
                                                         value={editForm.website}
                                                         onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
-                                                        className="w-full bg-neutral-900/50 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                                        className="w-full bg-neutral-900/50 border border-transparent rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
                                                         placeholder="https://your-site.com"
                                                     />
                                                 </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Years Exp.</label>
+                                                <input
+                                                    value={editForm.yearsExperience}
+                                                    onChange={(e) => setEditForm({ ...editForm, yearsExperience: e.target.value })}
+                                                    className="w-full bg-neutral-900/50 border border-transparent rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                                    placeholder="e.g. 5+"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Satisfaction</label>
+                                                <input
+                                                    value={editForm.satisfactionRate}
+                                                    onChange={(e) => setEditForm({ ...editForm, satisfactionRate: e.target.value })}
+                                                    className="w-full bg-neutral-900/50 border border-transparent rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                                    placeholder="e.g. 100%"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Avg. Turnaround</label>
+                                                <input
+                                                    value={editForm.avgTurnaround}
+                                                    onChange={(e) => setEditForm({ ...editForm, avgTurnaround: e.target.value })}
+                                                    className="w-full bg-neutral-900/50 border border-transparent rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
+                                                    placeholder="e.g. 24h"
+                                                />
                                             </div>
                                         </div>
 
@@ -682,7 +726,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                     e.target.style.height = `${Math.min(e.target.scrollHeight, 400)}px`;
                                                 }}
                                                 style={{ height: 'auto', minHeight: '128px' }}
-                                                className="w-full bg-neutral-900/50 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:bg-neutral-900 custom-scrollbar"
+                                                className="w-full bg-neutral-900/50 border border-transparent rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:bg-neutral-900 custom-scrollbar"
                                                 placeholder="Tell your story..."
                                             />
                                         </div>
@@ -691,8 +735,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                             </div>
 
                             {/* FOOTER */}
-                            <div className="p-4 border-t border-white/5 bg-neutral-900/50 lg:bg-neutral-900/30 backdrop-blur-md flex justify-end gap-3 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:pb-4">
-                                <button onClick={() => setIsEditModalOpen(false)} className="px-6 py-3 lg:py-2 rounded-xl lg:rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors bg-white/5 border border-white/5 lg:bg-transparent lg:border-none">
+                            <div className="p-4 border-t border-transparent bg-neutral-900/50 lg:bg-neutral-900/30 backdrop-blur-md flex justify-end gap-3 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:pb-4">
+                                <button onClick={() => setIsEditModalOpen(false)} className="px-6 py-3 lg:py-2 rounded-xl lg:rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors bg-white/5 border border-transparent lg:bg-transparent lg:border-none">
                                     Cancel
                                 </button>
                                 <button onClick={handleSaveProfile} className="flex-1 lg:flex-none px-8 py-3 lg:py-2 bg-primary text-black rounded-xl lg:rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(var(--primary),0.2)]">
@@ -704,14 +748,14 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 )}
 
                 {/* HEADER SECTION */}
-                <div className="relative rounded-3xl overflow-hidden bg-[#0a0a0a] border border-white/5 mb-6 group/header shadow-lg">
+                <div className="relative rounded-3xl overflow-hidden bg-[#0a0a0a] border border-transparent mb-6 group/header shadow-lg">
 
                     {/* View Controls (Top Right) */}
                     <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
                         {isOwnProfile && !isViewerMode && (
                             <button
                                 onClick={openEditModal}
-                                className="flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md text-xs font-bold border bg-black/60 border-white/10 text-white hover:bg-black/80 transition-all shadow-lg"
+                                className="flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md text-xs font-bold border bg-black/60 border-transparent text-white hover:bg-black/80 transition-all shadow-lg"
                             >
                                 <Edit3 size={14} />
                                 Edit Profile
@@ -724,7 +768,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                             flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md text-xs font-bold border transition-all shadow-lg
                             ${isViewerMode
                                         ? 'bg-blue-500/20 border-blue-500/30 text-blue-400 hover:bg-blue-500/30'
-                                        : 'bg-black/60 border-white/10 text-white hover:bg-black/80'
+                                        : 'bg-black/60 border-transparent text-white hover:bg-black/80'
                                     }
                         `}
                             >
@@ -926,10 +970,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     {/* Desktop Horizontal Layout */}
                     <div className="hidden lg:flex items-center gap-8 overflow-x-auto no-scrollbar whitespace-nowrap">
                         {availableTabs.includes('beat_tapes') && (
-                            <TabButton active={activeTab === 'beat_tapes'} onClick={() => setActiveTab('beat_tapes')} icon={<Disc size={18} />} label="Projects" count={localProjects.filter(p => p.status === 'published').length} />
+                            <TabButton active={activeTab === 'beat_tapes'} onClick={() => setActiveTab('beat_tapes')} icon={<Music size={18} />} label="Projects" count={localProjects.filter(p => p.status === 'published' && p.type === 'beat_tape').length} />
                         )}
                         {availableTabs.includes('releases') && (
-                            <TabButton active={activeTab === 'releases'} onClick={() => setActiveTab('releases')} icon={<Disc size={18} />} label="Releases" count={localProjects.filter(p => p.status === 'published').length} />
+                            <TabButton active={activeTab === 'releases'} onClick={() => setActiveTab('releases')} icon={<Disc size={18} />} label="Releases" count={localProjects.filter(p => p.status === 'published' && p.type === 'release').length} />
                         )}
                         {availableTabs.includes('sound_packs') && (
                             <TabButton active={activeTab === 'sound_packs'} onClick={() => setActiveTab('sound_packs')} icon={<Box size={18} />} label="Sound Packs" count={userProfile.soundPacks.length} />
@@ -964,7 +1008,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 {/* Create Project Card - Only for Owner */}
                                 {!isViewerMode && isOwnProfile && (
                                     <div
-                                        onClick={() => setIsCreateModalOpen(true)}
+                                        onClick={() => {
+                                            setCreateModalInitialType('beat_tape');
+                                            setIsCreateModalOpen(true);
+                                        }}
                                         className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                     >
                                         <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
@@ -974,7 +1021,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     </div>
                                 )}
 
-                                {localProjects.filter(project => project.status === 'published').length === 0 && (isViewerMode || !isOwnProfile) ? (
+                                {localProjects.filter(project => project.status === 'published' && project.type === 'beat_tape').length === 0 && (isViewerMode || !isOwnProfile) ? (
                                     <div className="col-span-1 md:col-span-2 lg:col-span-4">
                                         <EmptyStateCard
                                             icon={Music}
@@ -984,7 +1031,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     </div>
                                 ) : (
                                     localProjects
-                                        .filter(project => project.status === 'published')
+                                        .filter(project => project.status === 'published' && project.type === 'beat_tape')
                                         .map(project => (
                                             <div key={project.id} className="h-auto md:h-[282px]">
                                                 <ProjectCard
@@ -1021,7 +1068,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 {/* Create Project Card - Only for Owner */}
                                 {!isViewerMode && isOwnProfile && (
                                     <div
-                                        onClick={() => setIsCreateModalOpen(true)}
+                                        onClick={() => {
+                                            setCreateModalInitialType('release');
+                                            setIsCreateModalOpen(true);
+                                        }}
                                         className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                     >
                                         <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
@@ -1031,7 +1081,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     </div>
                                 )}
 
-                                {localProjects.filter(project => project.status === 'published').length === 0 && (isViewerMode || !isOwnProfile) ? (
+                                {localProjects.filter(project => project.status === 'published' && project.type === 'release').length === 0 && (isViewerMode || !isOwnProfile) ? (
                                     <div className="col-span-1 md:col-span-2 lg:col-span-4">
                                         <EmptyStateCard
                                             icon={Disc}
@@ -1041,7 +1091,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     </div>
                                 ) : (
                                     localProjects
-                                        .filter(project => project.status === 'published')
+                                        .filter(project => project.status === 'published' && project.type === 'release')
                                         .map(project => (
                                             <div key={project.id} className="h-auto md:h-[282px]">
                                                 <ProjectCard
@@ -1094,7 +1144,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             icon={Mic2}
                                             title="No Services Available"
                                             description="This user hasn't listed any services yet."
-                                            height="h-[255px]"
                                         />
                                     </div>
                                 ) : (
@@ -1147,7 +1196,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             icon={Box}
                                             title="No Soundpacks Available"
                                             description="This user hasn't published any soundpacks yet."
-                                            height="h-[255px]"
                                         />
                                     </div>
                                 ) : (
@@ -1246,10 +1294,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 </div>
 
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <StatsCard value="5+" label="Years Exp." />
-                                    <StatsCard value="300+" label="Projects Sold" />
-                                    <StatsCard value="100%" label="Satisfaction" />
-                                    <StatsCard value="24h" label="Avg. Turnaround" />
+                                    <StatsCard value={userProfile.yearsExperience || "0"} label="Years Exp." />
+                                    <StatsCard value={(userProfile.projectsSold || 0).toString()} label="Projects Sold" />
+                                    <StatsCard value={userProfile.satisfactionRate || "100%"} label="Satisfaction" />
+                                    <StatsCard value={userProfile.avgTurnaround || "24h"} label="Avg. Turnaround" />
                                 </div>
                             </div>
 

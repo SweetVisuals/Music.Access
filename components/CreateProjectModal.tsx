@@ -336,11 +336,14 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     if (!shouldRender) return null;
 
     return (
-        <div className={`fixed top-[56px] bottom-0 right-0 left-0 lg:left-[260px] z-[150] transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`fixed inset-0 z-[150] transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}>
             <div className="absolute inset-0 bg-black/40 -z-10" />
             <div className={`w-full h-full bg-[#0a0a0a] border-0 flex flex-col shadow-2xl overflow-hidden relative ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
 
-                <div className="h-14 md:h-16 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
+                <div
+                    className="h-14 md:h-16 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0"
+                    style={{ paddingTop: 'env(safe-area-inset-top)' }}
+                >
                     <h2 className="text-base md:text-lg font-bold text-white">Create New Project</h2>
                     <button onClick={handleInternalClose} className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white">
                         <X size={20} />
@@ -732,7 +735,10 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                     }
                 </div >
 
-                <div className="h-auto py-4 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 bg-neutral-900/50 gap-4 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                <div
+                    className="h-auto py-4 flex flex-col md:flex-row items-center justify-between px-4 md:px-8 bg-neutral-900/50 gap-4 shrink-0"
+                    style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+                >
                     <div className="text-xs text-neutral-500 hidden md:block">
                         {step === 3 && "Review details before publishing."}
                     </div>

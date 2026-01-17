@@ -512,7 +512,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             {isBannerAdjustOpen && userProfile?.banner && (
                 <BannerPositionManager
                     imageUrl={userProfile.banner}
-                    initialSettings={userProfile.bannerSettings}
+                    initialSettings={userProfile.bannerSettings as any}
                     onSave={(settings) => {
                         setUserProfile(prev => prev ? ({ ...prev, bannerSettings: settings }) : null);
                         setIsBannerAdjustOpen(false);
@@ -601,9 +601,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                             className="w-full h-full object-cover opacity-50 group-hover:opacity-30 transition-opacity"
                                                             alt="Banner Preview"
                                                             style={{
-                                                                transform: userProfile.bannerSettings
-                                                                    ? `translate(${userProfile.bannerSettings.x - 50}%, ${userProfile.bannerSettings.y - 50}%) scale(${userProfile.bannerSettings.scale})`
-                                                                    : 'none'
+                                                                transform: (() => {
+                                                                    const s = userProfile.bannerSettings;
+                                                                    if (!s) return 'none';
+                                                                    // Default to desktop for this preview or handle mixed
+                                                                    const set = ('desktop' in s) ? s.desktop : (s as any);
+                                                                    return `translate(${set.x - 50}%, ${set.y - 50}%) scale(${set.scale})`;
+                                                                })()
                                                             }}
                                                         />
                                                     ) : (
@@ -837,9 +841,24 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                             `}
                                     alt="Banner"
                                     style={{
-                                        transform: userProfile.bannerSettings
-                                            ? `translate(${userProfile.bannerSettings.x - 50}%, ${userProfile.bannerSettings.y - 50}%) scale(${userProfile.bannerSettings.scale})`
-                                            : 'none'
+                                        transform: (() => {
+                                            const s = userProfile.bannerSettings;
+                                            if (!s) return 'none';
+
+                                            // Handle multi-device vs legacy single-device
+                                            let set;
+                                            if ('desktop' in s) {
+                                                // Responsive check: simpler to use matchesMedia or just CSS vars
+                                                // Since we are inside a style object, we use window width check
+                                                // Note: this only runs on render.
+                                                const isMobile = window.innerWidth < 1024;
+                                                set = isMobile ? s.mobile : s.desktop;
+                                            } else {
+                                                set = s as any;
+                                            }
+
+                                            return `translate(${set.x - 50}%, ${set.y - 50}%) scale(${set.scale})`;
+                                        })()
                                     }}
                                 />
                                 {/* Gradient Overlay for Text Readability */}

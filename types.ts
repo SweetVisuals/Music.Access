@@ -120,9 +120,8 @@ export interface UserProfile {
   current_period_end?: string;
   cancel_at_period_end?: boolean;
   bannerSettings?: {
-    x: number;
-    y: number;
-    scale: number;
+    desktop: { x: number; y: number; scale: number };
+    mobile: { x: number; y: number; scale: number };
   };
 }
 

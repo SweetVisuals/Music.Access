@@ -185,7 +185,7 @@ const Studio: React.FC<StudioProps> = ({
             {/* NEW PROJECT MODAL */}
             {isCreateModalOpen && (
                 <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md md:p-4 animate-in fade-in duration-200">
-                    <div className="w-full h-full md:h-auto md:max-w-md bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl shadow-2xl flex flex-col max-h-none md:max-h-[90vh] overflow-hidden relative">
+                    <div className="w-full h-[100dvh] md:h-auto md:max-w-md bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl shadow-2xl flex flex-col max-h-none md:max-h-[90vh] overflow-hidden relative">
 
                         {/* Header */}
                         <div className="p-6 border-b border-white/5 flex justify-between items-center shrink-0">
@@ -684,7 +684,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             {/* ATTACH NOTE MODAL */}
             {attachNoteModalOpen && (
                 <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-sm md:p-4 animate-in fade-in duration-200">
-                    <div className="w-full h-full md:h-auto md:max-w-lg bg-neutral-900 border-0 md:border border-neutral-800 rounded-none md:rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-none md:max-h-[85vh]">
+                    <div className="w-full h-[100dvh] md:h-auto md:max-w-lg bg-neutral-900 border-0 md:border border-neutral-800 rounded-none md:rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-none md:max-h-[85vh]">
                         <div className="flex items-center justify-between p-4 border-b border-white/5">
                             <h3 className="font-bold text-white flex items-center gap-2">
                                 <StickyNote size={16} className="text-yellow-500" />
@@ -719,7 +719,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             {/* CONTRACT VIEWER MODAL */}
             {activeContract && (
                 <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-sm md:p-4 animate-in fade-in duration-200">
-                    <div className="w-full h-full md:h-auto md:max-w-2xl bg-white text-black rounded-none md:rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-none md:max-h-[85vh] animate-in slide-in-from-bottom-4 duration-300">
+                    <div className="w-full h-[100dvh] md:h-auto md:max-w-2xl bg-white text-black rounded-none md:rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-none md:max-h-[85vh] animate-in slide-in-from-bottom-4 duration-300">
 
                         <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
                             <div>

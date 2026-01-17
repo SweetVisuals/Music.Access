@@ -92,22 +92,22 @@ const BannerPositionManager: React.FC<BannerPositionManagerProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-[120] bg-black/95 backdrop-blur-md flex flex-col animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-md flex flex-col animate-in fade-in duration-200 h-[100dvh]">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-neutral-900/50">
-                <h3 className="text-white font-bold text-lg">Adjust Banner Position</h3>
+            <div className="flex items-center justify-between px-4 lg:px-6 py-4 border-b border-white/10 bg-neutral-900/50 shrink-0">
+                <h3 className="text-white font-bold text-base lg:text-lg">Adjust Banner Position</h3>
                 <div className="flex items-center gap-3">
                     <button onClick={onCancel} className="p-2 hover:bg-white/10 rounded-full text-neutral-400 transition-colors">
                         <X size={20} />
                     </button>
-                    <button onClick={() => onSave(settings)} className="px-6 py-2 bg-primary text-black font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
+                    <button onClick={() => onSave(settings)} className="px-4 lg:px-6 py-2 bg-primary text-black font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm lg:text-base">
                         <Check size={16} /> Save
                     </button>
                 </div>
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 overflow-y-auto p-4 lg:p-10 flex flex-col items-center gap-8">
+            <div className="flex-1 overflow-y-auto p-4 lg:p-10 flex flex-col items-center gap-6 lg:gap-8 pb-32 lg:pb-10">
 
                 {/* Desktop Preview (Interactive) */}
                 <div className="w-full max-w-4xl space-y-2">
@@ -117,7 +117,7 @@ const BannerPositionManager: React.FC<BannerPositionManagerProps> = ({
                     {/* Desktop Container: Aspect Ratio 4:1 */}
                     <div
                         ref={containerRef}
-                        className="w-full aspect-[4/1] bg-neutral-900 rounded-xl overflow-hidden border-2 border-dashed border-white/10 relative cursor-move group"
+                        className="w-full aspect-[4/1] bg-neutral-900 rounded-xl overflow-hidden border-2 border-dashed border-white/10 relative cursor-move group touch-none select-none"
                         onPointerDown={handlePointerDown}
                         onPointerMove={handlePointerMove}
                         onPointerUp={handlePointerUp}
@@ -141,7 +141,7 @@ const BannerPositionManager: React.FC<BannerPositionManagerProps> = ({
                 </div>
 
                 {/* Controls */}
-                <div className="w-full max-w-md bg-neutral-900/50 p-4 rounded-xl border border-white/5 backdrop-blur-sm">
+                <div className="w-full max-w-md bg-neutral-900/50 p-4 rounded-xl border border-white/5 backdrop-blur-sm sticky lg:static bottom-0 z-20 mb-safe-area-bottom">
                     <div className="flex items-center gap-4">
                         <button onClick={() => toggleZoom(-0.1)} className="p-2 text-neutral-400 hover:text-white transition-colors">
                             <ZoomOut size={20} />
@@ -162,14 +162,14 @@ const BannerPositionManager: React.FC<BannerPositionManagerProps> = ({
                 </div>
 
                 {/* Mobile Preview (Read-only) */}
-                <div className="w-full max-w-[375px] space-y-2">
+                <div className="w-full max-w-[300px] lg:max-w-[375px] space-y-2 pb-8">
                     <div className="flex items-center gap-2 text-neutral-400 text-xs font-bold uppercase tracking-wider">
                         <Smartphone size={14} /> Mobile View
                     </div>
                     {/* Mobile Container: Matches standard mobile header height roughly, often square or 16:9 */}
                     <div className="w-full aspect-[4/3] bg-neutral-900 rounded-xl overflow-hidden border border-white/10 relative shadow-2xl">
                         {/* Phone Notch Mockup (Optional - adds realism) */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-6 bg-black z-20 rounded-b-xl" />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-5 lg:h-6 bg-black z-20 rounded-b-xl" />
 
                         <img
                             src={imageUrl}
@@ -179,7 +179,7 @@ const BannerPositionManager: React.FC<BannerPositionManagerProps> = ({
 
                         {/* UI Overlay Mockup */}
                         <div className="absolute bottom-4 left-4 z-20">
-                            <div className="w-16 h-16 rounded-full bg-neutral-800 border-2 border-black" />
+                            <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-full bg-neutral-800 border-2 border-black" />
                         </div>
                     </div>
                 </div>

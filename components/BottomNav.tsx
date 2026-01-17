@@ -29,8 +29,8 @@ const BottomNav: React.FC<BottomNavProps> = ({ onNavigate, currentView }) => {
     };
 
     return (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[120] bg-[#050505] px-2 h-14 shadow-none">
-            <div className="flex items-center justify-between h-full max-w-md mx-auto">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[120] bg-[#050505] px-2 shadow-none pb-[env(safe-area-inset-bottom)] border-t border-white/5">
+            <div className="flex items-center justify-between h-14 max-w-md mx-auto">
                 {navItems.map((item) => {
                     if (item.isCenter) {
                         return (

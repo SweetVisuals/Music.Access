@@ -149,7 +149,7 @@ const BannerPositionManager: React.FC<BannerPositionManagerProps> = ({
                 </div>
 
                 {/* Controls */}
-                <div className="w-full max-w-md bg-neutral-900 shadow-xl p-4 rounded-xl border border-white/10 backdrop-blur-sm sticky lg:static bottom-0 z-20 mb-safe-area-bottom">
+                <div className="w-full max-w-md bg-neutral-900 shadow-xl p-4 rounded-xl border border-white/10 backdrop-blur-sm sticky lg:static bottom-0 z-20 pb-[env(safe-area-inset-bottom)]">
                     <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest flex items-center gap-2">

@@ -338,7 +338,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     return (
         <div className={`fixed inset-0 z-[150] transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}>
             <div className="absolute inset-0 bg-black/40 -z-10" />
-            <div className={`w-full h-full bg-[#0a0a0a] border-0 flex flex-col shadow-2xl overflow-hidden relative ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
+            <div className={`w-full h-[100dvh] bg-[#0a0a0a] border-0 flex flex-col shadow-2xl overflow-hidden relative ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
 
                 <div
                     className="h-14 md:h-16 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0"

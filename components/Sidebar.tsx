@@ -244,15 +244,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                         {userProfile.gems?.toLocaleString() || '0'}
                                     </span>
                                 </div>
-                                {/* Promo Credits */}
-                                <div className="flex items-center gap-1 min-[380px]:gap-1.5 px-2 py-0.5 min-[380px]:py-1 bg-white/5 rounded-full border border-white/5">
-                                    <div className="w-3.5 h-3.5 min-[380px]:w-4 min-[380px]:h-4 rounded-full bg-amber-400 flex items-center justify-center shrink-0">
-                                        <Star strokeWidth={2.5} className="text-black fill-current w-[9px] h-[9px] min-[380px]:w-[10px] min-[380px]:h-[10px]" />
-                                    </div>
-                                    <span className="text-[10px] min-[380px]:text-[11px] font-bold text-white font-mono">
-                                        {userProfile.promo_credits || 0}
-                                    </span>
-                                </div>
                             </div>
                         )}
                         <button onClick={onClose} className="text-neutral-500 hover:text-white p-1">

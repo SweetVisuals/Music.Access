@@ -30,10 +30,9 @@ const BottomNav: React.FC<BottomNavProps> = ({ onNavigate, currentView }) => {
 
     return (
         <div
-            className="lg:hidden fixed bottom-0 left-0 right-0 z-[120] bg-[#050505] px-2 shadow-none border-t border-white/5"
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            className="lg:hidden fixed bottom-0 left-0 right-0 z-[120] bg-[#050505] px-2 pb-[env(safe-area-inset-bottom)] border-t border-white/5"
         >
-            <div className="flex items-center justify-between h-14 max-w-md mx-auto">
+            <div className="flex items-center justify-between h-[50px] max-w-md mx-auto">
                 {navItems.map((item) => {
                     if (item.isCenter) {
                         return (
@@ -60,7 +59,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ onNavigate, currentView }) => {
                             <div className={`${active ? 'scale-110' : ''} transition-transform`}>
                                 {item.icon}
                             </div>
-                            <span className={`text-[10px] mt-1 font-bold ${active ? 'text-white' : ''}`}>
+                            <span className={`text-[9px] mt-0.5 font-bold ${active ? 'text-white' : ''}`}>
                                 {item.label}
                             </span>
                         </button>

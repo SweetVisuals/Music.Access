@@ -490,7 +490,7 @@ const App: React.FC = () => {
 
   const getBottomStackHeightCSS = () => {
     // Base bottom nav height (mobile)
-    const mobileNavHeight = 56; // approx 3.5rem
+    const mobileNavHeight = 50; // matched to BottomNav h-[50px]
     const playerHeightMobile = 64; // approx h-16
     const playerHeightDesktopExpanded = 90;
 
@@ -505,17 +505,8 @@ const App: React.FC = () => {
       if (isPlayerExpanded) {
         baseHeight = playerHeightDesktopExpanded;
       }
-      // If floating, it doesn't push main content by default, but we might want to if we want clear view?
-      // User said "prevent overlap... page content".
-      // Let's add a small buffer if floating player is there?
       if (currentTrackId && !isPlayerExpanded) {
         // Floating player is bottom-6 right-6. It covers content.
-        // Maybe we don't pad purely for floating player as it's meant to float over?
-        // But user asked for "push each other out of way".
-        // Let's safe-guard: if floating player, add 100px?
-        // Actually, standard behavior is float over.
-        // NOTE: FileNotification pushes UP from whatever player state is.
-        // So if Player is floating, Notification is above it.
       }
     }
 

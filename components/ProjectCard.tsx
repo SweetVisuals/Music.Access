@@ -207,7 +207,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
         return (
             <div
-                className="group relative aspect-square bg-neutral-900 border border-white/5 rounded-xl overflow-hidden hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.1)] cursor-pointer"
+                className="group relative aspect-square bg-neutral-900 border border-transparent rounded-xl overflow-hidden hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.1)] cursor-pointer"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 onClick={(e) => {
@@ -232,7 +232,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
                     {/* Play/Pause Overlay */}
                     <div className={`absolute inset-0 flex items-center justify-center z-10 transition-all duration-300 ${isTrackPlaying ? 'bg-black/20 backdrop-blur-[1px]' : 'opacity-0 group-hover:opacity-100'}`}>
-                        <div className={`w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 shadow-xl transition-all duration-300 ${isTrackPlaying ? 'bg-primary text-black scale-110' : 'bg-white/10 text-white hover:bg-white hover:text-black hover:scale-110'}`}>
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-md border border-transparent shadow-xl transition-all duration-300 ${isTrackPlaying ? 'bg-primary text-black scale-110' : 'bg-white/10 text-white hover:bg-white hover:text-black hover:scale-110'}`}>
                             {isTrackPlaying ? (
                                 <Pause size={24} fill="currentColor" />
                             ) : (
@@ -246,7 +246,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="flex gap-2">
                         {project.status !== 'published' && (
-                            <div className="p-1 rounded-md bg-black/50 backdrop-blur border border-white/10 text-neutral-400">
+                            <div className="p-1 rounded-md bg-black/50 backdrop-blur border border-transparent text-neutral-400">
                                 <Lock size={12} />
                             </div>
                         )}
@@ -255,7 +255,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                     {(onEdit || onDelete) && (
                         <div className="relative" onClick={e => e.stopPropagation()}>
                             <button
-                                className="p-1.5 rounded-full bg-black/50 backdrop-blur border border-white/10 text-white hover:bg-white hover:text-black transition-colors"
+                                className="p-1.5 rounded-full bg-black/50 backdrop-blur border border-transparent text-white hover:bg-white hover:text-black transition-colors"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setShowMenu(!showMenu);
@@ -264,7 +264,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                 <MoreVertical size={14} />
                             </button>
                             {showMenu && (
-                                <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
+                                <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-transparent rounded-xl shadow-2xl overflow-hidden z-50">
                                     <div className="p-1">
                                         {onEdit && (
                                             <button
@@ -296,7 +296,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-neutral-300 font-medium truncate max-w-[120px]">{project.producer}</span>
                             {project.genre && (
-                                <span className="px-1.5 py-0.5 rounded-full bg-white/10 border border-white/5 text-[9px] text-neutral-400 backdrop-blur-sm">
+                                <span className="px-1.5 py-0.5 rounded-full bg-white/10 border border-transparent text-[9px] text-neutral-400 backdrop-blur-sm">
                                     {project.genre}
                                 </span>
                             )}
@@ -338,7 +338,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         <>
             <div
                 // ... (rest of the file as is)
-                className="group h-full flex flex-col bg-neutral-950/50 border border-white/5 rounded-xl hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.05)] relative backdrop-blur-sm cursor-pointer"
+                className="group h-full flex flex-col bg-neutral-950/50 border border-transparent rounded-xl hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.05)] relative backdrop-blur-sm cursor-pointer"
                 style={{ zoom: '110%' }}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
@@ -350,19 +350,48 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/0 to-transparent group-hover:via-primary/50 transition-all duration-700"></div>
 
                 {/* Header Section */}
-                <div className="p-4 pb-3 flex flex-col relative z-10 bg-gradient-to-b from-white/[0.02] to-transparent rounded-t-xl">
-                    <div className="flex items-start justify-between gap-3 mb-1.5">
+                <div className="p-4 pb-2 space-y-2 flex flex-col relative z-10 bg-gradient-to-b from-white/[0.02] to-transparent rounded-t-xl">
+                    {/* Metadata Row - Moved Above Title */}
+                    <div className="flex items-center gap-2 text-[10px] font-medium text-neutral-400 font-mono">
+                        {project.status && project.status !== 'published' && showStatusTags && (
+                            <div className="p-1 rounded bg-neutral-900 border border-transparent text-neutral-500" title="Private Project">
+                                <Lock size={12} />
+                            </div>
+                        )}
+
+                        {project.genre === 'Uploads' ? (
+                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold uppercase tracking-wider text-[9px]">
+                                Upload
+                            </span>
+                        ) : (
+                            <>
+                                {project.genre && (
+                                    <span className="px-1.5 py-0.5 rounded bg-neutral-900/80 text-neutral-400 hover:text-neutral-300 transition-colors">
+                                        {project.genre}
+                                    </span>
+                                )}
+
+                                {(typeof project.bpm === 'string' ? project.bpm.length > 0 : project.bpm > 0) && project.type !== 'release' && (
+                                    <span className="px-1.5 py-0.5 rounded bg-neutral-900/80 text-neutral-300">
+                                        {project.bpm} <span className="text-neutral-600">BPM</span>
+                                    </span>
+                                )}
+
+                                {project.key && project.key !== 'C' && (
+                                    <span className="px-1.5 py-0.5 rounded bg-neutral-900/80 text-neutral-400">
+                                        {project.key}
+                                    </span>
+                                )}
+                            </>
+                        )}
+                    </div>
+
+                    <div className="flex items-start justify-between gap-3">
                         <h3 className="text-base font-bold text-white truncate tracking-tight group-hover:text-primary transition-colors duration-300 flex-1 leading-tight">
                             {project.title}
                         </h3>
 
                         <div className="flex items-center gap-2 shrink-0">
-                            {project.status && project.status !== 'published' && showStatusTags && (
-                                <div className="p-1 rounded bg-neutral-900 border border-white/5 text-neutral-500" title="Private Project">
-                                    <Lock size={12} />
-                                </div>
-                            )}
-
                             {/* More Menu - Only show if actions exist */}
                             {(onEdit || onDelete) && (
                                 <div className="relative" ref={menuRef}>
@@ -378,7 +407,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
                                     {/* Dropdown Menu */}
                                     {showMenu && (
-                                        <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                                        <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-transparent rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
                                             <div className="p-1">
                                                 {onEdit && (
                                                     <button
@@ -426,43 +455,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                             )}
                         </div>
                     </div>
-
-                    {/* Metadata Row */}
-                    <div className="flex items-center gap-2 text-[11px] font-medium text-neutral-500 font-mono">
-                        {project.genre === 'Uploads' ? (
-                            <span className="text-primary font-bold uppercase tracking-wider text-[10px]">
-                                Upload
-                            </span>
-                        ) : (
-                            <>
-                                {project.genre && (
-                                    <span className="text-neutral-400 hover:text-neutral-300 transition-colors">
-                                        {project.genre}
-                                    </span>
-                                )}
-
-                                {project.genre && ((typeof project.bpm === 'string' ? project.bpm.length > 0 : project.bpm > 0) || (project.key && project.key !== 'C')) && project.type !== 'release' && (
-                                    <div className="w-0.5 h-0.5 rounded-full bg-neutral-700" />
-                                )}
-
-                                {(typeof project.bpm === 'string' ? project.bpm.length > 0 : project.bpm > 0) && project.type !== 'release' && (
-                                    <span className="text-neutral-300">
-                                        {project.bpm} <span className="text-neutral-600">BPM</span>
-                                    </span>
-                                )}
-
-                                {project.key && project.key !== 'C' && ((typeof project.bpm === 'string' ? project.bpm.length > 0 : project.bpm > 0)) && (
-                                    <div className="w-0.5 h-0.5 rounded-full bg-neutral-700" />
-                                )}
-
-                                {project.key && project.key !== 'C' && (
-                                    <span className="text-neutral-400">
-                                        {project.key}
-                                    </span>
-                                )}
-                            </>
-                        )}
-                    </div>
                 </div>
 
                 {/* AI Analysis Overlay */}
@@ -475,8 +467,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                             <Sparkles size={10} className="text-primary animate-pulse" />
                         </div>
                         <div className="flex-1">
-                            <div className="text-[8px] text-primary/50 font-mono uppercase tracking-wider mb-0.5">System Analysis</div>
-                            <p className="text-[10px] text-neutral-200 font-mono leading-relaxed line-clamp-2">
+                            <div className="text-[7px] text-primary/50 font-mono uppercase tracking-wider mb-0.5">System Analysis</div>
+                            <p className="text-[9px] text-neutral-200 font-mono leading-relaxed line-clamp-2">
                                 {description}
                             </p>
                         </div>
@@ -485,7 +477,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
                 {/* Tracklist */}
                 <div className="flex-1 bg-[#050505] overflow-y-auto custom-scrollbar relative">
-                    <div className="p-2 space-y-0.5">
+                    <div className="p-2 space-y-2">
                         {(() => {
                             const tracksToShow = project.tracks.slice(0, 5);
                             // Ensure 5 slots are always shown on mobile
@@ -528,7 +520,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                             flex items-center px-3 py-2 rounded-md transition-all duration-200 cursor-pointer group/track border border-transparent
                                             ${isTrackPlaying
                                                 ? 'bg-primary/5 border-primary/10'
-                                                : 'hover:bg-white/5 hover:border-white/5'
+                                                : 'hover:bg-white/5 hover:border-transparent'
                                             }
                                         `}
                                         onClick={(e) => {
@@ -579,9 +571,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 </div>
 
                 {/* Footer */}
-                <div className="rounded-b-xl px-3 py-2.5 bg-neutral-900/90 border-t border-white/5 flex items-center justify-between z-20">
+                <div className="rounded-b-xl px-3 py-3 bg-neutral-900/90 border-t border-transparent flex items-center justify-between z-20">
                     <div className="flex items-center gap-2.5 overflow-hidden">
-                        <div className="h-5 w-5 rounded bg-neutral-800 text-neutral-400 border border-white/5 flex items-center justify-center text-[9px] font-bold uppercase shrink-0 overflow-hidden">
+                        <div className="h-5 w-5 rounded bg-neutral-800 text-neutral-400 border border-transparent flex items-center justify-center text-[9px] font-bold uppercase shrink-0 overflow-hidden">
                             {project.producerAvatar ? (
                                 <img src={project.producerAvatar} alt={project.producer} className="w-full h-full object-cover" />
                             ) : (
@@ -609,7 +601,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                             title="Generate AI Analysis"
                         >
                             <Cpu size={12} className={loadingDesc ? "animate-spin" : ""} />
-                            <span className="text-[9px] font-mono font-bold tracking-wider hidden group-hover:block">AI</span>
                         </button>
 
                         <div className="w-px h-3 bg-neutral-800 mx-1"></div>
@@ -678,8 +669,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 export default ProjectCard;
 
 export const ProjectSkeleton: React.FC = () => (
-    <div className="flex flex-col h-full bg-neutral-950/50 border border-white/5 rounded-xl overflow-hidden animate-pulse">
-        <div className="p-4 pb-2 space-y-2 border-b border-white/5">
+    <div className="flex flex-col h-full bg-neutral-950/50 border border-transparent rounded-xl overflow-hidden animate-pulse">
+        <div className="p-4 pb-2 space-y-2 border-b border-transparent">
             <div className="flex gap-2">
                 <div className="h-4 w-12 bg-neutral-800 rounded"></div>
                 <div className="h-4 w-12 bg-neutral-800 rounded"></div>
@@ -691,7 +682,7 @@ export const ProjectSkeleton: React.FC = () => (
                 <div key={i} className="h-8 w-full bg-neutral-900/50 rounded"></div>
             ))}
         </div>
-        <div className="p-3 bg-neutral-900/90 border-t border-white/5 flex justify-between items-center">
+        <div className="p-3 bg-neutral-900/90 border-t border-transparent flex justify-between items-center">
             <div className="h-4 w-20 bg-neutral-800 rounded"></div>
             <div className="flex gap-2">
                 <div className="h-4 w-4 bg-neutral-800 rounded"></div>

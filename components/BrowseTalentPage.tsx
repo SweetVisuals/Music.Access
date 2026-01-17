@@ -204,7 +204,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                                         className={`flex-1 text-xs font-bold flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors border ${talent.id === currentUserId
                                             ? 'bg-neutral-800 border-neutral-800 text-neutral-500 cursor-not-allowed opacity-50'
                                             : talent.isFollowing
-                                                ? 'bg-transparent border-transparent text-neutral-400 hover:text-red-500 hover:border-red-900'
+                                                ? 'bg-neutral-800 border-neutral-800 text-neutral-500 hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-500'
                                                 : 'text-white bg-primary/10 hover:bg-primary hover:text-black border-primary/20'
                                             }`}
                                     >

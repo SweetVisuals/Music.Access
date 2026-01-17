@@ -123,7 +123,7 @@ const SwipeableConversationItem: React.FC<SwipeableProps> = ({
     );
 };
 
-const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }) => {
+const MessagesPage: React.FC<{ isPlayerActive?: boolean; isPlayerExpanded?: boolean }> = ({ isPlayerActive, isPlayerExpanded }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -354,12 +354,12 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
     }, [activeConv?.messages]);
 
     return (
-        <div className={`w-full relative flex-1 ${isSidebarOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-full lg:bg-transparent overflow-hidden flex flex-col min-h-0 h-full`}>
+        <div className={`w-full relative flex-1 ${isSidebarOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:z-30 lg:top-0 lg:h-full lg:bg-transparent overflow-hidden flex flex-col min-h-0 h-full transition-all duration-500`}>
 
 
             <div className="flex-1 flex bg-[#0a0a0a] overflow-hidden relative min-h-0">
                 <div className={`
-                    absolute lg:static inset-y-0 left-0 z-[60] w-full lg:w-80 lg:border-r border-white/5 flex flex-col bg-black lg:bg-[#080808] transition-all duration-300
+                    absolute lg:static inset-y-0 left-0 z-[60] w-full lg:w-[340px] lg:border-r border-white/5 flex flex-col bg-black lg:bg-[#080808] transition-all duration-300
                     ${isSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 lg:translate-x-0 lg:opacity-100'}
                 `}>
                     <div className="p-4 border-b border-white/5 flex flex-col gap-4">
@@ -372,8 +372,8 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean }> = ({ isPlayerActive }
                         </div>
 
                         <div className="flex p-1 bg-neutral-900 rounded-lg">
-                            <button onClick={() => setActiveTab('messages')} className={`flex-1 py-1.5 rounded text-xs font-bold uppercase transition-all ${activeTab === 'messages' ? 'bg-neutral-800 text-white' : 'text-neutral-500'}`}>Messages</button>
-                            <button onClick={() => setActiveTab('notifications')} className={`flex-1 py-1.5 rounded text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 ${activeTab === 'notifications' ? 'bg-neutral-800 text-white' : 'text-neutral-500'}`}>
+                            <button onClick={() => setActiveTab('messages')} className={`flex-1 py-2.5 rounded text-xs font-bold uppercase transition-all ${activeTab === 'messages' ? 'bg-neutral-800 text-white' : 'text-neutral-500'}`}>Messages</button>
+                            <button onClick={() => setActiveTab('notifications')} className={`flex-1 py-2.5 rounded text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 ${activeTab === 'notifications' ? 'bg-neutral-800 text-white' : 'text-neutral-500'}`}>
                                 Alerts {notifications.some(n => !n.read) && <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>}
                             </button>
                         </div>

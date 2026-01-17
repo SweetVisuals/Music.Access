@@ -23,13 +23,13 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, user, onClick, isPre
             onClick={onClick}
             className={`
                 group relative w-full flex flex-col
-                bg-[#050505] border border-white/5 rounded-3xl overflow-hidden
+                bg-[#050505] border border-transparent rounded-3xl overflow-hidden
                 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)]
                 ${!isPreview ? 'hover:-translate-y-2 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7),0_0_20px_rgba(var(--primary-rgb),0.1)] cursor-pointer' : 'cursor-default'}
             `}
         >
             {/* 1. Header: Primary Focus (Price & Delivery) */}
-            <div className="relative p-6 pb-4 overflow-hidden border-b border-white/[0.03]">
+            <div className="relative p-6 pb-4 overflow-hidden border-b border-transparent">
                 {/* Dynamic Aura Background */}
                 <div className="absolute -top-20 -right-20 w-48 h-48 bg-primary/20 blur-[80px] rounded-full group-hover:bg-primary/40 transition-all duration-700"></div>
                 <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/5 blur-[50px] rounded-full opacity-50"></div>
@@ -73,7 +73,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, user, onClick, isPre
                 <div className="flex flex-wrap gap-2 mb-8">
                     {features.length > 0 ? (
                         features.slice(0, 3).map((feat, i) => (
-                            <div key={i} className="flex items-center gap-2 bg-white/[0.03] border border-white/5 px-3 py-1.5 rounded-full">
+                            <div key={i} className="flex items-center gap-2 bg-white/[0.03] border border-transparent px-3 py-1.5 rounded-full">
                                 <Sparkles size={10} className="text-primary/70" />
                                 <span className="text-[10px] text-neutral-300 font-bold uppercase tracking-tight">{feat}</span>
                             </div>
@@ -84,10 +84,10 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, user, onClick, isPre
                 </div>
 
                 {/* 3. Footer: Trust & CTA */}
-                <div className="mt-auto flex items-center justify-between pt-6 border-t border-white/[0.03]">
+                <div className="mt-auto flex items-center justify-between pt-6 border-t border-transparent">
                     <div className="flex items-center gap-3">
                         <div className="relative group/avatar">
-                            <div className="w-10 h-10 rounded-xl bg-neutral-800 border-2 border-white/5 overflow-hidden transition-all duration-300 group-hover/avatar:border-primary/50">
+                            <div className="w-10 h-10 rounded-xl bg-neutral-800 border-2 border-transparent overflow-hidden transition-all duration-300 group-hover/avatar:border-primary/50">
                                 {user?.avatar_url || user?.avatar ? (
                                     <img src={user?.avatar_url || user?.avatar} alt={user?.username || 'User'} className="w-full h-full object-cover" />
                                 ) : (
@@ -114,7 +114,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, user, onClick, isPre
             </div>
 
             {/* Premium Glow Overlay */}
-            <div className="absolute inset-0 ring-1 ring-inset ring-white/5 rounded-3xl group-hover:ring-primary/20 pointer-events-none transition-all duration-500"></div>
+            <div className="absolute inset-0 ring-1 ring-inset ring-transparent rounded-3xl group-hover:ring-primary/20 pointer-events-none transition-all duration-500"></div>
         </div>
     );
 };

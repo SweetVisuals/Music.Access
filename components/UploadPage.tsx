@@ -30,6 +30,8 @@ import { Project, Track } from '../types';
 import { uploadFile, deleteFile, getUserFiles, createFolder, updateAsset } from '../services/supabaseService';
 import { MOCK_PROJECTS, MOCK_USER_PROFILE } from '../constants';
 
+import { useFileOperation } from '../contexts/FileOperationContext';
+
 // --- Types ---
 type FileType = 'folder' | 'audio' | 'text' | 'image';
 
@@ -103,11 +105,13 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
     // Filter State
     const [activeFilter, setActiveFilter] = useState<FilterType>('all');
-    // Upload State
-    const [isUploading, setIsUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
-    const [uploadError, setUploadError] = useState<string | null>(null);
-    const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+
+    // Filter State
+
+
+    // Global File Operation Hook
+    const { uploadFiles, deleteFiles, moveFiles } = useFileOperation();
+
     const [noteSuccess, setNoteSuccess] = useState(false);
     const [isRenamingReady, setIsRenamingReady] = useState(false);
 
@@ -130,29 +134,172 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         }
     }, [renamingId]);
 
-    // --- Load Files on Mount ---
+    // --- Mobile DnD State ---
+    const [touchDragItem, setTouchDragItem] = useState<{ id: string, x: number, y: number } | null>(null);
+    const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const touchStartPositionRef = useRef<{ x: number, y: number } | null>(null);
+    const touchedElementRef = useRef<HTMLElement | null>(null);
+
+    // Cleanup timer on unmount
     useEffect(() => {
-        const loadFiles = async () => {
-            try {
-                const dbFiles = await getUserFiles();
-                const mappedFiles: FileSystemItem[] = dbFiles.map((f: any) => ({
-                    id: f.id,
-                    parentId: f.parentId || null,
-                    name: f.name,
-                    type: (f.type === 'folder') ? 'folder' : (f.type && f.type.startsWith('audio')) ? 'audio' : (f.type && f.type.startsWith('image')) ? 'image' : 'text',
-                    size: f.size,
-                    created: new Date().toLocaleDateString(), // TODO: use f.created_at
-                    format: f.name.split('.').pop()?.toUpperCase(),
-                    duration: 180, // detailed duration not yet available
-                    src: f.url
-                }));
-                // Force state update with new files
-                setItems(mappedFiles);
-            } catch (error) {
-                console.error("Failed to load files:", error);
-            }
+        return () => {
+            if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
         };
+    }, []);
+
+    const handleTouchStart = (e: React.TouchEvent, itemId: string) => {
+        // Only allow primary single touch
+        if (e.touches.length !== 1) return;
+
+        const touch = e.touches[0];
+        touchStartPositionRef.current = { x: touch.clientX, y: touch.clientY };
+        touchedElementRef.current = e.currentTarget as HTMLElement;
+
+        // Start long press timer
+        longPressTimerRef.current = setTimeout(() => {
+            // Initiate Drag Mode
+            if (window.navigator.vibrate) window.navigator.vibrate(50); // Haptic feedback
+            setTouchDragItem({
+                id: itemId,
+                x: touch.clientX,
+                y: touch.clientY
+            });
+            setDraggedItemId(itemId); // Sync with main dnd state logic
+        }, 500); // 500ms long press
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        const touch = e.touches[0];
+
+        if (touchDragItem) {
+            // We are dragging!
+            e.preventDefault(); // Prevent scrolling
+
+            // Update ghost position
+            setTouchDragItem(prev => prev ? ({ ...prev, x: touch.clientX, y: touch.clientY }) : null);
+
+            // Hit testing for highlight
+            // Temporarily hide the ghost or use document configuration to look "through" it
+            // Simple heuristic: elementFromPoint
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            const folderElement = target?.closest('[data-folder-id]');
+
+            if (folderElement) {
+                const folderId = folderElement.getAttribute('data-folder-id');
+                if (folderId && folderId !== touchDragItem.id) {
+                    setDragOverFolderId(folderId);
+                } else {
+                    setDragOverFolderId(null);
+                }
+            } else {
+                setDragOverFolderId(null);
+            }
+        } else {
+            // Not dragging yet, checking if we should cancel timer (user scrolled)
+            if (touchStartPositionRef.current) {
+                const diffX = Math.abs(touch.clientX - touchStartPositionRef.current.x);
+                const diffY = Math.abs(touch.clientY - touchStartPositionRef.current.y);
+
+                if (diffX > 10 || diffY > 10) {
+                    // Movement detected, cancel long press
+                    if (longPressTimerRef.current) {
+                        clearTimeout(longPressTimerRef.current);
+                        longPressTimerRef.current = null;
+                    }
+                }
+            }
+        }
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+        }
+
+        if (touchDragItem) {
+            // Drop logic!
+            if (dragOverFolderId) {
+                // Execute standard drop handler manually
+                // Use a synthetic event or call logic directly
+                // Replicating handleDrop logic partially for internal move
+                const targetFolderId = dragOverFolderId;
+
+                // Reuse existing logic but simplified
+                if (touchDragItem.id !== targetFolderId) {
+                    // Call the internal move logic
+                    // We need to 'fake' the event or extract key logic. 
+                    // Let's extract logic to 'executeMove(sourceIds, targetId)' eventually,
+                    // but for now we'll self-call logic inline or through handleDrop if possible.
+                    // Creating a synthetic event is messy. Let's call a new helper or modify handleDrop.
+
+                    // NOTE: We'll direct call the logic derived from handleDrop below.
+                    moveFileInternal(touchDragItem.id, targetFolderId);
+                }
+            }
+
+            setTouchDragItem(null);
+            setIsDraggingFiles(false);
+        }
+    };
+
+    // Extracted from handleDrop for reuse - using Global Context
+    const moveFileInternal = async (sourceId: string, targetId: string) => {
+        let itemsToMove: string[] = [];
+        if (selectedIds.has(sourceId)) {
+            itemsToMove = Array.from(selectedIds);
+        } else {
+            itemsToMove = [sourceId];
+        }
+        itemsToMove = itemsToMove.filter(id => id !== targetId);
+
+        if (itemsToMove.length > 0) {
+            // Create a map for the context to look up item names
+            const itemsMap = new Map();
+            items.forEach(i => itemsMap.set(i.id, i));
+
+            // Optimistic Update Locally
+            setItems(prevItems => prevItems.map(i => itemsToMove.includes(i.id) ? { ...i, parentId: targetId } : i));
+            setSelectedIds(new Set());
+
+            // Trigger Global Operation
+            moveFiles(itemsToMove, targetId, itemsMap);
+        }
+    };
+
+
+    // --- Load Files on Mount ---
+    // --- Load Files on Mount & Listen for Updates ---
+    const loadFiles = async () => {
+        try {
+            const dbFiles = await getUserFiles();
+            const mappedFiles: FileSystemItem[] = dbFiles.map((f: any) => ({
+                id: f.id,
+                parentId: f.parentId || null,
+                name: f.name,
+                type: (f.type === 'folder') ? 'folder' : (f.type && f.type.startsWith('audio')) ? 'audio' : (f.type && f.type.startsWith('image')) ? 'image' : 'text',
+                size: f.size,
+                created: new Date().toLocaleDateString(), // TODO: use f.created_at
+                format: f.name.split('.').pop()?.toUpperCase(),
+                duration: 180, // detailed duration not yet available
+                src: f.url
+            }));
+            // Force state update with new files
+            setItems(mappedFiles);
+        } catch (error) {
+            console.error("Failed to load files:", error);
+        }
+    };
+
+    useEffect(() => {
         loadFiles();
+
+        const handleStorageUpdate = () => {
+            loadFiles();
+        };
+
+        window.addEventListener('storage-updated', handleStorageUpdate);
+        return () => window.removeEventListener('storage-updated', handleStorageUpdate);
     }, []);
 
     // --- File Upload Handler ---
@@ -311,56 +458,34 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     };
 
     // Delete
-    const handleDelete = async (targetId?: string) => {
-        // If targetId is provided (from context menu), prioritize it.
-        // If targetId is NOT provided, use selectedIds.
-        // If targetId IS provided AND it is NOT in selectedIds, delete only targetId.
-        // If targetId IS provided AND it IS in selectedIds, delete all selectedIds.
+    const handleDelete = async () => {
+        if (!selectedIds.size && !contextMenu?.targetId) return;
 
-        let idsToDelete = new Set<string>();
-
-        if (targetId) {
-            if (selectedIds.has(targetId)) {
-                idsToDelete = new Set(selectedIds);
-            } else {
-                idsToDelete = new Set([targetId]);
-            }
+        const idsToDelete = new Set<string>();
+        if (contextMenu?.targetId) {
+            idsToDelete.add(contextMenu.targetId);
         } else {
-            idsToDelete = new Set(selectedIds);
+            selectedIds.forEach(id => idsToDelete.add(id));
         }
 
         if (idsToDelete.size === 0) return;
 
-        // Recursive delete logic needs to be run for EACH id
-        const finalIdsToDelete = new Set<string>();
+        // Global Delete Operation
+        const itemsMap = new Map();
+        items.forEach(i => itemsMap.set(i.id, i));
 
-        items.forEach(item => {
-            if (idsToDelete.has(item.id)) {
-                // Collect this and children
-                const collect = (pid: string) => {
-                    finalIdsToDelete.add(pid);
-                    items.filter(child => child.parentId === pid).forEach(c => collect(c.id));
-                };
-                collect(item.id);
-            }
-        });
+        // Optimistic UI Update - Remove immediately
+        setItems(prevItems => prevItems.filter(i => !idsToDelete.has(i.id)));
 
-        // Delete from Supabase
-        for (const itemId of Array.from(finalIdsToDelete)) {
-            try {
-                await deleteFile(itemId);
-            } catch (e) {
-                console.error('Failed to delete remote file', itemId, e);
-            }
-        }
+        // Trigger Global Delete
+        deleteFiles(Array.from(idsToDelete), itemsMap);
 
-        setItems(items.filter(i => !finalIdsToDelete.has(i.id)));
         setContextMenu(null);
         setSelectedIds(new Set()); // Clear selection
         setAnchorSelectedId(null);
 
-        // Path cleanup?
-        const remainingPath = selectedPath.filter(id => !finalIdsToDelete.has(id));
+        // Path cleanup
+        const remainingPath = selectedPath.filter(id => !idsToDelete.has(id));
         if (remainingPath.length !== selectedPath.length) {
             setSelectedPath(remainingPath);
         }
@@ -452,84 +577,22 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
     // File Upload
     const handleFileUpload = async (files: FileList | File[]) => {
-        setIsUploading(true);
-        setUploadError(null);
-        setUploadSuccess(null);
-
         const fileArray = Array.from(files);
-        let successCount = 0;
-        let failedFiles: string[] = [];
-        let errors: string[] = [];
+        if (fileArray.length === 0) return;
 
+        // Use Global Context for Upload
+        // The context handles notifications and state.
+        // We just need to trigger it.
+        // The 'storage-updated' event listener will handle refreshing the file list when done.
 
-        try {
-            for (let i = 0; i < fileArray.length; i++) {
-                const file = fileArray[i];
-                const fileId = `upload-${Date.now()}-${i}`;
-                const progress = Math.round(((i + 1) / fileArray.length) * 100);
-
-                // Update progress
-                setUploadProgress(prev => ({ ...prev, [fileId]: progress }));
-
-                try {
-                    const result = await uploadFile(file);
-
-                    // Create file item in UI
-                    const fileType: FileType = file.type.startsWith('audio/') ? 'audio' :
-                        file.type.startsWith('image/') ? 'image' :
-                            file.type.startsWith('text/') ? 'text' : 'text';
-
-                    const newFileItem: FileSystemItem = {
-                        id: result.assetId,
-                        parentId: currentFolderId,
-                        name: file.name,
-                        type: fileType,
-                        size: formatFileSize(file.size),
-                        created: new Date().toLocaleDateString(),
-                        format: file.name.split('.').pop()?.toUpperCase(),
-                        duration: fileType === 'audio' ? 180 : undefined, // Default duration for audio
-                        src: result.publicUrl // Store the public URL
-                    };
-
-                    setItems(prev => [...prev, newFileItem]);
-                    successCount++;
-
-                } catch (error) {
-                    console.error('Upload failed:', error);
-                    failedFiles.push(file.name);
-
-                    // Handle specific error types
-                    if (error.message.includes('row-level security policy')) {
-                        errors.push(`Storage bucket permissions not configured. Please create the "assets" bucket in your Supabase dashboard.`);
-                    } else if (error.message.includes('Bucket not found')) {
-                        errors.push(`Storage bucket "assets" doesn't exist. Please create it in Supabase Storage settings.`);
-                    } else {
-                        errors.push(`Failed to upload ${file.name}: ${error.message}`);
-                    }
-                }
-            }
-
-            if (successCount > 0) {
-                const successMessage = `Successfully uploaded ${successCount} file(s)`;
-                setUploadSuccess(successMessage);
-                // Dispatch event to update storage bar in sidebar
-                window.dispatchEvent(new CustomEvent('storage-updated'));
-            }
-
-            if (failedFiles.length > 0) {
-                const uniqueErrors = [...new Set(errors)]; // Remove duplicates
-                setUploadError(uniqueErrors.join(' '));
-            }
-
-        } catch (error) {
-            console.error('Upload error:', error);
-            const errorMessage = 'Upload failed. Please try again.';
-            setUploadError(errorMessage);
-        } finally {
-            setIsUploading(false);
-            setUploadProgress({});
-        }
+        await uploadFiles(fileArray, currentFolderId);
     };
+
+
+
+
+
+
 
     // Handle drag and drop from desktop
     const handleFileDrop = (e: React.DragEvent) => {
@@ -566,6 +629,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
     // Drag & Drop
     // Drag & Drop
+    // Drag & Drop
     const handleDrop = async (e: React.DragEvent, targetFolderId: string | null) => {
         e.preventDefault();
         e.stopPropagation();
@@ -589,25 +653,17 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 itemsToMove = [draggedItemId];
             }
 
-            // Filter out the target folder itself if it's in the selection to prevent cycles
+            // Filter out the target folder itself
             itemsToMove = itemsToMove.filter(id => id !== targetFolderId);
 
             if (itemsToMove.length > 0) {
-                // Optimistic update
-                setItems(items.map(i => itemsToMove.includes(i.id) ? { ...i, parentId: targetFolderId } : i));
-                setDraggedItemId(null);
-                // Clear selection after move
-                setSelectedIds(new Set());
+                // Use Global Context for Move
+                const itemsMap = new Map(items.map(i => [i.id, i]));
+                await moveFiles(itemsToMove, targetFolderId, itemsMap);
 
-                // Persist
-                for (const id of itemsToMove) {
-                    try {
-                        await updateAsset(id, { parentId: targetFolderId });
-                    } catch (e) {
-                        console.error("Failed to move item", id, e);
-                        // Revert optimistic update for this item? (Complex to handle partial failures, simplified for now)
-                    }
-                }
+                // Clear selection & drag state
+                setSelectedIds(new Set());
+                setDraggedItemId(null);
             }
         }
     };
@@ -719,24 +775,56 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
             {/* Header & Breadcrumb */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 lg:mb-8">
                 <div className="flex items-center space-x-2 text-sm font-medium">
-                    {viewMode === 'grid' ? (
-                        <>
+                    {/* Mobile Back Navigation Header */}
+                    <div className="md:hidden flex items-center gap-2">
+                        {currentFolderId ? (
                             <button
-                                onClick={() => handleNavigate(null)}
-                                className={`hover:text-white transition-colors ${!currentFolderId ? 'text-white font-bold' : 'text-neutral-400'}`}
+                                onClick={handleNavigateUp}
+                                className="flex items-center gap-1 text-neutral-400 hover:text-white transition-colors bg-white/5 px-2 py-1.5 rounded-lg active:scale-95"
                             >
-                                All Files
+                                <ChevronRight size={16} className="rotate-180" />
+                                <span className="font-bold">Back</span>
                             </button>
-                            {currentFolder && (
-                                <>
-                                    <ChevronRight size={14} className="text-neutral-600" />
-                                    <span className="text-white font-bold">{currentFolder.name}</span>
-                                </>
-                            )}
-                        </>
-                    ) : (
-                        <span className="text-white font-bold">Column Browser</span>
-                    )}
+                        ) : null}
+                        <span className="text-white font-bold ml-1 truncate max-w-[150px]">
+                            {currentFolder ? currentFolder.name : 'All Files'}
+                        </span>
+                    </div>
+
+                    {/* Desktop/Tablet Breadcrumbs (Hidden on Mobile) */}
+                    <div className="hidden md:flex items-center space-x-2">
+                        {viewMode === 'grid' ? (
+                            <>
+                                <button
+                                    onClick={() => handleNavigate(null)}
+                                    className={`hover:text-white transition-colors ${!currentFolderId ? 'text-white font-bold' : 'text-neutral-400'}`}
+                                >
+                                    All Files
+                                </button>
+                                {getPathToRoot(currentFolderId).map((folderId, index, array) => {
+                                    const folder = items.find(i => i.id === folderId);
+                                    const isLast = index === array.length - 1;
+
+                                    if (!folder) return null;
+
+                                    return (
+                                        <React.Fragment key={folderId}>
+                                            <ChevronRight size={14} className="text-neutral-600" />
+                                            <button
+                                                onClick={() => !isLast && handleNavigate(folderId)}
+                                                disabled={isLast}
+                                                className={`${isLast ? 'text-white font-bold cursor-default' : 'text-neutral-400 hover:text-white transition-colors'}`}
+                                            >
+                                                {folder.name}
+                                            </button>
+                                        </React.Fragment>
+                                    );
+                                })}
+                            </>
+                        ) : (
+                            <span className="text-white font-bold">Column Browser</span>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex items-center space-x-3">
@@ -888,7 +976,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                 )}
                 {currentItems.length === 0 ? (
                     <div
-                        className={`flex flex-col items-center justify-center h-64 border border-dashed rounded-xl transition-all ${isDraggingFiles ? 'border-primary bg-primary/10' : 'border-neutral-800 text-neutral-600'}`}
+                        className={`flex flex-col items-center justify-center h-64 border border-dashed rounded-xl transition-all m-[5px] ${isDraggingFiles ? 'border-primary bg-primary/10' : 'border-neutral-800 text-neutral-600'}`}
                     >
                         <UploadIcon size={48} className={`mb-4 ${isDraggingFiles ? 'text-primary animate-bounce' : 'opacity-50'}`} />
                         <p className="text-sm font-bold">{isDraggingFiles ? 'Drop files here' : 'This folder is empty'}</p>
@@ -951,6 +1039,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                 }
                                             `}
                                             onClick={(e) => handleItemClick(file, e)}
+                                            onDoubleClick={() => file.type === 'image' ? openInfo(file) : file.type === 'text' ? openTextEditor(file) : file.type === 'audio' ? handlePlay(file) : null}
                                         >
                                             <div
                                                 className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden cursor-pointer active:scale-95 transition-transform ${file.type === 'audio' ? (isPlayingFile ? 'bg-primary text-black animate-pulse' : 'bg-neutral-800/80 text-primary') :
@@ -1025,10 +1114,14 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                     ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]'
                                                     : 'bg-neutral-900/40 border-white/5 hover:bg-neutral-800 hover:border-white/10 text-neutral-400 hover:text-white'
                                                 }
-                                                ${dragOverFolderId === folder.id ? 'ring-2 ring-primary bg-primary/20' : ''}
+                                                ${dragOverFolderId === folder.id ? 'ring-2 ring-primary bg-primary/20 scale-105 z-10' : ''}
                                             `}
+                                            data-folder-id={folder.id} // Hook for mobile DnD detection
+                                            onTouchStart={(e) => handleTouchStart(e, folder.id)}
+                                            onTouchMove={handleTouchMove}
+                                            onTouchEnd={handleTouchEnd}
                                         >
-                                            <Folder size={14} className={isSelected ? 'text-black' : 'text-neutral-500 group-hover:text-white'} fill={isSelected ? "currentColor" : "none"} />
+                                            <Folder size={14} className={isSelected ? 'text-black' : 'text-neutral-500 group-hover:text-white'} fill={isSelected || (dragOverFolderId === folder.id) ? "currentColor" : "none"} />
                                             {renamingId === folder.id ? (
                                                 <input
                                                     autoFocus
@@ -1066,7 +1159,11 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                     : 'bg-[#0A0A0A] border-white/5 hover:bg-neutral-900 hover:border-white/10 text-neutral-400 hover:text-white'
                                                 }
                                                 ${isPlayingFile ? 'border-primary/50' : ''}
+                                                ${touchDragItem?.id === file.id ? 'opacity-50 scale-95' : ''}
                                             `}
+                                            onTouchStart={(e) => handleTouchStart(e, file.id)}
+                                            onTouchMove={handleTouchMove}
+                                            onTouchEnd={handleTouchEnd}
                                         >
                                             {/* Playing Indicator Background */}
                                             {isPlayingFile && !isSelected && (
@@ -1077,7 +1174,9 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                 {file.type === 'audio' ? (
                                                     isPlayingFile ? <div className="w-3.5 h-3.5 flex items-end gap-0.5"><div className="w-1 bg-primary h-full animate-[music-bar_0.5s_ease-in-out_infinite]" /><div className="w-1 bg-primary h-2/3 animate-[music-bar_0.5s_ease-in-out_infinite_0.1s]" /><div className="w-1 bg-primary h-1/2 animate-[music-bar_0.5s_ease-in-out_infinite_0.2s]" /></div> : <Music size={14} />
                                                 ) : file.type === 'image' ? (
-                                                    <LayoutGrid size={14} />
+                                                    file.src ? (
+                                                        <img src={file.src} className="w-3.5 h-3.5 object-cover rounded-[2px]" alt="" />
+                                                    ) : <LayoutGrid size={14} />
                                                 ) : (
                                                     <FileText size={14} />
                                                 )}
@@ -1174,6 +1273,10 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                                                 <Folder size={12} className={isSelected ? 'text-black' : 'text-neutral-500'} fill={isSelected || isActivePath ? "currentColor" : "none"} />
                                                             ) : item.type === 'audio' ? (
                                                                 <Music size={12} className={isSelected ? 'text-black' : 'text-neutral-500'} />
+                                                            ) : item.type === 'image' ? (
+                                                                item.src ? (
+                                                                    <img src={item.src} className="w-3 h-3 object-cover rounded-[1px]" alt="" />
+                                                                ) : <LayoutGrid size={12} className={isSelected ? 'text-black' : 'text-neutral-500'} />
                                                             ) : (
                                                                 <FileText size={12} className={isSelected ? 'text-black' : 'text-neutral-500'} />
                                                             )}
@@ -1294,117 +1397,32 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                         </div>
                     </div>
                 )}
-                {/* Upload Progress and Messages - Redesigned */}
-                {isUploading && (
-                    <div className="fixed bottom-6 right-0 left-0 mx-4 md:left-auto md:mx-0 md:right-6 z-50 md:w-96 bg-[#111] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300">
-                        <div className="p-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="relative">
-                                    <div className="w-2.5 h-2.5 bg-primary rounded-full animate-pulse absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
-                                    <div className="w-8 h-8 bg-primary/20 rounded-full animate-ping opacity-75"></div>
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-white">Uploading Files</h4>
-                                    <p className="text-[10px] text-neutral-400">{Object.keys(uploadProgress).length} file(s) in queue</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="p-2 max-h-64 overflow-y-auto custom-scrollbar">
-                            {Object.entries(uploadProgress).map(([fileId, progress]) => (
-                                <div key={fileId} className="p-3 mb-1 rounded-xl bg-neutral-900/50 border border-transparent hover:border-white/5 transition-colors group">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-3 overflow-hidden">
-                                            <div className="w-8 h-8 rounded-lg bg-neutral-800 flex items-center justify-center flex-shrink-0">
-                                                {fileId.includes('audio') ? <Music size={14} className="text-neutral-400" /> : <FileText size={14} className="text-neutral-400" />}
-                                            </div>
-                                            <span className="text-xs font-medium text-neutral-300 truncate">File {fileId.split('-').pop()}</span>
-                                        </div>
-                                        <span className="text-xs font-bold text-primary">{progress}%</span>
-                                    </div>
-                                    <div className="w-full bg-neutral-800 rounded-full h-1 overflow-hidden">
-                                        <div
-                                            className="bg-primary h-full rounded-full transition-all duration-300 ease-out relative"
-                                            style={{ width: `${progress}%` }}
-                                        >
-                                            <div className="absolute inset-0 bg-white/20 animate-[shimmer_1s_infinite]"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {(uploadError || uploadSuccess) && !isUploading && (
-                    <div className="fixed bottom-6 right-0 left-0 mx-4 md:left-auto md:mx-0 md:right-6 z-50 md:w-96 animate-in slide-in-from-bottom-5 fade-in duration-300">
-                        {uploadError && (
-                            <div className="bg-[#1a0505] border border-red-500/20 rounded-2xl shadow-2xl overflow-hidden">
-                                <div className="p-4 flex items-start gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0 border border-red-500/20">
-                                        <AlertCircle size={20} className="text-red-500" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="text-sm font-bold text-red-100 mb-1">Upload Failed</h4>
-                                        <p className="text-xs text-red-200/70 leading-relaxed mb-3">
-                                            {uploadError.includes('row-level security policy')
-                                                ? "Permission denied. Please ensure you are logged in and have the correct access rights."
-                                                : uploadError}
-                                        </p>
-
-                                        {uploadError.includes('row-level security policy') && (
-                                            <div className="space-y-2">
-                                                <div className="px-3 py-2 bg-red-500/5 rounded-lg border border-red-500/10">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <Info size={12} className="text-red-400" />
-                                                        <span className="text-[10px] font-bold text-red-300 uppercase tracking-wider">Troubleshooting</span>
-                                                    </div>
-                                                    <p className="text-[10px] text-red-400/80">
-                                                        The storage bucket "assets" might be missing or private.
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    onClick={() => setUploadError(null)}
-                                                    className="text-xs font-medium text-red-400 hover:text-red-300 transition-colors"
-                                                >
-                                                    Dismiss
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        {!uploadError.includes('row-level security policy') && (
-                                            <button
-                                                onClick={() => setUploadError(null)}
-                                                className="text-xs font-medium text-red-400 hover:text-red-300 transition-colors mt-1"
-                                            >
-                                                Dismiss
-                                            </button>
-                                        )}
-                                    </div>
-                                    <button onClick={() => setUploadError(null)} className="text-red-400/50 hover:text-red-400 transition-colors">
-                                        <X size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {uploadSuccess && (
-                            <div className="bg-[#051a05] border border-green-500/20 rounded-2xl shadow-2xl overflow-hidden p-4 flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 border border-green-500/20">
-                                    <Check size={20} className="text-green-500" />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="text-sm font-bold text-green-100">Upload Complete</h4>
-                                    <p className="text-xs text-green-200/70">{uploadSuccess}</p>
-                                </div>
-                                <button onClick={() => setUploadSuccess(null)} className="text-green-400/50 hover:text-green-400 transition-colors">
-                                    <X size={16} />
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
+                {/* File Operation Notification is now global in App.tsx */}
             </div>
+
+            {/* Touch Drag Overlay */}
+            {touchDragItem && (
+                <div
+                    className="fixed z-[9999] pointer-events-none p-3 bg-[#0A0A0A] border border-primary/50 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.8)] flex items-center gap-3 w-48 opacity-90"
+                    style={{
+                        left: 0,
+                        top: 0,
+                        transform: `translate(${touchDragItem.x}px, ${touchDragItem.y - 60}px)` // Offset slightly above finger
+                    }}
+                >
+                    <div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary">
+                        <Folder size={16} />
+                    </div>
+                    <div>
+                        <div className="text-xs font-bold text-white truncate max-w-[120px]">
+                            {items.find(i => i.id === touchDragItem.id)?.name || 'Moving item...'}
+                        </div>
+                        <div className="text-[9px] text-primary/80 font-mono font-bold uppercase tracking-wider">
+                            Move to folder...
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* TEXT EDITOR MODAL */}
             {
@@ -1453,15 +1471,31 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
             {
                 infoItem && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                        <div className="w-full max-w-md bg-[#0a0a0a] border border-neutral-700 rounded-xl shadow-2xl p-6 relative">
-                            <button onClick={() => setInfoItem(null)} className="absolute top-4 right-4 text-neutral-500 hover:text-white">
-                                <X size={16} />
+                        <div className={`w-full ${infoItem.type === 'image' ? 'max-w-5xl' : 'max-w-md'} bg-[#0a0a0a] border border-neutral-700 rounded-xl shadow-2xl p-6 relative transition-all duration-300`}>
+                            <button onClick={() => setInfoItem(null)} className="absolute top-4 right-4 text-neutral-500 hover:text-white z-10 bg-black/50 p-1.5 rounded-full hover:bg-black/80 backdrop-blur-sm transition-colors">
+                                <X size={20} />
                             </button>
                             <div className="flex flex-col items-center mb-6">
-                                <div className="w-20 h-20 bg-neutral-900 rounded-2xl border border-white/10 flex items-center justify-center mb-4 shadow-lg">
-                                    {infoItem.type === 'folder' ? <Folder size={40} className="text-primary" /> : infoItem.type === 'text' ? <FileText size={40} className="text-neutral-400" /> : <Music size={40} className="text-neutral-400" />}
-                                </div>
-                                <h3 className="text-lg font-bold text-white">{infoItem.name}</h3>
+                                {infoItem.type === 'image' && infoItem.src ? (
+                                    <div className="w-full max-h-[70vh] flex items-center justify-center bg-black/20 rounded-xl mb-4 overflow-hidden border border-white/5">
+                                        <img
+                                            src={infoItem.src}
+                                            className="max-w-full max-h-[70vh] object-contain"
+                                            alt={infoItem.name}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="w-20 h-20 bg-neutral-900 rounded-2xl border border-white/10 flex items-center justify-center mb-4 shadow-lg">
+                                        {infoItem.type === 'folder' ? (
+                                            <Folder size={40} className="text-primary" />
+                                        ) : infoItem.type === 'text' ? (
+                                            <FileText size={40} className="text-neutral-400" />
+                                        ) : (
+                                            <Music size={40} className="text-neutral-400" />
+                                        )}
+                                    </div>
+                                )}
+                                <h3 className="text-lg font-bold text-white mt-2">{infoItem.name}</h3>
                                 <span className="text-xs text-neutral-500 font-mono uppercase">{infoItem.type}</span>
                             </div>
 
@@ -1523,7 +1557,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                 <ContextMenuItem icon={<Edit size={14} />} label="Rename" onClick={() => handleStartRename(items.find(i => i.id === contextMenu.targetId)!)} />
                                 <div className="h-px bg-white/10 my-1 mx-2" />
                                 <ContextMenuItem icon={<Info size={14} />} label="Get Info" onClick={() => openInfo(items.find(i => i.id === contextMenu.targetId)!)} />
-                                <ContextMenuItem icon={<Trash2 size={14} />} label="Delete" className="text-red-400 hover:bg-red-500/10 hover:text-red-400" onClick={() => handleDelete(contextMenu.targetId!)} />
+                                <ContextMenuItem icon={<Trash2 size={14} />} label="Delete" className="text-red-400 hover:bg-red-500/10 hover:text-red-400" onClick={() => handleDelete()} />
                             </>
                         )}
 
@@ -1538,7 +1572,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                                 <ContextMenuItem icon={<Edit size={14} />} label="Rename" onClick={() => handleStartRename(items.find(i => i.id === contextMenu.targetId)!)} />
                                 <div className="h-px bg-white/10 my-1 mx-2" />
                                 <ContextMenuItem icon={<Info size={14} />} label="Get Info" onClick={() => openInfo(items.find(i => i.id === contextMenu.targetId)!)} />
-                                <ContextMenuItem icon={<Trash2 size={14} />} label="Delete" className="text-red-400 hover:bg-red-500/10 hover:text-red-400" onClick={() => handleDelete(contextMenu.targetId!)} />
+                                <ContextMenuItem icon={<Trash2 size={14} />} label="Delete" className="text-red-400 hover:bg-red-500/10 hover:text-red-400" onClick={() => handleDelete()} />
                             </>
                         )}
 

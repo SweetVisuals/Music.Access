@@ -8,6 +8,8 @@ import {
     MoreVertical,
     Edit,
     Download,
+    Printer,
+    Share2,
     Trash2,
     ArrowLeft,
     Play,
@@ -74,6 +76,7 @@ interface StudioProject extends Omit<Project, 'status' | 'tracks' | 'tasks'> {
     tracks: StudioTrack[];
 }
 
+// Library Asset Interface
 interface LibraryAsset {
     id: string;
     name: string;
@@ -83,16 +86,7 @@ interface LibraryAsset {
     fileType?: 'mp3' | 'wav' | 'zip';
 }
 
-// Mock Data for Purchased Library
-const LIBRARY_ASSETS: LibraryAsset[] = [
-    { id: 'lib1', name: 'Midnight_Tokio_Beat.wav', type: 'Purchased', producer: 'WavGod', date: 'Oct 24', fileType: 'wav' },
-    { id: 'lib2', name: 'Soul_Sample_Pack_Vol1.zip', type: 'Pack', producer: 'Mani Raé', date: 'Oct 22', fileType: 'zip' },
-    { id: 'lib3', name: 'Custom_Beat_Commission.mp3', type: 'Commission', producer: 'BeatSmith', date: 'Oct 15', fileType: 'mp3' },
-    { id: 'lib4', name: 'My_Vocal_Demo_v3.wav', type: 'Upload', producer: 'Me', date: 'Today', fileType: 'wav' },
-    { id: 'lib5', name: 'Drill_Anthem_Stems.zip', type: 'Purchased', producer: 'DrillMaster', date: 'Sep 30', fileType: 'zip' },
-    { id: 'lib6', name: 'Guitar_Loop_140bpm.wav', type: 'Upload', producer: 'Me', date: 'Yesterday', fileType: 'wav' },
-    { id: 'lib7', name: 'Neon_Rain_Project_File', type: 'Project', producer: 'WavGod', date: 'Oct 24', fileType: 'zip' },
-];
+/* REMOVED MOCK DATA */
 
 const Studio: React.FC<StudioProps> = ({
     projects,
@@ -280,7 +274,7 @@ const Studio: React.FC<StudioProps> = ({
             )}
 
             {activeView === 'dashboard' ? (
-                <div className="w-full max-w-[1600px] mx-auto pb-40 lg:pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+                <div className="w-full flex-1 flex flex-col pb-40 lg:pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
                         <div>
                             <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">My Studio</h1>
@@ -451,18 +445,18 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     // Menu State
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
-    // Library Assets State
-    const [assets, setAssets] = useState<LibraryAsset[]>(LIBRARY_ASSETS);
+    // Library Assets State (Real Data)
+    const [assets, setAssets] = useState<LibraryAsset[]>([]);
     const [trackToDelete, setTrackToDelete] = useState<string | null>(null);
     const { showToast } = useToast();
 
     useEffect(() => {
         const fetchAssets = async () => {
             try {
-                // If you have a real backend service, use it here:
-                // const data = await getLibraryAssets();
-                // setAssets(data);
-                // For now, we use the mock data as default
+                const data = await getLibraryAssets();
+                // Map the returned data (which aligns with our interface mostly) to strictly match LibraryAsset
+                // The service returns objects compatible with LibraryAsset
+                setAssets(data as LibraryAsset[]);
             } catch (error) {
                 console.error("Failed to fetch library assets", error);
             }
@@ -768,16 +762,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                         </div>
                     </div>
 
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setProjectToDelete(project.id);
-                        }}
-                        className="ml-2 p-2 text-neutral-500 hover:text-red-500 transition-colors"
-                        title="Delete Workspace"
-                    >
-                        <Trash2 size={18} />
-                    </button>
+
 
                     {/* Mobile Library Toggle */}
                     <button
@@ -789,9 +774,9 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 </div>
 
                 {/* Tabs - Mobile (Grid) & Desktop (Pills/List) */}
-                <div className="w-full lg:w-auto">
+                <div className="w-full lg:w-auto lg:hidden">
                     {/* Mobile Grid Layout */}
-                    <div className="lg:hidden grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5 w-full">
+                    <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5 w-full">
                         <button
                             onClick={() => setTab('overview')}
                             className={`flex flex-col items-center justify-center gap-1 py-2 rounded transition-all ${tab === 'overview' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
@@ -821,22 +806,51 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                             <span className="text-[9px] font-bold uppercase tracking-tight">Files</span>
                         </button>
                     </div>
-
-                    {/* Desktop Flex Layout (Existing) */}
-                    <div className="hidden lg:flex overflow-x-auto bg-neutral-900 p-1 rounded-lg border border-neutral-800 no-scrollbar">
-                        <TabBtn active={tab === 'overview'} onClick={() => setTab('overview')} label="Overview" icon={<LayoutList size={14} />} />
-                        <TabBtn active={tab === 'tracks'} onClick={() => setTab('tracks')} label="Tracks" icon={<Music size={14} />} />
-                        <TabBtn active={tab === 'contracts'} onClick={() => setTab('contracts')} label="Contracts" icon={<FileText size={14} />} />
-                        <TabBtn active={tab === 'files'} onClick={() => setTab('files')} label="Files" icon={<Folder size={14} />} />
-                    </div>
                 </div>
 
+                {/* Desktop Tabs - Centered & Spaced Out */}
+                <div className="hidden lg:flex items-center gap-12 absolute left-1/2 -translate-x-1/2">
+                    {['overview', 'tracks', 'contracts', 'files'].map((t) => (
+                        <button
+                            key={t}
+                            onClick={() => setTab(t as any)}
+                            className={`relative py-5 text-sm font-bold transition-all uppercase tracking-widest ${tab === t
+                                ? 'text-white'
+                                : 'text-neutral-500 hover:text-white'
+                                }`}
+                        >
+                            {t}
+                            {tab === t && (
+                                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)] rounded-full" />
+                            )}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Right Actions: Bin & Export */}
+                {/* Right Actions: Bin & Export */}
                 <div className="hidden lg:flex items-center gap-2">
-                    <button className="px-4 py-2 bg-white/5 border border-white/10 hover:bg-white/10 rounded-lg text-xs font-bold text-white transition-colors flex items-center gap-2">
-                        <Download size={14} /> Export
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setProjectToDelete(project.id);
+                        }}
+                        className="group h-9 w-9 flex items-center justify-center bg-white/[0.03] hover:bg-white/[0.06] border border-transparent hover:border-white/10 rounded-xl transition-all duration-300"
+                        title="Delete Workspace"
+                    >
+                        <Trash2 size={16} className="text-neutral-400 group-hover:text-red-500 transition-colors" />
+                    </button>
+
+                    <button
+                        className="group h-9 w-9 flex items-center justify-center bg-white/[0.03] hover:bg-white/[0.06] border border-transparent hover:border-white/10 rounded-xl transition-all duration-300"
+                        title="Export Project"
+                    >
+                        <Download size={16} className="text-white group-hover:text-primary transition-colors" />
                     </button>
                 </div>
             </div>
+
+
 
             {/* MAIN CONTENT AREA */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
@@ -845,7 +859,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-6 pb-40 lg:pb-12">
 
                     {tab === 'overview' && (
-                        <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-2">
+                        <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-2">
                             <div className="bg-neutral-900/30 border border-white/5 rounded-xl p-6">
                                 <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider flex justify-between items-center">
                                     Release Checklist
@@ -890,7 +904,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                     )}
 
                     {tab === 'tracks' && (
-                        <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-2">
+                        <div className="w-full animate-in fade-in slide-in-from-bottom-2">
                             <div className="flex justify-between items-end mb-4">
                                 <h3 className="text-sm font-bold text-white uppercase tracking-wider">Tracklist</h3>
                                 <button onClick={addTrack} className="text-xs font-bold text-primary hover:text-white flex items-center gap-1"><Plus size={14} /> Add Track</button>
@@ -963,7 +977,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                             <div className="flex-1 flex flex-wrap items-center gap-2 lg:gap-4 text-[10px] pl-11 lg:pl-0">
                                                 {track.files?.main ? (
                                                     <span className="flex items-center gap-1 text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20">
-                                                        <Music size={10} /> {LIBRARY_ASSETS.find(a => a.id === track.files?.main)?.name || 'Beat Assigned'}
+                                                        <Music size={10} /> {assets.find(a => a.id === track.files?.main)?.name || 'Beat Assigned'}
                                                     </span>
                                                 ) : (
                                                     <span className="flex items-center gap-1 text-neutral-500 bg-neutral-800 px-1.5 py-0.5 rounded border border-neutral-700 border-dashed">
@@ -1045,33 +1059,123 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                     )}
 
                     {tab === 'contracts' && (
-                        <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-2">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="bg-neutral-900/30 border border-white/5 rounded-xl p-6">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><Briefcase size={20} /></div>
-                                        <div>
-                                            <h3 className="text-sm font-bold text-white">Project Contracts</h3>
-                                            <p className="text-xs text-neutral-500">Manage agreements for this release</p>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {MOCK_CONTRACTS.slice(0, 3).map(contract => (
-                                            <div
-                                                key={contract.id}
-                                                onClick={() => setActiveContract(contract)}
-                                                className="flex items-center justify-between p-3 bg-white/5 border border-white/5 rounded-lg hover:border-primary/30 hover:bg-white/10 cursor-pointer group"
-                                            >
-                                                <div>
-                                                    <div className="text-xs font-bold text-white group-hover:text-primary transition-colors">{contract.title}</div>
-                                                    <div className="text-[10px] text-neutral-400">{contract.status.toUpperCase()} • {contract.created}</div>
-                                                </div>
-                                                <Eye size={14} className="text-neutral-500 group-hover:text-white" />
+                        <div className="w-full animate-in fade-in slide-in-from-bottom-2">
+                            <div className="w-full">
+                                <div className="w-full h-[600px] animate-in fade-in slide-in-from-bottom-2 flex gap-6">
+                                    {/* Contracts List Sidebar */}
+                                    <div className="w-1/3 bg-neutral-900/30 border border-white/5 rounded-xl p-4 flex flex-col">
+                                        <div className="flex items-center gap-3 mb-4 p-2">
+                                            <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><Briefcase size={20} /></div>
+                                            <div>
+                                                <h3 className="text-sm font-bold text-white">Agreements</h3>
+                                                <p className="text-xs text-neutral-500">Manage release contracts</p>
                                             </div>
-                                        ))}
-                                        <button className="w-full py-2 mt-2 border border-dashed border-neutral-700 rounded-lg text-xs font-bold text-neutral-400 hover:text-white hover:border-neutral-500 flex items-center justify-center gap-2">
+                                        </div>
+
+                                        <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar pr-1">
+                                            {MOCK_CONTRACTS.map(contract => (
+                                                <div
+                                                    key={contract.id}
+                                                    onClick={() => setActiveContract(contract)}
+                                                    className={`p-3 border rounded-lg cursor-pointer transition-all group ${
+                                                        //@ts-ignore
+                                                        activeContract?.id === contract.id
+                                                            ? 'bg-blue-500/10 border-blue-500/30'
+                                                            : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
+                                                        }`}
+                                                >
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <span className={`text-xs font-bold ${
+                                                            //@ts-ignore
+                                                            activeContract?.id === contract.id ? 'text-blue-400' : 'text-white'
+                                                            }`}>{contract.title}</span>
+                                                        <Eye size={12} className={
+                                                            //@ts-ignore
+                                                            activeContract?.id === contract.id ? 'text-blue-400' : 'text-neutral-600'
+                                                        } />
+                                                    </div>
+                                                    <div className="flex items-center justify-between mt-2">
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded border ${contract.status === 'signed'
+                                                            ? 'bg-green-500/10 border-green-500/20 text-green-500'
+                                                            : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
+                                                            }`}>
+                                                            {contract.status.toUpperCase()}
+                                                        </span>
+                                                        <span className="text-[9px] text-neutral-500">{contract.created}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <button className="w-full py-2 mt-4 border border-dashed border-neutral-700 rounded-lg text-xs font-bold text-neutral-400 hover:text-white hover:border-neutral-500 flex items-center justify-center gap-2 transition-colors">
                                             <Plus size={14} /> Link New Contract
                                         </button>
+                                    </div>
+
+                                    {/* PDF Preview Pane (Right Side) */}
+                                    <div className="flex-1 bg-neutral-900 border border-white/5 rounded-xl flex flex-col overflow-hidden relative">
+                                        {activeContract ? (
+                                            <>
+                                                {/* Preview Toolbar */}
+                                                <div className="h-12 border-b border-white/5 bg-white/[0.02] flex items-center justify-between px-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <FileText size={14} className="text-neutral-400" />
+                                                        {/* @ts-ignore */}
+                                                        <span className="text-xs font-mono font-bold text-white">{activeContract.title}.pdf</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <button className="p-1.5 hover:bg-white/10 rounded text-neutral-400 hover:text-white"><Printer size={14} /></button>
+                                                        <button className="p-1.5 hover:bg-white/10 rounded text-neutral-400 hover:text-white"><Download size={14} /></button>
+                                                        <button className="p-1.5 hover:bg-white/10 rounded text-neutral-400 hover:text-white"><Share2 size={14} /></button>
+                                                    </div>
+                                                </div>
+
+                                                {/* PDF Canvas area */}
+                                                <div className="flex-1 overflow-y-auto bg-[#1a1a1a] p-8 flex justify-center custom-scrollbar">
+                                                    <div className="w-full max-w-[600px] min-h-[800px] bg-white text-black p-8 shadow-2xl relative">
+                                                        {/* Mock Document Content */}
+                                                        <div className="flex justify-between items-start mb-8 border-b-2 border-black pb-4">
+                                                            <div>
+                                                                <h1 className="text-xl font-bold uppercase tracking-widest mb-1">Music Access</h1>
+                                                                <p className="text-[10px] font-mono text-neutral-500">OFFICIAL AGREEMENT</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                {/* @ts-ignore */}
+                                                                <p className="text-[10px] uppercase font-bold text-red-600 border-2 border-red-600 px-2 py-1 inline-block rotate-[-5deg] opacity-50">{activeContract.status}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-4 font-serif text-[10px] text-neutral-800 leading-relaxed text-justify">
+                                                            <p><strong>DATED:</strong> {new Date().toLocaleDateString()}</p>
+                                                            <p><strong>BETWEEN:</strong> Music Access Inc. ("Licensor") AND The Undersigned Artist ("Licensee").</p>
+
+                                                            <p className="mt-6">1. <strong>GRANT OF RIGHTS</strong>. Licensor hereby grants to Licensee a non-exclusive, non-transferable license to use the accompanying audio file(s) in accordance with the terms set forth herein.</p>
+
+                                                            <div className="h-2 bg-neutral-100 w-full rounded my-2"></div>
+                                                            <div className="h-2 bg-neutral-100 w-full rounded my-2"></div>
+                                                            <div className="h-2 bg-neutral-100 w-5/6 rounded my-2"></div>
+
+                                                            <p className="mt-4">2. <strong>ROYALTIES</strong>. Licensee agrees to pay Licensor royalties as specified in the Schedule A attached hereto. Payment shall be made quarterly within thirty (30) days of the end of each calendar quarter.</p>
+
+                                                            <div className="h-2 bg-neutral-100 w-full rounded my-2"></div>
+                                                            <div className="h-2 bg-neutral-100 w-11/12 rounded my-2"></div>
+
+                                                            <p className="mt-4">3. <strong>TERM</strong>. This Agreement shall commence on the Effective Date and shall continue in full force and effect for a period of [TERM] unless earlier terminated in accordance with the provisions of this Agreement.</p>
+
+                                                            <div className="h-32 border border-neutral-200 mt-8 p-4 flex flex-col justify-end">
+                                                                <div className="border-t border-black w-1/2 pt-1 text-[8px] uppercase font-bold">Authorized Signature</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="flex-1 flex flex-col items-center justify-center text-neutral-500">
+                                                <FileText size={48} className="mb-4 text-neutral-700" />
+                                                <p className="text-sm font-bold text-neutral-400">No Contract Selected</p>
+                                                <p className="text-xs">Select an agreement from the list to preview details.</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1079,7 +1183,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                     )}
 
                     {tab === 'files' && (
-                        <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-2">
+                        <div className="w-full animate-in fade-in slide-in-from-bottom-2">
                             <div className="bg-neutral-900/30 border border-white/5 rounded-xl overflow-hidden">
                                 <div className="p-4 border-b border-white/5 flex items-center gap-4 bg-neutral-900/50">
                                     <Folder size={16} className="text-neutral-400" />
@@ -1097,8 +1201,8 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 {/* RIGHT SIDEBAR (Library / Inspector) */}
                 <div className={`
                     fixed bg-[#080808] border-l border-neutral-800 flex flex-col transform transition-transform duration-300
-                    lg:relative lg:translate-x-0 lg:w-80 lg:inset-auto lg:z-auto
-                    ${showMobileLib ? 'inset-0 z-50 translate-x-0' : 'inset-y-0 right-0 w-80 translate-x-full z-30'}
+                    lg:relative lg:translate-x-0 lg:w-[335px] lg:inset-auto lg:z-auto
+                    ${showMobileLib ? 'inset-0 z-50 translate-x-0' : 'inset-y-0 right-0 w-[335px] translate-x-full z-30'}
                 `}>
                     {/* Mobile Close Button for Lib */}
                     <div className="lg:hidden p-2 flex justify-start">

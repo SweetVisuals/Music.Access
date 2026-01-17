@@ -4,7 +4,7 @@ import {
     ArrowRight, ArrowLeft, Clock, Gem, Wallet, Eye, EyeOff, Palette, Star,
     Command, Sparkles, Music, Package, Mic, Info, X, ChevronDown, Trash2, Check, LayoutDashboard
 } from 'lucide-react';
-import { Project, UserProfile, Notification, View } from '../types';
+import type { Project, UserProfile, Notification, View } from '../types';
 import MobileNotifications from './MobileNotifications';
 import { useCart } from '../contexts/CartContext';
 import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../services/supabaseService';
@@ -62,6 +62,7 @@ const RightActions: React.FC<{
     onMobileSearchOpen?: () => void;
     isCartAnimating?: boolean;
     projects: Project[];
+    handleNotificationClick: (notification: Notification) => void;
 }> = ({
     isLoggedIn, isFocused, mobileSearchOpen, currentView, userProfile,
     gemsClaimedToday, profileLoading, onClaimGems, onNavigate,
@@ -69,7 +70,8 @@ const RightActions: React.FC<{
     themeRef, notifRef, isNotificationsOpen, setIsNotificationsOpen, notifications,
     handleMarkAllRead, handleMarkRead, cartRef, isCartOpen, setIsCartOpen, cartItems,
     cartTotal, removeFromCart, dropdownRef, isProfileOpen, setIsProfileOpen,
-    onOpenAuth, onLogout, isSpacer = false, onMobileSearchOpen, isCartAnimating, projects
+    onOpenAuth, onLogout, isSpacer = false, onMobileSearchOpen, isCartAnimating, projects,
+    handleNotificationClick
 }) => {
         const { openPurchaseModal } = usePurchaseModal();
         // Spacer helper: makes content invisible and non-interactive
@@ -195,7 +197,7 @@ const RightActions: React.FC<{
                                                 notifications.map(notif => (
                                                     <div
                                                         key={notif.id}
-                                                        onClick={() => handleMarkRead(notif.id)}
+                                                        onClick={() => handleNotificationClick(notif)}
                                                         className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!notif.read ? 'bg-white/[0.03]' : ''}`}
                                                     >
                                                         <div className="flex gap-4">
@@ -601,6 +603,39 @@ const TopBar: React.FC<TopBarProps> = ({
         }
     };
 
+    const handleNotificationClick = (notification: Notification) => {
+        // 1. Mark as read if needed
+        handleMarkRead(notification.id);
+
+        // 2. Determine destination
+        let destination = 'dashboard-overview';
+
+        switch (notification.type) {
+            case 'sale':
+                destination = 'dashboard-sales';
+                break;
+            case 'message':
+                destination = 'dashboard-messages';
+                break;
+            case 'order':
+            case 'manage_order':
+                destination = 'dashboard-orders';
+                break;
+            case 'follow':
+                destination = 'dashboard-overview'; // Or 'profile'
+                break;
+            case 'system':
+            case 'alert':
+            default:
+                destination = 'dashboard-overview';
+                break;
+        }
+
+        // 3. Navigate
+        onNavigate(destination);
+        setIsNotificationsOpen(false);
+    };
+
     // Click outside handler
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -656,7 +691,7 @@ const TopBar: React.FC<TopBarProps> = ({
                         ? 'absolute inset-0 bg-[#050505] flex items-center px-4 pt-[env(safe-area-inset-top)] opacity-100 pointer-events-auto translate-x-0 z-[70]'
                         : 'opacity-0 pointer-events-none absolute inset-0 translate-x-4 lg:absolute lg:inset-x-0 lg:flex lg:justify-center lg:items-center lg:pointer-events-auto lg:opacity-100 lg:translate-x-0 mx-auto z-50'
                     }
-                ${!mobileSearchOpen && isFocused ? 'lg:max-w-[35rem] xl:max-w-[45rem] w-full' : 'lg:max-w-[24rem] xl:max-w-[32rem] w-full'}
+                ${!mobileSearchOpen && isFocused ? 'lg:max-w-[45rem] xl:max-w-[60rem] w-full' : 'lg:max-w-[30rem] xl:max-w-[40rem] w-full'}
             `}
             >
                 <button
@@ -780,6 +815,7 @@ const TopBar: React.FC<TopBarProps> = ({
                     onLogout={onLogout} isSpacer={false} onMobileSearchOpen={() => setMobileSearchOpen(true)}
                     isCartAnimating={isCartAnimating}
                     projects={projects}
+                    handleNotificationClick={handleNotificationClick}
                 />
             </div>
             {/* Mobile Notifications Portal - Rendered outside transformed containers */}
@@ -789,6 +825,7 @@ const TopBar: React.FC<TopBarProps> = ({
                 notifications={notifications}
                 onMarkAllRead={handleMarkAllRead}
                 onMarkRead={handleMarkRead}
+                onNotificationClick={handleNotificationClick}
             />
         </header>
     );

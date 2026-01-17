@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Project, View } from '../types';
 import { MOCK_USER_PROFILE } from '../constants';
 import { checkIsProjectSaved, saveProject, unsaveProject, convertAssetToProject, getSavedProjectIdForAsset } from '../services/supabaseService';
+import { useToast } from '../contexts/ToastContext';
 
 import BottomNav from './BottomNav';
 
@@ -19,9 +20,11 @@ interface MusicPlayerProps {
     isSidebarOpen?: boolean;
     onNext?: () => void;
     onPrev?: () => void;
+    isExpanded: boolean;
+    onExpandToggle: () => void;
 }
 
-const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackId, isPlaying, togglePlay, currentView, onClose, onNavigate, isSidebarOpen = false, onNext, onPrev }) => {
+const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackId, isPlaying, togglePlay, currentView, onClose, onNavigate, isSidebarOpen = false, onNext, onPrev, isExpanded, onExpandToggle }) => {
     const navigate = useNavigate();
     const [isMinimized, setIsMinimized] = useState(true);
 
@@ -39,6 +42,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
     const [imageLoaded, setImageLoaded] = useState(false);
     const [isLiked, setIsLiked] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
+    const { showToast } = useToast();
 
     useEffect(() => {
         if (!audioRef.current || !currentTrack) return;
@@ -141,12 +145,24 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                     }
                 }}
                 onError={(e) => {
+                    const error = e.currentTarget.error;
                     console.error("Audio Playback Error Details:", {
-                        error: e.currentTarget.error,
+                        error,
                         src: e.currentTarget.src,
                         networkState: e.currentTarget.networkState,
                         currentSrc: e.currentTarget.currentSrc
                     });
+
+                    // Show user-friendly error
+                    if (error) {
+                        let message = "Playback failed";
+                        if (error.code === 4) message = "Audio file not found or format not supported";
+                        else if (error.code === 3) message = "Playback decode error";
+                        else if (error.code === 2) message = "Network error while loading audio";
+                        else if (error.code === 1) message = "Playback aborted";
+
+                        showToast(message, 'error');
+                    }
                 }}
             />
 
@@ -155,7 +171,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                 className={`lg:hidden fixed left-0 right-0 bg-[#050505] border-t border-white/20 border-b-0 shadow-none transition-all duration-300 ${isMinimized
                     ? (currentView === 'notes' && !isSidebarOpen
                         ? 'bottom-[calc(max(8.5rem,var(--notes-toolkit-height,0vh))+env(safe-area-inset-bottom))] translate-y-0 z-[121]'
-                        : 'bottom-[calc(4.5rem+env(safe-area-inset-bottom))] translate-y-0 z-[119]')
+                        : 'bottom-[calc(3.5rem+env(safe-area-inset-bottom))] translate-y-0 z-[119]')
                     : 'bottom-0 translate-y-full opacity-0 pointer-events-none'
                     }`}
                 onClick={() => setIsMinimized(false)}
@@ -506,7 +522,12 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
             </div>
 
             {/* --- DESKTOP FLOATING CARD --- */}
-            <div className={`hidden lg:flex fixed bottom-6 right-6 z-[100] w-[400px] transition-all duration-500 transform cubic-bezier(0.2, 0.8, 0.2, 1) ${isMinimized ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0 pointer-events-none'}`}>
+            {/* --- DESKTOP FLOATING CARD --- */}
+            <div className={`
+                hidden lg:flex fixed bottom-6 right-6 z-[100] w-[400px] 
+                transition-all duration-500 transform cubic-bezier(0.2, 0.8, 0.2, 1) 
+                ${isExpanded ? 'translate-y-24 opacity-0 pointer-events-none' : (isMinimized ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0 pointer-events-none')}
+            `}>
                 <div className="w-full bg-[#050505] border border-white/10 rounded-2xl shadow-2xl p-5 flex flex-col gap-4 relative overflow-hidden group">
 
                     {/* Top Row: Art & Track */}
@@ -527,7 +548,14 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                         <div className="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-sm font-bold text-white truncate leading-tight tracking-tight">{currentTrack.title}</h4>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                    <button
+                                        onClick={onExpandToggle}
+                                        className="w-6 h-6 flex items-center justify-center rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all hover:scale-105"
+                                        title="Expand Player"
+                                    >
+                                        <Maximize2 size={12} />
+                                    </button>
                                     <button
                                         onClick={async () => {
                                             if (!currentProject?.id) return;
@@ -640,7 +668,152 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                     </div>
 
                 </div>
-            </div >
+            </div>
+
+            {/* --- DESKTOP BOTTOM BAR (EXPANDED) --- */}
+            <div className={`
+                hidden lg:flex fixed bottom-0 lg:left-[260px] right-0 z-[200] h-[90px] bg-[#0a0a0a]
+                border-t border-white/5 px-8 items-center justify-between
+                transition-all duration-500 cubic-bezier(0.2, 0.8, 0.2, 1) shadow-[0_-4px_20px_rgba(0,0,0,0.2)]
+                ${isExpanded ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}
+            `}>
+
+                {/* Top Scrubber */}
+                <div className="absolute top-0 left-0 right-0 h-[2px] hover:h-1 transition-all group/scrubber cursor-pointer z-20">
+                    {/* Hit Area */}
+                    <div className="absolute -top-3 bottom-0 left-0 right-0"></div>
+
+                    <div
+                        className="absolute inset-0 bg-white/10"
+                        onClick={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const pct = (e.clientX - rect.left) / rect.width;
+                            if (audioRef.current) audioRef.current.currentTime = pct * (audioRef.current.duration || 1);
+                        }}
+                    >
+                        <div className="h-full bg-primary relative transition-all" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}>
+                            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover/scrubber:opacity-100 transition-opacity shadow-sm scale-0 group-hover/scrubber:scale-100 duration-200"></div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Left: Track Info */}
+                <div className="flex items-center gap-3 w-1/4 min-w-0">
+                    <div className="h-10 w-10 rounded bg-neutral-900 border border-white/5 overflow-hidden shrink-0 relative group">
+                        <img src={currentProject.producerAvatar || currentProject.coverImage || MOCK_USER_PROFILE.avatar} className="w-full h-full object-cover" />
+                        {/* Mini Overlay Toggle */}
+                        {/* Mini Overlay Toggle */}
+                        <button
+                            onClick={onExpandToggle}
+                            className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                            <Minimize2 size={18} className="text-white" />
+                        </button>
+                    </div>
+                    <div className="flex flex-col min-w-0 justify-center gap-1">
+                        <h4 className="text-sm font-bold text-white truncate leading-tight">{currentTrack.title}</h4>
+                        <div className="flex items-center gap-2">
+                            <p className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer truncate">{currentProject.producer}</p>
+                            <button
+                                onClick={async () => {
+                                    if (!currentProject?.id) return;
+                                    try {
+                                        if (currentProject.id === 'upload_browser_proj') {
+                                            if (currentTrack?.id) {
+                                                if (isSaved) {
+                                                    const savedProjectId = await getSavedProjectIdForAsset(currentTrack.id);
+                                                    if (savedProjectId) { await unsaveProject(savedProjectId); setIsSaved(false); }
+                                                } else {
+                                                    await convertAssetToProject(currentTrack.id, currentTrack.title, { username: currentProject.producer, avatar: currentProject.producerAvatar });
+                                                    setIsSaved(true);
+                                                }
+                                            }
+                                        } else {
+                                            if (isSaved) { await unsaveProject(currentProject.id); setIsSaved(false); }
+                                            else { await saveProject(currentProject.id); setIsSaved(true); }
+                                        }
+                                    } catch (error) { console.error('Failed to toggle save:', error); }
+                                }}
+                                className={`text-neutral-500 hover:text-white transition-colors ${isSaved ? 'text-primary' : ''}`}
+                            >
+                                <BookmarkPlus size={12} fill={isSaved ? "currentColor" : "none"} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Center: Controls */}
+                <div className="flex items-center justify-center gap-6 w-2/4">
+                    <span className="text-[10px] font-mono text-neutral-600 w-10 text-right tabular-nums">{formatTime(currentTime)}</span>
+
+                    <div className="flex items-center gap-6">
+                        <button className="text-neutral-500 hover:text-primary transition-colors" title="Shuffle">
+                            <Shuffle size={20} />
+                        </button>
+                        <button onClick={onPrev} className="text-neutral-400 hover:text-white transition-colors">
+                            <SkipBack size={24} className="fill-current" />
+                        </button>
+                        <button
+                            onClick={togglePlay}
+                            className="w-12 h-12 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 transition-transform shadow-lg shadow-white/10"
+                        >
+                            {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-1" />}
+                        </button>
+                        <button onClick={onNext} className="text-neutral-400 hover:text-white transition-colors">
+                            <SkipForward size={24} className="fill-current" />
+                        </button>
+                        <button className="text-neutral-500 hover:text-primary transition-colors" title="Repeat">
+                            <Repeat size={20} />
+                        </button>
+                    </div>
+
+                    <span className="text-[10px] font-mono text-neutral-600 w-10 text-left tabular-nums">{formatTime(duration || currentTrack.duration || 0)}</span>
+                </div>
+
+
+                {/* Right: Actions */}
+                <div className="flex items-center justify-end gap-3 w-1/4">
+                    {/* Volume */}
+                    <div className="flex items-center gap-3 group/vol mr-4">
+                        <button
+                            onClick={() => { if (audioRef.current) audioRef.current.muted = !audioRef.current.muted; }}
+                            className="text-neutral-500 hover:text-white transition-colors"
+                        >
+                            <Volume2 size={20} />
+                        </button>
+                        <div className="w-24 h-1 bg-white/10 rounded-full overflow-hidden cursor-pointer relative group/slider">
+                            <input
+                                type="range" min="0" max="1" step="0.05" defaultValue="1"
+                                className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
+                                onChange={(e) => { if (audioRef.current) audioRef.current.volume = parseFloat(e.target.value); }}
+                            />
+                            <div className="h-full w-[80%] bg-neutral-500 group-hover/slider:bg-white transition-colors"></div>
+                        </div>
+                    </div>
+
+                    <div className="h-6 w-[1px] bg-white/10 mx-2"></div>
+
+                    <button className="text-neutral-500 hover:text-white p-2 hover:bg-white/5 rounded-lg transition-colors"><ListMusic size={20} /></button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const audioUrl = currentTrack.files?.mp3 || currentTrack.files?.wav || currentTrack.files?.main;
+                            onNavigate('notes');
+                            navigate('/notes', { state: { createNewNote: true, trackTitle: currentTrack.title, trackId: currentTrack.id, fileName: `${currentTrack.title}.mp3`, trackUrl: audioUrl, producerName: currentProject.producer, producerAvatar: currentProject.producerAvatar } });
+                        }}
+                        className="text-neutral-500 hover:text-white p-2 hover:bg-white/5 rounded-lg transition-colors"
+                    >
+                        <StickyNote size={20} />
+                    </button>
+                    <button onClick={onExpandToggle} className="text-neutral-500 hover:text-white p-2 hover:bg-white/5 rounded-lg transition-colors" title="Collapse">
+                        <Minimize2 size={20} />
+                    </button>
+                    <button onClick={onClose} className="text-neutral-500 hover:text-red-500 p-1.5 hover:bg-white/5 rounded transition-colors ml-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+
+            </div>
         </>
     );
 };

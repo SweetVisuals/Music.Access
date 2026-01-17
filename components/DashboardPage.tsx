@@ -46,6 +46,8 @@ import {
     getDashboardAnalytics,
     subscribeToArtistPresence,
     markNotificationAsRead,
+    archiveSale,
+    unarchiveSale,
     supabase
 } from '../services/supabaseService';
 
@@ -209,94 +211,333 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
     // --- SUB-COMPONENTS FOR SIMPLE VIEWS ---
 
-    const SalesView = () => (
-        <div className="w-full max-w-[1600px] mx-auto px-4 pt-6 pb-32 lg:p-8 animate-in fade-in duration-500">
-            <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">Sales History</h1>
-            <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed mb-8">Detailed overview of your marketplace transactions.</p>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <StatCard
-                    title="Total Revenue"
-                    value={`$${(dashboardAnalytics?.totalRevenue || 0).toLocaleString()}`}
-                    icon={<DollarSign size={20} />}
-                    trend="+12%"
-                    positive
-                    color="text-emerald-400"
-                    bgColor="bg-emerald-400/10" />
-                <StatCard
-                    title="Pending Payouts"
-                    value="$0.00"
-                    icon={<CreditCard size={20} />}
-                    subtext="Next payout: Fri"
-                    color="text-blue-400"
-                    bgColor="bg-blue-400/10" />
-                <StatCard
-                    title="Avg. Order Value"
-                    value={`$${dashboardAnalytics?.totalRevenue && sales.length > 0 ? (dashboardAnalytics.totalRevenue / sales.length).toFixed(2) : '0.00'}`}
-                    icon={<ShoppingCart size={20} />}
-                    trend="-2%"
-                    positive={false}
-                    color="text-orange-400"
-                    bgColor="bg-orange-400/10"
-                    className="hidden md:block" />
-            </div>
-            <div className="bg-[#0a0a0a] border border-transparent rounded-xl overflow-hidden">
-                <div className="p-6 border-b border-white/5">
-                    <h3 className="text-sm font-bold text-white">Transactions</h3>
+    const SalesView = () => {
+        const [filter, setFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+        const [showArchived, setShowArchived] = useState(false);
+        const [selectedSale, setSelectedSale] = useState<Purchase | null>(null);
+
+        // Filter Sales Logic
+        const filteredSales = sales.filter(sale => {
+            const saleDate = new Date(sale.date);
+            const today = new Date();
+
+            // 1. Archive Filter
+            if (!showArchived && (sale as any).archived) return false;
+            if (showArchived && !(sale as any).archived) return false;
+
+            // 2. Date Filter
+            if (filter === 'today') {
+                return saleDate.toDateString() === today.toDateString();
+            }
+            if (filter === 'week') {
+                const lastWeek = new Date(today.setDate(today.getDate() - 7));
+                return saleDate >= lastWeek;
+            }
+            if (filter === 'month') {
+                const lastMonth = new Date(today.setMonth(today.getMonth() - 1));
+                return saleDate >= lastMonth;
+            }
+            return true;
+        });
+
+
+        // Group by Date for Display
+        const groupedSales = filteredSales.reduce((acc, sale) => {
+            const dateKey = sale.date; // already formatted
+            if (!acc[dateKey]) acc[dateKey] = [];
+            acc[dateKey].push(sale);
+            return acc;
+        }, {} as Record<string, Purchase[]>);
+
+        return (
+            <div className="w-full max-w-[1600px] mx-auto px-4 pt-6 pb-32 lg:p-8 animate-in fade-in duration-500 relative">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                    <div>
+                        <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">Sales History</h1>
+                        <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Detailed overview of your marketplace transactions.</p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                        {/* Filter Toggles */}
+                        <div className="flex bg-neutral-900 p-1 rounded-lg border border-white/5">
+                            {(['all', 'today', 'week', 'month'] as const).map((f) => (
+                                <button
+                                    key={f}
+                                    onClick={() => setFilter(f)}
+                                    className={`px-3 py-1.5 rounded-md text-xs font-bold capitalize transition-all ${filter === f ? 'bg-white text-black shadow-sm' : 'text-neutral-500 hover:text-white'}`}
+                                >
+                                    {f === 'all' ? 'All Time' : f}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Archive Toggle */}
+                        <button
+                            onClick={() => setShowArchived(!showArchived)}
+                            className={`px-3 py-2 rounded-lg border text-xs font-bold transition-colors flex items-center gap-2 ${showArchived ? 'bg-amber-500/10 border-amber-500/50 text-amber-500' : 'bg-neutral-900 border-white/5 text-neutral-400 hover:text-white'}`}
+                        >
+                            <Package size={14} />
+                            {showArchived ? 'Viewing Archived' : 'View Archive'}
+                        </button>
+                    </div>
                 </div>
-                <table className="w-full text-left hidden md:table">
-                    <thead className="bg-neutral-900/50 text-[10px] font-mono uppercase text-neutral-500">
-                        <tr><th className="px-6 py-3">ID</th><th className="px-6 py-3">Date</th><th className="px-6 py-3">Customer</th><th className="px-6 py-3">Amount</th><th className="px-6 py-3">Status</th></tr>
-                    </thead>
-                    <tbody className="text-xs text-neutral-300">
-                        {sales.slice(0, 50).map((sale, i) => (
-                            <tr key={sale.id} className="border-b border-white/5 hover:bg-white/5">
-                                <td className="px-6 py-4 font-mono text-neutral-500">{sale.id.slice(0, 8)}</td>
-                                <td className="px-6 py-4">{sale.date}</td>
-                                <td className="px-6 py-4 flex items-center gap-2">
-                                    {sale.buyerAvatar && <img src={sale.buyerAvatar} className="w-5 h-5 rounded-full" />}
-                                    {sale.buyer || 'Unknown'}
-                                </td>
-                                <td className="px-6 py-4 font-mono font-bold text-white">${sale.amount.toFixed(2)}</td>
-                                <td className="px-6 py-4"><span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${sale.status === 'Completed' ? 'bg-green-500/10 text-green-500' :
-                                    sale.status === 'Processing' ? 'bg-blue-500/10 text-blue-500' :
-                                        'bg-red-500/10 text-red-500'
-                                    }`}>{sale.status}</span></td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                {/* Mobile Card View */}
-                <div className="md:hidden">
-                    {sales.slice(0, 50).map((sale, i) => (
-                        <div key={sale.id} className="p-4 border-b border-white/5 flex flex-col gap-3">
-                            <div className="flex justify-between items-start">
-                                <div className="flex items-center gap-2">
-                                    {sale.buyerAvatar && <img src={sale.buyerAvatar} className="w-8 h-8 rounded-full" />}
-                                    <div>
-                                        <div className="text-sm font-bold text-white">{sale.buyer || 'Unknown'}</div>
-                                        <div className="text-[10px] text-neutral-500 font-mono">{sale.date}</div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    {/* Dynamic Stats Calculation */}
+                    {(() => {
+                        const filteredRevenue = filteredSales.reduce((sum, sale) => sum + (sale.amount || 0), 0);
+                        const filteredAvgOrder = filteredSales.length > 0 ? filteredRevenue / filteredSales.length : 0;
+
+                        return (
+                            <>
+                                <StatCard
+                                    title="Total Revenue"
+                                    value={`$${filteredRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                                    icon={<DollarSign size={20} />}
+                                    trend={filter === 'all' ? "+12%" : "Filtered"} // static trend for now, but label explicitly if filtered
+                                    positive
+                                    color="text-emerald-400"
+                                    bgColor="bg-emerald-400/10"
+                                />
+                                <StatCard
+                                    title="Pending Payouts"
+                                    value="$0.00"
+                                    icon={<CreditCard size={20} />}
+                                    subtext="Next payout: Fri"
+                                    color="text-blue-400"
+                                    bgColor="bg-blue-400/10"
+                                />
+                                <StatCard
+                                    title="Avg. Order Value"
+                                    value={`$${filteredAvgOrder.toFixed(2)}`}
+                                    icon={<ShoppingCart size={20} />}
+                                    trend="-2%"
+                                    positive={false}
+                                    color="text-orange-400"
+                                    bgColor="bg-orange-400/10"
+                                    className="hidden md:block"
+                                />
+                            </>
+                        );
+                    })()}
+                </div>
+
+                <div className="space-y-8">
+                    {Object.keys(groupedSales).length === 0 ? (
+                        <div className="text-center py-20 bg-neutral-900/30 rounded-2xl border border-white/5 border-dashed">
+                            <ShoppingCart size={32} className="mx-auto text-neutral-600 mb-3" />
+                            <p className="text-neutral-500 font-medium">No sales found for this period.</p>
+                        </div>
+                    ) : (
+                        Object.entries(groupedSales).map(([date, dateSales]: [string, Purchase[]]) => (
+                            <div key={date} className='animate-in slide-in-from-bottom-2 duration-500'>
+                                <h3 className="text-neutral-500 text-xs font-bold uppercase tracking-wider mb-3 ml-1 flex items-center gap-2">
+                                    <Calendar size={12} /> {date}
+                                </h3>
+                                <div className="bg-[#0a0a0a] border border-white/5 rounded-xl overflow-hidden">
+                                    <table className="w-full text-left hidden md:table">
+                                        <thead className="bg-neutral-900/50 text-[10px] font-mono uppercase text-neutral-500 border-b border-white/5">
+                                            <tr>
+                                                <th className="px-6 py-3 w-24">Time</th>
+                                                <th className="px-6 py-3">Item</th>
+                                                <th className="px-6 py-3">Customer</th>
+                                                <th className="px-6 py-3 text-right">Amount</th>
+                                                <th className="px-6 py-3 text-center">Status</th>
+                                                <th className="px-6 py-3 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="text-xs text-neutral-300">
+                                            {dateSales.map((sale) => (
+                                                <tr
+                                                    key={sale.id}
+                                                    onClick={() => setSelectedSale(sale)}
+                                                    className="border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group"
+                                                >
+                                                    <td className="px-6 py-4 font-mono text-neutral-500">
+                                                        {new Date((sale as any).created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </td>
+                                                    <td className="px-6 py-4 font-bold text-white">
+                                                        {sale.item}
+                                                        <div className="text-[10px] text-neutral-500 font-normal mt-0.5">{sale.type}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-2">
+                                                            {sale.buyerAvatar && <img src={sale.buyerAvatar} className="w-5 h-5 rounded-full" />}
+                                                            <span className="group-hover:text-white transition-colors">{sale.buyer || 'Guest'}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right font-mono font-bold text-white">${sale.amount.toFixed(2)}</td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${sale.status === 'Completed' ? 'bg-green-500/10 text-green-500' :
+                                                            sale.status === 'Processing' ? 'bg-blue-500/10 text-blue-500' :
+                                                                'bg-red-500/10 text-red-500'
+                                                            }`}>{sale.status}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                                        {/* Quick Actions (Archive) */}
+                                                        <button
+                                                            className="p-1.5 text-neutral-500 hover:text-amber-500 hover:bg-amber-500/10 rounded transition-colors"
+                                                            title={showArchived ? "Unarchive" : "Archive"}
+                                                            onClick={async (e) => {
+                                                                e.stopPropagation();
+                                                                if (showArchived) await unarchiveSale(sale.id);
+                                                                else await archiveSale(sale.id);
+
+                                                                // Optimistic Update
+                                                                setSales(prev => prev.map(p =>
+                                                                    p.id === sale.id ? { ...p, archived: !showArchived } : p
+                                                                ));
+                                                            }}
+                                                        >
+                                                            {showArchived ? <ArrowUpRight size={14} /> : <Package size={14} />}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    {/* Mobile Card View */}
+                                    <div className="md:hidden">
+                                        {dateSales.map((sale) => (
+                                            <div
+                                                key={sale.id}
+                                                onClick={() => setSelectedSale(sale)}
+                                                className="p-4 border-b border-white/5 flex flex-col gap-3 active:bg-white/5 transition-colors"
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center border border-white/5 ${sale.status === 'Completed' ? 'bg-green-500/10 text-green-500' : 'bg-neutral-800 text-neutral-500'}`}>
+                                                            <DollarSign size={16} />
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-sm font-bold text-white line-clamp-1">{sale.item}</div>
+                                                            <div className="text-[10px] text-neutral-500 font-mono">{new Date((sale as any).created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {sale.buyer}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="font-mono font-bold text-white">${sale.amount.toFixed(2)}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <div className="font-mono font-bold text-white">${sale.amount.toFixed(2)}</div>
-                                    <div className="text-[10px] font-mono text-neutral-500">#{sale.id.slice(0, 8)}</div>
-                                </div>
                             </div>
-                            <div className="flex justify-between items-center">
-                                <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${sale.status === 'Completed' ? 'bg-green-500/10 text-green-500' :
-                                    sale.status === 'Processing' ? 'bg-blue-500/10 text-blue-500' :
-                                        'bg-red-500/10 text-red-500'
-                                    }`}>{sale.status}</span>
-                            </div>
-                        </div>
-                    ))}
-                    {sales.length === 0 && (
-                        <div className="p-8 text-center text-neutral-500 text-sm">No transactions found.</div>
+                        ))
                     )}
                 </div>
+
+                {/* Detailed Transaction Modal */}
+                {selectedSale && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedSale(null)}>
+                        <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                            {/* Header */}
+                            <div className="p-6 border-b border-white/5 flex justify-between items-start bg-neutral-900/30">
+                                <div>
+                                    <h2 className="text-xl font-black text-white tracking-tight">Transaction Details</h2>
+                                    <p className="text-xs text-neutral-500 font-mono mt-1">ID: {selectedSale.id}</p>
+                                </div>
+                                <button onClick={() => setSelectedSale(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-neutral-400 hover:text-white transition-colors">
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-6 space-y-6">
+                                {/* Status Banner */}
+                                <div className={`flex items-center gap-3 p-3 rounded-xl border ${selectedSale.status === 'Completed' ? 'bg-green-500/5 border-green-500/20' : 'bg-blue-500/5 border-blue-500/20'
+                                    }`}>
+                                    <div className={`p-2 rounded-lg ${selectedSale.status === 'Completed' ? 'bg-green-500/20 text-green-500' : 'bg-blue-500/20 text-blue-500'}`}>
+                                        {selectedSale.status === 'Completed' ? <CheckCircle size={18} /> : <Clock size={18} />}
+                                    </div>
+                                    <div>
+                                        <div className={`text-sm font-bold ${selectedSale.status === 'Completed' ? 'text-green-500' : 'text-blue-500'}`}>Payment {selectedSale.status}</div>
+                                        <div className="text-[10px] text-neutral-500">Processed on {selectedSale.date} at {new Date((selectedSale as any).created_at || new Date()).toLocaleTimeString()}</div>
+                                    </div>
+                                </div>
+
+                                {/* Items */}
+                                <div>
+                                    <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-3">Item Purchased</h3>
+                                    <div className="flex items-center gap-4 p-3 bg-white/5 rounded-xl border border-white/5">
+                                        <div className="w-12 h-12 bg-neutral-800 rounded-lg overflow-hidden">
+                                            <img src={selectedSale.image} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="font-bold text-white text-sm">{selectedSale.item}</div>
+                                            <div className="text-xs text-neutral-500">{selectedSale.type}</div>
+                                        </div>
+                                        <div className="font-mono font-bold text-white">${selectedSale.amount.toFixed(2)}</div>
+                                    </div>
+                                </div>
+
+                                {/* Customer Info */}
+                                <div>
+                                    <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-3">Customer</h3>
+                                    <div className="flex items-center gap-4">
+                                        {selectedSale.buyerAvatar ? (
+                                            <img src={selectedSale.buyerAvatar} className="w-10 h-10 rounded-full border border-white/10" />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-500">
+                                                <User size={18} />
+                                            </div>
+                                        )}
+                                        <div>
+                                            <div className="font-bold text-white text-sm">{selectedSale.buyer}</div>
+                                            {/* If email is available (it's in the interface now), display masked */}
+                                            <div className="text-xs text-neutral-500">{(selectedSale as any).buyerEmail || 'Email hidden'}</div>
+                                        </div>
+                                        <button className="ml-auto p-2 border border-white/5 rounded-lg hover:bg-white/5 text-neutral-400 hover:text-white transition-colors">
+                                            <MessageSquare size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Financial Breakdown */}
+                                <div className="space-y-2 pt-4 border-t border-white/5">
+                                    <div className="flex justify-between text-xs text-neutral-400">
+                                        <span>Subtotal</span>
+                                        <span>${selectedSale.amount.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs text-neutral-400">
+                                        <span>Platform Fee (0%)</span>
+                                        <span>$0.00</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm font-bold text-white pt-2 border-t border-white/5 mt-2">
+                                        <span>Net Earnings</span>
+                                        <span className="text-emerald-500">+${selectedSale.amount.toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer Actions */}
+                            <div className="p-4 bg-neutral-900/50 border-t border-white/5 flex gap-3">
+                                <button className="flex-1 py-3 bg-white text-black font-bold rounded-xl text-xs hover:bg-neutral-200 transition-colors">
+                                    Download Invoice
+                                </button>
+                                <button
+                                    className="px-4 py-3 bg-white/5 text-neutral-400 hover:text-white font-bold rounded-xl text-xs hover:bg-white/10 transition-colors border border-white/5"
+                                    onClick={async () => {
+                                        // Archive from modal logic
+                                        if ((selectedSale as any).archived) await unarchiveSale(selectedSale.id);
+                                        else await archiveSale(selectedSale.id);
+
+                                        // Optimistic Update
+                                        setSales(prev => prev.map(p =>
+                                            p.id === selectedSale.id ? { ...p, archived: !(selectedSale as any).archived } : p
+                                        ));
+                                        setSelectedSale(null);
+                                    }}
+                                >
+                                    {(selectedSale as any).archived ? 'Unarchive' : 'Archive'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
-        </div>
-    );
+        );
+    };
 
 
 
@@ -408,7 +649,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 gap-4">
-                    {filteredPurchases.map(purchase => (
+                    {(filteredPurchases || []).map(purchase => (
                         <div key={purchase.id} className="bg-[#0a0a0a] border border-transparent rounded-xl overflow-hidden hover:border-white/10 transition-colors group">
                             <div className="p-4 flex flex-col md:flex-row items-center gap-6">
                                 {/* Info */}
@@ -534,7 +775,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     }
 
     // Default: Overview - Use real data or fallbacks
-    const chartData = dashboardAnalytics?.monthlyData || [];
+    const chartData = (dashboardAnalytics?.monthlyData || []) as { revenue: number; listeners: number; plays: number; orders: number; gems: number; }[];
     const currentChart = {
         revenue: { label: 'Revenue Analytics', data: chartData.map(d => d.revenue), unit: '$' },
         listeners: { label: 'Live Listener Analytics', data: chartData.map(d => d.listeners), unit: '' },

@@ -216,15 +216,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
             )}
 
             <aside className={`
-        fixed inset-0 z-[100] w-full lg:w-[260px] bg-black lg:bg-[#050505] lg:border-r border-white/5 flex flex-col font-sans transition-transform duration-300 ease-in-out transform
+        fixed inset-0 z-[100] w-full lg:w-[260px] bg-black lg:bg-[#050505] flex flex-col font-sans transition-transform duration-300 ease-in-out transform
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:h-screen
       `}>
-                <div className="h-[calc(56px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] flex items-center justify-between lg:justify-center px-5 shrink-0 border-b border-white/5 relative overflow-hidden">
+                <div className="h-[calc(56px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] flex items-center justify-between lg:justify-center px-5 shrink-0 border-transparent relative overflow-hidden">
                     <div
                         className="flex items-center gap-2 cursor-pointer group"
                         onClick={() => onNavigate('home')}
                     >
-                        <div className="relative h-[40px] flex items-start pt-[1px] transition-transform scale-100 min-[380px]:scale-[1.1] lg:scale-105 translate-x-[4px] lg:translate-x-[4px] origin-center">
+                        <div className="relative h-[40px] flex items-start pt-[1px] transition-transform scale-100 min-[380px]:scale-[1.1] lg:scale-105 translate-x-[6px] lg:translate-x-[6px] origin-center">
                             <img
                                 src="/images/MUSIC ACCESS-Photoroom.png"
                                 alt="Music Access"
@@ -462,7 +462,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
 
                 {/* Footer */}
                 < div className={`
-                    shrink-0 px-4 py-3 border-t border-white/5 bg-[#050505]
+                    shrink-0 px-4 py-3 border-t border-transparent bg-[#050505]
                     transition-all duration-300
                     ${isPlayerActive ? 'pb-[calc(8rem+env(safe-area-inset-bottom))]' : 'pb-[calc(4.5rem+env(safe-area-inset-bottom))]'} 
                     lg:pb-4

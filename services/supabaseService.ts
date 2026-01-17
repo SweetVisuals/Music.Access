@@ -652,6 +652,32 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
   }
 };
 
+export const deletePlaylist = async (playlistId: string) => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  const { error } = await supabase
+    .from('playlists')
+    .delete()
+    .eq('id', playlistId)
+    .eq('user_id', currentUser.id); // Ensure ownership
+
+  if (error) throw error;
+};
+
+export const updatePlaylist = async (playlistId: string, updates: { title?: string, tracks?: any[] }) => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  const { error } = await supabase
+    .from('playlists')
+    .update(updates)
+    .eq('id', playlistId)
+    .eq('user_id', currentUser.id);
+
+  if (error) throw error;
+};
+
 export const updateUserProfile = async (userId: string, updates: Partial<UserProfile>) => {
   // Ensure user exists before trying to update them
   if (userId) {
@@ -1388,18 +1414,7 @@ export const createPlaylist = async (title: string, trackItems: { title: string;
   };
 };
 
-export const deletePlaylist = async (playlistId: string): Promise<void> => {
-  const currentUser = await getCurrentUser();
-  if (!currentUser) throw new Error('User not authenticated');
 
-  const { error } = await supabase
-    .from('playlists')
-    .delete()
-    .eq('id', playlistId)
-    .eq('user_id', currentUser.id);
-
-  if (error) throw error;
-};
 
 export const getServicesByUserId = async (userId: string): Promise<Service[]> => {
   const { data, error } = await supabase
@@ -3174,38 +3189,7 @@ export const deleteTrack = async (trackId: string) => {
 
 // -- LIBRARY --
 
-export const getLibraryAssets = async () => {
-  // 1. Get Purchases
-  // Note: getPurchases() isn't exported/implemented yet in this file snippet, let's assume we can query it directly here or it exists
-  // Actually, looking at the file it seems getPurchases isn't there. I'll implement a simple query.
-  const currentUser = await getCurrentUser();
-  if (!currentUser) return [];
 
-  const { data: purchases, error } = await supabase
-    .from('purchases')
-    .select(`
-        *,
-        seller:seller_id (username)
-      `)
-    .eq('user_id', currentUser.id);
-
-  const purchasedAssets = (purchases || []).map((p: any) => ({
-    id: p.id,
-    name: p.item,
-    type: 'Purchased',
-    producer: p.seller?.username || 'Unknown',
-    date: formatDate(new Date(p.created_at || new Date())),
-    fileType: 'wav' // simplified
-  }));
-
-  // 2. Get Uploads (files bucket) - MOCK for now
-  const uploadedAssets = [
-    { id: 'up_1', name: 'My Vocal Demo.wav', type: 'Upload', producer: 'Me', date: 'Today', fileType: 'wav' },
-    { id: 'up_2', name: 'Guitar Loop.wav', type: 'Upload', producer: 'Me', date: 'Yesterday', fileType: 'wav' }
-  ];
-
-  return [...purchasedAssets, ...uploadedAssets];
-};
 
 
 export const deleteNote = async (id: string, permanent: boolean = false) => {
@@ -4173,6 +4157,15 @@ export const getNotifications = async (userId: string): Promise<Notification[]> 
   }));
 };
 
+export const deleteAllNotifications = async (userId: string): Promise<void> => {
+  const { error } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('user_id', userId);
+
+  if (error) throw error;
+};
+
 export const getUnreadNotificationCount = async (userId: string): Promise<number> => {
   const { count, error } = await supabase
     .from('notifications')
@@ -4220,6 +4213,89 @@ export const createNotification = async (notification: Partial<Notification>) =>
     });
 
   if (error) console.error('Error creating notification:', error);
+};
+
+export const getLibraryAssets = async () => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  // 1. Fetch Purchases (Beats, Packs)
+  const { data: purchases, error: purchasesError } = await supabase
+    .from('purchases')
+    .select(`
+      id,
+      created_at,
+      purchase_items (
+        id,
+        item_name,
+        seller_id,
+        price
+      )
+    `)
+    .eq('buyer_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if (purchasesError) console.error('Error fetching purchases:', purchasesError);
+
+  // 2. Fetch User Uploads (Assets)
+  const { data: uploads, error: uploadsError } = await supabase
+    .from('assets')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if (uploadsError) console.error('Error fetching uploads:', uploadsError);
+
+  // Map to LibraryAsset format
+  const libraryAssets = [
+    ...(purchases || []).flatMap((p: any) =>
+      (p.purchase_items || []).map((pi: any) => ({
+        id: pi.id, // Use unique item ID 
+        // If we want unique IDs: `${p.id}-${pi.item_name}`
+        name: pi.item_name || 'Untitled Purchase',
+        type: 'Purchased' as const,
+        producer: 'Unknown', // We can't easily get seller name without another join/fetch. Leaving as Unknown for speed/safety or we can fetch sellers map.
+        date: formatDate(new Date(p.created_at)),
+        fileType: 'zip' as const
+      }))
+    ),
+    ...(uploads || []).map((u: any) => ({
+      id: u.id,
+      name: u.file_name || 'Untitled Upload',
+      type: 'Upload' as const,
+      producer: 'Me',
+      date: formatDate(new Date(u.created_at)),
+      fileType: (u.file_name?.split('.').pop() || 'wav') as 'mp3' | 'wav' | 'zip'
+    }))
+  ];
+
+  return libraryAssets;
+};
+
+export const archiveSale = async (saleId: string) => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  const { error } = await supabase
+    .from('purchase_items')
+    .update({ archived: true })
+    .eq('id', saleId)
+    .eq('seller_id', currentUser.id);
+
+  if (error) throw error;
+};
+
+export const unarchiveSale = async (saleId: string) => {
+  const currentUser = await ensureUserExists();
+  if (!currentUser) throw new Error('User not authenticated');
+
+  const { error } = await supabase
+    .from('purchase_items')
+    .update({ archived: false })
+    .eq('id', saleId)
+    .eq('seller_id', currentUser.id);
+
+  if (error) throw error;
 };
 
 

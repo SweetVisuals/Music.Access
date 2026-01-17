@@ -232,6 +232,7 @@ export interface Purchase {
     sellerId?: string;
     contractId?: string;
   }[];
+  archived?: boolean; // Added for sales management
 }
 
 export interface CartItem {

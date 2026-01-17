@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Bell, Check, Trash2, ArrowLeft } from 'lucide-react';
-import { Notification } from '../types';
+import type { Notification } from '../types';
 
 interface MobileNotificationsProps {
     isOpen: boolean;
@@ -9,12 +9,14 @@ interface MobileNotificationsProps {
     notifications: Notification[];
     onMarkAllRead: () => void;
     onMarkRead: (id: string) => void;
+    onNotificationClick: (notification: Notification) => void;
 }
 
 const SwipeableNotificationItem: React.FC<{
     item: Notification;
     onMarkRead: (id: string) => void;
-}> = ({ item, onMarkRead }) => {
+    onClick: () => void;
+}> = ({ item, onMarkRead, onClick }) => {
     const [offset, setOffset] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
     const startX = useRef(0);
@@ -77,7 +79,7 @@ const SwipeableNotificationItem: React.FC<{
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
-                onClick={() => onMarkRead(item.id)}
+                onClick={onClick}
                 style={{ transform: `translateX(${offset}px)`, transition: isDragging ? 'none' : 'transform 0.3s ease-out' }}
                 className={`
                     relative p-4 rounded-2xl flex gap-4 border touch-pan-y select-none
@@ -123,7 +125,8 @@ const MobileNotifications: React.FC<MobileNotificationsProps> = ({
     onClose,
     notifications,
     onMarkAllRead,
-    onMarkRead
+    onMarkRead,
+    onNotificationClick
 }) => {
     // Animation control
     const [render, setRender] = useState(false);
@@ -149,7 +152,7 @@ const MobileNotifications: React.FC<MobileNotificationsProps> = ({
     return createPortal(
         <div
             className={`
-                fixed inset-0 z-[100] lg:hidden flex flex-col bg-black 
+                fixed inset-0 z-[300] lg:hidden flex flex-col bg-black 
                 transition-transform duration-300 ease-in-out will-change-transform
                 ${visible ? 'translate-y-0' : 'translate-y-full'}
             `}
@@ -214,6 +217,7 @@ const MobileNotifications: React.FC<MobileNotificationsProps> = ({
                                 key={notif.id}
                                 item={notif}
                                 onMarkRead={onMarkRead}
+                                onClick={() => onNotificationClick(notif)}
                             />
                         ))}
                     </div>

@@ -219,7 +219,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                 <button className="flex-1 bg-white text-black py-3 rounded-xl font-bold text-sm lg:text-base hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-white/5">
                                     <ArrowDownLeft size={18} /> Withdraw
                                 </button>
-                                <button className="flex-1 bg-white/5 text-white border border-white/10 py-3 rounded-xl font-bold text-sm lg:text-base hover:bg-white/10 transition-colors flex items-center justify-center gap-2 backdrop-blur-md">
+                                <button className="flex-1 bg-white/5 text-white border border-transparent py-3 rounded-xl font-bold text-sm lg:text-base hover:bg-white/10 transition-colors flex items-center justify-center gap-2 backdrop-blur-md">
                                     <Plus size={18} /> Add Funds
                                 </button>
                             </div>
@@ -289,7 +289,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                 {/* RIGHT COLUMN: Payment Methods (Always visible on Desktop, Tabbed on Mobile) */}
                 <div className={`lg:col-span-5 ${activeTab === 'methods' ? 'block' : 'hidden lg:block'}`}>
                     <div className="bg-[#0a0a0a] border border-transparent rounded-2xl lg:h-full lg:min-h-[500px] flex flex-col">
-                        <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                        <div className="p-6 border-b border-transparent flex items-center justify-between">
                             <h3 className="font-bold text-white">Payment Methods</h3>
                             <button
                                 onClick={() => setIsAddMethodOpen(true)}
@@ -346,7 +346,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                         </div>
                                     ) : (
                                         <div className="mt-4">
-                                            <div className="flex gap-4 text-xs text-neutral-500 mb-4 border-t border-white/5 pt-4">
+                                            <div className="flex gap-4 text-xs text-neutral-500 mb-4 border-t border-transparent pt-4">
                                                 <div>
                                                     <span className="block font-bold text-white">{formatCurrency((stripeStatus?.balance?.pending || 0) / 100)}</span>
                                                     Pending
@@ -362,7 +362,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                                 className={`w-full py-3 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2
                                                     ${(stripeStatus?.balance?.available && stripeStatus.balance.available > 0)
                                                         ? 'bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/5'
-                                                        : 'bg-white/5 text-neutral-500 cursor-not-allowed border border-white/5'
+                                                        : 'bg-white/5 text-neutral-500 cursor-not-allowed border border-transparent'
                                                     }`}
                                             >
                                                 {isStripeLoading ? 'Processing...' : 'Withdraw Funds'}
@@ -385,7 +385,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
 
                             <button
                                 onClick={() => setIsAddMethodOpen(true)}
-                                className="w-full py-4 border border-dashed border-neutral-800 rounded-xl flex items-center justify-center gap-2 text-neutral-500 hover:text-white hover:border-neutral-700 hover:bg-white/5 transition-all text-sm font-medium"
+                                className="w-full py-4 border border-dashed border-transparent rounded-xl flex items-center justify-center gap-2 text-neutral-500 hover:text-white hover:border-neutral-700 hover:bg-white/5 transition-all text-sm font-medium"
                             >
                                 <Plus size={16} /> Add Payment Method
                             </button>
@@ -407,7 +407,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header */}
-                        <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                        <div className="p-4 border-b border-transparent flex items-center justify-between">
                             <h3 className="font-bold text-white">Add Payment Method</h3>
                             <button
                                 onClick={() => setIsAddMethodOpen(false)}
@@ -418,7 +418,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                         </div>
 
                         {/* Modal Tabs */}
-                        <div className="flex p-2 gap-2 border-b border-white/5 bg-neutral-900/30">
+                        <div className="flex p-2 gap-2 border-b border-transparent bg-neutral-900/30">
                             <button
                                 onClick={() => setAddMethodType('card')}
                                 className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${addMethodType === 'card' ? 'bg-white text-black shadow-lg' : 'text-neutral-500 hover:text-neutral-300'}`}
@@ -535,7 +535,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header */}
-                        <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                        <div className="p-4 border-b border-transparent flex items-center justify-between">
                             <h3 className="font-bold text-white">Buy Promotion Credits</h3>
                             <button
                                 onClick={() => setIsBuyPromoOpen(false)}
@@ -619,7 +619,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header */}
-                        <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                        <div className="p-4 border-b border-transparent flex items-center justify-between">
                             <h3 className="font-bold text-white">Purchase Gems</h3>
                             <button
                                 onClick={() => setIsBuyGemsOpen(false)}
@@ -641,7 +641,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                         <button
                                             key={pack.amount}
                                             onClick={() => setActiveGemPack(pack.amount)}
-                                            className={`relative p-4 rounded-xl border text-center transition-all ${activeGemPack === pack.amount ? 'border-purple-500 bg-purple-500/10' : 'border-transparent bg-white/5 hover:border-white/10'}`}
+                                            className={`relative p-4 rounded-xl border text-center transition-all ${activeGemPack === pack.amount ? 'border-purple-500 bg-purple-500/10' : 'border-transparent bg-white/5 hover:border-transparent'}`}
                                         >
                                             {pack.popular && (
                                                 <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-purple-500 text-[8px] font-black text-white px-2 py-0.5 rounded-full uppercase tracking-tighter shadow-lg">Popular</span>

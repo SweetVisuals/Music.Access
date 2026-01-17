@@ -125,7 +125,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
     };
 
     return (
-        <div className="w-full max-w-[1900px] mx-auto pb-4 lg:pb-32 pt-4 lg:pt-6 px-4 lg:px-10 xl:px-14 animate-in fade-in duration-500">
+        <div className="w-full max-w-[1900px] mx-auto pb-32 lg:pb-32 pt-4 lg:pt-6 px-4 lg:px-10 xl:px-14 animate-in fade-in duration-500">
 
             {/* Header */}
             <div className="mb-6 lg:mb-8">

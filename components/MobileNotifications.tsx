@@ -174,7 +174,7 @@ const MobileNotifications: React.FC<MobileNotificationsProps> = ({
                     </div>
                 </div>
 
-                {notifications.length > 0 && (
+                {notifications.some(n => !n.read) && (
                     <button
                         onClick={onMarkAllRead}
                         className="flex items-center gap-2 px-3 py-1.5 text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 rounded-lg border border-primary/20 transition-all uppercase tracking-wider"

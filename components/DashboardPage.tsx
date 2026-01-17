@@ -581,7 +581,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         });
 
         return (
-            <div className="w-full max-w-[1600px] mx-auto pb-4 pt-6 px-6 lg:px-8 animate-in fade-in duration-500 relative">
+            <div className="w-full max-w-[1600px] mx-auto pb-32 lg:pb-8 pt-6 px-6 lg:px-8 animate-in fade-in duration-500 relative">
                 {viewingReceipt && (
                     <ReceiptModal purchase={viewingReceipt} onClose={() => setViewingReceipt(null)} />
                 )}
@@ -785,7 +785,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     };
 
     return (
-        <div className="w-full max-w-[1600px] mx-auto pb-4 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-[1600px] mx-auto pb-32 lg:pb-8 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
 
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">

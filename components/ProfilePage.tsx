@@ -38,6 +38,8 @@ import EditProjectModal from './EditProjectModal';
 import { getUserProfile, getUserProfileByHandle, updateUserProfile, getCurrentUser, uploadFile, followUser, unfollowUser, checkIsFollowing, deleteProject, updateProject } from '../services/supabaseService';
 import EmptyStateCard from './EmptyStateCard';
 import CustomDropdown from './CustomDropdown';
+import BannerPositionManager from './BannerPositionManager';
+import { Move } from 'lucide-react';
 
 
 interface ProfilePageProps {
@@ -97,6 +99,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     // Hidden file inputs for image uploads
     const bannerInputRef = useRef<HTMLInputElement>(null);
     const avatarInputRef = useRef<HTMLInputElement>(null);
+    const [isBannerAdjustOpen, setIsBannerAdjustOpen] = useState(false);
 
     // Fetch profile if profileUsername is provided
     useEffect(() => {
@@ -387,7 +390,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     role: editForm.role,
                     yearsExperience: editForm.yearsExperience,
                     satisfactionRate: editForm.satisfactionRate,
-                    avgTurnaround: editForm.avgTurnaround
+                    avgTurnaround: editForm.avgTurnaround,
+                    bannerSettings: userProfile.bannerSettings
                 });
 
                 // Refetch to confirm the update
@@ -503,7 +507,18 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     };
 
     return (
-        <div className="relative w-full -mt-4 lg:-mt-12 animate-in fade-in duration-500 min-h-screen">
+        <div className="relative w-full -mt-4 lg:-mt-12 animate-in fade-in duration-500 min-h-screen overflow-x-hidden">
+            {isBannerAdjustOpen && userProfile?.banner && (
+                <BannerPositionManager
+                    imageUrl={userProfile.banner}
+                    initialSettings={userProfile.bannerSettings}
+                    onSave={(settings) => {
+                        setUserProfile(prev => prev ? ({ ...prev, bannerSettings: settings }) : null);
+                        setIsBannerAdjustOpen(false);
+                    }}
+                    onCancel={() => setIsBannerAdjustOpen(false)}
+                />
+            )}
 
             <CreateProjectModal
                 isOpen={isCreateModalOpen}
@@ -574,20 +589,40 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                         {/* Banner Upload */}
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Banner Image</label>
-                                            <div
-                                                onClick={() => bannerInputRef.current?.click()}
-                                                className="h-48 w-full rounded-lg bg-neutral-900/50 border border-transparent flex flex-col items-center justify-center text-neutral-500 hover:text-white hover:border-primary/30 hover:bg-white/5 transition-all cursor-pointer overflow-hidden relative group"
-                                            >
-                                                {userProfile.banner ? (
-                                                    <img src={userProfile.banner} className="w-full h-full object-cover opacity-50 group-hover:opacity-30 transition-opacity" alt="Banner Preview" />
-                                                ) : (
-                                                    <div className="absolute inset-0 bg-neutral-900 animate-pulse" />
-                                                )}
-                                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 drop-shadow-md">
-                                                    <Camera size={24} className="text-primary" />
-                                                    <span className="text-[10px] uppercase font-bold bg-black/50 px-2 py-1 rounded backdrop-blur-sm">Tap to Change Banner</span>
-                                                </div>
+                                            <div className="flex gap-2 mb-2">
+                                                <button
+                                                    onClick={() => bannerInputRef.current?.click()}
+                                                    className="flex-1 h-32 rounded-lg bg-neutral-900/50 border border-transparent flex flex-col items-center justify-center text-neutral-500 hover:text-white hover:border-primary/30 hover:bg-white/5 transition-all cursor-pointer overflow-hidden relative group"
+                                                >
+                                                    {userProfile.banner ? (
+                                                        <img
+                                                            src={userProfile.banner}
+                                                            className="w-full h-full object-cover opacity-50 group-hover:opacity-30 transition-opacity"
+                                                            alt="Banner Preview"
+                                                            style={{
+                                                                transform: userProfile.bannerSettings
+                                                                    ? `translate(${userProfile.bannerSettings.x - 50}%, ${userProfile.bannerSettings.y - 50}%) scale(${userProfile.bannerSettings.scale})`
+                                                                    : 'none'
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="absolute inset-0 bg-neutral-900 animate-pulse" />
+                                                    )}
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 drop-shadow-md">
+                                                        <Camera size={24} className="text-primary" />
+                                                        <span className="text-[10px] uppercase font-bold bg-black/50 px-2 py-1 rounded backdrop-blur-sm">Change Image</span>
+                                                    </div>
+                                                </button>
                                             </div>
+
+                                            {userProfile.banner && (
+                                                <button
+                                                    onClick={() => setIsBannerAdjustOpen(true)}
+                                                    className="w-full py-2 bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-colors mb-4"
+                                                >
+                                                    <Move size={14} /> Adjust Position (Desktop & Mobile)
+                                                </button>
+                                            )}
                                         </div>
 
                                         {/* Avatar Upload */}
@@ -799,6 +834,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 ${!isViewerMode ? 'group-hover/banner:scale-105 group-hover/banner:opacity-50' : ''}
                             `}
                                     alt="Banner"
+                                    style={{
+                                        transform: userProfile.bannerSettings
+                                            ? `translate(${userProfile.bannerSettings.x - 50}%, ${userProfile.bannerSettings.y - 50}%) scale(${userProfile.bannerSettings.scale})`
+                                            : 'none'
+                                    }}
                                 />
                                 {/* Gradient Overlay for Text Readability */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90" />
@@ -934,7 +974,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 </div>
 
                 {/* TABS NAVIGATION */}
-                <div className="relative bg-[#050505] lg:border-b lg:border-white/10 -mx-6 px-6 lg:-mx-8 lg:px-8 mb-4 lg:mb-6 py-2 transition-all">
+                <div className="relative bg-[#050505] lg:border-b lg:border-white/10 -mx-4 px-4 lg:-mx-8 lg:px-8 mb-4 lg:mb-6 py-2 transition-all">
 
                     {/* Mobile Tabs Layout */}
                     <div className="lg:hidden relative pb-2">

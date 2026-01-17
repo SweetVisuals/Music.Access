@@ -69,6 +69,11 @@ export interface Service {
   rateType: 'hourly' | 'flat';
   features: string[];
   deliveryDays?: number;
+  user?: {
+    username: string;
+    handle: string;
+    avatar?: string;
+  };
 }
 
 export interface SoundPack {
@@ -114,6 +119,11 @@ export interface UserProfile {
   subscription_id?: string;
   current_period_end?: string;
   cancel_at_period_end?: boolean;
+  bannerSettings?: {
+    x: number;
+    y: number;
+    scale: number;
+  };
 }
 
 export interface TalentProfile {

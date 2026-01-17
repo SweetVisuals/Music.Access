@@ -330,53 +330,7 @@ export const MOCK_MESSAGES: Conversation[] = [
     }
 ];
 
-export const MOCK_CONTRACTS: Contract[] = [
-    {
-        id: 'ct1',
-        title: 'Standard Lease Agreement',
-        type: 'lease',
-        status: 'draft',
-        created: '04/09/2025',
-        royaltySplit: 50,
-        revenueSplit: 50,
-        terms: 'Standard terms for MP3/WAV leasing.',
-        publisherName: 'Mani Rae Pub',
-        notes: '',
-        distNotes: 'Worldwide',
-        pubNotes: 'None'
-    },
-    {
-        id: 'ct2',
-        title: 'Exclusive Rights Agreement',
-        type: 'exclusive',
-        status: 'draft',
-        created: '07/10/2025',
-        royaltySplit: 20,
-        revenueSplit: 100,
-        terms: 'Full buyout terms. Producer retains writer share.',
-        publisherName: 'N/A',
-        notes: 'No special splits',
-        distNotes: 'Exclusive',
-        pubNotes: 'None'
-    },
-    {
-        id: 'ct3',
-        title: 'Mixing Service Contract',
-        type: 'service',
-        status: 'signed',
-        created: '15/08/2025',
-        clientName: 'Big Records',
-        royaltySplit: 0,
-        revenueSplit: 100,
-        terms: 'Work for hire.',
-        publisherName: 'Big Records Pub',
-        producerSignature: 'Mani Rae',
-        clientSignature: 'Big CEO',
-        notes: 'Buyout',
-        distNotes: 'N/A',
-        pubNotes: 'N/A'
-    }
-];
+// MOCK_CONTRACTS removed - Use supabaseService.getContracts() instead
 
 export const MOCK_NOTES: Note[] = [
     { id: 'n1', title: 'hh', preview: 'skdaas', content: 'skdaas', tags: [], updated: '14/10/2025' },

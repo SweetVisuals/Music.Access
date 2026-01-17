@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Upload, Music, Plus, Trash2, FileText, DollarSign, Check, FileAudio, Folder, LayoutTemplate, Box, FileSignature, Type, Lock, Globe, Archive, Disc, Image as ImageIcon } from 'lucide-react';
 import CustomDropdown from './CustomDropdown';
 import CustomInput from './CustomInput';
-import { Project, Track, LicenseInfo } from '../types';
-import { MOCK_CONTRACTS } from '../constants';
-import { createProject, updateProject, getUserFiles, uploadFile } from '../services/supabaseService';
+import { Project, Track, LicenseInfo, Contract } from '../types';
+import { createProject, updateProject, getUserFiles, uploadFile, getContracts } from '../services/supabaseService';
 
 interface CreateProjectModalProps {
     isOpen: boolean;
@@ -44,6 +43,22 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     );
     const [showAllGenres, setShowAllGenres] = useState(false);
     const [showAllSubGenres, setShowAllSubGenres] = useState(false);
+
+    const [availableContracts, setAvailableContracts] = useState<Contract[]>([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            const fetchContracts = async () => {
+                try {
+                    const contracts = await getContracts();
+                    setAvailableContracts(contracts);
+                } catch (error) {
+                    console.error("Failed to fetch contracts", error);
+                }
+            };
+            fetchContracts();
+        }
+    }, [isOpen]);
 
     const [projectData, setProjectData] = useState<Partial<Project>>({
         title: initialData?.title || '',
@@ -259,8 +274,15 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
             key: '' // Key removed per request, sending empty string or could be removed if API allows
         };
 
-        // Enforce license names
         if (finalProject.licenses) {
+            // Validate that all licenses have a contract assigned
+            const invalidLicense = finalProject.licenses.find(l => !l.contractId);
+            if (invalidLicense) {
+                alert(`Please select a contract template for the ${invalidLicense.name} license.`);
+                setIsSaving(false);
+                return;
+            }
+
             finalProject.licenses = finalProject.licenses.map(l => ({
                 ...l,
                 name: l.name || `${l.type} Lease`
@@ -624,19 +646,32 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                                 />
                                                             </div>
                                                         </div>
-                                                        <CustomDropdown
-                                                            label="Contract Template"
-                                                            value={license.contractId || ''}
-                                                            onChange={(val) => updateLicense(idx, 'contractId', val)}
-                                                            placeholder="Select Contract..."
-                                                            options={MOCK_CONTRACTS.map(c => ({
-                                                                value: c.id,
-                                                                label: c.title,
-                                                                icon: <FileSignature size={14} className="text-primary" />
-                                                            }))}
-                                                            searchable
-                                                            buttonClassName="border-0 focus:ring-0"
-                                                        />
+                                                        <div className="space-y-1">
+                                                            <CustomDropdown
+                                                                label="Contract Template"
+                                                                value={license.contractId || ''}
+                                                                onChange={(val) => updateLicense(idx, 'contractId', val)}
+                                                                placeholder={availableContracts.length === 0 ? "No contracts found" : "Select Contract..."}
+                                                                options={availableContracts.map(c => ({
+                                                                    value: c.id,
+                                                                    label: c.title,
+                                                                    icon: <FileSignature size={14} className="text-primary" />
+                                                                }))}
+                                                                searchable
+                                                                buttonClassName="border-0 focus:ring-0"
+                                                                disabled={availableContracts.length === 0}
+                                                            />
+                                                            {availableContracts.length === 0 && (
+                                                                <div className="flex items-center gap-2 mt-1 px-1">
+                                                                    <p className="text-[10px] text-red-400">
+                                                                        * You must create a contract before assigning it.
+                                                                    </p>
+                                                                    <a href="/dashboard/contracts" target="_blank" className="text-[10px] font-bold text-primary hover:underline">
+                                                                        Create Contract
+                                                                    </a>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                         <div className="pt-2 border-t border-white/10">
                                                             <div className="text-[10px] font-bold text-neutral-500 uppercase mb-2">Included Files</div>
                                                             <div className="flex flex-wrap gap-1">

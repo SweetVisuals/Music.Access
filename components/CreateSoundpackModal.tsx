@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { X, Upload, Music, Plus, Trash2, FileText, DollarSign, Check, FileAudio, Folder, Box, FileSignature, Drum, Repeat, Cpu, LayoutTemplate, Type, Hash } from 'lucide-react';
 import CustomDropdown from './CustomDropdown';
 import CustomInput from './CustomInput';
-import { Project, Track, LicenseInfo } from '../types';
-import { MOCK_CONTRACTS } from '../constants';
-import { createProject } from '../services/supabaseService';
+import { Project, Track, LicenseInfo, Contract } from '../types';
+import { createProject, getContracts } from '../services/supabaseService';
 
 interface CreateSoundpackModalProps {
     isOpen: boolean;
@@ -46,6 +45,22 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
     const [selectedPackType, setSelectedPackType] = useState<string>('Loop Kit');
     const [showAllGenres, setShowAllGenres] = useState(false);
     const [showAllSubGenres, setShowAllSubGenres] = useState(false);
+
+    const [availableContracts, setAvailableContracts] = useState<Contract[]>([]);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            const fetchContracts = async () => {
+                try {
+                    const contracts = await getContracts();
+                    setAvailableContracts(contracts);
+                } catch (error) {
+                    console.error("Failed to fetch contracts", error);
+                }
+            };
+            fetchContracts();
+        }
+    }, [isOpen]);
 
     const [projectData, setProjectData] = useState<Partial<Project>>({
         title: '',
@@ -145,8 +160,17 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
             ...(projectData.tags || []),
             ...selectedGenres,
             ...selectedSubGenres,
+            ...selectedSubGenres,
             selectedPackType
         ]));
+
+        if (projectData.licenses) {
+            const invalidLicense = projectData.licenses.find(l => !l.contractId);
+            if (invalidLicense) {
+                alert(`Please select a contract template for the ${invalidLicense.name} license.`);
+                return;
+            }
+        }
 
         const finalProject = {
             ...projectData,
@@ -440,18 +464,31 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
                                                 icon={<DollarSign size={14} />}
                                                 className="text-lg font-mono font-bold"
                                             />
-                                            <CustomDropdown
-                                                label="Contract Template"
-                                                value={license.contractId || ''}
-                                                onChange={(val) => updateLicense(idx, 'contractId', val)}
-                                                placeholder="Select Contract..."
-                                                options={MOCK_CONTRACTS.map(c => ({
-                                                    value: c.id,
-                                                    label: c.title,
-                                                    icon: <FileSignature size={14} className="text-primary" />
-                                                }))}
-                                                searchable
-                                            />
+                                            <div className="space-y-1">
+                                                <CustomDropdown
+                                                    label="Contract Template"
+                                                    value={license.contractId || ''}
+                                                    onChange={(val) => updateLicense(idx, 'contractId', val)}
+                                                    placeholder={availableContracts.length === 0 ? "No contracts found" : "Select Contract..."}
+                                                    options={availableContracts.map(c => ({
+                                                        value: c.id,
+                                                        label: c.title,
+                                                        icon: <FileSignature size={14} className="text-primary" />
+                                                    }))}
+                                                    disabled={availableContracts.length === 0}
+                                                    searchable
+                                                />
+                                                {availableContracts.length === 0 && (
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <p className="text-[10px] text-red-400">
+                                                            * You must create a contract before assigning it.
+                                                        </p>
+                                                        <a href="/dashboard/contracts" target="_blank" className="text-[10px] font-bold text-primary hover:underline">
+                                                            Create Contract
+                                                        </a>
+                                                    </div>
+                                                )}
+                                            </div>
                                             <div className="pt-2 border-t border-transparent">
                                                 <div className="text-[10px] font-bold text-neutral-500 uppercase mb-2">Included Files</div>
                                                 <div className="flex flex-wrap gap-1">

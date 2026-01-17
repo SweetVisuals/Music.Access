@@ -1,0 +1,192 @@
+
+import React, { useState, useRef, useEffect } from 'react';
+import { X, ZoomIn, ZoomOut, Check, Smartphone, Monitor } from 'lucide-react';
+
+interface BannerSettings {
+    x: number;
+    y: number;
+    scale: number;
+}
+
+interface BannerPositionManagerProps {
+    imageUrl: string;
+    initialSettings?: BannerSettings;
+    onSave: (settings: BannerSettings) => void;
+    onCancel: () => void;
+}
+
+const BannerPositionManager: React.FC<BannerPositionManagerProps> = ({
+    imageUrl,
+    initialSettings,
+    onSave,
+    onCancel
+}) => {
+    const [settings, setSettings] = useState<BannerSettings>(initialSettings || { x: 50, y: 50, scale: 1 });
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStartRef = useRef<{ x: number, y: number }>({ x: 0, y: 0 });
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Desktop Aspect Ratio (~4:1)
+    const toggleZoom = (delta: number) => {
+        setSettings(prev => ({
+            ...prev,
+            scale: Math.max(1, Math.min(3, prev.scale + delta))
+        }));
+    };
+
+    const handlePointerDown = (e: React.PointerEvent) => {
+        setIsDragging(true);
+        dragStartRef.current = { x: e.clientX, y: e.clientY };
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    };
+
+    const handlePointerMove = (e: React.PointerEvent) => {
+        if (!isDragging) return;
+
+        const deltaX = e.clientX - dragStartRef.current.x;
+        const deltaY = e.clientY - dragStartRef.current.y;
+
+        // Convert px delta to percentage
+        // We use the container width/height to determine sensitivity
+        // For translated background images, usually moving 100% of container width = full shift
+        // But since we use object-position (or translate %) logic, let's use a sensitivity factor
+
+        // Note: We are using TRANSLATE percentages. 
+        // 100% translation moves the element by 100% of its own width.
+        // Sensitivity: 0.2 seems reasonable for fine control
+        const sensitivity = 0.2;
+
+        setSettings(prev => {
+            // Clamping is optional but good. Let's allow free flow for now or clamp to reasonable bounds?
+            // Usually banners can be positioned anywhere.
+            return {
+                ...prev,
+                x: prev.x + (deltaX * sensitivity),
+                y: prev.y + (deltaY * sensitivity),
+                scale: prev.scale
+            };
+        });
+
+        dragStartRef.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const handlePointerUp = (e: React.PointerEvent) => {
+        setIsDragging(false);
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    };
+
+    // Render Preview
+    // We use a container with overflow hidden.
+    // The image inside is scaled and translated.
+    // Wait, translate(50%, 50%) moves it right/down. 
+    // object-position: 50% 50% is center. 
+    // We want to simulate "Position".
+    // If we use transform: translate(x%, y%), 0% is start.
+    // Let's use `transform: translate(${settings.x - 50}%, ${settings.y - 50}%) scale(${settings.scale})`
+    // If settings.x = 50, transform x is 0%.
+
+    const getTransform = () => {
+        const xOffset = settings.x - 50;
+        const yOffset = settings.y - 50;
+        return `translate(${xOffset}%, ${yOffset}%) scale(${settings.scale})`;
+    };
+
+    return (
+        <div className="fixed inset-0 z-[120] bg-black/95 backdrop-blur-md flex flex-col animate-in fade-in duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-neutral-900/50">
+                <h3 className="text-white font-bold text-lg">Adjust Banner Position</h3>
+                <div className="flex items-center gap-3">
+                    <button onClick={onCancel} className="p-2 hover:bg-white/10 rounded-full text-neutral-400 transition-colors">
+                        <X size={20} />
+                    </button>
+                    <button onClick={() => onSave(settings)} className="px-6 py-2 bg-primary text-black font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
+                        <Check size={16} /> Save
+                    </button>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex-1 overflow-y-auto p-4 lg:p-10 flex flex-col items-center gap-8">
+
+                {/* Desktop Preview (Interactive) */}
+                <div className="w-full max-w-4xl space-y-2">
+                    <div className="flex items-center gap-2 text-neutral-400 text-xs font-bold uppercase tracking-wider">
+                        <Monitor size={14} /> Desktop View (Interactive)
+                    </div>
+                    {/* Desktop Container: Aspect Ratio 4:1 */}
+                    <div
+                        ref={containerRef}
+                        className="w-full aspect-[4/1] bg-neutral-900 rounded-xl overflow-hidden border-2 border-dashed border-white/10 relative cursor-move group"
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerLeave={handlePointerUp}
+                    >
+                        {/* Grid Overlay for visual aid */}
+                        <div className="absolute inset-0 z-10 pointer-events-none opacity-0 group-hover:opacity-20 transition-opacity bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
+
+                        <img
+                            src={imageUrl}
+                            className="w-full h-full object-cover origin-center transition-transform duration-75 ease-out select-none pointer-events-none"
+                            style={{ transform: getTransform() }}
+                            draggable={false}
+                        />
+
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-50">
+                            <div className="w-4 h-4 border border-white/50 rounded-full bg-white/20 backdrop-blur-[1px]" />
+                        </div>
+                    </div>
+                    <p className="text-neutral-500 text-xs text-center">Drag to reposition • Use slider to zoom</p>
+                </div>
+
+                {/* Controls */}
+                <div className="w-full max-w-md bg-neutral-900/50 p-4 rounded-xl border border-white/5 backdrop-blur-sm">
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => toggleZoom(-0.1)} className="p-2 text-neutral-400 hover:text-white transition-colors">
+                            <ZoomOut size={20} />
+                        </button>
+                        <input
+                            type="range"
+                            min="1"
+                            max="3"
+                            step="0.05"
+                            value={settings.scale}
+                            onChange={(e) => setSettings(prev => ({ ...prev, scale: parseFloat(e.target.value) }))}
+                            className="flex-1 h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-primary"
+                        />
+                        <button onClick={() => toggleZoom(0.1)} className="p-2 text-neutral-400 hover:text-white transition-colors">
+                            <ZoomIn size={20} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Mobile Preview (Read-only) */}
+                <div className="w-full max-w-[375px] space-y-2">
+                    <div className="flex items-center gap-2 text-neutral-400 text-xs font-bold uppercase tracking-wider">
+                        <Smartphone size={14} /> Mobile View
+                    </div>
+                    {/* Mobile Container: Matches standard mobile header height roughly, often square or 16:9 */}
+                    <div className="w-full aspect-[4/3] bg-neutral-900 rounded-xl overflow-hidden border border-white/10 relative shadow-2xl">
+                        {/* Phone Notch Mockup (Optional - adds realism) */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-6 bg-black z-20 rounded-b-xl" />
+
+                        <img
+                            src={imageUrl}
+                            className="w-full h-full object-cover origin-center transition-transform duration-75 ease-out select-none"
+                            style={{ transform: getTransform() }}
+                        />
+
+                        {/* UI Overlay Mockup */}
+                        <div className="absolute bottom-4 left-4 z-20">
+                            <div className="w-16 h-16 rounded-full bg-neutral-800 border-2 border-black" />
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
+};
+
+export default BannerPositionManager;

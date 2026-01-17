@@ -422,7 +422,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, subscription_status, subscription_id, current_period_end, cancel_at_period_end, stripe_account_id, stripe_customer_id, years_experience, satisfaction_rate, avg_turnaround')
+    .select('id, username, handle, location, avatar_url, banner_url, banner_settings, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, subscription_status, subscription_id, current_period_end, cancel_at_period_end, stripe_account_id, stripe_customer_id, years_experience, satisfaction_rate, avg_turnaround')
     .eq('id', targetUserId)
     .single();
 
@@ -501,7 +501,8 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
         current_period_end: userData.current_period_end,
         cancel_at_period_end: userData.cancel_at_period_end,
         stripe_account_id: userData.stripe_account_id,
-        stripe_customer_id: userData.stripe_customer_id
+        stripe_customer_id: userData.stripe_customer_id,
+        bannerSettings: userData.banner_settings
       };
     } catch (err) {
       console.error('Error fetching related profile data:', err);
@@ -588,7 +589,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
 export const getUserProfileByHandle = async (handle: string): Promise<UserProfile | null> => {
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, email, location, avatar_url, banner_url, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, years_experience, satisfaction_rate, avg_turnaround')
+    .select('id, username, handle, email, location, avatar_url, banner_url, banner_settings, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, years_experience, satisfaction_rate, avg_turnaround')
     .eq('handle', handle)
     .single();
 
@@ -645,7 +646,8 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
         price: p.price,
         fileSize: '0 MB', // Placeholder
         itemCount: p.tracks.length
-      }))
+      })),
+      bannerSettings: userData.banner_settings
     };
   } else {
     return null;
@@ -706,6 +708,7 @@ export const updateUserProfile = async (userId: string, updates: Partial<UserPro
   if (updates.cancel_at_period_end !== undefined) updateObj.cancel_at_period_end = updates.cancel_at_period_end;
   if (updates.stripe_account_id !== undefined) updateObj.stripe_account_id = updates.stripe_account_id;
   if (updates.stripe_customer_id !== undefined) updateObj.stripe_customer_id = updates.stripe_customer_id;
+  if (updates.bannerSettings !== undefined) updateObj.banner_settings = updates.bannerSettings;
   // if (updates.yearsExperience !== undefined) updateObj.years_experience = updates.yearsExperience;
   // if (updates.satisfactionRate !== undefined) updateObj.satisfaction_rate = updates.satisfactionRate;
   // if (updates.avgTurnaround !== undefined) updateObj.avg_turnaround = updates.avgTurnaround;
@@ -1697,7 +1700,68 @@ export const getServices = async (): Promise<Service[]> => {
     description: service.description,
     price: service.price,
     features: service.features || [],
-    rateType: service.rate_type
+    rateType: service.rate_type,
+    user: {
+      username: service.user?.username || 'Unknown',
+      handle: service.user?.handle || 'unknown',
+      avatar: (service.user as any)?.avatar_url
+    }
+  }));
+};
+
+export const searchProfiles = async (query: string): Promise<TalentProfile[]> => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, username, handle, avatar_url, role')
+    .or(`username.ilike.%${query}%,handle.ilike.%${query}%`)
+    .limit(10);
+
+  if (error) throw error;
+
+  // We can just reuse getTalentProfiles logic or map simply. 
+  // For search results, simple mapping is often enough, but let's try to match TalentProfile structure.
+  return data.map(user => ({
+    id: user.id,
+    username: user.username,
+    handle: user.handle,
+    avatar: user.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+    role: user.role || 'Producer',
+    tags: user.role ? [user.role] : [],
+    followers: '0', // We could fetch this but maybe overkill for quick search results
+    isVerified: false,
+    streams: 0,
+    tracks: 0
+  }));
+};
+
+export const searchServices = async (query: string): Promise<Service[]> => {
+  const { data, error } = await supabase
+    .from('services')
+    .select(`
+      *,
+      user:user_id (
+        username,
+        handle,
+        avatar_url
+      )
+    `)
+    .ilike('title', `%${query}%`)
+    .limit(10);
+
+  if (error) throw error;
+
+  return data.map(service => ({
+    id: service.id,
+    title: service.title,
+    description: service.description,
+    price: service.price,
+    features: service.features || [],
+    rateType: service.rate_type,
+    user: {
+      username: service.user?.username || 'Unknown',
+      handle: service.user?.handle || 'unknown',
+      avatar: (service.user as any)?.avatar_url
+    }
   }));
 };
 
@@ -4193,7 +4257,10 @@ export const markAllNotificationsAsRead = async (userId: string) => {
     .eq('user_id', userId)
     .eq('read', false);
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error marking all notifications as read:', error);
+    throw error;
+  }
 };
 
 export const createNotification = async (notification: Partial<Notification>) => {

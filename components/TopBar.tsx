@@ -175,12 +175,14 @@ const RightActions: React.FC<{
                                     <div className="hidden lg:block absolute right-0 top-full mt-3 w-96 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                                         <div className="p-4 border-b border-white/5 flex justify-between items-center">
                                             <h3 className="text-sm font-bold text-white tracking-tight">Notifications</h3>
-                                            <button
-                                                onClick={handleMarkAllRead}
-                                                className="text-[10px] text-primary hover:underline font-bold uppercase tracking-wider"
-                                            >
-                                                Mark all read
-                                            </button>
+                                            {notifications.some(n => !n.read) && (
+                                                <button
+                                                    onClick={handleMarkAllRead}
+                                                    className="text-[10px] text-primary hover:underline font-bold uppercase tracking-wider"
+                                                >
+                                                    Mark all read
+                                                </button>
+                                            )}
                                         </div>
                                         <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                                             {notifications.length === 0 ? (
@@ -574,7 +576,11 @@ const TopBar: React.FC<TopBarProps> = ({
     };
 
     const handleMarkAllRead = async () => {
-        if (!userProfile?.id) return;
+        if (!userProfile?.id) {
+            console.warn('handleMarkAllRead: No user ID found');
+            return;
+        }
+
         // Optimistic update
         const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
         if (unreadIds.length === 0) return;
@@ -583,6 +589,8 @@ const TopBar: React.FC<TopBarProps> = ({
 
         try {
             await markAllNotificationsAsRead(userProfile.id);
+            // Trigger a fresh fetch to ensure we are in sync
+            window.dispatchEvent(new Event('notifications-updated'));
         } catch (error) {
             console.error("Error marking all as read:", error);
             // Revert on error? Or just log it. For UI responsiveness, optimistic is better.

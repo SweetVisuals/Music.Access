@@ -20,6 +20,7 @@ interface CustomDropdownProps {
     fullWidth?: boolean;
     size?: 'default' | 'compact';
     buttonClassName?: string;
+    menuClassName?: string;
 }
 
 const CustomDropdown: React.FC<CustomDropdownProps> = ({
@@ -30,6 +31,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     label,
     className = "",
     buttonClassName = "",
+    menuClassName = "",
     searchable = false,
     error,
     fullWidth = true,
@@ -109,7 +111,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
             </button>
 
             {isOpen && (
-                <div className="absolute z-[9999] mt-2 w-full bg-[#0a0a0a] rounded-xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className={`absolute z-[9999] mt-2 w-full bg-[#0a0a0a] rounded-xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 ${menuClassName}`}>
                     {searchable && (
                         <div className="p-2 border-b border-white/5">
                             <div className="relative">

@@ -32,7 +32,7 @@ import {
     Menu,
     LayoutList
 } from 'lucide-react';
-import { MOCK_CONTRACTS, MOCK_NOTES } from '../constants';
+import { MOCK_NOTES } from '../constants';
 import ConfirmationModal from './ConfirmationModal';
 import { useToast } from '../contexts/ToastContext';
 import {
@@ -45,7 +45,8 @@ import {
     deleteTask,
     addTrack as addTrackService,
     updateTrack as updateTrackService,
-    deleteTrack as deleteTrackService
+    deleteTrack as deleteTrackService,
+    getContracts
 } from '../services/supabaseService';
 import { Task } from '../types';
 
@@ -447,6 +448,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
     // Library Assets State (Real Data)
     const [assets, setAssets] = useState<LibraryAsset[]>([]);
+    const [availableContracts, setAvailableContracts] = useState<Contract[]>([]);
     const [trackToDelete, setTrackToDelete] = useState<string | null>(null);
     const { showToast } = useToast();
 
@@ -462,6 +464,18 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             }
         };
         fetchAssets();
+    }, []);
+
+    useEffect(() => {
+        const fetchContracts = async () => {
+            try {
+                const data = await getContracts();
+                setAvailableContracts(data);
+            } catch (error) {
+                console.error("Failed to fetch contracts", error);
+            }
+        };
+        fetchContracts();
     }, []);
 
     useEffect(() => {
@@ -1073,38 +1087,44 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                         </div>
 
                                         <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar pr-1">
-                                            {MOCK_CONTRACTS.map(contract => (
-                                                <div
-                                                    key={contract.id}
-                                                    onClick={() => setActiveContract(contract)}
-                                                    className={`p-3 border rounded-lg cursor-pointer transition-all group ${
-                                                        //@ts-ignore
-                                                        activeContract?.id === contract.id
-                                                            ? 'bg-blue-500/10 border-blue-500/30'
-                                                            : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
-                                                        }`}
-                                                >
-                                                    <div className="flex justify-between items-start mb-1">
-                                                        <span className={`text-xs font-bold ${
-                                                            //@ts-ignore
-                                                            activeContract?.id === contract.id ? 'text-blue-400' : 'text-white'
-                                                            }`}>{contract.title}</span>
-                                                        <Eye size={12} className={
-                                                            //@ts-ignore
-                                                            activeContract?.id === contract.id ? 'text-blue-400' : 'text-neutral-600'
-                                                        } />
-                                                    </div>
-                                                    <div className="flex items-center justify-between mt-2">
-                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded border ${contract.status === 'signed'
-                                                            ? 'bg-green-500/10 border-green-500/20 text-green-500'
-                                                            : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
-                                                            }`}>
-                                                            {contract.status.toUpperCase()}
-                                                        </span>
-                                                        <span className="text-[9px] text-neutral-500">{contract.created}</span>
-                                                    </div>
+                                            {availableContracts.length === 0 ? (
+                                                <div className="text-center py-8 text-neutral-500 text-xs">
+                                                    No contracts found.
                                                 </div>
-                                            ))}
+                                            ) : (
+                                                availableContracts.map(contract => (
+                                                    <div
+                                                        key={contract.id}
+                                                        onClick={() => setActiveContract(contract)}
+                                                        className={`p-3 border rounded-lg cursor-pointer transition-all group ${
+                                                            //@ts-ignore
+                                                            activeContract?.id === contract.id
+                                                                ? 'bg-blue-500/10 border-blue-500/30'
+                                                                : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
+                                                            }`}
+                                                    >
+                                                        <div className="flex justify-between items-start mb-1">
+                                                            <span className={`text-xs font-bold ${
+                                                                //@ts-ignore
+                                                                activeContract?.id === contract.id ? 'text-blue-400' : 'text-white'
+                                                                }`}>{contract.title}</span>
+                                                            <Eye size={12} className={
+                                                                //@ts-ignore
+                                                                activeContract?.id === contract.id ? 'text-blue-400' : 'text-neutral-600'
+                                                            } />
+                                                        </div>
+                                                        <div className="flex items-center justify-between mt-2">
+                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded border ${contract.status === 'signed'
+                                                                ? 'bg-green-500/10 border-green-500/20 text-green-500'
+                                                                : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
+                                                                }`}>
+                                                                {contract.status.toUpperCase()}
+                                                            </span>
+                                                            <span className="text-[9px] text-neutral-500">{contract.created}</span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
                                         </div>
 
                                         <button className="w-full py-2 mt-4 border border-dashed border-neutral-700 rounded-lg text-xs font-bold text-neutral-400 hover:text-white hover:border-neutral-500 flex items-center justify-center gap-2 transition-colors">

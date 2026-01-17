@@ -51,6 +51,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
           searchable
           size="compact"
           buttonClassName="!border-0"
+          menuClassName="!border-0"
         />
 
         {/* Key and Scale */}
@@ -64,6 +65,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
             searchable
             size="compact"
             buttonClassName="!border-0"
+            menuClassName="!border-0"
           />
           <CustomDropdown
             value={filters.scaleType}
@@ -74,6 +76,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
             searchable={false}
             size="compact"
             buttonClassName="!border-0"
+            menuClassName="!border-0"
           />
         </div>
 

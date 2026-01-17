@@ -30,8 +30,8 @@ import NotLoggedInState from './components/NotLoggedInState';
 import { FloatingMessenger } from './components/FloatingMessenger';
 import BottomNav from './components/BottomNav';
 import PullToRefresh from './components/PullToRefresh';
-import { getProjects, getUserProfile, supabase, signOut, updateUserProfile, getCurrentUser } from './services/supabaseService';
-import { Project, FilterState, View, UserProfile } from './types';
+import { getProjects, getUserProfile, supabase, signOut, updateUserProfile, getCurrentUser, searchProfiles, searchServices } from './services/supabaseService';
+import { Project, FilterState, View, UserProfile, TalentProfile, Service } from './types';
 
 import { CartProvider } from './contexts/CartContext';
 import { PurchaseModalProvider } from './contexts/PurchaseModalContext';
@@ -61,6 +61,11 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+
+  // Search State
+  const [searchedProfiles, setSearchedProfiles] = useState<TalentProfile[]>([]);
+  const [searchedServices, setSearchedServices] = useState<Service[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   // Get current view from URL path
   const getCurrentViewFromPath = (pathname: string): View => {
     // Handle profile routes - both @username and /profile
@@ -275,6 +280,40 @@ const App: React.FC = () => {
       return matchesGenre && matchesKey && matchesSearch;
     });
   }, [projects, filters]);
+
+  // Effect to handle unified search
+  useEffect(() => {
+    const performSearch = async () => {
+      const query = filters.searchQuery.trim();
+      if (!query) {
+        setSearchedProfiles([]);
+        setSearchedServices([]);
+        setIsSearching(false);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const [profiles, services] = await Promise.all([
+          searchProfiles(query),
+          searchServices(query)
+        ]);
+        setSearchedProfiles(profiles);
+        setSearchedServices(services);
+      } catch (err) {
+        console.error("Search failed:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    // Debounce search
+    const timer = setTimeout(() => {
+      performSearch();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [filters.searchQuery]);
 
   // Plays a specific track from a project
   const handlePlayTrack = (project: Project, trackId: string) => {
@@ -582,7 +621,121 @@ const App: React.FC = () => {
                               </div>
                             ))}
                           </div>
-                        ) : (
+                        ) : null}
+
+                        {/* Search Results Sections */}
+                        {filters.searchQuery && (
+                          <div className="space-y-10 pb-20 mt-8">
+
+                            {/* Profiles Section */}
+                            {searchedProfiles.length > 0 && (
+                              <section>
+                                <div className="flex items-center gap-2 mb-4 px-1">
+                                  <h2 className="text-lg font-bold text-white">Profiles</h2>
+                                  <span className="text-xs text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">{searchedProfiles.length}</span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                                  {searchedProfiles.map(profile => (
+                                    <div
+                                      key={profile.id}
+                                      className="group bg-neutral-900/50 hover:bg-neutral-800/80 border border-neutral-800 hover:border-neutral-700 p-4 rounded-xl transition-all cursor-pointer"
+                                      onClick={() => handleNavigate(`@${profile.handle}`)}
+                                    >
+                                      <div className="flex items-center gap-4">
+                                        <div className="relative">
+                                          <img
+                                            src={profile.avatar}
+                                            alt={profile.username}
+                                            className="w-12 h-12 rounded-full object-cover border border-neutral-700 group-hover:border-primary/50 transition-colors"
+                                          />
+                                          {profile.isVerified && (
+                                            <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white p-0.5 rounded-full border-2 border-neutral-900"> <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+                                          )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <h3 className="font-bold text-white group-hover:text-primary transition-colors text-sm truncate">{profile.username}</h3>
+                                          <p className="text-xs text-neutral-400 truncate">@{profile.handle}</p>
+                                          <div className="flex gap-1 mt-1 flex-wrap">
+                                            {profile.tags.slice(0, 2).map(tag => (
+                                              <span key={tag} className="text-[10px] bg-neutral-800 text-neutral-300 px-1.5 py-0.5 rounded">{tag}</span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </section>
+                            )}
+
+                            {/* Services Section */}
+                            {searchedServices.length > 0 && (
+                              <section>
+                                <div className="flex items-center gap-2 mb-4 px-1">
+                                  <h2 className="text-lg font-bold text-white">Services</h2>
+                                  <span className="text-xs text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">{searchedServices.length}</span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                                  {searchedServices.map(service => (
+                                    <div
+                                      key={service.id}
+                                      className="group bg-neutral-900/50 hover:bg-neutral-800/80 border border-neutral-800 hover:border-neutral-700 p-4 rounded-xl transition-all flex flex-col h-full"
+                                    >
+                                      <div className="flex items-start justify-between mb-2">
+                                        <h3 className="font-bold text-white group-hover:text-primary text-sm line-clamp-2">{service.title}</h3>
+                                        <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-1 rounded ml-2 whitespace-nowrap">
+                                          ${service.price}{service.rateType === 'hourly' ? '/hr' : ''}
+                                        </span>
+                                      </div>
+
+                                      <p className="text-xs text-neutral-400 line-clamp-2 mb-3 flex-1">{service.description}</p>
+
+                                      {service.user && (
+                                        <div className="flex items-center gap-2 pt-3 border-t border-neutral-800/50 mt-auto">
+                                          <img src={service.user.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'} className="w-5 h-5 rounded-full" />
+                                          <span className="text-xs text-neutral-500 hover:text-white cursor-pointer transition-colors" onClick={() => handleNavigate(`@${service.user?.handle}`)}>
+                                            {service.user.username}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </section>
+                            )}
+
+                            {/* Projects Section */}
+                            <section>
+                              <div className="flex items-center gap-2 mb-4 px-1">
+                                <h2 className="text-lg font-bold text-white">Projects</h2>
+                                <span className="text-xs text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">{filteredProjects.length}</span>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                                {filteredProjects.length > 0 ? (
+                                  filteredProjects.map(project => (
+                                    <div key={project.id} className="h-auto md:h-[282px]">
+                                      <ProjectCard
+                                        project={project}
+                                        currentTrackId={currentTrackId}
+                                        isPlaying={currentProject?.id === project.id && isPlaying}
+                                        onPlayTrack={(trackId) => handlePlayTrack(project, trackId)}
+                                        onTogglePlay={handleTogglePlay}
+                                      />
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="col-span-full py-10 text-center border border-dashed border-neutral-800 rounded-xl bg-white/5">
+                                    <p className="text-neutral-500 font-mono text-xs">No projects found matching query.</p>
+                                  </div>
+                                )}
+                              </div>
+                            </section>
+
+                          </div>
+                        )}
+
+                        {/* Existing Project Grid (Only show if NO search query is active) */}
+                        {!filters.searchQuery && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mt-6 pb-20">
                             {filteredProjects.length > 0 ? (
                               filteredProjects.map(project => (

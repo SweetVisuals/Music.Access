@@ -46,23 +46,22 @@ const BannerPositionManager: React.FC<BannerPositionManagerProps> = ({
         const deltaX = e.clientX - dragStartRef.current.x;
         const deltaY = e.clientY - dragStartRef.current.y;
 
-        // Convert px delta to percentage
-        // We use the container width/height to determine sensitivity
-        // For translated background images, usually moving 100% of container width = full shift
-        // But since we use object-position (or translate %) logic, let's use a sensitivity factor
+        // Calculate sensitivity based on the container's size to ensure limits are respected 1:1
+        // 100% means moving the image one full width/height.
+        const container = e.currentTarget as HTMLElement; // e.target might be correct if capturing, but safer to rely on ref or currentTarget if capturing is on target.
+        // Since we did setPointerCapture on e.target, e.target is the element. 
+        // We attached handler to the div.
+        const width = container.clientWidth || 1;
+        const height = container.clientHeight || 1;
 
-        // Note: We are using TRANSLATE percentages. 
-        // 100% translation moves the element by 100% of its own width.
-        // Sensitivity: 0.2 seems reasonable for fine control
-        const sensitivity = 0.2;
+        const deltaXPercent = (deltaX / width) * 100;
+        const deltaYPercent = (deltaY / height) * 100;
 
         setSettings(prev => {
-            // Clamping is optional but good. Let's allow free flow for now or clamp to reasonable bounds?
-            // Usually banners can be positioned anywhere.
             return {
                 ...prev,
-                x: prev.x + (deltaX * sensitivity),
-                y: prev.y + (deltaY * sensitivity),
+                x: prev.x + deltaXPercent,
+                y: prev.y + deltaYPercent,
                 scale: prev.scale
             };
         });
@@ -161,24 +160,34 @@ const BannerPositionManager: React.FC<BannerPositionManagerProps> = ({
                     </div>
                 </div>
 
-                {/* Mobile Preview (Read-only) */}
+                {/* Mobile Preview (Interactive) */}
                 <div className="w-full max-w-[300px] lg:max-w-[375px] space-y-2 pb-8">
                     <div className="flex items-center gap-2 text-neutral-400 text-xs font-bold uppercase tracking-wider">
                         <Smartphone size={14} /> Mobile View
                     </div>
                     {/* Mobile Container: Matches standard mobile header height roughly, often square or 16:9 */}
-                    <div className="w-full aspect-[4/3] bg-neutral-900 rounded-xl overflow-hidden border border-white/10 relative shadow-2xl">
+                    <div
+                        className="w-full aspect-[4/3] bg-neutral-900 rounded-xl overflow-hidden border border-white/10 relative shadow-2xl cursor-move group touch-none select-none"
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerLeave={handlePointerUp}
+                    >
+                        {/* Grid Overlay for visual aid */}
+                        <div className="absolute inset-0 z-10 pointer-events-none opacity-0 group-hover:opacity-20 transition-opacity bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
+
                         {/* Phone Notch Mockup (Optional - adds realism) */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-5 lg:h-6 bg-black z-20 rounded-b-xl" />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-5 lg:h-6 bg-black z-20 rounded-b-xl pointer-events-none" />
 
                         <img
                             src={imageUrl}
-                            className="w-full h-full object-cover origin-center transition-transform duration-75 ease-out select-none"
+                            className="w-full h-full object-cover origin-center transition-transform duration-75 ease-out select-none pointer-events-none"
                             style={{ transform: getTransform() }}
+                            draggable={false}
                         />
 
                         {/* UI Overlay Mockup */}
-                        <div className="absolute bottom-4 left-4 z-20">
+                        <div className="absolute bottom-4 left-4 z-20 pointer-events-none">
                             <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-full bg-neutral-800 border-2 border-black" />
                         </div>
                     </div>

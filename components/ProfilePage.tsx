@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, Project } from '../types';
 import {
@@ -561,8 +562,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             <div className="w-full max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 pb-20 lg:pb-12 pt-[30px]">
 
                 {/* EDIT PROFILE MODAL - RESPONSIVE */}
-                {isEditModalOpen && (
-                    <div className="fixed inset-0 z-[100] flex flex-col lg:items-center lg:justify-center bg-black lg:bg-black/80 lg:backdrop-blur-sm lg:p-4 animate-in fade-in duration-200">
+                {isEditModalOpen && createPortal(
+                    <div className="fixed inset-0 z-[200] flex flex-col lg:items-center lg:justify-center bg-black lg:bg-black/80 lg:backdrop-blur-sm lg:p-4 animate-in fade-in duration-200">
                         <div className="flex-1 lg:flex-none w-full lg:max-w-3xl bg-black lg:bg-[#0a0a0a] lg:border border-transparent lg:rounded-xl lg:shadow-2xl overflow-hidden flex flex-col h-full lg:max-h-[90vh]">
 
                             {/* HEADER */}
@@ -779,7 +780,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )}
 
                 {/* HEADER SECTION */}

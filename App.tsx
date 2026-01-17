@@ -519,7 +519,7 @@ const App: React.FC = () => {
       }
     }
 
-    return `calc(${baseHeight}px + var(--file-op-height, 0px))`;
+    return `calc(${baseHeight}px + var(--file-op-height, 0px) + env(safe-area-inset-bottom))`;
   };
 
   const uploadNotificationBottom = useMemo(() => {
@@ -528,7 +528,9 @@ const App: React.FC = () => {
     // Desktop Expanded: Above Player bar
     // Desktop Floating: Above floating player (approx 180px gap?)
     if (window.innerWidth < 1024) {
-      return currentTrackId ? '130px' : '70px';
+      return currentTrackId
+        ? 'calc(130px + env(safe-area-inset-bottom))'
+        : 'calc(70px + env(safe-area-inset-bottom))';
     }
 
     if (isPlayerExpanded) return '110px';

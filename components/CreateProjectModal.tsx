@@ -274,7 +274,12 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
             key: '' // Key removed per request, sending empty string or could be removed if API allows
         };
 
-        if (finalProject.licenses) {
+        // Clear licenses for 'release' type as they are not needed
+        if (finalProject.type === 'release') {
+            finalProject.licenses = [];
+        }
+
+        if (finalProject.licenses && finalProject.licenses.length > 0) {
             // Validate that all licenses have a contract assigned
             const invalidLicense = finalProject.licenses.find(l => !l.contractId);
             if (invalidLicense) {

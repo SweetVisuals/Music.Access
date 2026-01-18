@@ -122,7 +122,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 }) => {
     const [selectedStat, setSelectedStat] = useState<'revenue' | 'listeners' | 'plays' | 'orders' | 'gems'>('revenue');
     const [dashboardAnalytics, setDashboardAnalytics] = useState<DashboardAnalytics | null>(null);
-    const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '6m' | '12m' | 'all'>('30d');
+    const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '6m' | '12m' | 'all'>('7d');
     const [isTimeRangeOpen, setIsTimeRangeOpen] = useState(false);
     const [analyticsLoading, setAnalyticsLoading] = useState(true);
     const [liveListeners, setLiveListeners] = useState(0);
@@ -898,53 +898,68 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
 
             {/* Top Stats Row - Use real data */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
                 <StatCard
                     title="Total Revenue"
                     value={`$${(dashboardAnalytics?.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                    change={dashboardAnalytics?.revenueChange || 0}
-                    icon="DollarSign"
-                    selected={selectedStat === 'revenue'}
+                    trend={dashboardAnalytics?.revenueChange ? `${dashboardAnalytics.revenueChange >= 0 ? '+' : ''}${dashboardAnalytics.revenueChange.toFixed(1)}%` : undefined}
+                    positive={(dashboardAnalytics?.revenueChange || 0) >= 0}
+                    icon={<DollarSign size={20} />}
+                    color="text-emerald-400"
+                    bgColor="bg-emerald-400/10"
+                    borderColor="border-emerald-400/20"
+                    isActive={selectedStat === 'revenue'}
                     onClick={() => setSelectedStat('revenue')}
-                    color="green"
-
                 />
                 <StatCard
                     title="Live Listeners"
                     value={liveListeners.toString()}
-                    change={dashboardAnalytics?.listenersChange || 0}
-                    icon="Users"
-                    selected={selectedStat === 'listeners'}
+                    trend={dashboardAnalytics?.listenersChange ? `${dashboardAnalytics.listenersChange >= 0 ? '+' : ''}${dashboardAnalytics.listenersChange.toFixed(1)}%` : undefined}
+                    positive={(dashboardAnalytics?.listenersChange || 0) >= 0}
+                    live={liveListeners > 0}
+                    icon={<Radio size={20} />}
+                    color="text-red-500"
+                    bgColor="bg-red-500/10"
+                    borderColor="border-red-500/20"
+                    isActive={selectedStat === 'listeners'}
                     onClick={() => setSelectedStat('listeners')}
-                    color="blue"
                 />
                 <StatCard
                     title="Total Plays"
-                    value={dashboardAnalytics?.totalPlays.toLocaleString() || '0'}
-                    change={dashboardAnalytics?.playsChange || 0}
-                    icon="Play"
-                    selected={selectedStat === 'plays'}
+                    value={(dashboardAnalytics?.totalPlays || 0).toLocaleString()}
+                    trend={dashboardAnalytics?.playsChange ? `${dashboardAnalytics.playsChange >= 0 ? '+' : ''}${dashboardAnalytics.playsChange.toFixed(1)}%` : undefined}
+                    positive={(dashboardAnalytics?.playsChange || 0) >= 0}
+                    icon={<Play size={20} />}
+                    color="text-blue-400"
+                    bgColor="bg-blue-400/10"
+                    borderColor="border-blue-400/20"
+                    isActive={selectedStat === 'plays'}
                     onClick={() => setSelectedStat('plays')}
-                    color="purple"
                 />
                 <StatCard
                     title="Active Orders"
-                    value={dashboardAnalytics?.activeOrders.toString() || '0'}
-                    change={dashboardAnalytics?.ordersChange || 0}
-                    icon="ShoppingBag"
-                    selected={selectedStat === 'orders'}
+                    value={(dashboardAnalytics?.activeOrders || 0).toString()}
+                    trend={dashboardAnalytics?.ordersChange ? `${dashboardAnalytics.ordersChange >= 0 ? '+' : ''}${dashboardAnalytics.ordersChange.toFixed(1)}%` : undefined}
+                    positive={(dashboardAnalytics?.ordersChange || 0) >= 0}
+                    icon={<ShoppingCart size={20} />}
+                    color="text-orange-400"
+                    bgColor="bg-orange-400/10"
+                    borderColor="border-orange-400/20"
+                    isActive={selectedStat === 'orders'}
                     onClick={() => setSelectedStat('orders')}
-                    color="orange"
                 />
                 <StatCard
                     title="Gems Balance"
                     value={getSafeUserProfileValue(userProfile?.gems, 0).toLocaleString()}
-                    icon="Gem"
+                    trend={dashboardAnalytics?.gemsChange ? `${dashboardAnalytics.gemsChange >= 0 ? '+' : ''}${dashboardAnalytics.gemsChange.toFixed(1)}%` : undefined}
+                    positive={(dashboardAnalytics?.gemsChange || 0) >= 0}
+                    icon={<Gem size={20} />}
                     subtext={`Approx. $${(getSafeUserProfileValue(userProfile?.gems, 0) * 0.01).toFixed(2)}`}
-                    color="purple"
-                    selected={selectedStat === 'gems'}
+                    color="text-purple-400"
+                    bgColor="bg-purple-400/10"
+                    borderColor="border-purple-400/20"
+                    isActive={selectedStat === 'gems'}
                     onClick={() => setSelectedStat('gems')}
-                    className="hidden md:block" // Hide on mobile as requested
                 />
             </div>
 
@@ -1047,70 +1062,63 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                         <button className="text-[10px] font-bold text-primary hover:text-white transition-colors">VIEW ALL</button>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse hidden md:table">
-                            <thead>
-                                <tr className="text-[10px] text-neutral-500 font-mono uppercase tracking-wider border-b border-white/5 bg-neutral-900/50">
-                                    <th className="px-6 py-3 font-medium">Order ID</th>
-                                    <th className="px-6 py-3 font-medium">Item</th>
-                                    <th className="px-6 py-3 font-medium">Date</th>
-                                    <th className="px-6 py-3 font-medium">Amount</th>
-                                    <th className="px-6 py-3 font-medium text-right">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-xs text-neutral-300">
-                                {(dashboardAnalytics?.recentOrders || []).map((order, idx) => (
-                                    <TableRow
-                                        key={order.id}
-                                        id={`#ORD-${idx + 1}`}
-                                        item={order.item}
-                                        date={order.date}
-                                        amount={order.amount}
-                                        status={order.status}
-                                        statusColor={order.statusColor}
-                                    />
-                                ))}
-
-                                {/* Show empty state if no recent orders */}
-                                {!dashboardAnalytics?.recentOrders?.length && (
-                                    <tr className="border-b border-white/5">
-                                        <td colSpan={5} className="px-6 py-8 text-center text-neutral-500">
-                                            <div className="flex flex-col items-center">
-                                                <ShoppingCart size={24} className="mb-2 opacity-50" />
-                                                <p className="text-sm font-medium">No Recent Orders</p>
-                                                <p className="text-xs text-neutral-600 mt-1">Orders will appear here when you start making sales</p>
+                    <div className="overflow-x-auto flex-1 flex flex-col">
+                        {(dashboardAnalytics?.recentOrders || []).length > 0 ? (
+                            <>
+                                <table className="w-full text-left border-collapse hidden md:table">
+                                    <thead>
+                                        <tr className="text-[10px] text-neutral-500 font-mono uppercase tracking-wider border-b border-white/5 bg-neutral-900/50">
+                                            <th className="px-6 py-3 font-medium">Order ID</th>
+                                            <th className="px-6 py-3 font-medium">Item</th>
+                                            <th className="px-6 py-3 font-medium">Date</th>
+                                            <th className="px-6 py-3 font-medium">Amount</th>
+                                            <th className="px-6 py-3 font-medium text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-xs text-neutral-300">
+                                        {dashboardAnalytics!.recentOrders.map((order, idx) => (
+                                            <TableRow
+                                                key={order.id}
+                                                id={`#ORD-${idx + 1}`}
+                                                item={order.item}
+                                                date={order.date}
+                                                amount={order.amount}
+                                                status={order.status}
+                                                statusColor={order.statusColor}
+                                            />
+                                        ))}
+                                    </tbody>
+                                </table>
+                                {/* Mobile Card View */}
+                                <div className="md:hidden">
+                                    {dashboardAnalytics!.recentOrders.map((order, idx) => (
+                                        <div key={order.id} className="p-4 border-b border-white/5 flex flex-col gap-3 hover:bg-white/5 transition-colors">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <div className="text-sm font-bold text-white">{order.item}</div>
+                                                    <div className="text-[10px] text-neutral-500 font-mono mt-0.5">{order.date}</div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="font-mono font-bold text-white">{order.amount}</div>
+                                                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mt-1 ${order.statusColor}`}>
+                                                        {order.status}
+                                                    </span>
+                                                </div>
                                             </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                        {/* Mobile Card View */}
-                        <div className="md:hidden">
-                            {(dashboardAnalytics?.recentOrders || []).map((order, idx) => (
-                                <div key={order.id} className="p-4 border-b border-white/5 flex flex-col gap-3 hover:bg-white/5 transition-colors">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <div className="text-sm font-bold text-white">{order.item}</div>
-                                            <div className="text-[10px] text-neutral-500 font-mono mt-0.5">{order.date}</div>
+                                            <div className="text-[10px] font-mono text-neutral-600">ID: #ORD-{idx + 1}</div>
                                         </div>
-                                        <div className="text-right">
-                                            <div className="font-mono font-bold text-white">{order.amount}</div>
-                                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mt-1 ${order.statusColor}`}>
-                                                {order.status}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="text-[10px] font-mono text-neutral-600">ID: #ORD-{idx + 1}</div>
+                                    ))}
                                 </div>
-                            ))}
-                            {!dashboardAnalytics?.recentOrders?.length && (
-                                <div className="p-8 text-center text-neutral-500">
-                                    <ShoppingCart size={24} className="mx-auto mb-2 opacity-50" />
-                                    <p className="text-sm font-medium">No Recent Orders</p>
-                                </div>
-                            )}
-                        </div>
+                            </>
+                        ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center p-8 lg:p-12 text-center text-neutral-500 animate-in fade-in zoom-in-95 duration-500">
+                                <ShoppingCart size={32} className="mb-3 opacity-20" />
+                                <p className="text-sm font-bold text-white mb-1">No Recent Orders</p>
+                                <p className="text-[10px] text-neutral-600 font-medium max-w-[200px] leading-relaxed">
+                                    Your sales activity will automatically appear here once you start receiving orders.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
 

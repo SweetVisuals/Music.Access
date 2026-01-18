@@ -15,6 +15,7 @@ interface ViewAllPageProps {
     currentProject: Project | null;
     onPlayTrack: (project: Project, trackId: string) => void;
     onTogglePlay: () => void;
+    onOpenAuth?: () => void;
 }
 
 const ViewAllPage: React.FC<ViewAllPageProps> = ({
@@ -25,7 +26,8 @@ const ViewAllPage: React.FC<ViewAllPageProps> = ({
     isPlaying,
     currentProject,
     onPlayTrack,
-    onTogglePlay
+    onTogglePlay,
+    onOpenAuth
 }) => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -92,7 +94,12 @@ const ViewAllPage: React.FC<ViewAllPageProps> = ({
 
     const handleFollow = async (e: React.MouseEvent, talent: TalentProfile) => {
         e.stopPropagation();
-        if (!currentUserId) return; // Should probably trigger auth modal ideally
+        if (!currentUserId) {
+            onOpenAuth?.();
+            return;
+        }
+
+        if (talent.id === currentUserId) return;
 
         if (talent.isFollowing) {
             // Optimistic Unfollow
@@ -220,7 +227,7 @@ const ViewAllPage: React.FC<ViewAllPageProps> = ({
 
 // Sub-components for cleaner generic file
 
-const TalentCard = ({ talent, currentUserId, onFollow, navigate }: { talent: TalentProfile, currentUserId: string | null, onFollow: any, navigate: any }) => (
+const TalentCard = ({ talent, currentUserId, onFollow, navigate }: { talent: TalentProfile, currentUserId: string | null, onFollow: any, navigate: any, key?: any }) => (
     <div
         onClick={() => navigate(`/@${talent.handle}`)}
         className="bg-[#0a0a0a] border border-transparent rounded-xl p-5 transition-all group hover:-translate-y-1 flex flex-col h-full cursor-pointer hover:bg-neutral-900/40"
@@ -281,7 +288,7 @@ const TalentCard = ({ talent, currentUserId, onFollow, navigate }: { talent: Tal
     </div>
 );
 
-const ServiceCard = ({ service }: { service: Service }) => (
+const ServiceCard = ({ service }: { service: Service, key?: any }) => (
     <div className="bg-neutral-900/50 border border-transparent p-5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer flex flex-col h-full">
         <div className="flex justify-between items-start mb-2">
             <div className="p-2 bg-neutral-800 rounded-lg text-neutral-300">

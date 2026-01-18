@@ -13,6 +13,7 @@ interface BrowseTalentPageProps {
     currentProject: Project | null;
     onPlayTrack: (project: Project, trackId: string) => void;
     onTogglePlay: () => void;
+    onOpenAuth?: () => void;
 }
 
 const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
@@ -20,7 +21,8 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
     isPlaying,
     currentProject,
     onPlayTrack,
-    onTogglePlay
+    onTogglePlay,
+    onOpenAuth
 }) => {
     const navigate = useNavigate();
     const [talents, setTalents] = useState<TalentProfile[]>([]);
@@ -79,6 +81,14 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
 
     const handleFollow = async (e: React.MouseEvent, talent: TalentProfile) => {
         e.stopPropagation(); // Prevent card click
+
+        if (!currentUserId) {
+            onOpenAuth?.();
+            return;
+        }
+
+        if (talent.id === currentUserId) return;
+
         const { followUser, unfollowUser } = await import('../services/supabaseService');
 
         if (talent.isFollowing) {

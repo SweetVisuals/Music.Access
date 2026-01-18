@@ -445,6 +445,7 @@ export interface DashboardAnalytics {
   playsChange: number;
   followersChange: number;
   listenersChange: number;
+  gemsChange: number;
 }
 
 // --- Roadmap & Calendar Types ---

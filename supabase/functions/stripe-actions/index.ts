@@ -142,6 +142,13 @@ serve(async (req) => {
                 console.log(`[create-connect-account] Initializing for user: ${userId}, email: ${email}`);
                 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+                if (!userId || userId === 'guest') {
+                    throw new Error('Valid userId is required to create a Connect account');
+                }
+                if (!email || !email.includes('@')) {
+                    throw new Error('Valid email is required to create a Connect account');
+                }
+
                 const { data: user } = await supabase
                     .from('users')
                     .select('stripe_account_id')
@@ -182,12 +189,13 @@ serve(async (req) => {
                             .update({ stripe_account_id: accountId })
                             .eq('id', userId);
                     } catch (e: any) {
-                        console.error('Failed to create Stripe Connect account:', e);
+                        console.error('[Stripe Error] stripe.accounts.create failed:', e);
                         // Provide a clearer error if it's likely a configuration issue
-                        if (e.message?.includes('Connect')) {
-                            throw new Error(`Stripe Connect configuration error: ${e.message}`);
+                        const stripeErrorMessage = e.message || 'Unknown Stripe error';
+                        if (stripeErrorMessage.includes('Connect')) {
+                            throw new Error(`Stripe Connect configuration error: ${stripeErrorMessage}`);
                         }
-                        throw e;
+                        throw new Error(`Failed to create Stripe Connect account: ${stripeErrorMessage}`);
                     }
                 }
 
@@ -386,7 +394,12 @@ serve(async (req) => {
     } catch (error) {
         console.error(`[Stripe Edge Function Error]`, error);
         return new Response(
-            JSON.stringify({ error: error.message, stack: error.stack }),
+            JSON.stringify({
+                error: error.message,
+                stack: error.stack,
+                type: error.constructor.name,
+                code: error.code // Stripe specific error code
+            }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         )
     }

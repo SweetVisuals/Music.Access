@@ -70,7 +70,7 @@ const FollowingPage: React.FC<FollowingPageProps> = () => {
                             <div
                                 key={talent.id}
                                 onClick={() => navigate(`/@${talent.handle}`)}
-                                className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-5 hover:border-neutral-600 transition-all group hover:-translate-y-1 flex flex-col h-full cursor-pointer"
+                                className="bg-[#0a0a0a] rounded-xl p-5 transition-all group hover:-translate-y-1 flex flex-col h-full cursor-pointer"
                             >
                                 <div className="flex-1">
                                     {/* Header: User Info & Top Right Role */}
@@ -98,16 +98,16 @@ const FollowingPage: React.FC<FollowingPageProps> = () => {
                                     </div>
 
                                     {/* Stats Grid */}
-                                    <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2 border border-neutral-800">
+                                    <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2">
                                         <div className="text-center">
                                             <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Followers</div>
                                             <div className="text-xs font-bold text-white">{talent.followers}</div>
                                         </div>
-                                        <div className="text-center border-l border-neutral-800">
+                                        <div className="text-center">
                                             <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Plays</div>
                                             <div className="text-xs font-bold text-white">{talent.streams ? talent.streams.toLocaleString() : '0'}</div>
                                         </div>
-                                        <div className="text-center border-l border-neutral-800">
+                                        <div className="text-center">
                                             <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Tracks</div>
                                             <div className="text-xs font-bold text-white">{talent.tracks || 0}</div>
                                         </div>
@@ -115,10 +115,10 @@ const FollowingPage: React.FC<FollowingPageProps> = () => {
                                 </div>
 
                                 {/* Footer */}
-                                <div className="flex items-center gap-2 pt-4 border-t border-neutral-800 mt-4">
+                                <div className="flex items-center gap-2 pt-4 mt-4">
                                     <button
                                         onClick={(e) => handleUnfollow(e, talent)}
-                                        className="flex-1 text-xs font-bold flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors border bg-transparent border-neutral-700 text-neutral-400 hover:text-red-500 hover:border-red-900"
+                                        className="flex-1 text-xs font-bold flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors bg-neutral-900 text-neutral-400 hover:text-red-500"
                                     >
                                         <UserMinus size={14} /> Unfollow
                                     </button>
@@ -127,7 +127,7 @@ const FollowingPage: React.FC<FollowingPageProps> = () => {
                                             e.stopPropagation();
                                             navigate(`/dashboard/messages?uid=${talent.id}`);
                                         }}
-                                        className="text-neutral-400 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 px-3 py-2 rounded-lg transition-colors"
+                                        className="text-neutral-400 hover:text-white bg-neutral-900 hover:bg-neutral-800 px-3 py-2 rounded-lg transition-colors"
                                         title="Message"
                                     >
                                         <MessageCircle size={14} />
@@ -159,7 +159,7 @@ const FollowingPage: React.FC<FollowingPageProps> = () => {
 };
 
 const TalentSkeleton = () => (
-    <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-5 flex flex-col h-full animate-pulse">
+    <div className="bg-[#0a0a0a] rounded-xl p-5 flex flex-col h-full animate-pulse">
         <div className="flex-1">
             <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
@@ -172,9 +172,9 @@ const TalentSkeleton = () => (
                 <div className="h-4 w-16 bg-neutral-800 rounded"></div>
             </div>
             <div className="items-center gap-3 mb-3"></div>
-            <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2 border border-neutral-800 h-10"></div>
+            <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2 h-10"></div>
         </div>
-        <div className="flex items-center gap-2 pt-4 border-t border-neutral-800 mt-4">
+        <div className="flex items-center gap-2 pt-4 mt-4">
             <div className="h-9 w-full bg-neutral-800 rounded-lg"></div>
         </div>
     </div>

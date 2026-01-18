@@ -938,6 +938,7 @@ const App: React.FC = () => {
                       isPlaying={isPlaying}
                       onPlayTrack={handlePlayTrack}
                       onTogglePlay={handleTogglePlay}
+                      onOpenAuth={() => setIsAuthModalOpen(true)}
                     />
                   )}
 
@@ -952,6 +953,7 @@ const App: React.FC = () => {
                       isPlaying={isPlaying}
                       onPlayTrack={handlePlayTrack}
                       onTogglePlay={handleTogglePlay}
+                      onOpenAuth={() => setIsAuthModalOpen(true)}
                     />
                   )}
                   {currentView === 'browse-all-projects' && (
@@ -964,6 +966,7 @@ const App: React.FC = () => {
                       isPlaying={isPlaying}
                       onPlayTrack={handlePlayTrack}
                       onTogglePlay={handleTogglePlay}
+                      onOpenAuth={() => setIsAuthModalOpen(true)}
                     />
                   )}
                   {currentView === 'browse-all-soundpacks' && (
@@ -976,6 +979,7 @@ const App: React.FC = () => {
                       isPlaying={isPlaying}
                       onPlayTrack={handlePlayTrack}
                       onTogglePlay={handleTogglePlay}
+                      onOpenAuth={() => setIsAuthModalOpen(true)}
                     />
                   )}
                   {currentView === 'browse-all-releases' && (
@@ -988,6 +992,7 @@ const App: React.FC = () => {
                       isPlaying={isPlaying}
                       onPlayTrack={handlePlayTrack}
                       onTogglePlay={handleTogglePlay}
+                      onOpenAuth={() => setIsAuthModalOpen(true)}
                     />
                   )}
                   {currentView === 'browse-all-services' && (
@@ -1000,6 +1005,7 @@ const App: React.FC = () => {
                       isPlaying={isPlaying}
                       onPlayTrack={handlePlayTrack}
                       onTogglePlay={handleTogglePlay}
+                      onOpenAuth={() => setIsAuthModalOpen(true)}
                     />
                   )}
 

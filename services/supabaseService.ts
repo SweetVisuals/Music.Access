@@ -205,7 +205,8 @@ export const getProjects = async (): Promise<Project[]> => {
         created_at
       )
     `)
-    .eq('status', 'published'); // Only show published projects on public pages
+    .eq('status', 'published') // Only show published projects on public pages
+    .neq('type', 'beat_tape'); // Studio releases are type 'beat_tape' and should remain private to the Studio page
 
 
   if (error) throw error;
@@ -508,7 +509,12 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
         avgTurnaround: userData.avg_turnaround || '24h',
         bio: userData.bio,
         website: userData.website,
-        projects: projects,
+        projects: projects.filter(p => {
+          // If viewing self, show everything
+          if (currentUser?.id === targetUserId) return true;
+          // Otherwise, hide Studio (beat_tape) releases
+          return p.type !== 'beat_tape';
+        }),
         services: services,
         soundPacks: projects.filter(p => p.type === 'sound_pack').map(p => ({
           id: p.id,
@@ -516,7 +522,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
           type: 'Loop Kit', // Defaulting for now
           price: p.price,
           fileSize: '0 MB', // Placeholder
-          itemCount: p.tracks.length
+          itemCount: p.tracks?.length || 0
         })),
         subscription_status: userData.subscription_status,
         subscription_id: userData.subscription_id,
@@ -660,7 +666,7 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
       avgTurnaround: userData.avg_turnaround || '24h',
       bio: userData.bio,
       website: userData.website,
-      projects: projects.filter(p => p.type === 'beat_tape'),
+      projects: projects.filter(p => p.type === 'release'), // ONLY show releases and hide Studio (beat_tape) from public visitors
       services: services,
       soundPacks: projects.filter(p => p.type === 'sound_pack').map(p => ({
         id: p.id,
@@ -668,7 +674,7 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
         type: 'Loop Kit', // Defaulting for now as type is generic in Project
         price: p.price,
         fileSize: '0 MB', // Placeholder
-        itemCount: p.tracks.length
+        itemCount: p.tracks?.length || 0
       })),
       bannerSettings: userData.banner_settings,
       is_public: userData.is_public
@@ -1905,7 +1911,7 @@ export const followUser = async (targetUserId: string) => {
 
   if (currentUser.id === targetUserId) {
     console.warn('[Follow] User attempted to follow themselves');
-    return;
+    throw new Error('You cannot follow yourself');
   }
 
   // Check if already following
@@ -4060,6 +4066,28 @@ export const getDashboardAnalytics = async (timeRange: '7d' | '30d' | '90d' | '6
 
   const listenersChange = calculateChange(currentAvgListeners, prevAvgListeners);
 
+  // --- Gems Change Calculation ---
+  // We need to calculate the average balance in the previous period to compare with currentAvgGems
+  const { data: prevGemTransactions } = await supabase
+    .from('gem_transactions')
+    .select('amount')
+    .eq('user_id', currentUser.id)
+    .gte('created_at', prevStart.toISOString())
+    .lt('created_at', prevEnd.toISOString());
+
+  const prevTotalGemChange = (prevGemTransactions || []).reduce((sum, t) => sum + t.amount, 0);
+  // balanceAtEndOfPreviousPeriod = balanceAtStartOfCurrentPeriod
+  const balanceAtEndOfPreviousPeriod = currentGemBalance - totalGemChangeInRange;
+  const balanceAtStartOfPreviousPeriod = balanceAtEndOfPreviousPeriod - prevTotalGemChange;
+
+  // For a simple estimation of average previous balance:
+  const prevAvgGems = (balanceAtStartOfPreviousPeriod + balanceAtEndOfPreviousPeriod) / 2;
+  const currentAvgGems = chartData.length > 0
+    ? chartData.reduce((sum, d) => sum + d.gems, 0) / chartData.length
+    : currentGemBalance;
+
+  const gemsChange = calculateChange(currentAvgGems, prevAvgGems);
+
 
   return {
     totalRevenue,
@@ -4074,7 +4102,8 @@ export const getDashboardAnalytics = async (timeRange: '7d' | '30d' | '90d' | '6
     ordersChange: ordersChange,
     playsChange: playsChange,
     followersChange: 0, // Hard to calc without snapshots, keeping 0
-    listenersChange
+    listenersChange,
+    gemsChange
   };
 };
 

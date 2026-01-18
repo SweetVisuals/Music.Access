@@ -38,6 +38,7 @@ import {
     LayoutGrid
 } from 'lucide-react';
 import Studio from './Studio';
+import GoalsPage from './GoalsPage';
 import WalletPage from './WalletPage';
 import { MOCK_PURCHASES } from '../constants';
 import {
@@ -48,7 +49,8 @@ import {
     markNotificationAsRead,
     archiveSale,
     unarchiveSale,
-    supabase
+    supabase,
+    recordDailyMetric
 } from '../services/supabaseService';
 
 interface DashboardPageProps {
@@ -118,8 +120,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     userProfile,
     onNavigate
 }) => {
-    const [selectedStat, setSelectedStat] = useState('revenue');
+    const [selectedStat, setSelectedStat] = useState<'revenue' | 'listeners' | 'plays' | 'orders' | 'gems'>('revenue');
     const [dashboardAnalytics, setDashboardAnalytics] = useState<DashboardAnalytics | null>(null);
+    const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '6m' | '12m' | 'all'>('30d');
+    const [isTimeRangeOpen, setIsTimeRangeOpen] = useState(false);
     const [analyticsLoading, setAnalyticsLoading] = useState(true);
     const [liveListeners, setLiveListeners] = useState(0);
 
@@ -129,12 +133,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
         const channel = subscribeToArtistPresence(userProfile.id, (count) => {
             setLiveListeners(count);
+            // Log this metric for history
+            if (count > 0) {
+                recordDailyMetric(userProfile.id, 'listeners', count).catch(console.error);
+            }
         });
 
         return () => {
             channel.unsubscribe();
         };
     }, [userProfile?.id]);
+
+    // Record followers on load
+    useEffect(() => {
+        if (dashboardAnalytics?.totalFollowers && userProfile?.id) {
+            recordDailyMetric(userProfile.id, 'followers', dashboardAnalytics.totalFollowers).catch(console.error);
+        }
+    }, [dashboardAnalytics?.totalFollowers, userProfile?.id]);
 
     // State for Purchases/Orders View
     const [activePurchaseTab, setActivePurchaseTab] = useState<'all' | 'beats' | 'kits' | 'services'>('all');
@@ -144,33 +159,56 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     const [purchases, setPurchases] = useState<Purchase[]>([]);
     const [sales, setSales] = useState<Purchase[]>([]);
 
+    // Fetch purchases and sales (independent of timeRange)
+    // Fetch purchases and sales (Core Data - Once)
     useEffect(() => {
-        /* ... existing fetchDashboardData ... */
-        const fetchDashboardData = async () => {
+        const fetchCoreData = async () => {
             try {
-                setAnalyticsLoading(true);
-
-                // Fetch purchases, sales, and dashboard analytics
-                const [purchasesData, salesData, analyticsData] = await Promise.all([
+                const [purchasesData, salesData] = await Promise.all([
                     getPurchases(),
                     getSales(),
-                    getDashboardAnalytics()
                 ]);
-
                 setPurchases(purchasesData);
                 setSales(salesData);
-                setDashboardAnalytics(analyticsData);
             } catch (error) {
-                console.error('Error fetching dashboard data:', error);
-                // Fallback to mock data if fetch fails
+                console.error('Error fetching core data:', error);
                 setPurchases(MOCK_PURCHASES);
-            } finally {
-                setAnalyticsLoading(false);
             }
         };
 
-        fetchDashboardData();
+        fetchCoreData();
     }, []);
+
+    // Fetch Analytics (Depends on timeRange)
+    const fetchAnalytics = async () => {
+        setAnalyticsLoading(true);
+        try {
+            const data = await getDashboardAnalytics(timeRange);
+            setDashboardAnalytics(data);
+        } catch (error) {
+            console.error('Error fetching dashboard analytics:', error);
+        } finally {
+            setAnalyticsLoading(false);
+        }
+    };
+
+    // Initial fetch and fetch on TimeRange change
+    useEffect(() => {
+        fetchAnalytics();
+    }, [timeRange]); // Removed userProfile?.id dependency as getDashboardAnalytics gets user internally
+
+    // Listen for global profile updates (e.g. Gem Claim) to refresh chart
+    useEffect(() => {
+        const handleProfileUpdate = () => {
+            console.log("Profile updated, refreshing dashboard analytics...");
+            fetchAnalytics();
+        };
+
+        window.addEventListener('profile-updated', handleProfileUpdate);
+        return () => {
+            window.removeEventListener('profile-updated', handleProfileUpdate);
+        };
+    }, [timeRange]); // Re-bind if timeRange changes so fetchAnalytics uses current range
 
     // Mark notifications as read when visiting relevant views
     useEffect(() => {
@@ -551,11 +589,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             isPlaying={isPlaying}
             onPlayTrack={onPlayTrack}
             onTogglePlay={onTogglePlay}
+            userProfile={userProfile}
         />;
     }
 
     if (view === 'dashboard-sales') {
         return <SalesView />;
+    }
+
+    if (view === 'dashboard-goals') {
+        return <GoalsPage onNavigate={onNavigate} />;
     }
 
     if (view === 'dashboard-wallet') {
@@ -775,7 +818,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     }
 
     // Default: Overview - Use real data or fallbacks
-    const chartData = (dashboardAnalytics?.monthlyData || []) as { revenue: number; listeners: number; plays: number; orders: number; gems: number; }[];
+    // Prefer chartData (new) over monthlyData (old)
+    const chartSource = (dashboardAnalytics?.chartData && dashboardAnalytics.chartData.length > 0)
+        ? dashboardAnalytics.chartData
+        : (dashboardAnalytics?.monthlyData || []);
+
+    const chartData = chartSource as any[]; // Type assertion for flexibility
+
+    // Safety check for empty data
+    if (chartData.length === 0) {
+        // Fallback or empty placeholder if desired
+    }
+
     const currentChart = {
         revenue: { label: 'Revenue Analytics', data: chartData.map(d => d.revenue), unit: '$' },
         listeners: { label: 'Live Listener Analytics', data: chartData.map(d => d.listeners), unit: '' },
@@ -800,72 +854,95 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                         <span>System Online</span>
                     </div>
 
-                    <button className="flex items-center gap-2 px-4 py-2 bg-[#0a0a0a] border border-white/5 rounded-lg text-xs font-bold text-white hover:bg-white/5 transition-colors">
-                        <Calendar size={14} className="text-neutral-500" />
-                        <span>Last 30 days</span>
-                        <ChevronDown size={12} className="text-neutral-500 ml-1" />
-                    </button>
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsTimeRangeOpen(!isTimeRangeOpen)}
+                            className="flex items-center gap-2 px-4 py-2 bg-[#0a0a0a] border border-white/5 rounded-lg text-xs font-bold text-white hover:bg-white/5 transition-colors"
+                        >
+                            <Calendar size={14} className="text-neutral-500" />
+                            <span>
+                                {timeRange === '7d' ? 'Last 7 days' :
+                                    timeRange === '30d' ? 'Last 30 days' :
+                                        timeRange === '90d' ? 'Last 3 months' :
+                                            timeRange === '6m' ? 'Last 6 months' :
+                                                timeRange === '12m' ? 'Last Year' : 'All Time'}
+                            </span>
+                            <ChevronDown size={12} className="text-neutral-500 ml-1" />
+                        </button>
+
+                        {isTimeRangeOpen && (
+                            <div className="absolute right-0 top-full mt-2 w-40 bg-[#0a0a0a] border border-white/10 rounded-lg shadow-xl z-50 py-1">
+                                {[
+                                    { value: '7d', label: 'Last 7 days' },
+                                    { value: '30d', label: 'Last 30 days' },
+                                    { value: '90d', label: 'Last 3 months' },
+                                    { value: '6m', label: 'Last 6 months' },
+                                    { value: '12m', label: 'Last Year' },
+                                    { value: 'all', label: 'All Time' }
+                                ].map((option) => (
+                                    <button
+                                        key={option.value}
+                                        onClick={() => {
+                                            setTimeRange(option.value as any);
+                                            setIsTimeRangeOpen(false);
+                                        }}
+                                        className={`w-full text-left px-4 py-2 text-xs font-medium hover:bg-white/5 transition-colors ${timeRange === option.value ? 'text-white' : 'text-neutral-400'}`}
+                                    >
+                                        {option.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* Top Stats Row - Use real data */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <StatCard
+                    title="Total Revenue"
+                    value={`$${(dashboardAnalytics?.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    change={dashboardAnalytics?.revenueChange || 0}
+                    icon="DollarSign"
+                    selected={selectedStat === 'revenue'}
+                    onClick={() => setSelectedStat('revenue')}
+                    color="green"
+
+                />
                 <StatCard
                     title="Live Listeners"
                     value={liveListeners.toString()}
-                    icon={<Radio size={20} />}
-                    live={true}
-                    color="text-red-500"
-                    bgColor="bg-red-500/10"
-                    borderColor="border-red-500/20"
-                    isActive={selectedStat === 'listeners'}
+                    change={dashboardAnalytics?.listenersChange || 0}
+                    icon="Users"
+                    selected={selectedStat === 'listeners'}
                     onClick={() => setSelectedStat('listeners')}
-                />
-                <StatCard
-                    title="Total Revenue"
-                    value={`$${(dashboardAnalytics?.totalRevenue || 0).toLocaleString()}`}
-                    icon={<DollarSign size={20} />}
-                    trend="+12.5%"
-                    positive
-                    color="text-emerald-400"
-                    bgColor="bg-emerald-400/10"
-                    borderColor="border-emerald-400/20"
-                    isActive={selectedStat === 'revenue'}
-                    onClick={() => setSelectedStat('revenue')}
+                    color="blue"
                 />
                 <StatCard
                     title="Total Plays"
-                    value={`${(dashboardAnalytics?.totalPlays || 0).toLocaleString()}`}
-                    icon={<Play size={20} />}
-                    trend="+5.2%"
-                    positive
-                    color="text-blue-400"
-                    bgColor="bg-blue-400/10"
-                    borderColor="border-blue-400/20"
-                    isActive={selectedStat === 'plays'}
+                    value={dashboardAnalytics?.totalPlays.toLocaleString() || '0'}
+                    change={dashboardAnalytics?.playsChange || 0}
+                    icon="Play"
+                    selected={selectedStat === 'plays'}
                     onClick={() => setSelectedStat('plays')}
+                    color="purple"
                 />
                 <StatCard
                     title="Active Orders"
-                    value={(dashboardAnalytics?.activeOrders || 0).toString()}
-                    icon={<ShoppingCart size={20} />}
-                    trend="-2.1%"
-                    positive={false}
-                    color="text-orange-400"
-                    bgColor="bg-orange-400/10"
-                    borderColor="border-orange-400/20"
-                    isActive={selectedStat === 'orders'}
+                    value={dashboardAnalytics?.activeOrders.toString() || '0'}
+                    change={dashboardAnalytics?.ordersChange || 0}
+                    icon="ShoppingBag"
+                    selected={selectedStat === 'orders'}
                     onClick={() => setSelectedStat('orders')}
+                    color="orange"
                 />
                 <StatCard
                     title="Gems Balance"
                     value={getSafeUserProfileValue(userProfile?.gems, 0).toLocaleString()}
-                    icon={<Gem size={20} />}
+                    icon="Gem"
                     subtext={`Approx. $${(getSafeUserProfileValue(userProfile?.gems, 0) * 0.01).toFixed(2)}`}
-                    color="text-purple-400"
-                    bgColor="bg-purple-400/10"
-                    borderColor="border-purple-400/20"
-                    isActive={selectedStat === 'gems'}
+                    color="purple"
+                    selected={selectedStat === 'gems'}
                     onClick={() => setSelectedStat('gems')}
                     className="hidden md:block" // Hide on mobile as requested
                 />
@@ -905,8 +982,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                         })()}
                     </div>
                     <div className="flex justify-between mt-4 text-[10px] font-mono text-neutral-600 border-t border-white/5 pt-2">
-                        <span>JAN</span><span>FEB</span><span>MAR</span><span>APR</span><span>MAY</span><span>JUN</span>
-                        <span>JUL</span><span>AUG</span><span>SEP</span><span>OCT</span><span>NOV</span><span>DEC</span>
+                        {chartData.length > 0 ? (
+                            // Show max 6-8 labels evenly distributed
+                            chartData.filter((_, i) => {
+                                const step = Math.ceil(chartData.length / 6);
+                                return i === 0 || i === chartData.length - 1 || i % step === 0;
+                            }).slice(0, 7).map((d, i) => (
+                                <span key={i}>{d.label || d.date?.slice(5) || '-'}</span>
+                            ))
+                        ) : (
+                            <span>No Data Available</span>
+                        )}
                     </div>
 
                     {/* Background Grid */}

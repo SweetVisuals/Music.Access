@@ -13,6 +13,7 @@ import ManageServicesPage from './components/ManageServicesPage';
 import ContractsPage from './components/ContractsPage';
 import PostServicePage from './components/PostServicePage';
 import NotesPage from './components/NotesPage';
+import ViewAllPage from './components/ViewAllPage';
 import BrowseTalentPage from './components/BrowseTalentPage';
 import FollowingPage from './components/FollowingPage';
 import CollaboratePage from './components/CollaboratePage';
@@ -30,7 +31,7 @@ import NotLoggedInState from './components/NotLoggedInState';
 import { FloatingMessenger } from './components/FloatingMessenger';
 import BottomNav from './components/BottomNav';
 import PullToRefresh from './components/PullToRefresh';
-import { getProjects, getUserProfile, supabase, signOut, updateUserProfile, getCurrentUser, searchProfiles, searchServices } from './services/supabaseService';
+import { getProjects, getUserProfile, supabase, signOut, updateUserProfile, getCurrentUser, searchProfiles, searchServices, claimDailyReward } from './services/supabaseService';
 import { Project, FilterState, View, UserProfile, TalentProfile, Service } from './types';
 
 import { CartProvider } from './contexts/CartContext';
@@ -38,6 +39,10 @@ import { PurchaseModalProvider } from './contexts/PurchaseModalContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { FileOperationProvider } from './contexts/FileOperationContext';
 import { FileOperationNotificationContainer } from './components/FileOperationNotification';
+import { Verified, Star, UserPlus, MessageCircle, MoreHorizontal } from 'lucide-react';
+import { followUser, unfollowUser } from './services/supabaseService';
+
+const normalizeString = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 const App: React.FC = () => {
   const navigate = useNavigate();
@@ -58,6 +63,9 @@ const App: React.FC = () => {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [currentTrackId, setCurrentTrackId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<'off' | 'all' | 'one'>('off');
+  const [isShuffling, setIsShuffling] = useState(false);
+  const [shuffledQueue, setShuffledQueue] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,6 +80,11 @@ const App: React.FC = () => {
     if (pathname.startsWith('/@') || pathname === '/profile') return 'profile';
     if (pathname === '/upload') return 'upload';
     if (pathname === '/browse-talent') return 'browse-talent';
+    if (pathname === '/browse/talent') return 'browse-all-talent';
+    if (pathname === '/browse/projects') return 'browse-all-projects';
+    if (pathname === '/browse/soundpacks') return 'browse-all-soundpacks';
+    if (pathname === '/browse/releases') return 'browse-all-releases';
+    if (pathname === '/browse/services') return 'browse-all-services';
     if (pathname === '/following') return 'following';
     if (pathname === '/collaborate') return 'collaborate';
     if (pathname === '/library') return 'library';
@@ -92,6 +105,7 @@ const App: React.FC = () => {
       if (pathname === '/dashboard/invoices') return 'dashboard-invoices';
       if (pathname === '/dashboard/invoices') return 'dashboard-invoices';
       if (pathname === '/dashboard/roadmap') return 'dashboard-roadmap';
+      if (pathname === '/dashboard/goals') return 'dashboard-goals';
       if (pathname === '/dashboard/orders') return 'dashboard-orders';
       if (pathname === '/dashboard/studio') return 'dashboard-studio';
       if (pathname === '/dashboard/sales') return 'dashboard-sales';
@@ -244,6 +258,9 @@ const App: React.FC = () => {
 
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
+      // EXCLUDE STUDIO PROJECTS ('beat_tape') FROM DISCOVER
+      if (p.type === 'beat_tape') return false;
+
       const matchesGenre = filters.genre === "All Genres" || p.genre === filters.genre;
       // Key Filtering Logic
       let matchesKey = true;
@@ -269,10 +286,10 @@ const App: React.FC = () => {
         }
       }
 
-      const query = filters.searchQuery.toLowerCase().trim();
+      const query = normalizeString(filters.searchQuery.trim());
       if (!query) return matchesGenre && matchesKey;
 
-      const searchableContent = `${p.title} ${p.producer} ${p.genre} ${p.key} ${p.tags.join(' ')}`.toLowerCase();
+      const searchableContent = normalizeString(`${p.title} ${p.producer} ${p.genre} ${p.key} ${p.tags.join(' ')} ${p.description || ''} ${p.type.replace('_', ' ')}`);
 
       const searchTerms = query.split(/\s+/).filter(t => t.length > 0);
       const matchesSearch = searchTerms.every(term => searchableContent.includes(term));
@@ -333,39 +350,92 @@ const App: React.FC = () => {
     }
   };
 
+  // Shuffle Queue Generation
+  useEffect(() => {
+    if (isShuffling && currentProject) {
+      const ids = currentProject.tracks.map((t, i) => t.id || `track-${i}`);
+      // Fisher-Yates Shuffle
+      for (let i = ids.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [ids[i], ids[j]] = [ids[j], ids[i]];
+      }
+      setShuffledQueue(ids);
+    }
+  }, [isShuffling, currentProject?.id]);
+
+  const handleToggleShuffle = () => {
+    setIsShuffling(!isShuffling);
+  };
+
+  const handleToggleRepeat = () => {
+    setRepeatMode(prev => {
+      if (prev === 'off') return 'all';
+      if (prev === 'all') return 'one';
+      return 'off';
+    });
+  };
+
   const handleNextTrack = () => {
     if (!currentProject || !currentTrackId) return;
 
-    const currentIndex = currentProject.tracks.findIndex(t => (t.id || `track-${currentProject.tracks.indexOf(t)}`) === currentTrackId);
-    if (currentIndex === -1) return;
+    const trackList = isShuffling
+      ? shuffledQueue
+      : currentProject.tracks.map((t, i) => t.id || `track-${i}`);
 
-    if (currentIndex < currentProject.tracks.length - 1) {
-      const nextTrack = currentProject.tracks[currentIndex + 1];
-      setCurrentTrackId(nextTrack.id || `track-${currentIndex + 1}`);
+    const currentIndex = trackList.indexOf(currentTrackId);
+
+    // Safety check
+    if (currentIndex === -1) {
+      if (trackList.length > 0) {
+        setCurrentTrackId(trackList[0]);
+        setIsPlaying(true);
+      }
+      return;
+    }
+
+    if (currentIndex < trackList.length - 1) {
+      setCurrentTrackId(trackList[currentIndex + 1]);
       setIsPlaying(true);
     } else {
-      // Loop back to start or stop? Let's loop for now as it's friendlier
-      const firstTrack = currentProject.tracks[0];
-      setCurrentTrackId(firstTrack.id || `track-0`);
-      setIsPlaying(true);
+      // End of playlist
+      if (repeatMode === 'all') {
+        setCurrentTrackId(trackList[0]);
+        setIsPlaying(true);
+      } else {
+        setIsPlaying(false);
+      }
     }
   };
+
+  const hasPrev = useMemo(() => {
+    if (!currentProject || !currentTrackId) return false;
+    const trackList = isShuffling
+      ? shuffledQueue
+      : currentProject.tracks.map((t, i) => t.id || `track-${i}`);
+    const currentIndex = trackList.indexOf(currentTrackId);
+    if (repeatMode === 'all' && trackList.length > 1) return true;
+    return currentIndex > 0;
+  }, [currentProject, currentTrackId, isShuffling, shuffledQueue, repeatMode]);
 
   const handlePrevTrack = () => {
     if (!currentProject || !currentTrackId) return;
 
-    const currentIndex = currentProject.tracks.findIndex(t => (t.id || `track-${currentProject.tracks.indexOf(t)}`) === currentTrackId);
+    const trackList = isShuffling
+      ? shuffledQueue
+      : currentProject.tracks.map((t, i) => t.id || `track-${i}`);
+
+    const currentIndex = trackList.indexOf(currentTrackId);
     if (currentIndex === -1) return;
 
     if (currentIndex > 0) {
-      const prevTrack = currentProject.tracks[currentIndex - 1];
-      setCurrentTrackId(prevTrack.id || `track-${currentIndex - 1}`);
+      setCurrentTrackId(trackList[currentIndex - 1]);
       setIsPlaying(true);
     } else {
-      // Go to last track if at start (loop)
-      const lastTrack = currentProject.tracks[currentProject.tracks.length - 1];
-      setCurrentTrackId(lastTrack.id || `track-${currentProject.tracks.length - 1}`);
-      setIsPlaying(true);
+      // Start of playlist
+      if (repeatMode === 'all') {
+        setCurrentTrackId(trackList[trackList.length - 1]);
+        setIsPlaying(true);
+      }
     }
   };
 
@@ -394,12 +464,12 @@ const App: React.FC = () => {
       try {
         const currentUser = await getCurrentUser();
         if (currentUser) {
-          const now = new Date().toISOString();
-          await updateUserProfile(currentUser.id, {
-            gems: userProfile.gems + 10,
-            lastGemClaimDate: now
+          const newBalance = await claimDailyReward(currentUser.id);
+          setUserProfile({
+            ...userProfile,
+            gems: newBalance,
+            lastGemClaimDate: new Date().toISOString()
           });
-          setUserProfile({ ...userProfile, gems: userProfile.gems + 10, lastGemClaimDate: now });
           setGemsClaimedToday(true);
         }
       } catch (error) {
@@ -445,6 +515,7 @@ const App: React.FC = () => {
           'dashboard-wallet': '/dashboard/wallet',
           'dashboard-settings': '/dashboard/settings',
           'dashboard-roadmap': '/dashboard/roadmap',
+          'dashboard-goals': '/dashboard/goals',
           'dashboard-help': '/dashboard/help'
         };
         const path = pathMap[view] || '/';
@@ -457,6 +528,11 @@ const App: React.FC = () => {
         'profile': '/profile', // Special route for current user's profile
         'upload': '/upload',
         'browse-talent': '/browse-talent',
+        'browse-all-talent': '/browse/talent',
+        'browse-all-projects': '/browse/projects',
+        'browse-all-soundpacks': '/browse/soundpacks',
+        'browse-all-releases': '/browse/releases',
+        'browse-all-services': '/browse/services',
         'following': '/following',
         'collaborate': '/collaborate',
         'library': '/library',
@@ -480,6 +556,7 @@ const App: React.FC = () => {
         'dashboard-wallet': '/dashboard/wallet',
         'dashboard-settings': '/dashboard/settings',
         'dashboard-roadmap': '/dashboard/roadmap',
+        'dashboard-goals': '/dashboard/goals',
         'dashboard-help': '/dashboard/help'
       };
       const path = pathMap[view] || '/';
@@ -579,19 +656,19 @@ const App: React.FC = () => {
                     <PullToRefresh onRefresh={fetchProjects}>
                       <div className="w-full max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 pt-4 lg:pt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {isLoggedIn && !gemsClaimedToday && !profileLoading && userProfile && (
-                          <div className="mb-4 mt-6 lg:mt-0 pt-3 pb-4 px-5 bg-gradient-to-r from-primary/20 to-transparent border border-primary/20 rounded-xl flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary animate-pulse">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z" /></svg>
+                          <div className="mb-[13px] mt-4 lg:mt-0 px-3 py-2 lg:px-5 lg:py-4 bg-gradient-to-r from-primary/20 to-transparent border border-primary/20 rounded-xl flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 lg:w-10 lg:h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary animate-pulse shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 lg:w-4 lg:h-4"><path d="M6 3h12l4 6-10 13L2 9Z" /></svg>
                               </div>
                               <div>
-                                <h3 className="font-bold text-white text-base">Daily Reward Available!</h3>
+                                <h3 className="font-bold text-white text-sm lg:text-base">Daily Reward Available!</h3>
                                 <p className="text-sm text-neutral-300 hidden sm:block">Claim your 10 free Gems for today.</p>
                               </div>
                             </div>
                             <button
                               onClick={handleClaimDailyGems}
-                              className="px-4 py-2 bg-primary text-black font-bold rounded-lg text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
+                              className="px-3 py-1.5 lg:px-4 lg:py-2 bg-primary text-black font-bold rounded-lg text-xs lg:text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
                             >
                               Claim 10 Gems
                             </button>
@@ -627,33 +704,89 @@ const App: React.FC = () => {
                                   <h2 className="text-lg font-bold text-white">Profiles</h2>
                                   <span className="text-xs text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">{searchedProfiles.length}</span>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                                   {searchedProfiles.map(profile => (
                                     <div
                                       key={profile.id}
-                                      className="group bg-neutral-900/50 hover:bg-neutral-800/80 border border-neutral-800 hover:border-neutral-700 p-4 rounded-xl transition-all cursor-pointer"
                                       onClick={() => handleNavigate(`@${profile.handle}`)}
+                                      className="bg-[#0a0a0a] border border-transparent rounded-xl p-5 transition-all group hover:-translate-y-1 flex flex-col h-full cursor-pointer"
                                     >
-                                      <div className="flex items-center gap-4">
-                                        <div className="relative">
-                                          <img
-                                            src={profile.avatar}
-                                            alt={profile.username}
-                                            className="w-12 h-12 rounded-full object-cover border border-neutral-700 group-hover:border-primary/50 transition-colors"
-                                          />
-                                          {profile.isVerified && (
-                                            <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white p-0.5 rounded-full border-2 border-neutral-900"> <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+                                      <div className="flex-1">
+                                        {/* Header: User Info & Top Right Role */}
+                                        <div className="flex justify-between items-start mb-3">
+                                          <div className="flex items-center gap-3">
+                                            <div className="relative">
+                                              <img src={profile.avatar} alt={profile.username} className="w-12 h-12 rounded-full border-2 border-[#0a0a0a] shadow-lg object-cover" />
+                                              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[#0a0a0a] rounded-full" title="Online"></div>
+                                            </div>
+
+                                            <div>
+                                              <h3 className="text-sm font-bold text-white flex items-center gap-1">
+                                                {profile.username}
+                                                {profile.isVerified && <Verified size={12} className="text-blue-400" />}
+                                              </h3>
+                                              <p className="text-[10px] text-neutral-500 font-mono">{profile.handle}</p>
+                                            </div>
+                                          </div>
+
+                                          {profile.role && (
+                                            <span className="px-2 py-0.5 rounded bg-white/5 border border-transparent text-[9px] font-bold text-primary uppercase tracking-wide">
+                                              {profile.role}
+                                            </span>
                                           )}
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                          <h3 className="font-bold text-white group-hover:text-primary transition-colors text-sm truncate">{profile.username}</h3>
-                                          <p className="text-xs text-neutral-400 truncate">@{profile.handle}</p>
-                                          <div className="flex gap-1 mt-1 flex-wrap">
-                                            {profile.tags.slice(0, 2).map(tag => (
-                                              <span key={tag} className="text-[10px] bg-neutral-800 text-neutral-300 px-1.5 py-0.5 rounded">{tag}</span>
-                                            ))}
+
+                                        {/* Stats Grid */}
+                                        <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2 border border-transparent">
+                                          <div className="text-center">
+                                            <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Followers</div>
+                                            <div className="text-xs font-bold text-white">{profile.followers}</div>
+                                          </div>
+                                          <div className="text-center border-l border-transparent">
+                                            <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Plays</div>
+                                            <div className="text-xs font-bold text-white">{profile.streams ? profile.streams.toLocaleString() : '0'}</div>
+                                          </div>
+                                          <div className="text-center border-l border-transparent">
+                                            <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Tracks</div>
+                                            <div className="text-xs font-bold text-white">{profile.tracks || 0}</div>
                                           </div>
                                         </div>
+                                      </div>
+
+                                      {/* Footer */}
+                                      <div className="flex items-center gap-2 pt-4 border-t border-transparent mt-4">
+                                        <button
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            if (!userProfile) {
+                                              setIsAuthModalOpen(true);
+                                              return;
+                                            }
+                                            if (profile.id === userProfile.id) return;
+
+                                            if (profile.isFollowing) {
+                                              // Unfollow
+                                              setSearchedProfiles(prev => prev.map(t => t.id === profile.id ? { ...t, isFollowing: false, followers: (parseInt(t.followers) - 1).toString() } : t));
+                                              try { await unfollowUser(profile.id); } catch (err) { console.error(err); }
+                                            } else {
+                                              // Follow
+                                              setSearchedProfiles(prev => prev.map(t => t.id === profile.id ? { ...t, isFollowing: true, followers: (parseInt(t.followers) + 1).toString() } : t));
+                                              try { await followUser(profile.id); } catch (err) { console.error(err); }
+                                            }
+                                          }}
+                                          disabled={userProfile?.id === profile.id}
+                                          className={`flex-1 text-xs font-bold flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors border ${userProfile?.id === profile.id
+                                            ? 'bg-neutral-800 border-neutral-800 text-neutral-500 cursor-not-allowed opacity-50'
+                                            : profile.isFollowing
+                                              ? 'bg-neutral-800 border-neutral-800 text-neutral-500 hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-500'
+                                              : 'text-white bg-primary/10 hover:bg-primary hover:text-black border-primary/20'
+                                            }`}
+                                        >
+                                          <UserPlus size={14} /> {profile.isFollowing ? 'Following' : 'Follow'}
+                                        </button>
+                                        <button className="text-neutral-400 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-transparent hover:border-neutral-700 px-3 py-2 rounded-lg transition-colors" title="Message">
+                                          <MessageCircle size={14} />
+                                        </button>
                                       </div>
                                     </div>
                                   ))}
@@ -697,15 +830,42 @@ const App: React.FC = () => {
                               </section>
                             )}
 
-                            {/* Projects Section */}
+                            {/* Sound Packs Section */}
+                            {filteredProjects.filter(p => p.type === 'sound_pack').length > 0 && (
+                              <section>
+                                <div className="flex items-center gap-2 mb-4 px-1">
+                                  <h2 className="text-lg font-bold text-white">Sound Kits</h2>
+                                  <span className="text-xs text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">
+                                    {filteredProjects.filter(p => p.type === 'sound_pack').length}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                                  {filteredProjects.filter(p => p.type === 'sound_pack').map(project => (
+                                    <div key={project.id} className="h-auto md:h-[282px]">
+                                      <ProjectCard
+                                        project={project}
+                                        currentTrackId={currentTrackId}
+                                        isPlaying={currentProject?.id === project.id && isPlaying}
+                                        onPlayTrack={(trackId) => handlePlayTrack(project, trackId)}
+                                        onTogglePlay={handleTogglePlay}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </section>
+                            )}
+
+                            {/* Projects (Beats) Section */}
                             <section>
                               <div className="flex items-center gap-2 mb-4 px-1">
-                                <h2 className="text-lg font-bold text-white">Projects</h2>
-                                <span className="text-xs text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">{filteredProjects.length}</span>
+                                <h2 className="text-lg font-bold text-white">Beats</h2>
+                                <span className="text-xs text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">
+                                  {filteredProjects.filter(p => p.type !== 'sound_pack').length}
+                                </span>
                               </div>
                               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                                {filteredProjects.length > 0 ? (
-                                  filteredProjects.map(project => (
+                                {filteredProjects.filter(p => p.type !== 'sound_pack').length > 0 ? (
+                                  filteredProjects.filter(p => p.type !== 'sound_pack').map(project => (
                                     <div key={project.id} className="h-auto md:h-[282px]">
                                       <ProjectCard
                                         project={project}
@@ -718,7 +878,7 @@ const App: React.FC = () => {
                                   ))
                                 ) : (
                                   <div className="col-span-full py-10 text-center border border-dashed border-neutral-800 rounded-xl bg-white/5">
-                                    <p className="text-neutral-500 font-mono text-xs">No projects found matching query.</p>
+                                    <p className="text-neutral-500 font-mono text-xs">No beats found matching query.</p>
                                   </div>
                                 )}
                               </div>
@@ -773,6 +933,68 @@ const App: React.FC = () => {
 
                   {currentView === 'browse-talent' && (
                     <BrowseTalentPage
+                      currentProject={currentProject}
+                      currentTrackId={currentTrackId}
+                      isPlaying={isPlaying}
+                      onPlayTrack={handlePlayTrack}
+                      onTogglePlay={handleTogglePlay}
+                    />
+                  )}
+
+                  {/* View All Pages */}
+                  {currentView === 'browse-all-talent' && (
+                    <ViewAllPage
+                      type="talent"
+                      title="Featured Creators"
+                      description="Discover the best emerging producers, vocalists, and engineers."
+                      currentProject={currentProject}
+                      currentTrackId={currentTrackId}
+                      isPlaying={isPlaying}
+                      onPlayTrack={handlePlayTrack}
+                      onTogglePlay={handleTogglePlay}
+                    />
+                  )}
+                  {currentView === 'browse-all-projects' && (
+                    <ViewAllPage
+                      type="projects"
+                      title="Trending Projects"
+                      description="Explore the latest and most popular projects from our community."
+                      currentProject={currentProject}
+                      currentTrackId={currentTrackId}
+                      isPlaying={isPlaying}
+                      onPlayTrack={handlePlayTrack}
+                      onTogglePlay={handleTogglePlay}
+                    />
+                  )}
+                  {currentView === 'browse-all-soundpacks' && (
+                    <ViewAllPage
+                      type="soundpacks"
+                      title="Sound Kits"
+                      description="High-quality drum kits, loop packs, and presets for your production."
+                      currentProject={currentProject}
+                      currentTrackId={currentTrackId}
+                      isPlaying={isPlaying}
+                      onPlayTrack={handlePlayTrack}
+                      onTogglePlay={handleTogglePlay}
+                    />
+                  )}
+                  {currentView === 'browse-all-releases' && (
+                    <ViewAllPage
+                      type="releases"
+                      title="Releases"
+                      description="Fresh releases from artists across the platform."
+                      currentProject={currentProject}
+                      currentTrackId={currentTrackId}
+                      isPlaying={isPlaying}
+                      onPlayTrack={handlePlayTrack}
+                      onTogglePlay={handleTogglePlay}
+                    />
+                  )}
+                  {currentView === 'browse-all-services' && (
+                    <ViewAllPage
+                      type="services"
+                      title="Services"
+                      description="Hire talented professionals for your next project."
                       currentProject={currentProject}
                       currentTrackId={currentTrackId}
                       isPlaying={isPlaying}
@@ -930,6 +1152,11 @@ const App: React.FC = () => {
                 isSidebarOpen={isMobileMenuOpen}
                 onNext={handleNextTrack}
                 onPrev={handlePrevTrack}
+                hasPrev={hasPrev}
+                repeatMode={repeatMode}
+                isShuffling={isShuffling}
+                onToggleRepeat={handleToggleRepeat}
+                onToggleShuffle={handleToggleShuffle}
                 isExpanded={isPlayerExpanded}
                 onExpandToggle={() => setIsPlayerExpanded(!isPlayerExpanded)}
               />

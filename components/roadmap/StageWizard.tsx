@@ -74,9 +74,9 @@ const MultiSelectField = ({ field, value, onChange, strategyData }: { field: Sta
                             <button
                                 key={opt}
                                 onClick={() => toggle(opt)}
-                                className={`relative h-28 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all p-4 group overflow-hidden ${isSelected
-                                    ? 'bg-white text-black border-white shadow-xl scale-[1.02]'
-                                    : 'bg-neutral-900/50 text-neutral-400 border-neutral-800 hover:border-neutral-600 hover:text-white hover:bg-neutral-800'
+                                className={`relative h-28 rounded-xl flex flex-col items-center justify-center gap-2 transition-all p-4 group overflow-hidden ${isSelected
+                                    ? 'bg-white text-black shadow-xl scale-[1.02]'
+                                    : 'bg-neutral-900/50 text-neutral-400 hover:text-white hover:bg-neutral-800'
                                     }`}
                             >
                                 <div className="text-4xl" style={getfontStyle(opt)}>Aa</div>
@@ -93,9 +93,9 @@ const MultiSelectField = ({ field, value, onChange, strategyData }: { field: Sta
                             <button
                                 key={opt}
                                 onClick={() => toggle(opt)}
-                                className={`px-4 py-3 rounded-xl text-xs font-medium border transition-all duration-200 ${selected.includes(opt)
-                                    ? 'bg-white text-black border-white shadow-lg shadow-white/10 scale-105'
-                                    : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-white'
+                                className={`px-4 py-3 rounded-xl text-xs font-medium transition-all duration-200 ${selected.includes(opt)
+                                    ? 'bg-white text-black shadow-lg shadow-white/10 scale-105'
+                                    : 'bg-neutral-900 text-neutral-400 hover:text-white'
                                     }`}
                             >
                                 {opt}
@@ -111,7 +111,7 @@ const MultiSelectField = ({ field, value, onChange, strategyData }: { field: Sta
                         <button
                             key={s}
                             onClick={() => toggle(s)}
-                            className="px-4 py-3 rounded-xl text-xs font-medium border border-primary bg-primary/20 text-primary flex items-center justify-center gap-2 group hover:bg-primary/30 transition-all"
+                            className="px-4 py-3 rounded-xl text-xs font-medium bg-primary/20 text-primary flex items-center justify-center gap-2 group hover:bg-primary/30 transition-all"
                         >
                             {s}
                             <X size={12} className="opacity-50 group-hover:opacity-100" />
@@ -133,7 +133,7 @@ const MultiSelectField = ({ field, value, onChange, strategyData }: { field: Sta
                             }
                         }}
                         placeholder={field.placeholder || "Add custom..."}
-                        className="flex-1 bg-neutral-900/50 border border-neutral-800 rounded-xl px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-all placeholder:text-neutral-600"
+                        className="flex-1 bg-neutral-900/50 rounded-xl px-4 py-3 text-sm text-white focus:bg-neutral-800 focus:outline-none transition-all placeholder:text-neutral-600"
                     />
                     <button
                         onClick={handleAddCustom}
@@ -193,7 +193,7 @@ const IntegratedDateRangePicker = ({ value, onChange }: { value: { from: string;
     };
 
     return (
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 w-full max-w-sm">
+        <div className="bg-neutral-900 rounded-xl p-4 w-full max-w-sm">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <button onClick={handlePrevMonth} className="p-1 hover:bg-white/10 rounded-full text-neutral-400 hover:text-white transition-colors">
@@ -243,7 +243,7 @@ const IntegratedDateRangePicker = ({ value, onChange }: { value: { from: string;
                 })}
             </div>
             {/* Legend / Status */}
-            <div className="mt-4 flex items-center justify-between text-xs border-t border-neutral-800 pt-3">
+            <div className="mt-4 flex items-center justify-between text-xs pt-3">
                 <div className="text-neutral-500">
                     {value?.from ? (
                         <>
@@ -537,7 +537,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
             if (aiState.suggestion) {
                 return (
-                    <div className="mt-2 bg-neutral-900/50 border border-primary/20 rounded-lg p-3 animate-in slide-in-from-top-2">
+                    <div className="mt-2 bg-neutral-900/50 rounded-lg p-3 animate-in slide-in-from-top-2">
                         <div className="flex items-start gap-3">
                             <div className="text-primary mt-0.5"><Lightbulb size={14} /></div>
                             <div className="flex-1">
@@ -574,7 +574,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
                 return (
                     <div className="h-full flex flex-col animate-in slide-in-from-right duration-300">
-                        <div className="flex items-center justify-between mb-6 pb-4 border-b border-neutral-800">
+                        <div className="flex items-center justify-between mb-6 pb-4">
                             <div className="flex items-center gap-4">
                                 <button
                                     onClick={() => setFocusedArrayItem(null)}
@@ -679,7 +679,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                     {uiGroups.map((group, gIdx) => (
                         <div key={gIdx} className="space-y-3">
                             {group.title && (
-                                <h5 className="text-xs font-black text-neutral-500 uppercase flex items-center gap-2 ml-1 mt-4 border-b border-neutral-800 pb-2">
+                                <h5 className="text-xs font-black text-neutral-500 uppercase flex items-center gap-2 ml-1 mt-4 pb-2">
                                     {group.isPseudo ? <Layout size={12} /> : <Target size={12} />}
                                     {group.title}
                                 </h5>
@@ -687,7 +687,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
                             <div className="grid grid-cols-1 gap-3">
                                 {group.items.map(({ data: item, index: idx }) => (
-                                    <div key={idx} className="bg-neutral-900/40 border border-neutral-800 rounded-xl p-5 flex items-center justify-between group hover:border-neutral-600 hover:bg-neutral-900/60 transition-all duration-300">
+                                    <div key={idx} className="bg-neutral-900/40 rounded-xl p-5 flex items-center justify-between group hover:bg-neutral-900/60 transition-all duration-300">
                                         <div className="flex items-center gap-4">
                                             <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-500 font-bold text-xs">
                                                 {idx + 1}
@@ -706,7 +706,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button
                                                 onClick={() => setFocusedArrayItem({ fieldId: field.id, index: idx })}
-                                                className="p-2 text-neutral-400 hover:text-white bg-black/40 hover:bg-black/60 rounded-lg transition-colors border border-transparent hover:border-neutral-700"
+                                                className="p-2 text-neutral-400 hover:text-white bg-black/40 hover:bg-black/60 rounded-lg transition-colors"
                                             >
                                                 <Edit size={16} />
                                             </button>
@@ -715,7 +715,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                                     const newItems = items.filter((_, i) => i !== idx);
                                                     onChange(newItems);
                                                 }}
-                                                className="p-2 text-neutral-400 hover:text-red-500 bg-black/40 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
+                                                className="p-2 text-neutral-400 hover:text-red-500 bg-black/40 hover:bg-red-500/10 rounded-lg transition-colors"
                                             >
                                                 <Trash2 size={16} />
                                             </button>
@@ -726,7 +726,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                 {group.customAdd && (
                                     <button
                                         onClick={group.customAdd}
-                                        className="w-full py-4 border border-dashed border-neutral-800 rounded-xl text-neutral-500 font-bold text-xs hover:text-white hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-2 group opacity-60 hover:opacity-100"
+                                        className="w-full py-4 bg-white/5 rounded-xl text-neutral-500 font-bold text-xs hover:text-white hover:bg-primary/5 transition-all flex items-center justify-center gap-2 group opacity-60 hover:opacity-100"
                                     >
                                         <Plus size={14} /> Add to {group.title}
                                     </button>
@@ -743,7 +743,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
                                 onChange([...items, {}]);
                                 setFocusedArrayItem({ fieldId: field.id, index: newIdx, isNew: true });
                             }}
-                            className="w-full py-6 border border-dashed border-neutral-800 rounded-xl text-neutral-500 font-bold text-sm hover:text-white hover:border-primary/50 hover:bg-primary/5 transition-all flex items-center justify-center gap-3 group"
+                            className="w-full py-6 bg-white/5 rounded-xl text-neutral-500 font-bold text-sm hover:text-white hover:bg-primary/5 transition-all flex items-center justify-center gap-3 group"
                         >
                             <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 group-hover:bg-primary group-hover:text-black transition-colors">
                                 <Plus size={18} />
@@ -776,8 +776,8 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
         if (field.type === 'checkbox') {
             return (
-                <label className="flex items-center gap-3 cursor-pointer group p-3 bg-neutral-900/30 border border-neutral-800 rounded-xl hover:border-neutral-700 transition-all">
-                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${value ? 'bg-primary border-primary text-black' : 'border-neutral-600 bg-neutral-900 group-hover:border-neutral-400'}`}>
+                <label className="flex items-center gap-3 cursor-pointer group p-3 bg-neutral-900/30 rounded-xl transition-all">
+                    <div className={`w-5 h-5 rounded flex items-center justify-center transition-all ${value ? 'bg-primary text-black' : 'bg-neutral-900'}`}>
                         {value && <Check size={12} strokeWidth={4} />}
                     </div>
                     <input
@@ -1009,11 +1009,11 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
     // --- MAIN RENDER ---
     return (
-        <div className="fixed inset-0 z-[200] flex flex-col bg-[#0A0A0A] text-[#EDEDED] animate-in fade-in slide-in-from-bottom-5 duration-300 md:relative md:inset-auto md:z-auto md:max-w-6xl md:mx-auto md:h-[85vh] md:min-h-[500px] md:border md:border-neutral-800/60 md:rounded-3xl md:shadow-2xl md:mb-24 md:overflow-hidden">
+        <div className="fixed inset-0 z-[200] flex flex-col bg-[#0A0A0A] text-[#EDEDED] animate-in fade-in slide-in-from-bottom-5 duration-300 md:relative md:inset-auto md:z-auto md:max-w-6xl md:mx-auto md:h-[85vh] md:min-h-[500px] md:rounded-3xl md:shadow-2xl md:mb-24 md:overflow-hidden">
 
             {/* Header */}
             {!isFocusedMode && (
-                <div className="h-16 md:h-20 border-b border-neutral-800 flex items-center justify-between px-4 md:px-8 bg-black/40 shrink-0">
+                <div className="h-16 md:h-20 flex items-center justify-between px-4 md:px-8 bg-black/40 shrink-0">
                     <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
                         <button
                             onClick={onClose}
@@ -1039,7 +1039,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
             {/* Progress Indicator (Left Side or Top) */}
             {!isFocusedMode && (
-                <div className="px-4 md:px-8 py-3 md:py-4 bg-black/20 border-b border-neutral-800 overflow-x-auto hide-scrollbar">
+                <div className="px-4 md:px-8 py-3 md:py-4 bg-black/20 overflow-x-auto hide-scrollbar">
                     <div className="flex items-center gap-2 w-max">
                         {config.steps.map((step, idx) => (
                             <div key={step.id} className="flex items-center">
@@ -1137,7 +1137,7 @@ const StageWizard: React.FC<StageWizardProps> = ({ config, initialData, onClose,
 
             {/* Footer - HIDDEN IF FOCUSED */}
             {!isFocusedMode && (
-                <div className="min-h-[80px] md:h-24 border-t border-neutral-800 flex flex-col-reverse md:flex-row items-center justify-between p-4 md:px-8 bg-black/40 shrink-0 backdrop-blur-sm gap-4 md:gap-0">
+                <div className="min-h-[80px] md:h-24 flex flex-col-reverse md:flex-row items-center justify-between p-4 md:px-8 bg-black/40 shrink-0 backdrop-blur-sm gap-4 md:gap-0">
                     <button
                         onClick={handleBack}
                         disabled={currentStepIndex === 0}

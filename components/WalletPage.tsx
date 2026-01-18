@@ -239,12 +239,6 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                                 <p className="text-neutral-500 text-xs">Approx. {formatCurrency((userProfile?.gems || 0) * 0.01)} USD</p>
                             </div>
                         </div>
-                        <button
-                            onClick={() => setIsBuyGemsOpen(true)}
-                            className="px-4 py-2 bg-purple-500 text-white text-xs font-bold rounded-lg hover:bg-purple-600 transition-colors shadow-lg shadow-purple-900/20 font-black uppercase tracking-wider"
-                        >
-                            Buy Gems
-                        </button>
                     </div>
 
                     {/* Promotion Credits Card */}

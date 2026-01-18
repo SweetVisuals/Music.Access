@@ -19,7 +19,9 @@ serve(async (req) => {
     }
 
     try {
-        const { action, ...data } = await req.json()
+        const body = await req.json()
+        const { action, ...data } = body
+        console.log(`[Stripe Edge Function] Action: ${action}, Payload:`, JSON.stringify(data));
 
         let result;
 
@@ -135,10 +137,9 @@ serve(async (req) => {
 
             case 'create-connect-account': {
                 const { userId, email, country, type } = data;
-
-                // First, check if user already has an account to avoid duplicates
                 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
                 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+                console.log(`[create-connect-account] Initializing for user: ${userId}, email: ${email}`);
                 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
                 const { data: user } = await supabase
@@ -383,8 +384,9 @@ serve(async (req) => {
             { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         )
     } catch (error) {
+        console.error(`[Stripe Edge Function Error]`, error);
         return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: error.message, stack: error.stack }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         )
     }

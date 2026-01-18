@@ -522,22 +522,37 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                 </div>
                             )
                         ) : (
-                            <div className="p-3 bg-white/5 rounded-lg border border-white/5">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-6 h-6 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400">
-                                        <Users size={12} />
+                            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-neutral-900/90 to-black border border-white/5 p-4 group">
+                                {/* Ambient Background Glow */}
+                                <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-primary/20 transition-all duration-500"></div>
+
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-8 h-8 rounded-lg bg-neutral-800/80 flex items-center justify-center text-neutral-400 group-hover:text-white group-hover:bg-neutral-800 transition-all shadow-inner">
+                                            <Users size={14} />
+                                        </div>
+                                        <div>
+                                            <div className="text-[11px] font-bold text-white leading-tight">Guest Access</div>
+                                            <div className="text-[9px] text-neutral-500 font-medium tracking-wide">Join the community</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="text-[10px] font-bold text-white">Guest</div>
-                                        <div className="text-[9px] text-neutral-500">Sign in now</div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={onOpenAuth}
+                                            className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-[10px] font-bold transition-all border border-white/5 hover:border-white/10"
+                                        >
+                                            Sign Up
+                                        </button>
+                                        <button
+                                            onClick={onOpenAuth}
+                                            className="px-3 py-2 bg-primary hover:bg-primary/90 text-black rounded-lg text-[10px] font-bold transition-all shadow-[0_2px_10px_rgba(var(--primary),0.15)] flex items-center justify-center gap-1.5"
+                                        >
+                                            <LogIn size={10} />
+                                            <span>Log In</span>
+                                        </button>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={onOpenAuth}
-                                    className="w-full py-2 bg-white text-black font-bold rounded-md text-[10px] flex items-center justify-center gap-2 hover:bg-neutral-200 transition-colors"
-                                >
-                                    <LogIn size={10} /> Log In
-                                </button>
                             </div>
                         )
                     }

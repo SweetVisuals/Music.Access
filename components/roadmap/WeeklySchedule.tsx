@@ -51,7 +51,7 @@ const CustomSelect = ({
         <div className="relative" ref={containerRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2 text-xs text-white flex items-center justify-between hover:border-primary/50 transition-colors"
+                className="w-full bg-neutral-900 rounded-lg px-3 py-2 text-xs text-white flex items-center justify-between transition-colors"
             >
                 <span className={selectedLabel ? "text-white" : "text-neutral-500"}>
                     {selectedLabel || placeholder}
@@ -60,7 +60,7 @@ const CustomSelect = ({
             </button>
 
             {isOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-neutral-900 rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-200">
                     {groups ? (
                         options.map((group, gIdx) => (
                             <div key={gIdx} className="p-1">
@@ -154,11 +154,11 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ value, onChange, strate
                     <div
                         key={day}
                         className={`
-                            bg-neutral-900/40 border border-neutral-800 rounded-xl p-5 flex flex-col gap-4 min-h-[220px] transition-all duration-300
-                            ${focusedDay === day ? 'border-primary/50 shadow-[0_0_20px_-10px_var(--primary)] bg-neutral-900/60' : 'hover:border-neutral-700 hover:bg-neutral-900/50'}
+                            bg-neutral-900/40 rounded-xl p-5 flex flex-col gap-4 min-h-[220px] transition-all duration-300
+                            ${focusedDay === day ? 'shadow-[0_0_20px_-10px_var(--primary)] bg-neutral-900/60' : 'hover:bg-neutral-900/50'}
                         `}
                     >
-                        <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+                        <div className="flex items-center justify-between pb-3">
                             <h4 className="font-bold text-lg text-neutral-200">{day}</h4>
                             <button
                                 onClick={() => {
@@ -179,7 +179,7 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ value, onChange, strate
                         {/* List Scheduled Items */}
                         <div className="flex-1 space-y-2.5">
                             {schedule[day]?.map((item: any, idx: number) => (
-                                <div key={idx} className="bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-xs flex items-center justify-between group hover:border-neutral-700 transition-colors">
+                                <div key={idx} className="bg-neutral-950 rounded-lg p-3 text-xs flex items-center justify-between group transition-colors">
                                     <div className="flex flex-col">
                                         <span className={`text-[9px] font-black uppercase tracking-wider mb-1 ${item.type === 'campaign' ? 'text-indigo-400' : 'text-emerald-400'}`}>
                                             {item.type === 'campaign' ? 'Campaign' : 'Bucket'}
@@ -200,7 +200,7 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ value, onChange, strate
                                 </div>
                             ))}
                             {(!schedule[day] || schedule[day].length === 0) && focusedDay !== day && (
-                                <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-neutral-800/50 rounded-lg opacity-40 p-4 min-h-[100px]">
+                                <div className="h-full flex flex-col items-center justify-center bg-white/5 rounded-lg opacity-40 p-4 min-h-[100px]">
                                     <span className="text-xs font-bold text-neutral-500">Free Day</span>
                                 </div>
                             )}
@@ -208,7 +208,7 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ value, onChange, strate
 
                         {/* Add Slot Form */}
                         {focusedDay === day && (
-                            <div className="bg-neutral-950 p-4 rounded-xl border border-neutral-800 animate-in fade-in slide-in-from-top-2 space-y-3 shadow-2xl relative z-10">
+                            <div className="bg-neutral-950 p-4 rounded-xl animate-in fade-in slide-in-from-top-2 space-y-3 shadow-2xl relative z-10">
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="text-[10px] font-bold text-primary uppercase tracking-widest">Add New Item</span>
                                 </div>

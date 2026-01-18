@@ -19,6 +19,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
     const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
 
     // Form fields
     const [email, setEmail] = useState('');
@@ -43,7 +44,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
             onClose();
         } catch (err: any) {
             console.error('Login error details:', err);
-            setError(err.message || `Login failed: ${err.status || 'Unknown error'}`);
+            if (err.message && err.message.toLowerCase().includes('email not confirmed')) {
+                setError('Please verify your email address. Check your inbox for the confirmation link.');
+            } else {
+                setError(err.message || `Login failed: ${err.status || 'Unknown error'}`);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -60,12 +65,24 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
 
         try {
             // Join roles with comma
+            // Join roles with comma
             const roleString = selectedRoles.join(',');
-            await signUp(email, password, username, handle, roleString || 'listener');
-            // After signup, automatically log in
-            await signIn(email, password);
-            onLogin();
-            onClose();
+            // signUp service throws on error, returns data directly
+            const data = await signUp(email, password, username, handle, roleString || 'listener');
+
+            if (data.user && !data.session) {
+                // Email confirmation required
+                setSuccess('Please check your email for confirmation. Once confirmed, you can log in.');
+                switchMode('login'); // Switch to login view so they can log in after confirming
+                return;
+            }
+
+            // After signup, automatically log in ONLY if session exists (no confirmation needed)
+            if (data.session) {
+                await signIn(email, password);
+                onLogin();
+                onClose();
+            }
         } catch (err: any) {
             setError(err.message || 'Signup failed');
         } finally {
@@ -107,7 +124,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
         setMode(m);
         setStep(1);
         setSelectedRoles([]);
+        setSelectedRoles([]);
         setError(null);
+        setSuccess(null);
         setEmail('');
         setPassword('');
         setUsername('');
@@ -115,8 +134,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-[480px] bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl flex flex-col relative max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-[480px] bg-[#0a0a0a] rounded-2xl shadow-2xl flex flex-col relative max-h-[90vh] overflow-hidden">
 
                 <button
                     onClick={onClose}
@@ -158,6 +177,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
                     <div className="px-8 py-2">
                         <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-2 rounded-lg text-center">
                             {error}
+                        </div>
+                    </div>
+                )}
+
+                {success && (
+                    <div className="px-8 py-2">
+                        <div className="bg-green-500/10 border border-green-500/20 text-green-400 text-xs p-2 rounded-lg text-center">
+                            {success}
                         </div>
                     </div>
                 )}

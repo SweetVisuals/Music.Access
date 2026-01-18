@@ -24,11 +24,18 @@ async function callStripeAction<T>(action: string, payload: any): Promise<T> {
 
         if (error) {
             console.error(`[Stripe] Backend Error for ${action}:`, error);
+            // If it's a FunctionsHttpError, the message might be in the error object itself
+            // but Supabase JS usually puts the response body in the error if it can.
             throw error;
         }
         return data as T;
     } catch (e: any) {
-        console.error(`[Stripe] Request failed for ${action}:`, e);
+        console.error(`[Stripe] Request failed for ${action}. Details:`, {
+            message: e.message,
+            name: e.name,
+            status: e.status,
+            context: e.context
+        });
         throw e;
     }
 }

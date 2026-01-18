@@ -1,10 +1,11 @@
+
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Shuffle, Repeat, Maximize2, ListMusic, Minimize2, ChevronUp, Move, Share2, MoreHorizontal, ChevronDown, StickyNote, PlusCircle, BookmarkPlus } from 'lucide-react';
 import WaveformVisualizer from './WaveformVisualizer';
 import { useNavigate } from 'react-router-dom';
 import { Project, View } from '../types';
 import { MOCK_USER_PROFILE } from '../constants';
-import { checkIsProjectSaved, saveProject, unsaveProject, convertAssetToProject, getSavedProjectIdForAsset } from '../services/supabaseService';
+import { checkIsProjectSaved, saveProject, unsaveProject, convertAssetToProject, getSavedProjectIdForAsset, joinListeningRoom, incrementTrackPlays } from '../services/supabaseService';
 import { useToast } from '../contexts/ToastContext';
 
 import BottomNav from './BottomNav';
@@ -20,11 +21,34 @@ interface MusicPlayerProps {
     isSidebarOpen?: boolean;
     onNext?: () => void;
     onPrev?: () => void;
+    hasPrev?: boolean;
+    repeatMode?: 'off' | 'all' | 'one';
+    isShuffling?: boolean;
+    onToggleRepeat?: () => void;
+    onToggleShuffle?: () => void;
     isExpanded: boolean;
     onExpandToggle: () => void;
 }
 
-const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackId, isPlaying, togglePlay, currentView, onClose, onNavigate, isSidebarOpen = false, onNext, onPrev, isExpanded, onExpandToggle }) => {
+const MusicPlayer: React.FC<MusicPlayerProps> = ({
+    currentProject,
+    currentTrackId,
+    isPlaying,
+    togglePlay,
+    currentView,
+    onClose,
+    onNavigate,
+    isSidebarOpen = false,
+    onNext,
+    onPrev,
+    hasPrev,
+    repeatMode = 'off',
+    isShuffling = false,
+    onToggleRepeat,
+    onToggleShuffle,
+    isExpanded,
+    onExpandToggle
+}) => {
     const navigate = useNavigate();
     const [isMinimized, setIsMinimized] = useState(true);
 
@@ -74,7 +98,43 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
             }
         };
         checkSavedStatus();
-    }, [currentTrack, isPlaying, currentProject?.id]);
+
+        // Track Live Listeners (Presence)
+        let cleanupPresence: { unsubscribe: () => void } | undefined;
+        if (isPlaying && currentProject?.userId && currentTrack?.id) {
+            // joinListeningRoom(artistId, trackId, userId)
+            cleanupPresence = joinListeningRoom(currentProject.userId, currentTrack.id, currentProject.userId === 'guest' ? undefined : undefined);
+        }
+
+        return () => {
+            if (cleanupPresence) cleanupPresence.unsubscribe();
+        };
+    }, [currentTrack, isPlaying, currentProject?.id, currentProject?.userId]);
+
+    // --- Play Counting Logic ---
+    const playRecordedRef = useRef(false);
+
+    // Reset recorded flag when track changes
+    useEffect(() => {
+        playRecordedRef.current = false;
+    }, [currentTrackId]);
+
+    // Record play after threshold
+    useEffect(() => {
+        if (!isPlaying || !currentTrackId || playRecordedRef.current) return;
+
+        // 5 second threshold to count as a "stream"
+        const timer = setTimeout(() => {
+            if (isPlaying && currentTrackId && !playRecordedRef.current) {
+                // Ensure we don't count uploads/previews if specified, but usually we count everything played here
+                incrementTrackPlays(currentTrackId);
+                playRecordedRef.current = true;
+                // console.log("Stream recorded for:", currentTrackId);
+            }
+        }, 5000);
+
+        return () => clearTimeout(timer);
+    }, [isPlaying, currentTrackId]);
 
     const handleTimeUpdate = () => {
         if (audioRef.current && !isScrubbing) {
@@ -110,6 +170,22 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
         return `${min}:${sec.toString().padStart(2, '0')}`;
     };
 
+    // --- Back Button Logic ---
+    const handlePrevClick = (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+
+        // Critical requirement: If no track before it (hasPrev is false), 
+        // OR if we are deep into the track (> 3s), restart.
+        // The user specifically asked: "make the back button if pressed with no track before it, to take the current track back to the start."
+        // We combine this with standard UX:
+        if (audioRef.current && (audioRef.current.currentTime > 3 || !hasPrev)) {
+            audioRef.current.currentTime = 0;
+            setCurrentTime(0);
+        } else if (onPrev) {
+            onPrev();
+        }
+    };
+
     // Use producer avatar as requested for mobile
     const displayImage = currentProject?.producerAvatar || currentProject?.coverImage || MOCK_USER_PROFILE.avatar;
 
@@ -123,22 +199,25 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
     return (
         <>
             <style>{`
-                @keyframes marquee {
-                    0% { transform: translateX(0); }
-                    100% { transform: translateX(-50%); }
-                }
-                .animate-marquee {
-                    animation: marquee 10s linear infinite;
-                    min-width: 200%;
-                }
-            `}</style>
+@keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+    animation: marquee 10s linear infinite;
+    min-width: 200%;
+}
+`}</style>
             <audio
                 ref={audioRef}
                 crossOrigin="anonymous"
                 onTimeUpdate={handleTimeUpdate}
                 onLoadedMetadata={handleLoadedMetadata}
                 onEnded={() => {
-                    if (onNext) {
+                    if (repeatMode === 'one' && audioRef.current) {
+                        audioRef.current.currentTime = 0;
+                        audioRef.current.play().catch(console.error);
+                    } else if (onNext) {
                         onNext();
                     } else {
                         togglePlay();
@@ -341,13 +420,17 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                             {/* Main Controls - Spaced & Centerea */}
                             <div className="flex items-center justify-between pt-4 pb-4 px-4" onClick={(e) => e.stopPropagation()}>
                                 {/* Shuffle */}
-                                <button className="text-neutral-500 hover:text-white transition-colors active:scale-95">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onToggleShuffle?.(); }}
+                                    className={`transition-colors active:scale-95 ${isShuffling ? 'text-primary' : 'text-neutral-500 hover:text-white'}`}
+                                >
                                     <Shuffle size={20} />
+                                    {isShuffling && <div className="mx-auto w-1 h-1 bg-primary rounded-full mt-1"></div>}
                                 </button>
 
                                 {/* Center Cluster */}
                                 <div className="flex items-center gap-6 sm:gap-8">
-                                    <button onClick={onPrev} className="text-white hover:text-white/80 transition-colors active:scale-95">
+                                    <button onClick={handlePrevClick} className={`text-white hover:text-white/80 transition-colors active:scale-95 ${!hasPrev && currentTime < 3 ? 'opacity-50' : 'opacity-100'}`}>
                                         <SkipBack size={24} fill="currentColor" />
                                     </button>
 
@@ -367,8 +450,15 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                                 </div>
 
                                 {/* Repeat */}
-                                <button className="text-neutral-500 hover:text-white transition-colors active:scale-95">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onToggleRepeat?.(); }}
+                                    className={`transition-colors active:scale-95 relative ${repeatMode !== 'off' ? 'text-primary' : 'text-neutral-500 hover:text-white'}`}
+                                >
                                     <Repeat size={20} />
+                                    {repeatMode === 'one' && (
+                                        <span className="absolute -top-1 -right-1 text-[8px] font-bold bg-primary text-black px-0.5 rounded-sm">1</span>
+                                    )}
+                                    {repeatMode !== 'off' && <div className="mx-auto w-1 h-1 bg-primary rounded-full mt-1"></div>}
                                 </button>
                             </div>
                         </div>
@@ -524,10 +614,10 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
             {/* --- DESKTOP FLOATING CARD --- */}
             {/* --- DESKTOP FLOATING CARD --- */}
             <div className={`
-                hidden lg:flex fixed bottom-6 right-6 z-[100] w-[400px] 
-                transition-all duration-500 transform cubic-bezier(0.2, 0.8, 0.2, 1) 
+                hidden lg:flex fixed bottom-6 right-6 z-[100] w-[400px]
+transition-all duration-500 transform cubic-bezier(0.2, 0.8, 0.2, 1) 
                 ${isExpanded ? 'translate-y-24 opacity-0 pointer-events-none' : (isMinimized ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0 pointer-events-none')}
-            `}>
+`}>
                 <div className="w-full bg-[#050505] border border-white/10 rounded-2xl shadow-2xl p-5 flex flex-col gap-4 relative overflow-hidden group">
 
                     {/* Top Row: Art & Track */}
@@ -596,15 +686,22 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
 
                     {/* Scrubber - Clean & Functional */}
                     <div className="space-y-1.5 relative z-10">
-                        <div
-                            className="relative h-1 w-full flex items-center cursor-pointer py-2 group/scrubber"
-                            onClick={(e) => {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                const pct = (e.clientX - rect.left) / rect.width;
-                                if (audioRef.current) audioRef.current.currentTime = pct * (audioRef.current.duration || 1);
-                            }}
-                        >
-                            <div className="absolute left-0 right-0 h-1 bg-white/10 rounded-full overflow-hidden transition-all duration-200 group-hover/scrubber:h-1.5">
+                        <div className="relative h-1 w-full flex items-center cursor-pointer py-2 group/scrubber">
+                            {/* Transparent Scrubber Input */}
+                            <input
+                                type="range"
+                                min="0"
+                                max={duration || 0}
+                                step="0.1"
+                                value={currentTime}
+                                onChange={handleSeek}
+                                onMouseDown={handleScrubbingStart}
+                                onMouseUp={handleScrubbingEnd}
+                                className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer"
+                            />
+
+                            {/* Visual Track */}
+                            <div className="absolute left-0 right-0 h-1 bg-white/10 rounded-full overflow-hidden transition-all duration-200 group-hover/scrubber:h-1.5 pointer-events-none">
                                 <div className="h-full bg-neutral-200 rounded-full group-hover/scrubber:bg-primary transition-colors relative" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}>
                                     <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md opacity-0 group-hover/scrubber:opacity-100 transition-opacity duration-200"></div>
                                 </div>
@@ -638,7 +735,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
 
                         {/* Transport - Centered in Flex */}
                         <div className="flex items-center gap-5">
-                            <button onClick={onPrev} className="text-neutral-500 hover:text-white transition-colors active:scale-95"><SkipBack size={18} fill="currentColor" /></button>
+                            <button onClick={handlePrevClick} className="text-neutral-500 hover:text-white transition-colors active:scale-95"><SkipBack size={18} fill="currentColor" /></button>
                             <button
                                 onClick={togglePlay}
                                 className="w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center hover:bg-neutral-200 transition-colors shadow-lg active:scale-95"
@@ -673,24 +770,31 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
             {/* --- DESKTOP BOTTOM BAR (EXPANDED) --- */}
             <div className={`
                 hidden lg:flex fixed bottom-0 lg:left-[260px] right-0 z-[200] h-[90px] bg-[#0a0a0a]
-                border-t border-white/5 px-8 items-center justify-between
-                transition-all duration-500 cubic-bezier(0.2, 0.8, 0.2, 1) shadow-[0_-4px_20px_rgba(0,0,0,0.2)]
+border-t border-white/5 px-8 items-center justify-between
+transition-all duration-500 cubic-bezier(0.2, 0.8, 0.2, 1) shadow-[0_-4px_20px_rgba(0,0,0,0.2)]
                 ${isExpanded ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}
-            `}>
+`}>
 
                 {/* Top Scrubber */}
                 <div className="absolute top-0 left-0 right-0 h-[2px] hover:h-1 transition-all group/scrubber cursor-pointer z-20">
                     {/* Hit Area */}
                     <div className="absolute -top-3 bottom-0 left-0 right-0"></div>
 
-                    <div
-                        className="absolute inset-0 bg-white/10"
-                        onClick={(e) => {
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            const pct = (e.clientX - rect.left) / rect.width;
-                            if (audioRef.current) audioRef.current.currentTime = pct * (audioRef.current.duration || 1);
-                        }}
-                    >
+                    {/* Transparent Range Input */}
+                    <input
+                        type="range"
+                        min="0"
+                        max={duration || 0}
+                        step="0.1"
+                        value={currentTime}
+                        onChange={handleSeek}
+                        onMouseDown={handleScrubbingStart}
+                        onMouseUp={handleScrubbingEnd}
+                        className="absolute inset-x-0 -top-2 h-4 opacity-0 z-30 cursor-pointer"
+                    />
+
+                    {/* Visual Bar */}
+                    <div className="absolute inset-0 bg-white/10 pointer-events-none">
                         <div className="h-full bg-primary relative transition-all" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}>
                             <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover/scrubber:opacity-100 transition-opacity shadow-sm scale-0 group-hover/scrubber:scale-100 duration-200"></div>
                         </div>
@@ -747,23 +851,40 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({ currentProject, currentTrackI
                     <span className="text-[10px] font-mono text-neutral-600 w-10 text-right tabular-nums">{formatTime(currentTime)}</span>
 
                     <div className="flex items-center gap-6">
-                        <button className="text-neutral-500 hover:text-primary transition-colors" title="Shuffle">
-                            <Shuffle size={20} />
+                        {/* Shuffle */}
+                        <button
+                            onClick={onToggleShuffle}
+                            className={`transition-colors active:scale-95 ${isShuffling ? 'text-primary' : 'text-neutral-600 hover:text-white'}`}
+                            title="Shuffle"
+                        >
+                            <Shuffle size={18} />
                         </button>
-                        <button onClick={onPrev} className="text-neutral-400 hover:text-white transition-colors">
-                            <SkipBack size={24} className="fill-current" />
+
+                        <button onClick={handlePrevClick} className="text-neutral-300 hover:text-white transition-colors active:scale-95">
+                            <SkipBack size={24} fill="currentColor" />
                         </button>
+
                         <button
                             onClick={togglePlay}
-                            className="w-12 h-12 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 transition-transform shadow-lg shadow-white/10"
+                            className="w-12 h-12 flex items-center justify-center bg-white text-black rounded-full shadow-[0_4px_12px_rgba(255,255,255,0.1)] hover:scale-105 active:scale-95 transition-all"
                         >
-                            {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" className="ml-1" />}
+                            {isPlaying ? <Pause fill="black" size={20} /> : <Play fill="black" size={20} className="ml-0.5" />}
                         </button>
-                        <button onClick={onNext} className="text-neutral-400 hover:text-white transition-colors">
-                            <SkipForward size={24} className="fill-current" />
+
+                        <button onClick={onNext} className="text-neutral-300 hover:text-white transition-colors active:scale-95">
+                            <SkipForward size={24} fill="currentColor" />
                         </button>
-                        <button className="text-neutral-500 hover:text-primary transition-colors" title="Repeat">
-                            <Repeat size={20} />
+
+                        {/* Repeat */}
+                        <button
+                            onClick={onToggleRepeat}
+                            className={`transition-colors active:scale-95 relative ${repeatMode !== 'off' ? 'text-primary' : 'text-neutral-600 hover:text-white'}`}
+                            title="Repeat"
+                        >
+                            <Repeat size={18} />
+                            {repeatMode === 'one' && (
+                                <span className="absolute -top-1 -right-1 text-[8px] font-bold bg-primary text-black px-0.5 rounded-sm">1</span>
+                            )}
                         </button>
                     </div>
 

@@ -261,9 +261,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
         let tabs: Tab[] = [];
 
+        const isPublic = userProfile?.is_public ?? true;
+
         if (role === 'artist') {
             tabs = ['releases', 'services'];
-        } else if (role === 'producer' || role === 'engineer') {
+        } else if (role === 'producer') {
+            tabs = ['beat_tapes', 'sound_packs', 'services'];
+        } else if (role === 'engineer') {
             tabs = ['beat_tapes', 'releases', 'sound_packs', 'services'];
         } else if (role === 'platform') {
             tabs = ['services'];
@@ -273,6 +277,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         }
 
         tabs.push('about');
+
+        // If private profile and in viewer mode (or not owner), restrict tabs
+        if (!isPublic && (isViewerMode || !isOwnProfile)) {
+            return []; // No tabs when private for visitors
+        }
 
         if (isOwner) {
             tabs.push('private');
@@ -793,6 +802,14 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
                     {/* View Controls (Top Right) */}
                     <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+                        {/* Private Indicator for Owner */}
+                        {isOwnProfile && !(userProfile?.is_public ?? true) && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-900/80 backdrop-blur-md border border-white/5 text-neutral-400">
+                                <Lock size={12} />
+                                <span className="text-[10px] font-bold uppercase tracking-wider">Private</span>
+                            </div>
+                        )}
+
                         {isOwnProfile && !isViewerMode && (
                             <button
                                 onClick={openEditModal}
@@ -955,7 +972,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                 className={`px-4 md:px-10 py-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all border flex-1 md:flex-auto ${isOwnProfile
                                                     ? 'bg-neutral-800 border-white/10 text-neutral-500 cursor-not-allowed opacity-50'
                                                     : isFollowing
-                                                        ? 'bg-transparent border-neutral-600 text-neutral-300 hover:border-red-500 hover:text-red-500'
+                                                        ? 'bg-primary/20 border-primary/20 text-primary hover:bg-red-500/20 hover:border-red-500 hover:text-red-500'
                                                         : 'bg-primary border-primary text-black hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)]'
                                                     } ${isFollowLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
@@ -994,421 +1011,436 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     </div>
                 </div>
 
-                {/* TABS NAVIGATION */}
-                <div className="relative bg-[#050505] lg:border-b lg:border-white/10 -mx-4 px-4 lg:-mx-8 lg:px-8 mb-4 lg:mb-6 py-2 transition-all">
+                {/* PRIVATE PROFILE STATE */}
+                {(!userProfile.is_public && (isViewerMode || !isOwnProfile)) ? (
+                    <div className="flex flex-col items-center justify-center py-20 px-4 text-center animate-in fade-in duration-500">
+                        <div className="w-20 h-20 rounded-full bg-neutral-900 flex items-center justify-center mb-6">
+                            <Lock size={32} className="text-neutral-500" />
+                        </div>
+                        <h2 className="text-xl font-bold text-white mb-2">This Account is Private</h2>
+                        <p className="text-neutral-400 max-w-md">
+                            @{userProfile.handle} has restricted access to their profile content.
+                        </p>
+                    </div>
+                ) : (
+                    <>
+                        {/* TABS NAVIGATION */}
+                        <div className="relative bg-[#050505] lg:border-b lg:border-white/10 -mx-4 px-4 lg:-mx-8 lg:px-8 mb-4 lg:mb-6 py-2 transition-all">
 
-                    {/* Mobile Tabs Layout */}
-                    <div className="lg:hidden relative pb-2">
-                        <div className={`grid grid-cols-${Math.min(availableTabs.length, 5)} gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5`}>
-                            {availableTabs.map(tab => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`
+                            {/* Mobile Tabs Layout */}
+                            <div className="lg:hidden relative pb-2">
+                                <div className={`grid grid-cols-${Math.min(availableTabs.length, 5)} gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5`}>
+                                    {availableTabs.map(tab => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setActiveTab(tab)}
+                                            className={`
                                         flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
                                         ${activeTab === tab ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
                                     `}
-                                >
-                                    {tab === 'beat_tapes' && <Disc size={14} className={activeTab === 'beat_tapes' ? 'text-primary' : ''} />}
-                                    {tab === 'releases' && <Disc size={14} className={activeTab === 'releases' ? 'text-primary' : ''} />}
-                                    {tab === 'sound_packs' && <Box size={14} className={activeTab === 'sound_packs' ? 'text-primary' : ''} />}
-                                    {tab === 'services' && <LayoutList size={14} className={activeTab === 'services' ? 'text-primary' : ''} />}
-                                    {tab === 'about' && <Info size={14} className={activeTab === 'about' ? 'text-primary' : ''} />}
-                                    {tab === 'private' && <Lock size={14} className={activeTab === 'private' ? 'text-primary' : ''} />}
+                                        >
+                                            {tab === 'beat_tapes' && <Disc size={14} className={activeTab === 'beat_tapes' ? 'text-primary' : ''} />}
+                                            {tab === 'releases' && <Disc size={14} className={activeTab === 'releases' ? 'text-primary' : ''} />}
+                                            {tab === 'sound_packs' && <Box size={14} className={activeTab === 'sound_packs' ? 'text-primary' : ''} />}
+                                            {tab === 'services' && <LayoutList size={14} className={activeTab === 'services' ? 'text-primary' : ''} />}
+                                            {tab === 'about' && <Info size={14} className={activeTab === 'about' ? 'text-primary' : ''} />}
+                                            {tab === 'private' && <Lock size={14} className={activeTab === 'private' ? 'text-primary' : ''} />}
 
-                                    <span className="text-[9px] font-bold uppercase tracking-tight">
-                                        {tab === 'beat_tapes' ? 'Projects' :
-                                            tab === 'releases' ? 'Releases' :
-                                                tab === 'sound_packs' ? 'Sounds' :
-                                                    tab === 'services' ? 'Services' :
-                                                        tab === 'private' ? 'Private' : 'About'}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Desktop Horizontal Layout */}
-                    <div className="hidden lg:flex items-center gap-8 overflow-x-auto no-scrollbar whitespace-nowrap">
-                        {availableTabs.includes('beat_tapes') && (
-                            <TabButton active={activeTab === 'beat_tapes'} onClick={() => setActiveTab('beat_tapes')} icon={<Music size={18} />} label="Projects" count={localProjects.filter(p => p.status === 'published' && p.type === 'beat_tape').length} />
-                        )}
-                        {availableTabs.includes('releases') && (
-                            <TabButton active={activeTab === 'releases'} onClick={() => setActiveTab('releases')} icon={<Disc size={18} />} label="Releases" count={localProjects.filter(p => p.status === 'published' && p.type === 'release').length} />
-                        )}
-                        {availableTabs.includes('sound_packs') && (
-                            <TabButton active={activeTab === 'sound_packs'} onClick={() => setActiveTab('sound_packs')} icon={<Box size={18} />} label="Sound Packs" count={userProfile.soundPacks.length} />
-                        )}
-                        {availableTabs.includes('services') && (
-                            <TabButton active={activeTab === 'services'} onClick={() => setActiveTab('services')} icon={<LayoutList size={18} />} label="Services" count={userProfile.services.length} />
-                        )}
-                        {availableTabs.includes('private') && (
-                            <TabButton active={activeTab === 'private'} onClick={() => setActiveTab('private')} icon={<Lock size={18} />} label="Private" count={localProjects.filter(p => p.status !== 'published').length} />
-                        )}
-                        <TabButton active={activeTab === 'about'} onClick={() => setActiveTab('about')} icon={<Info size={18} />} label="About" />
-                    </div>
-                </div>
-
-                {/* CONTENT AREA */}
-                <div className="animate-in fade-in duration-500 min-h-0 px-0 md:px-0">
-
-                    {activeTab === 'beat_tapes' && (
-                        <div>
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <Music size={18} className="text-primary" /> Latest Projects
-                                </h2>
-                                <div className="flex items-center gap-2">
-                                    <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
-                                        Sort By: Newest
-                                    </button>
+                                            <span className="text-[9px] font-bold uppercase tracking-tight">
+                                                {tab === 'beat_tapes' ? 'Projects' :
+                                                    tab === 'releases' ? 'Releases' :
+                                                        tab === 'sound_packs' ? 'Sounds' :
+                                                            tab === 'services' ? 'Services' :
+                                                                tab === 'private' ? 'Private' : 'About'}
+                                            </span>
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {/* Create Project Card - Only for Owner */}
-                                {!isViewerMode && isOwnProfile && (
-                                    <div
-                                        onClick={() => {
-                                            setCreateModalInitialType('beat_tape');
-                                            setIsCreateModalOpen(true);
-                                        }}
-                                        className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
-                                    >
-                                        <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
-                                            <Box size={24} />
-                                        </div>
-                                        <span className="font-mono text-xs font-bold uppercase tracking-widest relative z-10">Create Project</span>
-                                    </div>
+                            {/* Desktop Horizontal Layout */}
+                            <div className="hidden lg:flex items-center gap-8 overflow-x-auto no-scrollbar whitespace-nowrap">
+                                {availableTabs.includes('beat_tapes') && (
+                                    <TabButton active={activeTab === 'beat_tapes'} onClick={() => setActiveTab('beat_tapes')} icon={<Music size={18} />} label="Projects" count={localProjects.filter(p => p.status === 'published' && p.type === 'beat_tape').length} />
                                 )}
+                                {availableTabs.includes('releases') && (
+                                    <TabButton active={activeTab === 'releases'} onClick={() => setActiveTab('releases')} icon={<Disc size={18} />} label="Releases" count={localProjects.filter(p => p.status === 'published' && p.type === 'release').length} />
+                                )}
+                                {availableTabs.includes('sound_packs') && (
+                                    <TabButton active={activeTab === 'sound_packs'} onClick={() => setActiveTab('sound_packs')} icon={<Box size={18} />} label="Sound Packs" count={userProfile.soundPacks.length} />
+                                )}
+                                {availableTabs.includes('services') && (
+                                    <TabButton active={activeTab === 'services'} onClick={() => setActiveTab('services')} icon={<LayoutList size={18} />} label="Services" count={userProfile.services.length} />
+                                )}
+                                {availableTabs.includes('private') && (
+                                    <TabButton active={activeTab === 'private'} onClick={() => setActiveTab('private')} icon={<Lock size={18} />} label="Private" count={localProjects.filter(p => p.status !== 'published').length} />
+                                )}
+                                <TabButton active={activeTab === 'about'} onClick={() => setActiveTab('about')} icon={<Info size={18} />} label="About" />
+                            </div>
+                        </div>
 
-                                {localProjects.filter(project => project.status === 'published' && project.type === 'beat_tape').length === 0 && (isViewerMode || !isOwnProfile) ? (
-                                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
-                                        <EmptyStateCard
-                                            icon={Music}
-                                            title="No Projects Found"
-                                            description="This user hasn't published any projects yet."
-                                        />
+                        {/* CONTENT AREA */}
+                        <div className="animate-in fade-in duration-500 min-h-0 px-0 md:px-0">
+
+                            {activeTab === 'beat_tapes' && (
+                                <div>
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                            <Music size={18} className="text-primary" /> Latest Projects
+                                        </h2>
+                                        <div className="flex items-center gap-2">
+                                            <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
+                                                Sort By: Newest
+                                            </button>
+                                        </div>
                                     </div>
-                                ) : (
-                                    localProjects
-                                        .filter(project => project.status === 'published' && project.type === 'beat_tape')
-                                        .map(project => (
-                                            <div key={project.id} className="h-auto md:h-[282px]">
-                                                <ProjectCard
-                                                    project={project}
-                                                    currentTrackId={currentTrackId}
-                                                    isPlaying={currentProject?.id === project.id && isPlaying}
-                                                    onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
-                                                    onTogglePlay={onTogglePlay}
-                                                    onEdit={!isViewerMode && isOwnProfile ? handleEditProject : undefined}
-                                                    onDelete={!isViewerMode && isOwnProfile ? handleDeleteProject : undefined}
-                                                    onStatusChange={handleProjectStatusChange}
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                        {/* Create Project Card - Only for Owner */}
+                                        {!isViewerMode && isOwnProfile && (
+                                            <div
+                                                onClick={() => {
+                                                    setCreateModalInitialType('beat_tape');
+                                                    setIsCreateModalOpen(true);
+                                                }}
+                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                            >
+                                                <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
+                                                    <Box size={24} />
+                                                </div>
+                                                <span className="font-mono text-xs font-bold uppercase tracking-widest relative z-10">Create Project</span>
+                                            </div>
+                                        )}
+
+                                        {localProjects.filter(project => project.status === 'published' && project.type === 'beat_tape').length === 0 && (isViewerMode || !isOwnProfile) ? (
+                                            <div className="col-span-1 md:col-span-2 lg:col-span-4">
+                                                <EmptyStateCard
+                                                    icon={Music}
+                                                    title="No Projects Found"
+                                                    description="This user hasn't published any projects yet."
                                                 />
                                             </div>
-                                        ))
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'releases' && (
-                        <div>
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <Disc size={18} className="text-primary" /> Latest Releases
-                                </h2>
-                                <div className="flex items-center gap-2">
-                                    <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
-                                        Sort By: Newest
-                                    </button>
+                                        ) : (
+                                            localProjects
+                                                .filter(project => project.status === 'published' && project.type === 'beat_tape')
+                                                .map(project => (
+                                                    <div key={project.id} className="h-auto md:h-[282px]">
+                                                        <ProjectCard
+                                                            project={project}
+                                                            currentTrackId={currentTrackId}
+                                                            isPlaying={currentProject?.id === project.id && isPlaying}
+                                                            onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
+                                                            onTogglePlay={onTogglePlay}
+                                                            onEdit={!isViewerMode && isOwnProfile ? handleEditProject : undefined}
+                                                            onDelete={!isViewerMode && isOwnProfile ? handleDeleteProject : undefined}
+                                                            onStatusChange={handleProjectStatusChange}
+                                                        />
+                                                    </div>
+                                                ))
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {/* Create Project Card - Only for Owner */}
-                                {!isViewerMode && isOwnProfile && (
-                                    <div
-                                        onClick={() => {
-                                            setCreateModalInitialType('release');
-                                            setIsCreateModalOpen(true);
-                                        }}
-                                        className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
-                                    >
-                                        <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
-                                            <Disc size={24} />
+                            {activeTab === 'releases' && (
+                                <div>
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                            <Disc size={18} className="text-primary" /> Latest Releases
+                                        </h2>
+                                        <div className="flex items-center gap-2">
+                                            <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
+                                                Sort By: Newest
+                                            </button>
                                         </div>
-                                        <span className="font-mono text-xs font-bold uppercase tracking-widest relative z-10">Add Release</span>
                                     </div>
-                                )}
 
-                                {localProjects.filter(project => project.status === 'published' && project.type === 'release').length === 0 && (isViewerMode || !isOwnProfile) ? (
-                                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
-                                        <EmptyStateCard
-                                            icon={Disc}
-                                            title="No Releases Found"
-                                            description="This artist hasn't published any releases yet."
-                                        />
-                                    </div>
-                                ) : (
-                                    localProjects
-                                        .filter(project => project.status === 'published' && project.type === 'release')
-                                        .map(project => (
-                                            <div key={project.id} className="h-auto md:h-[282px]">
-                                                <ProjectCard
-                                                    project={project}
-                                                    currentTrackId={currentTrackId}
-                                                    isPlaying={currentProject?.id === project.id && isPlaying}
-                                                    onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
-                                                    onTogglePlay={onTogglePlay}
-                                                    onEdit={!isViewerMode && isOwnProfile ? handleEditProject : undefined}
-                                                    onDelete={!isViewerMode && isOwnProfile ? handleDeleteProject : undefined}
-                                                    onStatusChange={handleProjectStatusChange}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                        {/* Create Project Card - Only for Owner */}
+                                        {!isViewerMode && isOwnProfile && (
+                                            <div
+                                                onClick={() => {
+                                                    setCreateModalInitialType('release');
+                                                    setIsCreateModalOpen(true);
+                                                }}
+                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                            >
+                                                <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
+                                                    <Disc size={24} />
+                                                </div>
+                                                <span className="font-mono text-xs font-bold uppercase tracking-widest relative z-10">Add Release</span>
+                                            </div>
+                                        )}
+
+                                        {localProjects.filter(project => project.status === 'published' && project.type === 'release').length === 0 && (isViewerMode || !isOwnProfile) ? (
+                                            <div className="col-span-1 md:col-span-2 lg:col-span-4">
+                                                <EmptyStateCard
+                                                    icon={Disc}
+                                                    title="No Releases Found"
+                                                    description="This artist hasn't published any releases yet."
                                                 />
                                             </div>
-                                        ))
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'services' && (
-                        <div>
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <LayoutList size={18} className="text-primary" /> Services Available
-                                </h2>
-                                <div className="flex items-center gap-2">
-                                    <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
-                                        Sort By: Newest
-                                    </button>
+                                        ) : (
+                                            localProjects
+                                                .filter(project => project.status === 'published' && project.type === 'release')
+                                                .map(project => (
+                                                    <div key={project.id} className="h-auto md:h-[282px]">
+                                                        <ProjectCard
+                                                            project={project}
+                                                            currentTrackId={currentTrackId}
+                                                            isPlaying={currentProject?.id === project.id && isPlaying}
+                                                            onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
+                                                            onTogglePlay={onTogglePlay}
+                                                            onEdit={!isViewerMode && isOwnProfile ? handleEditProject : undefined}
+                                                            onDelete={!isViewerMode && isOwnProfile ? handleDeleteProject : undefined}
+                                                            onStatusChange={handleProjectStatusChange}
+                                                        />
+                                                    </div>
+                                                ))
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {/* Create Service Card - Only for Owner */}
-                                {!isViewerMode && isOwnProfile && (
-                                    <div
-                                        onClick={() => setIsCreateServiceModalOpen(true)}
-                                        className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
-                                    >
-                                        <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
-                                            <Mic2 size={24} />
+                            {activeTab === 'services' && (
+                                <div>
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                            <LayoutList size={18} className="text-primary" /> Services Available
+                                        </h2>
+                                        <div className="flex items-center gap-2">
+                                            <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
+                                                Sort By: Newest
+                                            </button>
                                         </div>
-                                        <span className="font-mono text-xs font-bold uppercase tracking-widest relative z-10">Create Service</span>
                                     </div>
-                                )}
 
-                                {userProfile.services.length === 0 && (isViewerMode || !isOwnProfile) ? (
-                                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
-                                        <EmptyStateCard
-                                            icon={Mic2}
-                                            title="No Services Available"
-                                            description="This user hasn't listed any services yet."
-                                        />
-                                    </div>
-                                ) : (
-                                    userProfile.services.map(service => (
-                                        <ServiceCard
-                                            key={service.id}
-                                            service={service}
-                                            user={userProfile}
-                                            onClick={() => {
-                                                // Handle booking logic or navigation
-                                                console.log('Book service', service.id);
-                                            }}
-                                        />
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'sound_packs' && (
-                        <div>
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <Box size={18} className="text-primary" /> Sound Kits
-                                </h2>
-                                <div className="flex items-center gap-2">
-                                    <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
-                                        Sort By: Newest
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {/* Create Soundpack Card - Only for Owner */}
-                                {!isViewerMode && isOwnProfile && (
-                                    <div
-                                        onClick={() => setIsCreateSoundpackModalOpen(true)}
-                                        className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
-                                    >
-                                        <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
-                                            <Box size={24} />
-                                        </div>
-                                        <span className="font-mono text-xs font-bold uppercase tracking-widest relative z-10">Create Soundpack</span>
-                                    </div>
-                                )}
-
-                                {userProfile.soundPacks.length === 0 && (isViewerMode || !isOwnProfile) ? (
-                                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
-                                        <EmptyStateCard
-                                            icon={Box}
-                                            title="No Soundpacks Available"
-                                            description="This user hasn't published any soundpacks yet."
-                                        />
-                                    </div>
-                                ) : (
-                                    userProfile.soundPacks.map(pack => (
-                                        <div key={pack.id} className="bg-neutral-900/50 border border-white/5 rounded-xl overflow-hidden group hover:border-primary/30 transition-all hover:-translate-y-1 hover:shadow-xl">
-                                            <div className="h-48 bg-black flex items-center justify-center relative overflow-hidden">
-                                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-black to-black opacity-50"></div>
-                                                <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#333 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
-                                                <Box size={56} className="text-neutral-700 group-hover:text-primary transition-all duration-500 relative z-10 group-hover:scale-110 group-hover:rotate-6 drop-shadow-[0_0_15px_rgba(var(--primary),0.3)]" />
-
-                                                <div className="absolute top-3 right-3 z-20">
-                                                    <span className="px-2.5 py-1 bg-black/80 backdrop-blur text-xs font-mono font-bold text-white border border-white/10 rounded-md">
-                                                        ${pack.price}
-                                                    </span>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                        {/* Create Service Card - Only for Owner */}
+                                        {!isViewerMode && isOwnProfile && (
+                                            <div
+                                                onClick={() => setIsCreateServiceModalOpen(true)}
+                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                            >
+                                                <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
+                                                    <Mic2 size={24} />
                                                 </div>
+                                                <span className="font-mono text-xs font-bold uppercase tracking-widest relative z-10">Create Service</span>
                                             </div>
-                                            <div className="p-5">
-                                                <div className="flex justify-between items-center mb-1.5">
-                                                    <span className="text-[9px] font-mono text-primary uppercase tracking-wider bg-primary/10 px-1.5 py-0.5 rounded">{pack.type}</span>
-                                                </div>
-                                                <h3 className="text-base font-bold text-white mb-3 leading-tight group-hover:text-primary transition-colors">{pack.title}</h3>
+                                        )}
 
-                                                <div className="flex items-center justify-between text-[10px] text-neutral-500 font-mono mb-5 border-t border-white/5 pt-3">
-                                                    <span className="flex items-center gap-1.5"><Download size={12} /> {pack.fileSize}</span>
-                                                    <span className="flex items-center gap-1.5"><Box size={12} /> {pack.itemCount} Files</span>
-                                                </div>
+                                        {userProfile.services.length === 0 && (isViewerMode || !isOwnProfile) ? (
+                                            <div className="col-span-1 md:col-span-2 lg:col-span-4">
+                                                <EmptyStateCard
+                                                    icon={Mic2}
+                                                    title="No Services Available"
+                                                    description="This user hasn't listed any services yet."
+                                                />
+                                            </div>
+                                        ) : (
+                                            userProfile.services.map(service => (
+                                                <ServiceCard
+                                                    key={service.id}
+                                                    service={service}
+                                                    user={userProfile}
+                                                    onClick={() => {
+                                                        // Handle booking logic or navigation
+                                                        console.log('Book service', service.id);
+                                                    }}
+                                                />
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            )}
 
-                                                <button className="w-full py-2.5 bg-white/5 hover:bg-white hover:text-black border border-white/10 rounded-lg text-[10px] font-bold text-white transition-all flex items-center justify-center gap-2 uppercase tracking-wide">
-                                                    Add to Cart
+                            {activeTab === 'sound_packs' && (
+                                <div>
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                            <Box size={18} className="text-primary" /> Sound Kits
+                                        </h2>
+                                        <div className="flex items-center gap-2">
+                                            <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
+                                                Sort By: Newest
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                        {/* Create Soundpack Card - Only for Owner */}
+                                        {!isViewerMode && isOwnProfile && (
+                                            <div
+                                                onClick={() => setIsCreateSoundpackModalOpen(true)}
+                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                            >
+                                                <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
+                                                    <Box size={24} />
+                                                </div>
+                                                <span className="font-mono text-xs font-bold uppercase tracking-widest relative z-10">Create Soundpack</span>
+                                            </div>
+                                        )}
+
+                                        {userProfile.soundPacks.length === 0 && (isViewerMode || !isOwnProfile) ? (
+                                            <div className="col-span-1 md:col-span-2 lg:col-span-4">
+                                                <EmptyStateCard
+                                                    icon={Box}
+                                                    title="No Soundpacks Available"
+                                                    description="This user hasn't published any soundpacks yet."
+                                                />
+                                            </div>
+                                        ) : (
+                                            userProfile.soundPacks.map(pack => (
+                                                <div key={pack.id} className="bg-neutral-900/50 border border-white/5 rounded-xl overflow-hidden group hover:border-primary/30 transition-all hover:-translate-y-1 hover:shadow-xl">
+                                                    <div className="h-48 bg-black flex items-center justify-center relative overflow-hidden">
+                                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-neutral-800 via-black to-black opacity-50"></div>
+                                                        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#333 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+                                                        <Box size={56} className="text-neutral-700 group-hover:text-primary transition-all duration-500 relative z-10 group-hover:scale-110 group-hover:rotate-6 drop-shadow-[0_0_15px_rgba(var(--primary),0.3)]" />
+
+                                                        <div className="absolute top-3 right-3 z-20">
+                                                            <span className="px-2.5 py-1 bg-black/80 backdrop-blur text-xs font-mono font-bold text-white border border-white/10 rounded-md">
+                                                                ${pack.price}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-5">
+                                                        <div className="flex justify-between items-center mb-1.5">
+                                                            <span className="text-[9px] font-mono text-primary uppercase tracking-wider bg-primary/10 px-1.5 py-0.5 rounded">{pack.type}</span>
+                                                        </div>
+                                                        <h3 className="text-base font-bold text-white mb-3 leading-tight group-hover:text-primary transition-colors">{pack.title}</h3>
+
+                                                        <div className="flex items-center justify-between text-[10px] text-neutral-500 font-mono mb-5 border-t border-white/5 pt-3">
+                                                            <span className="flex items-center gap-1.5"><Download size={12} /> {pack.fileSize}</span>
+                                                            <span className="flex items-center gap-1.5"><Box size={12} /> {pack.itemCount} Files</span>
+                                                        </div>
+
+                                                        <button className="w-full py-2.5 bg-white/5 hover:bg-white hover:text-black border border-white/10 rounded-lg text-[10px] font-bold text-white transition-all flex items-center justify-center gap-2 uppercase tracking-wide">
+                                                            Add to Cart
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'private' && (
+                                <div className="animate-in fade-in duration-500">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                            <Lock size={18} className="text-primary" /> Private Projects
+                                        </h2>
+                                        <div className="flex items-center gap-2">
+                                            <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
+                                                Sort By: Newest
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                        {localProjects.filter(p => p.status !== 'published').length === 0 ? (
+                                            <div className="col-span-1 md:col-span-2 lg:col-span-4">
+                                                <EmptyStateCard
+                                                    icon={Lock}
+                                                    title="No Private Projects"
+                                                    description="You don't have any private or draft projects."
+                                                />
+                                            </div>
+                                        ) : (
+                                            localProjects
+                                                .filter(p => p.status !== 'published')
+                                                .map(project => (
+                                                    <div key={project.id} className="h-auto md:h-[282px]">
+                                                        <ProjectCard
+                                                            project={project}
+                                                            currentTrackId={currentTrackId}
+                                                            isPlaying={currentProject?.id === project.id && isPlaying}
+                                                            onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
+                                                            onTogglePlay={onTogglePlay}
+                                                            onEdit={!isViewerMode && isOwnProfile ? handleEditProject : undefined}
+                                                            onDelete={!isViewerMode && isOwnProfile ? handleDeleteProject : undefined}
+                                                            onStatusChange={handleProjectStatusChange}
+                                                        />
+                                                    </div>
+                                                ))
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'about' && (
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                    <div className="lg:col-span-8 space-y-8">
+                                        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-8 relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 p-20 bg-primary/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                                            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-6 flex items-center gap-2 relative z-10">
+                                                <Info size={16} className="text-primary" /> Biography
+                                            </h3>
+                                            <div className="prose prose-invert prose-sm max-w-none relative z-10">
+                                                <p className="text-neutral-300 leading-loose text-sm whitespace-pre-line">
+                                                    {userProfile.bio}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <StatsCard value={userProfile.yearsExperience || "0"} label="Years Exp." />
+                                            <StatsCard value={(userProfile.projectsSold || 0).toString()} label="Projects Sold" />
+                                            <StatsCard value={userProfile.satisfactionRate || "100%"} label="Satisfaction" />
+                                            <StatsCard value={userProfile.avgTurnaround || "24h"} label="Avg. Turnaround" />
+                                        </div>
+                                    </div>
+
+                                    <div className="lg:col-span-4 space-y-6">
+                                        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6">
+                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-5">Info & Contact</h3>
+                                            <div className="space-y-5">
+                                                <div className="flex items-center gap-4 text-sm text-white">
+                                                    <div className="w-10 h-10 bg-neutral-900 rounded-lg flex items-center justify-center text-neutral-400 border border-white/5"><MapPin size={18} /></div>
+                                                    <div>
+                                                        <div className="text-[10px] text-neutral-500 uppercase font-bold mb-0.5">Based In</div>
+                                                        <div className="font-bold">{userProfile.location || 'Not specified'}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4 text-sm text-white">
+                                                    <div className="w-10 h-10 bg-neutral-900 rounded-lg flex items-center justify-center text-neutral-400 border border-white/5"><Calendar size={18} /></div>
+                                                    <div>
+                                                        <div className="text-[10px] text-neutral-500 uppercase font-bold mb-0.5">Member Since</div>
+                                                        <div className="font-bold">Sep 2023</div>
+                                                    </div>
+                                                </div>
+                                                {userProfile.website && (
+                                                    <div className="flex items-center gap-4 text-sm text-white">
+                                                        <div className="w-10 h-10 bg-neutral-900 rounded-lg flex items-center justify-center text-neutral-400 border border-white/5"><Globe size={18} /></div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="text-[10px] text-neutral-500 uppercase font-bold mb-0.5">Website</div>
+                                                            <a href={userProfile.website} target="_blank" rel="noreferrer" className="font-bold hover:text-primary truncate block">{userProfile.website.replace('https://', '')}</a>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <button className="w-full py-3.5 mt-2 bg-white text-black font-bold rounded-lg text-xs hover:bg-neutral-200 transition-colors shadow-lg uppercase tracking-wide">
+                                                    Contact For Inquiries
                                                 </button>
                                             </div>
                                         </div>
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    )}
 
-                    {activeTab === 'private' && (
-                        <div className="animate-in fade-in duration-500">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                    <Lock size={18} className="text-primary" /> Private Projects
-                                </h2>
-                                <div className="flex items-center gap-2">
-                                    <button className="text-[10px] font-mono text-neutral-500 border border-white/10 px-3 py-1.5 rounded hover:text-white hover:bg-white/5 transition-colors uppercase">
-                                        Sort By: Newest
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {localProjects.filter(p => p.status !== 'published').length === 0 ? (
-                                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
-                                        <EmptyStateCard
-                                            icon={Lock}
-                                            title="No Private Projects"
-                                            description="You don't have any private or draft projects."
-                                        />
-                                    </div>
-                                ) : (
-                                    localProjects
-                                        .filter(p => p.status !== 'published')
-                                        .map(project => (
-                                            <div key={project.id} className="h-auto md:h-[282px]">
-                                                <ProjectCard
-                                                    project={project}
-                                                    currentTrackId={currentTrackId}
-                                                    isPlaying={currentProject?.id === project.id && isPlaying}
-                                                    onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
-                                                    onTogglePlay={onTogglePlay}
-                                                    onEdit={!isViewerMode && isOwnProfile ? handleEditProject : undefined}
-                                                    onDelete={!isViewerMode && isOwnProfile ? handleDeleteProject : undefined}
-                                                    onStatusChange={handleProjectStatusChange}
-                                                />
-                                            </div>
-                                        ))
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'about' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                            <div className="lg:col-span-8 space-y-8">
-                                <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-8 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-20 bg-primary/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
-                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-6 flex items-center gap-2 relative z-10">
-                                        <Info size={16} className="text-primary" /> Biography
-                                    </h3>
-                                    <div className="prose prose-invert prose-sm max-w-none relative z-10">
-                                        <p className="text-neutral-300 leading-loose text-sm whitespace-pre-line">
-                                            {userProfile.bio}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <StatsCard value={userProfile.yearsExperience || "0"} label="Years Exp." />
-                                    <StatsCard value={(userProfile.projectsSold || 0).toString()} label="Projects Sold" />
-                                    <StatsCard value={userProfile.satisfactionRate || "100%"} label="Satisfaction" />
-                                    <StatsCard value={userProfile.avgTurnaround || "24h"} label="Avg. Turnaround" />
-                                </div>
-                            </div>
-
-                            <div className="lg:col-span-4 space-y-6">
-                                <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6">
-                                    <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-5">Info & Contact</h3>
-                                    <div className="space-y-5">
-                                        <div className="flex items-center gap-4 text-sm text-white">
-                                            <div className="w-10 h-10 bg-neutral-900 rounded-lg flex items-center justify-center text-neutral-400 border border-white/5"><MapPin size={18} /></div>
-                                            <div>
-                                                <div className="text-[10px] text-neutral-500 uppercase font-bold mb-0.5">Based In</div>
-                                                <div className="font-bold">{userProfile.location || 'Not specified'}</div>
+                                        <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6">
+                                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-4">Skills & Tools</h3>
+                                            <div className="flex flex-wrap gap-2">
+                                                {['FL Studio', 'Pro Tools', 'Mixing', 'Mastering', 'Piano', 'Guitar', 'Sound Design', 'Vocal Tuning'].map(tag => (
+                                                    <span key={tag} className="px-3 py-1.5 bg-neutral-900 border border-white/10 rounded-lg text-xs font-medium text-neutral-300 hover:text-white hover:border-neutral-700 transition-colors cursor-default">
+                                                        {tag}
+                                                    </span>
+                                                ))}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 text-sm text-white">
-                                            <div className="w-10 h-10 bg-neutral-900 rounded-lg flex items-center justify-center text-neutral-400 border border-white/5"><Calendar size={18} /></div>
-                                            <div>
-                                                <div className="text-[10px] text-neutral-500 uppercase font-bold mb-0.5">Member Since</div>
-                                                <div className="font-bold">Sep 2023</div>
-                                            </div>
-                                        </div>
-                                        {userProfile.website && (
-                                            <div className="flex items-center gap-4 text-sm text-white">
-                                                <div className="w-10 h-10 bg-neutral-900 rounded-lg flex items-center justify-center text-neutral-400 border border-white/5"><Globe size={18} /></div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="text-[10px] text-neutral-500 uppercase font-bold mb-0.5">Website</div>
-                                                    <a href={userProfile.website} target="_blank" rel="noreferrer" className="font-bold hover:text-primary truncate block">{userProfile.website.replace('https://', '')}</a>
-                                                </div>
-                                            </div>
-                                        )}
-                                        <button className="w-full py-3.5 mt-2 bg-white text-black font-bold rounded-lg text-xs hover:bg-neutral-200 transition-colors shadow-lg uppercase tracking-wide">
-                                            Contact For Inquiries
-                                        </button>
                                     </div>
                                 </div>
-
-                                <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6">
-                                    <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-4">Skills & Tools</h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {['FL Studio', 'Pro Tools', 'Mixing', 'Mastering', 'Piano', 'Guitar', 'Sound Design', 'Vocal Tuning'].map(tag => (
-                                            <span key={tag} className="px-3 py-1.5 bg-neutral-900 border border-white/10 rounded-lg text-xs font-medium text-neutral-300 hover:text-white hover:border-neutral-700 transition-colors cursor-default">
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
+                            )}
                         </div>
-                    )}
-                </div>
+                    </>
+                )}
             </div >
         </div >
     );

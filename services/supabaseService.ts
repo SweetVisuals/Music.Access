@@ -100,6 +100,28 @@ export const signOut = async () => {
   if (error) throw error;
 };
 
+export const updatePassword = async (oldPassword: string, newPassword: string) => {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user || !user.email) throw new Error('User not authenticated');
+
+  // Verify old password by signing in
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: oldPassword
+  });
+
+  if (signInError) {
+    throw new Error('Incorrect current password');
+  }
+
+  // Update password
+  const { error: updateError } = await supabase.auth.updateUser({
+    password: newPassword
+  });
+
+  if (updateError) throw updateError;
+};
+
 export const getCurrentUser = async () => {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error) throw error;
@@ -422,7 +444,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, location, avatar_url, banner_url, banner_settings, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, subscription_status, subscription_id, current_period_end, cancel_at_period_end, stripe_account_id, stripe_customer_id, years_experience, satisfaction_rate, avg_turnaround')
+    .select('id, username, handle, location, avatar_url, banner_url, banner_settings, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, subscription_status, subscription_id, current_period_end, cancel_at_period_end, stripe_account_id, stripe_customer_id, years_experience, satisfaction_rate, avg_turnaround, is_public')
     .eq('id', targetUserId)
     .single();
 
@@ -502,7 +524,8 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
         cancel_at_period_end: userData.cancel_at_period_end,
         stripe_account_id: userData.stripe_account_id,
         stripe_customer_id: userData.stripe_customer_id,
-        bannerSettings: userData.banner_settings
+        bannerSettings: userData.banner_settings,
+        is_public: userData.is_public
       };
     } catch (err) {
       console.error('Error fetching related profile data:', err);
@@ -589,7 +612,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
 export const getUserProfileByHandle = async (handle: string): Promise<UserProfile | null> => {
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, email, location, avatar_url, banner_url, banner_settings, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, years_experience, satisfaction_rate, avg_turnaround')
+    .select('id, username, handle, email, location, avatar_url, banner_url, banner_settings, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, years_experience, satisfaction_rate, avg_turnaround, is_public')
     .eq('handle', handle)
     .single();
 
@@ -647,7 +670,8 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
         fileSize: '0 MB', // Placeholder
         itemCount: p.tracks.length
       })),
-      bannerSettings: userData.banner_settings
+      bannerSettings: userData.banner_settings,
+      is_public: userData.is_public
     };
   } else {
     return null;
@@ -906,10 +930,16 @@ export const getProjectsByUserId = async (userId: string): Promise<Project[]> =>
         avatar_url
       ),
       tracks (
+        id,
         title,
         duration_seconds,
         track_number,
-        play_count
+        note_id,
+        status_tags,
+        assigned_file_id,
+        files:assigned_file_id (
+            storage_path
+        )
       ),
       project_licenses (
         license:licenses (
@@ -926,16 +956,30 @@ export const getProjectsByUserId = async (userId: string): Promise<Project[]> =>
         tag:tags (
           name
         )
+      ),
+      tasks (
+        id,
+        project_id,
+        text,
+        completed,
+        created_at
       )
     `)
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
 
   if (error) throw error;
 
-  return data.map(project => ({
+  // Manual Asset URL Generation (since we only have storage_path from join)
+  // We can optimize this by generating signed or public URLs in bulk if needed,
+  // but for public buckets, getPublicUrl is synchronous/local mostly.
+  const projectsData = data as any[];
+
+  return projectsData.map(project => ({
     id: project.id,
     title: project.title,
     producer: project.user?.username || 'Unknown',
+    producerAvatar: project.user?.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
     coverImage: project.cover_image_url,
     price: project.project_licenses?.[0]?.price || project.project_licenses?.[0]?.license?.default_price || 0,
     bpm: project.bpm,
@@ -944,11 +988,26 @@ export const getProjectsByUserId = async (userId: string): Promise<Project[]> =>
     subGenre: project.sub_genre,
     type: project.type,
     tags: project.project_tags?.map((pt: any) => pt.tag?.name).filter(Boolean) || [],
-    tracks: project.tracks?.map((track: any) => ({
-      id: track.id,
-      title: track.title,
-      duration: track.duration_seconds
-    })) || [],
+    tracks: project.tracks?.map((track: any) => {
+      let mp3Url = '';
+      if (track.files?.storage_path) {
+        const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(track.files.storage_path);
+        mp3Url = publicUrl;
+      }
+
+      return {
+        id: track.id,
+        title: track.title,
+        duration: track.duration_seconds,
+        trackNumber: track.track_number,
+        noteId: track.note_id,
+        statusTags: track.status_tags,
+        assignedFileId: track.assigned_file_id,
+        files: {
+          mp3: mp3Url
+        }
+      };
+    }) || [],
     description: project.description,
     licenses: project.project_licenses?.map((pl: any) => ({
       id: pl.license?.id,
@@ -960,7 +1019,12 @@ export const getProjectsByUserId = async (userId: string): Promise<Project[]> =>
     })) || [],
     status: project.status,
     created: project.created_at,
-    userId: project.user_id
+    userId: project.user_id,
+    releaseDate: project.release_date,
+    format: project.format,
+    progress: project.progress,
+    gems: project.gems || 0,
+    tasks: project.tasks?.map((t: any) => ({ id: t.id, projectId: t.project_id, text: t.text, completed: t.completed, createdAt: t.created_at })) || []
   }));
 };
 
@@ -1710,17 +1774,16 @@ export const getServices = async (): Promise<Service[]> => {
 };
 
 export const searchProfiles = async (query: string): Promise<TalentProfile[]> => {
+  /* Use RPC for accent-insensitive search */
   const { data, error } = await supabase
-    .from('users')
-    .select('id, username, handle, avatar_url, role')
-    .or(`username.ilike.%${query}%,handle.ilike.%${query}%`)
-    .limit(10);
+    .rpc('search_profiles_unaccent', { query })
+    .select('id, username, handle, avatar_url, role');
 
   if (error) throw error;
 
   // We can just reuse getTalentProfiles logic or map simply. 
   // For search results, simple mapping is often enough, but let's try to match TalentProfile structure.
-  return data.map(user => ({
+  return (data as any[]).map(user => ({
     id: user.id,
     username: user.username,
     handle: user.handle,
@@ -1745,7 +1808,7 @@ export const searchServices = async (query: string): Promise<Service[]> => {
         avatar_url
       )
     `)
-    .ilike('title', `%${query}%`)
+    .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
     .limit(10);
 
   if (error) throw error;
@@ -2811,8 +2874,14 @@ export const joinListeningRoom = (artistId: string, trackId: string, userId?: st
 
   channel.subscribe(async (status) => {
     if (status === 'SUBSCRIBED') {
+      let activeUserId = userId;
+      if (!activeUserId) {
+        const { data } = await supabase.auth.getUser();
+        activeUserId = data.user?.id;
+      }
+
       await channel.track({
-        user_id: userId || 'anon',
+        user_id: activeUserId || `anon-${Math.random().toString(36).substr(2, 9)}`,
         track_id: trackId,
         online_at: new Date().toISOString(),
       });
@@ -3665,11 +3734,30 @@ export const getPurchases = async (): Promise<Purchase[]> => {
   });
 };
 
-export const getDashboardAnalytics = async (): Promise<DashboardAnalytics | null> => {
+// Helper for date ranges
+export const getTimeRangeDates = (range: '7d' | '30d' | '90d' | '6m' | '12m' | 'all') => {
+  const end = new Date();
+  const start = new Date();
+
+  switch (range) {
+    case '7d': start.setDate(end.getDate() - 7); break;
+    case '30d': start.setDate(end.getDate() - 30); break;
+    case '90d': start.setDate(end.getDate() - 90); break;
+    case '6m': start.setMonth(end.getMonth() - 6); break;
+    case '12m': start.setFullYear(end.getFullYear() - 1); break;
+    case 'all': start.setFullYear(2020); break; // Arbitrary start
+  }
+  return { start, end };
+};
+
+export const getDashboardAnalytics = async (timeRange: '7d' | '30d' | '90d' | '6m' | '12m' | 'all' = '30d'): Promise<DashboardAnalytics | null> => {
   const currentUser = await getCurrentUser();
   if (!currentUser) return null;
 
-  // 1. Fetch Sales (Purchases where seller is current user)
+  const { start, end } = getTimeRangeDates(timeRange);
+  const isDaily = ['7d', '30d', '90d'].includes(timeRange);
+
+  // 1. Fetch Sales
   const { data: sales, error: salesError } = await supabase
     .from('purchases')
     .select(`
@@ -3683,13 +3771,11 @@ export const getDashboardAnalytics = async (): Promise<DashboardAnalytics | null
       )
     `)
     .eq('purchase_items.seller_id', currentUser.id)
+    .gte('created_at', start.toISOString())
+    .lte('created_at', end.toISOString())
     .order('created_at', { ascending: false });
 
   if (salesError) throw salesError;
-
-  // Manually fetch distinct buyers for dashboard calls if needed, 
-  // but for analytics totals we primarily need amounts and counts.
-  // We'll calculate amounts based on items sold by THIS user.
 
   const getMySaleAmount = (sale: any) => {
     if (!sale.purchase_items) return 0;
@@ -3705,7 +3791,6 @@ export const getDashboardAnalytics = async (): Promise<DashboardAnalytics | null
   };
 
   // 2. Fetch Plays
-  // First get all user's projects to get track IDs
   const { data: userProjects } = await supabase
     .from('projects')
     .select('id, tracks(id, play_count)')
@@ -3720,14 +3805,15 @@ export const getDashboardAnalytics = async (): Promise<DashboardAnalytics | null
     });
   });
 
-  // Get historical plays for chart
+  // Get historical plays
   let playsHistory: any[] = [];
   if (trackIds.length > 0) {
     const { data: playsData } = await supabase
       .from('plays')
       .select('created_at')
       .in('track_id', trackIds)
-      .gte('created_at', new Date(new Date().setMonth(new Date().getMonth() - 6)).toISOString()); // Last 6 months
+      .gte('created_at', start.toISOString())
+      .lte('created_at', end.toISOString());
 
     playsHistory = playsData || [];
   }
@@ -3735,69 +3821,147 @@ export const getDashboardAnalytics = async (): Promise<DashboardAnalytics | null
   // 3. Fetch Subscribers
   const totalFollowers = await getFollowersCount(currentUser.id);
 
-  // 3b. Fetch Gem Transactions for History
+  // 3b. Fetch Gem Transactions
   const { data: gemTransactions } = await supabase
     .from('gem_transactions')
     .select('created_at, amount')
     .eq('user_id', currentUser.id)
+    .gte('created_at', start.toISOString())
+    .lte('created_at', end.toISOString())
     .order('created_at', { ascending: false });
 
   // 4. Calculate Totals
   const totalRevenue = sales.reduce((sum, sale) => sum + getMySaleAmount(sale), 0);
   const activeOrders = sales.filter(s => s.status === 'Processing').length;
 
-  // 5. Aggregate Monthly Data (Last 6 Months)
-  const monthlyData = [];
-  const today = new Date();
-
-  // Start with current balance from profile, falling back to 0 if not set
-  let runningGemBalance = currentUser.user_metadata?.gems || 0;
-  // Note: If using a real 'users' table profile, we should use that. 
-  // We'll fetch the profile to be sure.
+  // 4b. Get Current Gem Balance for History Calc
   const { data: userProfile } = await supabase
     .from('users')
     .select('gems')
     .eq('id', currentUser.id)
     .single();
 
-  if (userProfile) {
-    runningGemBalance = userProfile.gems || 0;
+  const currentGemBalance = userProfile?.gems || 0;
+
+  // Calculate starting balance by subtracting all transactions in the fetched range from current balance
+  // Balance[Start] = Balance[Now] - Sum(Transactions[Start...Now])
+  const totalGemChangeInRange = (gemTransactions || []).reduce((sum, t) => sum + t.amount, 0);
+  let runningGemBalance = currentGemBalance - totalGemChangeInRange;
+
+  // 4c. Fetch Daily Metrics (for listeners history etc)
+  const { data: dailyMetrics } = await supabase
+    .from('daily_metrics')
+    .select('date, metric, value')
+    .eq('user_id', currentUser.id)
+    .gte('date', start.toISOString().split('T')[0])
+    .lte('date', end.toISOString().split('T')[0]);
+
+  const metricsByDate: Record<string, Record<string, number>> = {};
+  if (dailyMetrics) {
+    dailyMetrics.forEach((m: any) => {
+      if (!metricsByDate[m.date]) metricsByDate[m.date] = {};
+      metricsByDate[m.date][m.metric] = m.value;
+    });
   }
 
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-    const monthName = d.toLocaleString('en-US', { month: 'short' });
-    const nextMonth = new Date(today.getFullYear(), today.getMonth() - i + 1, 1);
+  // 5. Aggregate Data for Chart
+  const chartData: DashboardAnalytics['chartData'] = [];
+  const monthlyData: DashboardAnalytics['monthlyData'] = [];
 
-    // Filter data for this month
-    const monthSales = sales.filter(s => {
-      const date = new Date(s.created_at);
-      return date >= d && date < nextMonth;
-    });
+  if (isDaily) {
+    // Daily Granularity
+    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    for (let i = 0; i <= days; i++) {
+      const d = new Date(start);
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().split('T')[0];
+      const label = d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
 
-    const monthPlays = playsHistory.filter(p => {
-      const date = new Date(p.created_at);
-      return date >= d && date < nextMonth;
-    });
+      // Filter for Day
+      const daySales = sales.filter(s => s.created_at.startsWith(dateStr));
+      const dayPlays = playsHistory.filter(p => p.created_at.startsWith(dateStr));
+      const dayGems = gemTransactions?.filter((t: any) => t.created_at.startsWith(dateStr)) || [];
 
-    // Calculate gem balance at the END of this month
-    // Balance at Month M End = CurrentBalance - (Sum of transactions AFTER Month M End)
+      // Update Running Balance
+      // Balance at end of day = Balance at start of day + Change in day
+      const dayChange = dayGems.reduce((sum: any, t: any) => sum + t.amount, 0);
+      runningGemBalance += dayChange;
 
-    // Transactions that happened AFTER this month (i.e. in the future relative to this month's end)
-    const transactionsAfterThisMonth = (gemTransactions || []).filter(t => {
-      return new Date(t.created_at) >= nextMonth;
-    });
+      // Metrics
+      const dayMetrics = metricsByDate[dateStr] || {};
+      const listenersCount = dayMetrics['listeners'] || 0; // History or 0
 
-    const changeAfterThisMonth = transactionsAfterThisMonth.reduce((sum, t) => sum + t.amount, 0);
-    const balanceAtMonthEnd = userProfile ? (userProfile.gems - changeAfterThisMonth) : 0;
+      chartData.push({
+        label,
+        date: dateStr,
+        revenue: daySales.reduce((sum, s) => sum + getMySaleAmount(s), 0),
+        listeners: listenersCount,
+        plays: dayPlays.length,
+        orders: daySales.length,
+        gems: runningGemBalance // Show Balance
+      });
+    }
+  } else {
+    // Monthly Granularity
+    let current = new Date(start);
+    current.setDate(1);
 
-    monthlyData.push({
-      revenue: monthSales.reduce((sum, s) => sum + getMySaleAmount(s), 0),
-      listeners: 0, // TODO: Unique listener count from plays history if user_id recorded
-      plays: monthPlays.length,
-      orders: monthSales.length,
-      gems: Math.max(0, balanceAtMonthEnd) // Ensure no negative balance in visual
-    });
+    while (current <= end) {
+      const nextMonth = new Date(current.getFullYear(), current.getMonth() + 1, 1);
+      const label = current.toLocaleDateString('en-US', { month: 'short' });
+
+      const monthSales = sales.filter(s => {
+        const d = new Date(s.created_at);
+        return d >= current && d < nextMonth;
+      });
+      const monthPlays = playsHistory.filter(p => {
+        const d = new Date(p.created_at);
+        return d >= current && d < nextMonth;
+      });
+      const monthGems = gemTransactions?.filter((t: any) => {
+        const d = new Date(t.created_at);
+        return d >= current && d < nextMonth;
+      }) || [];
+
+      const monthChange = monthGems.reduce((sum: any, t: any) => sum + t.amount, 0);
+      runningGemBalance += monthChange;
+
+      // Average listeners for the month? Or Max? let's take average of available days
+      // This is complex. For now, let's take just the sum of snapshots (wrong) or max?
+      // Let's take the AVERAGE of recorded daily listeners for that month
+      let avgListeners = 0;
+      if (dailyMetrics) {
+        const monthMetricValues = dailyMetrics.filter((m: any) => {
+          const d = new Date(m.date);
+          return m.metric === 'listeners' && d >= current && d < nextMonth;
+        }).map((m: any) => m.value);
+
+        if (monthMetricValues.length > 0) {
+          avgListeners = Math.round(monthMetricValues.reduce((a: number, b: number) => a + b, 0) / monthMetricValues.length);
+        }
+      }
+
+      chartData.push({
+        label,
+        date: current.toISOString(),
+        revenue: monthSales.reduce((sum, s) => sum + getMySaleAmount(s), 0),
+        listeners: avgListeners,
+        plays: monthPlays.length,
+        orders: monthSales.length,
+        gems: runningGemBalance
+      });
+
+      monthlyData.push({
+        date: current.toISOString(),
+        revenue: monthSales.reduce((sum, s) => sum + getMySaleAmount(s), 0),
+        listeners: avgListeners,
+        plays: monthPlays.length,
+        orders: monthSales.length,
+        gems: runningGemBalance
+      });
+
+      current = nextMonth;
+    }
   }
 
   // 6. Recent Activity
@@ -3810,9 +3974,9 @@ export const getDashboardAnalytics = async (): Promise<DashboardAnalytics | null
     color: 'green'
   }));
 
-  // 7. Recent Orders (Formatted)
+  // 7. Recent Orders
   const recentOrders = sales.slice(0, 5).map((sale, i) => ({
-    id: `ORD-${sale.created_at.slice(0, 4)}-${i}`, // Mock ID generation
+    id: `ORD-${sale.created_at.slice(0, 4)}-${i}`,
     item: getMyItemName(sale),
     date: formatDate(new Date(sale.created_at)),
     amount: `$${getMySaleAmount(sale).toFixed(2)}`,
@@ -3820,14 +3984,97 @@ export const getDashboardAnalytics = async (): Promise<DashboardAnalytics | null
     statusColor: sale.status === 'Completed' ? 'bg-green-500/10 text-green-500' : sale.status === 'Processing' ? 'bg-blue-500/10 text-blue-500' : 'bg-red-500/10 text-red-500'
   }));
 
+  // --- Calculate Percentage Changes ---
+  // A. Determine Previous Range
+  const durationMs = end.getTime() - start.getTime();
+  const prevEnd = new Date(start.getTime()); // Previous end is current start
+  const prevStart = new Date(prevEnd.getTime() - durationMs);
+
+  // B. Fetch Previous Data (Simple aggregates)
+  //   We need Sales (Revenue & Orders) and Plays for previous period
+  const { count: prevOrdersCount } = await supabase
+    .from('purchases')
+    .select('id', { count: 'exact', head: true })
+    .eq('purchase_items.seller_id', currentUser.id)
+    .gte('created_at', prevStart.toISOString())
+    .lt('created_at', prevEnd.toISOString()); // Use lt to avoid overlap
+
+  // For Revenue, we need to fetch the sums. 
+  // Optimization: Just fetch all sales for prev period. If load is high, use RPC. For now, fetch is fine.
+  const { data: prevSales } = await supabase
+    .from('purchases')
+    .select(`
+        created_at, 
+        purchase_items!inner (
+            price,
+            seller_id
+        )
+    `)
+    .eq('purchase_items.seller_id', currentUser.id)
+    .gte('created_at', prevStart.toISOString())
+    .lt('created_at', prevEnd.toISOString());
+
+  const prevTotalRevenue = (prevSales || []).reduce((sum, s) => sum + getMySaleAmount(s), 0);
+  const prevOrders = prevSales?.length || 0;
+
+  // Prev Plays using RPC if available or just count
+  const { count: prevPlaysCount } = await supabase
+    .from('plays')
+    .select('id', { count: 'exact', head: true })
+    .eq('artist_id', currentUser.id)
+    .gte('created_at', prevStart.toISOString())
+    .lt('created_at', prevEnd.toISOString());
+
+  const prevPlays = prevPlaysCount || 1; // Avoid divide by zero for first meaningful change
+
+  // Calculate Deltas
+  const calculateChange = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+  };
+
+  const revenueChange = calculateChange(totalRevenue, prevTotalRevenue);
+  const ordersChange = calculateChange(activeOrders, prevOrders);
+  const playsChange = calculateChange(playsHistory.length, prevPlays === 1 && prevPlaysCount !== 1 ? 0 : prevPlays); // Handle the 1 fallback
+
+  // Listeners Change? (Needs daily_metrics history for prev period)
+  // We can treat "Live Listeners" as "Average Listeners" for the period comparison
+  const { data: prevDailyMetrics } = await supabase
+    .from('daily_metrics')
+    .select('value')
+    .eq('user_id', currentUser.id)
+    .eq('metric', 'listeners')
+    .gte('date', prevStart.toISOString().split('T')[0])
+    .lte('date', prevEnd.toISOString().split('T')[0]);
+
+  let prevAvgListeners = 0;
+  if (prevDailyMetrics && prevDailyMetrics.length > 0) {
+    prevAvgListeners = prevDailyMetrics.reduce((sum, m) => sum + Number(m.value), 0) / prevDailyMetrics.length;
+  }
+
+  // Current Average Listeners (calculated from chartData or re-calculated)
+  // Let's use the average from chartData listeners
+  const currentAvgListeners = chartData.length > 0
+    ? chartData.reduce((sum, d) => sum + d.listeners, 0) / chartData.length
+    : 0;
+
+  const listenersChange = calculateChange(currentAvgListeners, prevAvgListeners);
+
+
   return {
     totalRevenue,
     activeOrders,
-    totalPlays,
+    totalPlays: playsHistory.length,
     totalFollowers,
     monthlyData,
+    chartData,
     recentActivity,
-    recentOrders
+    recentOrders,
+    revenueChange,
+    ordersChange: ordersChange,
+    playsChange: playsChange,
+    followersChange: 0, // Hard to calc without snapshots, keeping 0
+    listenersChange
   };
 };
 
@@ -4169,18 +4416,82 @@ export const markStageStarted = async (stageId: string) => {
       .insert({
         user_id: user.id,
         stage_id: stageId,
-        data: {},
-        status: 'in_progress'
+        data: {}, // Start empty
+        status: 'in_progress',
+        updated_at: new Date().toISOString()
       });
-    if (error) console.error('Error marking stage started:', error);
-  } else if (existing.status === 'not_started') {
-    // Update to in_progress if not started
+
+    if (error) console.error('Error starting stage:', error);
+  } else if (existing.status !== 'in_progress') {
+    // Update
     const { error } = await supabase
       .from('strategies')
-      .update({ status: 'in_progress' })
+      .update({ status: 'in_progress', updated_at: new Date().toISOString() })
       .eq('user_id', user.id)
       .eq('stage_id', stageId);
-    if (error) console.error('Error marking stage started:', error);
+
+    if (error) console.error('Error reusing stage:', error);
+  }
+};
+
+// --- Daily Rewards & Metrics Logging ---
+
+export const claimDailyReward = async (userId: string) => {
+  // 1. Get current balance to be safe (or trust caller, but safer here)
+  const { data: profile } = await supabase.from('users').select('gems').eq('id', userId).single();
+  const currentGems = profile?.gems || 0;
+  const newBalance = currentGems + 10;
+  const now = new Date().toISOString();
+
+  // 2. Update User Profile
+  const { error: updateError } = await supabase
+    .from('users')
+    .update({
+      gems: newBalance,
+      last_gem_claim_date: now
+    })
+    .eq('id', userId);
+
+  if (updateError) throw updateError;
+
+  // 3. Insert Transaction Record
+  const { error: txError } = await supabase
+    .from('gem_transactions')
+    .insert({
+      user_id: userId,
+      amount: 10,
+      type: 'daily_reward',
+      description: 'Daily Reward Claim',
+      created_at: now
+    });
+
+  if (txError) console.error("Error logging gem transaction:", txError);
+
+  return newBalance;
+};
+
+// Function to snapshot daily metrics (e.g. followers, plays, etc) for history
+export const recordDailyMetric = async (userId: string, metric: string, value: number) => {
+  const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+  // Try to insert; if conflict (already exists for today), assume we keep max or latest? 
+  // Let's use upsert.
+  // Note: Table 'daily_metrics' must exist.
+  // Schema: id, user_id, date, metric, value, created_at
+
+  const { error } = await supabase
+    .from('daily_metrics')
+    .upsert({
+      user_id: userId,
+      date: dateStr,
+      metric: metric,
+      value: value,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,date,metric' });
+
+  if (error) {
+    // Suppress error if table doesn't exist so we don't crash app, but log it
+    console.warn(`Failed to record metric ${metric} (Table might be missing):`, error.message);
   }
 };
 
@@ -4318,22 +4629,27 @@ export const getLibraryAssets = async () => {
     ...(purchases || []).flatMap((p: any) =>
       (p.purchase_items || []).map((pi: any) => ({
         id: pi.id, // Use unique item ID 
-        // If we want unique IDs: `${p.id}-${pi.item_name}`
         name: pi.item_name || 'Untitled Purchase',
         type: 'Purchased' as const,
-        producer: 'Unknown', // We can't easily get seller name without another join/fetch. Leaving as Unknown for speed/safety or we can fetch sellers map.
+        producer: 'Unknown',
         date: formatDate(new Date(p.created_at)),
-        fileType: 'zip' as const
+        fileType: 'zip' as const,
+        parentId: null
       }))
     ),
-    ...(uploads || []).map((u: any) => ({
-      id: u.id,
-      name: u.file_name || 'Untitled Upload',
-      type: 'Upload' as const,
-      producer: 'Me',
-      date: formatDate(new Date(u.created_at)),
-      fileType: (u.file_name?.split('.').pop() || 'wav') as 'mp3' | 'wav' | 'zip'
-    }))
+    ...(uploads || []).map((u: any) => {
+      const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(u.storage_path);
+      return {
+        id: u.id,
+        name: u.file_name || 'Untitled Upload',
+        type: u.mime_type === 'application/vnd.antigravity.folder' ? 'folder' : 'Upload',
+        producer: 'Me',
+        date: formatDate(new Date(u.created_at)),
+        fileType: (u.file_name?.split('.').pop() || 'wav') as 'mp3' | 'wav' | 'zip',
+        parentId: u.parent_id || null,
+        url: publicUrl
+      };
+    })
   ];
 
   return libraryAssets;
@@ -4368,3 +4684,43 @@ export const unarchiveSale = async (saleId: string) => {
 
 
 
+// ... existing code ...
+
+// ... existing code ...
+
+export const incrementTrackPlays = async (trackId: string) => {
+  const currentUser = await getCurrentUser().catch(() => null);
+
+  // 1. Record individual play event (for history/charts)
+  const { error: playError } = await supabase
+    .from('plays')
+    .insert({
+      track_id: trackId,
+      user_id: currentUser?.id || null
+    });
+
+  if (playError) {
+    // If table doesn't exist or other error, log it but don't stop flow
+    console.error('Error recording play history:', playError);
+  }
+
+  // 2. Increment total count on track (Atomic RPC or Read-Update)
+  // Try RPC first if available (common pattern), else fallback
+  const { error: rpcError } = await supabase.rpc('increment_track_plays', { t_id: trackId });
+
+  if (rpcError) {
+    // Fallback: Read-Update (Optimistic)
+    const { data: track, error: fetchError } = await supabase
+      .from('tracks')
+      .select('play_count')
+      .eq('id', trackId)
+      .single();
+
+    if (!fetchError && track) {
+      await supabase
+        .from('tracks')
+        .update({ play_count: (track.play_count || 0) + 1 })
+        .eq('id', trackId);
+    }
+  }
+};

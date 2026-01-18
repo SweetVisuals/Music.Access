@@ -1083,7 +1083,7 @@ const CreatePlaylistModalComponent: React.FC<{
     toggleTrackSelection,
     isEditing
 }) => (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col animate-in slide-in-from-bottom duration-300">
+        <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in slide-in-from-bottom duration-300">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-white/5">
                 <button

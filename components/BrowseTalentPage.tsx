@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MOCK_TALENT } from '../constants';
-import { Verified, UserPlus, ChevronRight, Star, Music, Zap, MessageCircle } from 'lucide-react';
+import { Verified, UserPlus, ChevronRight, Star, Music, Zap, MessageCircle, Disc, Package } from 'lucide-react';
 import ProjectCard, { ProjectSkeleton } from './ProjectCard';
 import { Project, TalentProfile, Service } from '../types';
 import { getTalentProfiles, getServices, getProjects, getCurrentUser } from '../services/supabaseService';
@@ -124,6 +124,10 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
         window.dispatchEvent(new CustomEvent('following-updated'));
     };
 
+    const trendingProjects = projects.filter(p => p.type !== 'sound_pack' && p.type !== 'release');
+    const soundPacks = projects.filter(p => p.type === 'sound_pack');
+    const releases = projects.filter(p => p.type === 'release');
+
     return (
         <div className="w-full max-w-[1900px] mx-auto pb-32 lg:pb-32 pt-4 lg:pt-6 px-4 lg:px-10 xl:px-14 animate-in fade-in duration-500">
 
@@ -139,14 +143,14 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
                         <Star size={18} className="text-primary" /> Featured Creators
                     </h2>
-                    <button className="text-xs text-neutral-500 hover:text-white flex items-center gap-1">View All <ChevronRight size={12} /></button>
+                    <button onClick={() => navigate('/browse/talent')} className="text-xs text-neutral-500 hover:text-white flex items-center gap-1">View All <ChevronRight size={12} /></button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     {loading ? (
-                        [...Array(4)].map((_, i) => <TalentSkeleton key={i} />)
+                        [...Array(5)].map((_, i) => <TalentSkeleton key={i} />)
                     ) : (
-                        talents.map(talent => (
+                        talents.slice(0, 5).map(talent => (
                             <div
                                 key={talent.id}
                                 onClick={() => navigate(`/@${talent.handle}`)}
@@ -226,18 +230,18 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
                         <Music size={18} className="text-primary" /> Trending Projects
                     </h2>
-                    <button className="text-xs text-neutral-500 hover:text-white flex items-center gap-1">View All <ChevronRight size={12} /></button>
+                    <button onClick={() => navigate('/browse/projects')} className="text-xs text-neutral-500 hover:text-white flex items-center gap-1">View All <ChevronRight size={12} /></button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     {loading ? (
-                        [...Array(4)].map((_, i) => (
+                        [...Array(5)].map((_, i) => (
                             <div key={i} className="h-auto md:h-[282px]">
                                 <ProjectSkeleton />
                             </div>
                         ))
                     ) : (
-                        projects.slice(0, 4).map(project => (
+                        trendingProjects.slice(0, 5).map(project => (
                             <div key={project.id} className="h-auto md:h-[282px]">
                                 <ProjectCard
                                     project={project}
@@ -250,12 +254,80 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                         ))
                     )}
                 </div>
-                {!loading && projects.length === 0 && (
+                {!loading && trendingProjects.length === 0 && (
                     <div className="col-span-4 text-center py-8 text-neutral-500 text-sm">
-                        No beat tapes available yet.
+                        No projects available yet.
                     </div>
                 )}
             </div>
+
+            {/* Sound Packs */}
+            {(!loading || soundPacks.length > 0) && (
+                <div className="mb-12">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                            <Package size={18} className="text-primary" /> Sound Kits
+                        </h2>
+                        <button onClick={() => navigate('/browse/soundpacks')} className="text-xs text-neutral-500 hover:text-white flex items-center gap-1">View All <ChevronRight size={12} /></button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                        {loading ? (
+                            [...Array(5)].map((_, i) => (
+                                <div key={i} className="h-auto md:h-[282px]">
+                                    <ProjectSkeleton />
+                                </div>
+                            ))
+                        ) : (
+                            soundPacks.slice(0, 5).map(project => (
+                                <div key={project.id} className="h-auto md:h-[282px]">
+                                    <ProjectCard
+                                        project={project}
+                                        currentTrackId={currentTrackId}
+                                        isPlaying={currentProject?.id === project.id && isPlaying}
+                                        onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
+                                        onTogglePlay={onTogglePlay}
+                                    />
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Releases */}
+            {(!loading || releases.length > 0) && (
+                <div className="mb-12">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                            <Disc size={18} className="text-primary" /> Releases
+                        </h2>
+                        <button onClick={() => navigate('/browse/releases')} className="text-xs text-neutral-500 hover:text-white flex items-center gap-1">View All <ChevronRight size={12} /></button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                        {loading ? (
+                            [...Array(5)].map((_, i) => (
+                                <div key={i} className="h-auto md:h-[282px]">
+                                    <ProjectSkeleton />
+                                </div>
+                            ))
+                        ) : (
+                            releases.slice(0, 5).map(project => (
+                                <div key={project.id} className="h-auto md:h-[282px]">
+                                    <ProjectCard
+                                        project={project}
+                                        currentTrackId={currentTrackId}
+                                        isPlaying={currentProject?.id === project.id && isPlaying}
+                                        onPlayTrack={(trackId) => onPlayTrack(project, trackId)}
+                                        onTogglePlay={onTogglePlay}
+                                    />
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* New Services Section */}
             <div>
@@ -263,7 +335,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
                         <Zap size={18} className="text-primary" /> New Services
                     </h2>
-                    <button className="text-xs text-neutral-500 hover:text-white flex items-center gap-1">View All <ChevronRight size={12} /></button>
+                    <button onClick={() => navigate('/browse/services')} className="text-xs text-neutral-500 hover:text-white flex items-center gap-1">View All <ChevronRight size={12} /></button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -298,7 +370,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                 </div>
             </div>
 
-        </div>
+        </div >
     );
 };
 

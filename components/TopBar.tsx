@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
     Search, Bell, Menu, User, LogOut, Settings, Terminal, ShoppingBag,
     ArrowRight, ArrowLeft, Clock, Gem, Wallet, Eye, EyeOff, Palette, Star,
-    Command, Sparkles, Music, Package, Mic, Info, X, ChevronDown, Trash2, Check, LayoutDashboard
+    Command, Sparkles, Music, Package, Mic, Info, X, ChevronDown, Trash2, Check, LayoutDashboard, Upload
 } from 'lucide-react';
 import type { Project, UserProfile, Notification, View } from '../types';
 import MobileNotifications from './MobileNotifications';
@@ -74,6 +74,16 @@ const RightActions: React.FC<{
     handleNotificationClick
 }) => {
         const { openPurchaseModal } = usePurchaseModal();
+
+        const [isMobile, setIsMobile] = useState(false);
+
+        useEffect(() => {
+            const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+            checkMobile(); // Check on mount
+            window.addEventListener('resize', checkMobile);
+            return () => window.removeEventListener('resize', checkMobile);
+        }, []);
+
         // Spacer helper: makes content invisible and non-interactive
         // Spacer helper: makes content invisible and non-interactive
         const visibilityClasses = (mobileSearchOpen || isSpacer)
@@ -87,13 +97,13 @@ const RightActions: React.FC<{
 
 
                 {/* Group 1: Balances */}
-                {isLoggedIn && !isFocused && (
+                {isLoggedIn && (
                     <div className="hidden sm:flex items-center gap-2">
                         {/* Daily Claim Button */}
                         {!gemsClaimedToday && !profileLoading && userProfile && (
                             <button
                                 onClick={isSpacer ? undefined : onClaimGems}
-                                className="group relative h-9 px-4 flex items-center gap-2.5 bg-primary/5 hover:bg-primary/10 border border-transparent hover:border-primary/30 rounded-xl transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_0_20px_rgb(var(--primary)/0.05)] hover:shadow-[0_0_25px_rgb(var(--primary)/0.15)]"
+                                className="group relative h-9 px-4 flex items-center gap-2.5 bg-primary/5 hover:bg-primary/10 border border-transparent hover:border-primary/30 rounded-xl transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_0_5px_rgb(var(--primary)/0.05)] hover:shadow-[0_0_10px_rgb(var(--primary)/0.1)]"
                             >
                                 <div className="absolute inset-0 bg-primary/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                                 <Gem size={13} className="text-primary relative z-10 animate-[pulse_3s_infinite]" />
@@ -102,6 +112,19 @@ const RightActions: React.FC<{
                         )}
 
 
+
+                        {/* Upload Button */}
+                        <button
+                            onClick={isSpacer ? undefined : () => onNavigate('upload')}
+                            className="group h-9 px-3.5 flex items-center gap-2.5 bg-white/[0.03] hover:bg-white/[0.06] border border-transparent hover:border-white/10 rounded-xl transition-all duration-300 cursor-pointer"
+                        >
+                            <Upload size={13} className="text-primary/70 group-hover:text-primary transition-colors" />
+                            <div className="flex flex-col items-start justify-center h-full pt-0.5">
+                                <span className="text-[10px] sm:text-[11px] font-bold text-neutral-300 group-hover:text-white font-mono leading-none transition-colors">
+                                    UPLOAD
+                                </span>
+                            </div>
+                        </button>
 
                         {/* Gem Balance */}
                         <div
@@ -185,7 +208,7 @@ const RightActions: React.FC<{
                                             )}
                                         </div>
                                         <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                                            {notifications.length === 0 ? (
+                                            {notifications.filter(n => !n.read).length === 0 ? (
                                                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                                                     <div className="w-12 h-12 bg-neutral-900 rounded-full flex items-center justify-center text-neutral-600 mb-3 border border-white/5">
                                                         <Bell size={20} />
@@ -196,7 +219,7 @@ const RightActions: React.FC<{
                                                     </p>
                                                 </div>
                                             ) : (
-                                                notifications.map(notif => (
+                                                notifications.filter(n => !n.read).map(notif => (
                                                     <div
                                                         key={notif.id}
                                                         onClick={() => handleNotificationClick(notif)}
@@ -339,7 +362,13 @@ const RightActions: React.FC<{
                     {/* Group 3: Profile */}
                     <div className="relative ml-2" ref={isSpacer ? null : dropdownRef}>
                         <button
-                            onClick={isSpacer ? undefined : (isLoggedIn ? () => setIsProfileOpen(!isProfileOpen) : onOpenAuth)}
+                            onClick={isSpacer ? undefined : (isLoggedIn ? () => {
+                                if (isMobile) {
+                                    onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile');
+                                } else {
+                                    setIsProfileOpen(!isProfileOpen);
+                                }
+                            } : onOpenAuth)}
                             className="flex items-center gap-3 pl-2 group"
                         >
                             <div className="flex items-center gap-3">
@@ -353,7 +382,7 @@ const RightActions: React.FC<{
                                     )}
                                 </div>
                             </div>
-                            {isLoggedIn && <ChevronDown size={12} className="text-neutral-500 group-hover:text-white transition-colors" />}
+                            {isLoggedIn && !isMobile && <ChevronDown size={12} className="text-neutral-500 group-hover:text-white transition-colors" />}
                         </button>
 
                         {/* Profile Dropdown */}
@@ -697,9 +726,8 @@ const TopBar: React.FC<TopBarProps> = ({
                 transition-all duration-400
                 ${mobileSearchOpen
                         ? 'absolute inset-0 bg-[#050505] flex items-center px-4 pt-[env(safe-area-inset-top)] opacity-100 pointer-events-auto translate-x-0 z-[70]'
-                        : 'opacity-0 pointer-events-none absolute inset-0 translate-x-4 lg:absolute lg:inset-x-0 lg:flex lg:justify-center lg:items-center lg:pointer-events-auto lg:opacity-100 lg:translate-x-0 mx-auto z-50'
+                        : `opacity-0 pointer-events-none absolute inset-0 translate-x-4 lg:absolute lg:left-1/2 lg:opacity-100 lg:top-0 lg:bottom-0 lg:flex lg:items-center lg:pointer-events-auto lg:w-[40rem] lg:ml-[calc(-20rem-110px)] xl:w-[50rem] xl:ml-[calc(-25rem-110px)] ${isFocused ? 'lg:w-[43rem] xl:w-[53rem]' : ''} z-50`
                     }
-                ${!mobileSearchOpen && isFocused ? 'lg:max-w-[45rem] xl:max-w-[60rem] w-full' : 'lg:max-w-[30rem] xl:max-w-[40rem] w-full'}
             `}
             >
                 <button
@@ -711,7 +739,7 @@ const TopBar: React.FC<TopBarProps> = ({
 
                 <div
                     ref={searchRef}
-                    className={`relative group rounded-xl transition-all duration-300 w-full ${isFocused ? 'lg:shadow-[0_0_40px_rgb(var(--primary)/0.15)]' : ''}`}
+                    className={`relative group rounded-xl transition-all duration-300 w-full ${isFocused ? (searchMode === 'ai' ? 'lg:shadow-[0_0_15px_rgb(var(--primary)/0.15)]' : 'lg:shadow-[0_0_20px_rgb(var(--primary)/0.1)]') : ''}`}
                 >
                     {/* Input Background */}
                     <div className={`absolute inset-0 rounded-xl border transition-all duration-300 ${isFocused || aiResponse ? 'border-primary/50 bg-black' : 'border-transparent bg-black/40'}`}></div>
@@ -725,7 +753,7 @@ const TopBar: React.FC<TopBarProps> = ({
                             className={`
                         flex items-center justify-center px-2 py-1 mr-2 rounded-lg transition-all duration-300 gap-2 border relative overflow-hidden shrink-0
                         ${searchMode === 'ai'
-                                    ? 'bg-primary/10 border-primary/30 text-primary shadow-[0_0_15px_rgb(var(--primary)/0.2)]'
+                                    ? 'bg-primary/10 border-primary/30 text-primary shadow-[0_0_5px_rgb(var(--primary)/0.15)]'
                                     : 'bg-neutral-900/50 border-white/5 text-neutral-500 hover:text-white hover:bg-white/10 hover:border-white/10'
                                 }
                     `}

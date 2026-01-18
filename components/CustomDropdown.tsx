@@ -90,10 +90,10 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                 onClick={toggleDropdown}
                 className={`
                     w-full flex items-center justify-between ${paddingClass} 
-                    bg-neutral-900/50 border ${isOpen ? 'border-primary/50 bg-[#0c0c0c]' : 'border-transparent'} 
+                    bg-neutral-900/50 
                     rounded-xl text-sm font-medium text-white transition-all duration-200
-                    hover:border-white/20 hover:bg-[#0c0c0c]
-                    ${error ? 'border-red-500/50' : ''}
+                    hover:bg-[#0c0c0c]
+                    ${error ? 'ring-1 ring-red-500/50' : ''}
                     focus:outline-none focus:ring-1 focus:ring-primary/20
                     ${buttonClassName}
                 `}
@@ -111,14 +111,14 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
             </button>
 
             {isOpen && (
-                <div className={`absolute z-[9999] mt-2 w-full bg-[#0a0a0a] rounded-xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 ${menuClassName}`}>
+                <div className={`absolute z-[9999] mt-2 w-full bg-[#0a0a0a] rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 ${menuClassName}`}>
                     {searchable && (
-                        <div className="p-2 border-b border-white/5">
+                        <div className="p-2">
                             <div className="relative">
                                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
                                 <input
                                     type="text"
-                                    className="w-full bg-black/40 border border-neutral-800 rounded-lg py-2 pl-9 pr-3 text-xs text-white focus:outline-none focus:border-primary/50"
+                                    className="w-full bg-black/40 rounded-lg py-2 pl-9 pr-3 text-xs text-white focus:outline-none focus:bg-white/5"
                                     placeholder="Search..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}

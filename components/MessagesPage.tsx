@@ -93,8 +93,8 @@ const SwipeableConversationItem: React.FC<SwipeableProps> = ({
             {/* Foreground Content */}
             <div
                 className={`
-                    relative z-10 bg-black lg:bg-[#0a0a0a] border-b border-white/5
-                    ${activeId === conv.id ? 'bg-white/5 border-l-2 border-l-primary' : ''}
+                    relative z-10 bg-black lg:bg-[#0a0a0a]
+                    ${activeId === conv.id ? 'bg-white/5' : ''}
                 `}
                 style={{
                     transform: `translateX(${offset}px)`,
@@ -108,7 +108,7 @@ const SwipeableConversationItem: React.FC<SwipeableProps> = ({
                 <div className="p-4 flex items-center gap-3 cursor-pointer hover:bg-white/5 transition-colors">
                     <div className="relative shrink-0">
                         <img src={conv.avatar} alt={conv.user} className="w-10 h-10 rounded-full object-cover" />
-                        {conv.unread > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-[#0a0a0a]"></span>}
+                        {conv.unread > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full"></span>}
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline mb-1">
@@ -359,10 +359,10 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean; isPlayerExpanded?: bool
 
             <div className="flex-1 flex bg-[#0a0a0a] overflow-hidden relative min-h-0">
                 <div className={`
-                    absolute lg:static inset-y-0 left-0 z-[60] w-full lg:w-[340px] lg:border-r border-white/5 flex flex-col bg-black lg:bg-[#080808] transition-all duration-300
+                    absolute lg:static inset-y-0 left-0 z-[60] w-full lg:w-[340px] flex flex-col bg-black lg:bg-[#080808] transition-all duration-300
                     ${isSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 lg:translate-x-0 lg:opacity-100'}
                 `}>
-                    <div className="p-4 border-b border-white/5 flex flex-col gap-4">
+                    <div className="p-4 flex flex-col gap-4">
                         <div className="flex items-center justify-between">
                             <h3 className="text-base font-bold text-white uppercase tracking-wider flex items-center gap-2">
                                 <MessageCircle size={16} className="text-primary" />
@@ -381,7 +381,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean; isPlayerExpanded?: bool
                         {activeTab === 'messages' && (
                             <div className="relative">
                                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-neutral-900 border border-white/5 rounded-lg py-2 pl-9 pr-4 text-sm text-white focus:outline-none" placeholder="Search..." />
+                                <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-neutral-900 rounded-lg py-2 pl-9 pr-4 text-sm text-white focus:outline-none" placeholder="Search..." />
                             </div>
                         )}
                     </div>
@@ -408,7 +408,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean; isPlayerExpanded?: bool
                             <div className="space-y-1">
                                 {loadingNotifications ? <div className="p-8 text-center text-xs text-neutral-500">Loading...</div> :
                                     notifications.map(n => (
-                                        <div key={n.id} onClick={() => { if (!n.read) markNotificationAsRead(n.id); if (n.link) window.location.hash = '#' + n.link; }} className={`p-3 rounded-lg border cursor-pointer flex gap-3 ${n.read ? 'opacity-60 border-transparent' : 'bg-neutral-900 border-white/5'}`}>
+                                        <div key={n.id} onClick={() => { if (!n.read) markNotificationAsRead(n.id); if (n.link) window.location.hash = '#' + n.link; }} className={`p-3 rounded-lg cursor-pointer flex gap-3 ${n.read ? 'opacity-60' : 'bg-neutral-900'}`}>
                                             <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-primary'}`}></div>
                                             <div className="flex-1 min-w-0">
                                                 <h4 className="text-xs font-bold text-white">{n.title}</h4>
@@ -424,7 +424,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean; isPlayerExpanded?: bool
                 <div className="flex-1 flex flex-col bg-[#050505] relative overflow-hidden min-h-0">
                     {isCreatingNew ? (
                         <div className="flex flex-col h-full bg-black/20">
-                            <div className="h-16 lg:h-24 border-b border-white/5 flex items-center px-4 gap-3 bg-neutral-900/30">
+                            <div className="h-16 lg:h-24 flex items-center px-4 gap-3 bg-neutral-900/30">
                                 <span className="text-neutral-400 text-base lg:text-lg font-bold">To:</span>
                                 <input autoFocus={window.innerWidth >= 768} value={userSearchQuery} onChange={(e) => handleUserSearch(e.target.value)} className="flex-1 bg-transparent border-none text-white text-sm focus:outline-none" placeholder="Search creators..." />
                             </div>
@@ -439,7 +439,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean; isPlayerExpanded?: bool
                         </div>
                     ) : activeConv ? (
                         <>
-                            <div className="h-16 lg:h-24 border-b border-white/5 flex items-center justify-between px-4 lg:px-6 bg-neutral-900/30">
+                            <div className="h-16 lg:h-24 flex items-center justify-between px-4 lg:px-6 bg-neutral-900/30">
                                 <div className="flex items-center gap-3 lg:gap-4">
                                     <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden text-neutral-400 mr-1"><ArrowLeft size={20} /></button>
                                     <div
@@ -450,7 +450,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean; isPlayerExpanded?: bool
                                         }}
                                         className="flex items-center gap-3 lg:gap-4 cursor-pointer group"
                                     >
-                                        <img src={activeConv.avatar} className="w-9 h-9 lg:w-14 lg:h-14 rounded-full object-cover border-2 border-white/5 group-hover:border-primary/50 transition-colors" />
+                                        <img src={activeConv.avatar} className="w-9 h-9 lg:w-14 lg:h-14 rounded-full object-cover group-hover:opacity-80 transition-opacity" />
                                         <div>
                                             <h3 className="text-base lg:text-2xl font-bold text-white group-hover:text-primary transition-colors">{activeConv.user}</h3>
                                             <div className="flex items-center gap-2">
@@ -467,7 +467,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean; isPlayerExpanded?: bool
                                     <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
                                         <div
                                             onContextMenu={(e) => handleContextMenu(e, msg.id, msg.isMe)}
-                                            className={`max-w-[85%] rounded-2xl px-4 py-3 lg:px-6 lg:py-4 text-sm lg:text-base cursor-pointer select-none transition-transform active:scale-[0.98] ${msg.isMe ? 'bg-primary text-black' : 'bg-neutral-800 text-white border border-white/5 shadow-lg'}`}
+                                            className={`max-w-[85%] rounded-2xl px-4 py-3 lg:px-6 lg:py-4 text-sm lg:text-base cursor-pointer select-none transition-transform active:scale-[0.98] ${msg.isMe ? 'bg-primary text-black' : 'bg-neutral-800 text-white shadow-lg'}`}
                                         >
                                             <p className="whitespace-pre-wrap break-words">{msg.text}</p>
                                             <span className="text-[9px] opacity-50 block mt-1">{msg.timestamp}</span>
@@ -476,10 +476,10 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean; isPlayerExpanded?: bool
                                 ))}
                                 <div ref={messagesEndRef} />
                             </div>
-                            <div className="p-4 border-t border-white/5 bg-[#0a0a0a]/80 backdrop-blur-md">
+                            <div className="p-4 bg-[#0a0a0a]/80 backdrop-blur-md">
                                 <div className="flex items-center gap-3 max-w-4xl mx-auto">
                                     <button className="text-neutral-500"><Paperclip size={20} /></button>
-                                    <div className="flex-1 bg-black/40 border border-white/5 rounded-xl px-4 py-2 flex items-center">
+                                    <div className="flex-1 bg-black/40 rounded-xl px-4 py-2 flex items-center">
                                         <textarea
                                             value={inputText}
                                             onChange={(e) => {
@@ -523,7 +523,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean; isPlayerExpanded?: bool
                 <>
                     <div className="fixed inset-0 z-[150]" onClick={() => setContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }} />
                     <div
-                        className="fixed z-[160] bg-neutral-900 border border-white/5 rounded-xl shadow-2xl py-1 min-w-[160px] animate-in fade-in zoom-in duration-100"
+                        className="fixed z-[160] bg-neutral-900 rounded-xl shadow-2xl py-1 min-w-[160px] animate-in fade-in zoom-in duration-100"
                         style={{
                             left: Math.min(contextMenu.x, window.innerWidth - 170),
                             top: Math.min(contextMenu.y, window.innerHeight - 100)
@@ -543,7 +543,7 @@ const MessagesPage: React.FC<{ isPlayerActive?: boolean; isPlayerExpanded?: bool
             {/* Delete Confirmation Dialog */}
             {messageToDelete && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full max-w-sm bg-[#0a0a0a] border border-white/5 rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+                    <div className="w-full max-w-sm bg-[#0a0a0a] rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
                         <div className="p-8 text-center">
                             <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
                                 <Trash size={28} className="text-red-500" />

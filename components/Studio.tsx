@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Project, Track, Contract } from '../types';
+import { Project, Track, Contract, UserProfile } from '../types';
 import {
     Plus,
     Search,
@@ -57,6 +57,7 @@ interface StudioProps {
     isPlaying: boolean;
     onPlayTrack: (project: Project, trackId: string) => void;
     onTogglePlay: () => void;
+    userProfile?: UserProfile | null;
 }
 
 // Extended Type for Studio Workflow
@@ -81,10 +82,12 @@ interface StudioProject extends Omit<Project, 'status' | 'tracks' | 'tasks'> {
 interface LibraryAsset {
     id: string;
     name: string;
-    type: 'Purchased' | 'Pack' | 'Commission' | 'Upload' | 'Project';
+    type: 'Purchased' | 'Pack' | 'Commission' | 'Upload' | 'Project' | 'folder';
     producer: string;
     date: string;
     fileType?: 'mp3' | 'wav' | 'zip';
+    parentId?: string | null;
+    url?: string;
 }
 
 /* REMOVED MOCK DATA */
@@ -95,7 +98,8 @@ const Studio: React.FC<StudioProps> = ({
     currentTrackId,
     isPlaying,
     onPlayTrack,
-    onTogglePlay
+    onTogglePlay,
+    userProfile
 }) => {
     const [activeView, setActiveView] = useState<'dashboard' | 'workspace'>('dashboard');
     const [selectedProject, setSelectedProject] = useState<StudioProject | null>(null);
@@ -108,20 +112,44 @@ const Studio: React.FC<StudioProps> = ({
     const [newProjectFormat, setNewProjectFormat] = useState<'Album' | 'EP' | 'Single'>('Album');
 
     // --- STUDIO PROJECTS ---
-    // Filter projects that are part of the studio workflow.
-    // We map the `projects` prop to `StudioProject` interface.
-    const studioProjects = projects.map(p => ({
-        ...p,
-        status: (p.status || 'planning') as any,
-        format: (p.format || 'Album') as any,
-        progress: p.progress || 0,
-        tasks: p.tasks || [],
-        tracks: p.tracks.map(t => ({
-            ...t,
-            statusTags: t.statusTags || [{ label: 'Lyrics', active: false }, { label: 'Vocals', active: false }, { label: 'Mixed', active: false }],
-            files: t.files || {}
-        }))
-    })) as StudioProject[];
+    // Fetch unique studio projects for the logged in user
+    const [studioProjects, setStudioProjects] = useState<StudioProject[]>([]);
+
+    useEffect(() => {
+        const fetchStudioProjects = async () => {
+            if (userProfile?.id) {
+                try {
+                    // Import dynamically to avoid circular dependency if possible, or just use imported service
+                    const { getProjectsByUserId } = await import('../services/supabaseService');
+                    const data = await getProjectsByUserId(userProfile.id);
+
+                    const formatted = data.map(p => ({
+                        ...p,
+                        status: (p.status || 'planning') as any,
+                        format: (p.format || 'Album') as any,
+                        progress: p.progress || 0,
+                        tasks: p.tasks || [],
+                        tracks: p.tracks.map(t => ({
+                            ...t,
+                            statusTags: t.statusTags || [{ label: 'Lyrics', active: false }, { label: 'Vocals', active: false }, { label: 'Mixed', active: false }],
+                            files: t.files || {}
+                        }))
+                    })) as StudioProject[];
+
+                    setStudioProjects(formatted);
+                } catch (e) {
+                    console.error("Failed to fetch studio projects", e);
+                }
+            }
+        };
+
+        fetchStudioProjects();
+    }, [userProfile?.id]); // Re-fetch when user changes
+
+    // Update handler for local state when creating/deleting
+    // We also need to update the parent setProjects if we want to reflect changes elsewhere, 
+    // but Studio now manages its own source of truth for the "private" view.
+
 
     const handleCreateProject = async () => {
         try {
@@ -137,7 +165,33 @@ const Studio: React.FC<StudioProps> = ({
             });
 
             // We update the parent state which flows down to studioProjects
-            const studioProj: Project = { ...newProj, tasks: [], tracks: [] };
+            // Map the raw DB response (snake_case) to our Project interface (camelCase)
+            const studioProj: Project = {
+                id: newProj.id,
+                title: newProj.title,
+                producer: userProfile?.username || 'Me',
+                producerAvatar: userProfile?.avatar || '',
+                coverImage: newProj.cover_image_url || '',
+                price: 0,
+                bpm: newProj.bpm,
+                key: newProj.key,
+                genre: newProj.genre,
+                subGenre: newProj.sub_genre,
+                type: newProj.type,
+                tags: [],
+                tracks: [],
+                description: newProj.description,
+                licenses: [],
+                status: (newProj.status || 'planning') as any,
+                created: newProj.created_at,
+                userId: newProj.user_id || userProfile?.id, // Fallback to ensure visibility
+                releaseDate: newProj.release_date,
+                format: newProj.format,
+                progress: newProj.progress || 0,
+                gems: newProj.gems || 0,
+                tasks: []
+            };
+
             setProjects([studioProj, ...projects]);
 
             setIsCreateModalOpen(false);
@@ -146,9 +200,9 @@ const Studio: React.FC<StudioProps> = ({
             // Open it (casting to satisfy local requirements until next render)
             openProject({
                 ...studioProj,
-                status: 'planning',
-                format: newProjectFormat,
-                progress: 0,
+                status: (studioProj.status || 'planning') as any,
+                format: (studioProj.format || 'Album') as any,
+                progress: studioProj.progress || 0,
                 tasks: [],
                 tracks: []
             } as StudioProject);
@@ -211,7 +265,7 @@ const Studio: React.FC<StudioProps> = ({
                                     value={newProjectTitle}
                                     onChange={(e) => setNewProjectTitle(e.target.value)}
                                     placeholder="e.g. Summer Hitz Vol. 1"
-                                    className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl px-4 py-4 text-lg text-white font-bold placeholder-neutral-700 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 focus:outline-none transition-all"
+                                    className="w-full bg-neutral-900/50 rounded-xl px-4 py-4 text-lg text-white font-bold placeholder-neutral-700 focus:ring-1 focus:ring-primary/50 focus:outline-none transition-all"
                                     autoFocus={window.innerWidth >= 768}
                                 />
                             </div>
@@ -226,10 +280,10 @@ const Studio: React.FC<StudioProps> = ({
                                             key={fmt}
                                             onClick={() => setNewProjectFormat(fmt)}
                                             className={`
-                                                relative overflow-hidden py-3 rounded-xl text-sm font-bold transition-all border
+                                                relative overflow-hidden py-3 rounded-xl text-sm font-bold transition-all
                                                 ${newProjectFormat === fmt
-                                                    ? 'bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]'
-                                                    : 'bg-neutral-900 border-neutral-800 text-neutral-500 hover:border-neutral-600 hover:text-white'
+                                                    ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]'
+                                                    : 'bg-neutral-900 text-neutral-500 hover:text-white'
                                                 }
                                             `}
                                         >
@@ -240,7 +294,7 @@ const Studio: React.FC<StudioProps> = ({
                             </div>
 
                             {/* Visual Decor Element */}
-                            <div className="p-4 rounded-xl bg-gradient-to-br from-neutral-900 to-black border border-neutral-800/50 flex items-center gap-4">
+                            <div className="p-4 rounded-xl bg-gradient-to-br from-neutral-900 to-black flex items-center gap-4">
                                 <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
                                     <Music size={20} />
                                 </div>
@@ -256,7 +310,7 @@ const Studio: React.FC<StudioProps> = ({
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setIsCreateModalOpen(false)}
-                                    className="flex-1 py-3.5 bg-neutral-900 border border-neutral-800 text-neutral-400 font-bold rounded-xl hover:bg-neutral-800 hover:text-white transition-all"
+                                    className="flex-1 py-3.5 bg-neutral-900 text-neutral-400 font-bold rounded-xl hover:bg-neutral-800 hover:text-white transition-all"
                                 >
                                     Cancel
                                 </button>
@@ -294,9 +348,9 @@ const Studio: React.FC<StudioProps> = ({
                         {/* Create New Card (Shortcut) */}
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="h-[280px] border-2 border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center text-neutral-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all group bg-[#0a0a0a]"
+                            className="h-[280px] rounded-xl flex flex-col items-center justify-center text-neutral-500 hover:text-primary hover:bg-primary/5 transition-all group bg-[#0a0a0a]"
                         >
-                            <div className="h-16 w-16 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
+                            <div className="h-16 w-16 rounded-full bg-neutral-900 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
                                 <Plus size={28} />
                             </div>
                             <span className="font-mono text-xs font-bold uppercase tracking-widest">Start New Release</span>
@@ -307,16 +361,16 @@ const Studio: React.FC<StudioProps> = ({
                             <div
                                 key={project.id}
                                 onClick={() => openProject(project)}
-                                className="group h-[280px] bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden hover:border-neutral-600 transition-all relative cursor-pointer hover:shadow-2xl flex flex-col"
+                                className="group h-[280px] bg-[#0a0a0a] rounded-xl overflow-hidden transition-all relative cursor-pointer hover:shadow-2xl flex flex-col"
                             >
                                 {/* Top Section: Cover & Info */}
                                 <div className="flex-1 relative p-5 flex flex-col justify-between z-10">
                                     <div className="absolute inset-0 bg-gradient-to-b from-neutral-900 to-[#0a0a0a]"></div>
 
                                     <div className="relative flex justify-between items-start">
-                                        <span className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider border ${project.status === 'ready' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
-                                            project.status === 'planning' ? 'bg-neutral-800 text-neutral-400 border-neutral-700' :
-                                                'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                        <span className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider ${project.status === 'ready' ? 'bg-green-500/10 text-green-500' :
+                                            project.status === 'planning' ? 'bg-neutral-800 text-neutral-400' :
+                                                'bg-blue-500/10 text-blue-400'
                                             }`}>
                                             {project.status}
                                         </span>
@@ -327,7 +381,7 @@ const Studio: React.FC<StudioProps> = ({
                                             {/* Simple Dropdown for More Actions */}
                                             <div className="group/menu relative">
                                                 <button className="text-neutral-500 hover:text-white"><MoreVertical size={16} /></button>
-                                                <div className="absolute right-0 top-full mt-1 w-32 bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl hidden group-hover/menu:block z-20">
+                                                <div className="absolute right-0 top-full mt-1 w-32 bg-neutral-900 rounded-lg shadow-xl hidden group-hover/menu:block z-20">
                                                     <button onClick={(e) => { e.stopPropagation(); setProjectToDelete(project.id); }} className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-white/5 rounded-t-lg">Delete</button>
                                                     <button className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-white/5 rounded-b-lg">Rename</button>
                                                 </div>
@@ -436,6 +490,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
     // Library State
     const [libraryFilter, setLibraryFilter] = useState<'All' | 'Purchased' | 'Uploaded'>('All');
     const [librarySearch, setLibrarySearch] = useState('');
+    const [currentLibraryFolderId, setCurrentLibraryFolderId] = useState<string | null>(null);
 
     // Modal States
     const [activeContract, setActiveContract] = useState<Contract | null>(null);
@@ -576,7 +631,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                     return {
                         ...t,
                         title: newTitle,
-                        files: { ...t.files, main: newAssignedFileId }
+                        files: { ...t.files, main: newAssignedFileId, mp3: draggingAsset.url }
                     };
                 }
                 return t;
@@ -672,11 +727,21 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             ? true
             : libraryFilter === 'Purchased'
                 ? (asset.type === 'Purchased' || asset.type === 'Pack' || asset.type === 'Project')
-                : asset.type === 'Upload';
+                : (asset.type === 'Upload' || asset.type === 'folder');
 
         const matchesSearch = asset.name.toLowerCase().includes(librarySearch.toLowerCase());
-        return matchesFilter && matchesSearch;
+
+        // detailed folder logic
+        if (librarySearch.trim()) {
+            return matchesFilter && matchesSearch;
+        }
+
+        // Hierarchy check
+        const isChildOfCurrent = (asset.parentId || null) === currentLibraryFolderId;
+        return matchesFilter && isChildOfCurrent;
     });
+
+    const currentFolder = assets.find(a => a.id === currentLibraryFolderId);
 
     return (
         <div className="flex flex-col h-full bg-[#0a0a0a]">
@@ -684,7 +749,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             {/* ATTACH NOTE MODAL */}
             {attachNoteModalOpen && (
                 <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-sm md:p-4 animate-in fade-in duration-200">
-                    <div className="w-full h-[100dvh] md:h-auto md:max-w-lg bg-neutral-900 border-0 md:border border-neutral-800 rounded-none md:rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-none md:max-h-[85vh]">
+                    <div className="w-full h-[100dvh] md:h-auto md:max-w-lg bg-neutral-900 rounded-none md:rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-none md:max-h-[85vh]">
                         <div className="flex items-center justify-between p-4 border-b border-white/5">
                             <h3 className="font-bold text-white flex items-center gap-2">
                                 <StickyNote size={16} className="text-yellow-500" />
@@ -697,13 +762,13 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                 <div
                                     key={note.id}
                                     onClick={() => attachNoteToTrack(note.id)}
-                                    className="p-3 rounded-lg border border-white/5 bg-white/5 hover:bg-white/10 hover:border-primary/30 cursor-pointer transition-all"
+                                    className="p-3 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition-all"
                                 >
                                     <h4 className="text-sm font-bold text-white mb-1">{note.title}</h4>
                                     <p className="text-xs text-neutral-400 line-clamp-2">{note.content}</p>
                                     <div className="flex gap-2 mt-2">
                                         {note.tags.map(tag => (
-                                            <span key={tag} className="text-[9px] bg-black px-2 py-0.5 rounded text-neutral-500 border border-neutral-800">{tag}</span>
+                                            <span key={tag} className="text-[9px] bg-black px-2 py-0.5 rounded text-neutral-500">{tag}</span>
                                         ))}
                                     </div>
                                 </div>
@@ -759,7 +824,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
             )}
 
             {/* WORKSPACE HEADER */}
-            <div className="h-auto lg:h-16 border-b border-white/5 bg-[#050505] flex flex-col lg:flex-row items-start lg:items-center justify-between px-4 lg:px-6 py-4 lg:py-0 shrink-0 gap-4">
+            <div className="h-auto lg:h-16 bg-[#050505] flex flex-col lg:flex-row items-start lg:items-center justify-between px-4 lg:px-6 py-4 lg:py-0 shrink-0 gap-4">
                 <div className="flex items-center gap-4 w-full lg:w-auto">
                     <button onClick={onBack} className="p-2 hover:bg-white/5 rounded-lg text-neutral-400 hover:text-white transition-colors">
                         <ArrowLeft size={18} />
@@ -780,7 +845,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
                     {/* Mobile Library Toggle */}
                     <button
-                        className="ml-auto lg:hidden p-2 border border-neutral-700 rounded text-neutral-400"
+                        className="ml-auto lg:hidden p-2 rounded text-neutral-400"
                         onClick={() => setShowMobileLib(!showMobileLib)}
                     >
                         <Folder size={18} />
@@ -790,7 +855,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                 {/* Tabs - Mobile (Grid) & Desktop (Pills/List) */}
                 <div className="w-full lg:w-auto lg:hidden">
                     {/* Mobile Grid Layout */}
-                    <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5 w-full">
+                    <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg w-full">
                         <button
                             onClick={() => setTab('overview')}
                             className={`flex flex-col items-center justify-center gap-1 py-2 rounded transition-all ${tab === 'overview' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
@@ -874,7 +939,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
                     {tab === 'overview' && (
                         <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-2">
-                            <div className="bg-neutral-900/30 border border-white/5 rounded-xl p-6">
+                            <div className="bg-neutral-900/30 rounded-xl p-6">
                                 <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider flex justify-between items-center">
                                     Release Checklist
                                     <span className="text-[10px] text-neutral-500 normal-case">{project.tasks.filter(t => t.completed).length}/{project.tasks.length} Completed</span>
@@ -883,7 +948,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                     {project.tasks.map(task => (
                                         <div key={task.id} className="flex items-center justify-between group">
                                             <div
-                                                className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/5 hover:border-white/10 cursor-pointer flex-1"
+                                                className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer flex-1"
                                                 onClick={() => toggleTask(task.id)}
                                             >
                                                 <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-colors ${task.completed ? 'bg-primary border-primary text-black' : 'border-neutral-600 text-transparent'}`}>
@@ -932,8 +997,8 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                             key={track.id}
                                             onClick={() => handleTrackClick(track.id)}
                                             className={`
-                                            group bg-[#0f0f0f] border border-neutral-800 rounded-xl p-3 lg:p-2 flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4 transition-colors cursor-pointer select-none
-                                            ${isTrackPlaying ? 'border-primary bg-primary/5' : 'hover:border-neutral-600 hover:bg-white/5'}
+                                            group bg-[#0f0f0f] border border-transparent rounded-xl p-3 lg:p-2 flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4 transition-colors cursor-pointer select-none
+                                            ${isTrackPlaying ? 'border-primary bg-primary/5' : 'hover:bg-white/5'}
                                         `}
                                             onDragOver={(e) => e.preventDefault()}
                                             onDrop={() => handleDropOnTrack(track.id)}
@@ -990,11 +1055,11 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                             {/* Track Info / Beat Source */}
                                             <div className="flex-1 flex flex-wrap items-center gap-2 lg:gap-4 text-[10px] pl-11 lg:pl-0">
                                                 {track.files?.main ? (
-                                                    <span className="flex items-center gap-1 text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded border border-green-500/20">
+                                                    <span className="flex items-center gap-1 text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded">
                                                         <Music size={10} /> {assets.find(a => a.id === track.files?.main)?.name || 'Beat Assigned'}
                                                     </span>
                                                 ) : (
-                                                    <span className="flex items-center gap-1 text-neutral-500 bg-neutral-800 px-1.5 py-0.5 rounded border border-neutral-700 border-dashed">
+                                                    <span className="flex items-center gap-1 text-neutral-500 bg-neutral-800 px-1.5 py-0.5 rounded">
                                                         <Upload size={10} /> Drag Beat Here
                                                     </span>
                                                 )}
@@ -1013,7 +1078,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                                     <div
                                                         key={tag.label}
                                                         onClick={() => toggleStatusTag(track.id, tag.label)}
-                                                        className={`px-2 py-1 rounded border flex items-center gap-1 text-[9px] font-bold uppercase cursor-pointer transition-all ${tag.active ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-neutral-900 border-neutral-800 text-neutral-600 hover:border-neutral-600'}`}
+                                                        className={`px-2 py-1 rounded flex items-center gap-1 text-[9px] font-bold uppercase cursor-pointer transition-all ${tag.active ? 'bg-green-500/10 text-green-500' : 'bg-neutral-900 text-neutral-600'}`}
                                                     >
                                                         {tag.label === 'Vocals' ? <Mic2 size={10} /> : tag.label === 'Lyrics' ? <FileText size={10} /> : <CheckCircle size={10} />}
                                                         <span className="hidden sm:inline">{tag.label}</span>
@@ -1022,7 +1087,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                             </div>
 
                                             {/* Desktop Actions */}
-                                            <div className="hidden lg:flex items-center gap-2 pr-2 border-l border-neutral-800 pl-4 relative">
+                                            <div className="hidden lg:flex items-center gap-2 pr-2 ml-4 relative">
                                                 <button onClick={(e) => e.stopPropagation()} className="p-1.5 hover:bg-white/10 rounded text-neutral-500 hover:text-white" title="Link Contract">
                                                     <ShieldCheck size={14} />
                                                 </button>
@@ -1061,12 +1126,12 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                 })}
                             </div>
 
-                            <div className="mt-8 p-6 border border-dashed border-neutral-800 rounded-xl text-center text-neutral-500 text-xs flex flex-col items-center justify-center bg-white/[0.01]">
+                            <div className="mt-8 p-6 rounded-xl text-center text-neutral-500 text-xs flex flex-col items-center justify-center bg-white/[0.01]">
                                 <p className="mb-2">Drag and drop Purchased Beats or Uploaded Files from the right panel onto a track to assign audio.</p>
                                 <div className="flex gap-2">
-                                    <span className="px-2 py-1 bg-neutral-800 rounded text-[10px] border border-neutral-700">WAV</span>
-                                    <span className="px-2 py-1 bg-neutral-800 rounded text-[10px] border border-neutral-700">MP3</span>
-                                    <span className="px-2 py-1 bg-neutral-800 rounded text-[10px] border border-neutral-700">ZIP</span>
+                                    <span className="px-2 py-1 bg-neutral-800 rounded text-[10px]">WAV</span>
+                                    <span className="px-2 py-1 bg-neutral-800 rounded text-[10px]">MP3</span>
+                                    <span className="px-2 py-1 bg-neutral-800 rounded text-[10px]">ZIP</span>
                                 </div>
                             </div>
                         </div>
@@ -1077,7 +1142,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                             <div className="w-full">
                                 <div className="w-full h-[600px] animate-in fade-in slide-in-from-bottom-2 flex gap-6">
                                     {/* Contracts List Sidebar */}
-                                    <div className="w-1/3 bg-neutral-900/30 border border-white/5 rounded-xl p-4 flex flex-col">
+                                    <div className="w-1/3 bg-neutral-900/30 rounded-xl p-4 flex flex-col">
                                         <div className="flex items-center gap-3 mb-4 p-2">
                                             <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><Briefcase size={20} /></div>
                                             <div>
@@ -1100,7 +1165,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                                             //@ts-ignore
                                                             activeContract?.id === contract.id
                                                                 ? 'bg-blue-500/10 border-blue-500/30'
-                                                                : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
+                                                                : 'bg-white/5 border-transparent hover:bg-white/10'
                                                             }`}
                                                     >
                                                         <div className="flex justify-between items-start mb-1">
@@ -1114,9 +1179,9 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                                             } />
                                                         </div>
                                                         <div className="flex items-center justify-between mt-2">
-                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded border ${contract.status === 'signed'
-                                                                ? 'bg-green-500/10 border-green-500/20 text-green-500'
-                                                                : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500'
+                                                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${contract.status === 'signed'
+                                                                ? 'bg-green-500/10 text-green-500'
+                                                                : 'bg-yellow-500/10 text-yellow-500'
                                                                 }`}>
                                                                 {contract.status.toUpperCase()}
                                                             </span>
@@ -1127,17 +1192,17 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                             )}
                                         </div>
 
-                                        <button className="w-full py-2 mt-4 border border-dashed border-neutral-700 rounded-lg text-xs font-bold text-neutral-400 hover:text-white hover:border-neutral-500 flex items-center justify-center gap-2 transition-colors">
+                                        <button className="w-full py-2 mt-4 rounded-lg text-xs font-bold text-neutral-400 hover:text-white flex items-center justify-center gap-2 transition-colors">
                                             <Plus size={14} /> Link New Contract
                                         </button>
                                     </div>
 
                                     {/* PDF Preview Pane (Right Side) */}
-                                    <div className="flex-1 bg-neutral-900 border border-white/5 rounded-xl flex flex-col overflow-hidden relative">
+                                    <div className="flex-1 bg-neutral-900 rounded-xl flex flex-col overflow-hidden relative">
                                         {activeContract ? (
                                             <>
                                                 {/* Preview Toolbar */}
-                                                <div className="h-12 border-b border-white/5 bg-white/[0.02] flex items-center justify-between px-4">
+                                                <div className="h-12 bg-white/[0.02] flex items-center justify-between px-4">
                                                     <div className="flex items-center gap-2">
                                                         <FileText size={14} className="text-neutral-400" />
                                                         {/* @ts-ignore */}
@@ -1154,7 +1219,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                                 <div className="flex-1 overflow-y-auto bg-[#1a1a1a] p-8 flex justify-center custom-scrollbar">
                                                     <div className="w-full max-w-[600px] min-h-[800px] bg-white text-black p-8 shadow-2xl relative">
                                                         {/* Mock Document Content */}
-                                                        <div className="flex justify-between items-start mb-8 border-b-2 border-black pb-4">
+                                                        <div className="flex justify-between items-start mb-8 pb-4">
                                                             <div>
                                                                 <h1 className="text-xl font-bold uppercase tracking-widest mb-1">Music Access</h1>
                                                                 <p className="text-[10px] font-mono text-neutral-500">OFFICIAL AGREEMENT</p>
@@ -1183,7 +1248,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                                             <p className="mt-4">3. <strong>TERM</strong>. This Agreement shall commence on the Effective Date and shall continue in full force and effect for a period of [TERM] unless earlier terminated in accordance with the provisions of this Agreement.</p>
 
                                                             <div className="h-32 border border-neutral-200 mt-8 p-4 flex flex-col justify-end">
-                                                                <div className="border-t border-black w-1/2 pt-1 text-[8px] uppercase font-bold">Authorized Signature</div>
+                                                                <div className="w-1/2 pt-1 text-[8px] uppercase font-bold">Authorized Signature</div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1204,14 +1269,14 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
                     {tab === 'files' && (
                         <div className="w-full animate-in fade-in slide-in-from-bottom-2">
-                            <div className="bg-neutral-900/30 border border-white/5 rounded-xl overflow-hidden">
+                            <div className="bg-neutral-900/30 rounded-xl overflow-hidden">
                                 <div className="p-4 border-b border-white/5 flex items-center gap-4 bg-neutral-900/50">
                                     <Folder size={16} className="text-neutral-400" />
                                     <span className="text-sm font-bold text-white">Project Files</span>
                                 </div>
                                 <div className="p-8 text-center text-neutral-500 text-sm">
                                     <p>No local files uploaded to this project workspace yet.</p>
-                                    <button className="mt-4 px-4 py-2 bg-white/5 border border-white/10 rounded hover:bg-white/10 text-white text-xs font-bold">Upload Files</button>
+                                    <button className="mt-4 px-4 py-2 bg-white/5 rounded hover:bg-white/10 text-white text-xs font-bold">Upload Files</button>
                                 </div>
                             </div>
                         </div>
@@ -1220,7 +1285,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
 
                 {/* RIGHT SIDEBAR (Library / Inspector) */}
                 <div className={`
-                    fixed bg-[#080808] border-l border-neutral-800 flex flex-col transform transition-transform duration-300
+                    fixed bg-[#080808] flex flex-col transform transition-transform duration-300
                     lg:relative lg:translate-x-0 lg:w-[335px] lg:inset-auto lg:z-auto
                     ${showMobileLib ? 'inset-0 z-50 translate-x-0' : 'inset-y-0 right-0 w-[335px] translate-x-full z-30'}
                 `}>
@@ -1229,7 +1294,7 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                         <button onClick={() => setShowMobileLib(false)} className="p-2 text-white"><X size={20} /></button>
                     </div>
 
-                    <div className="p-4 border-b border-white/5">
+                    <div className="p-4">
                         <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-3">Library Assets</h3>
 
                         {/* Filter Tabs */}
@@ -1250,49 +1315,82 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                             <input
                                 value={librarySearch}
                                 onChange={(e) => setLibrarySearch(e.target.value)}
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-lg pl-8 py-2 text-xs text-white focus:outline-none focus:border-primary/30 placeholder-neutral-600"
+                                className="w-full bg-neutral-900 rounded-lg pl-8 py-2 text-xs text-white focus:outline-none placeholder-neutral-600"
                                 placeholder="Search beats, packs..."
                             />
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                        {filteredLibrary.map(asset => (
-                            <div
-                                key={asset.id}
-                                draggable
-                                onDragStart={() => setDraggingAsset(asset)}
-                                onDragEnd={() => setDraggingAsset(null)}
-                                className="p-3 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10 cursor-grab active:cursor-grabbing group transition-colors"
+                    <div className="flex-1 overflow-y-auto p-2">
+                        {/* Folder Navigation Header */}
+                        {currentLibraryFolderId && !librarySearch && (
+                            <button
+                                onClick={() => setCurrentLibraryFolderId(currentFolder?.parentId || null)}
+                                className="w-full flex items-center gap-2 p-2 mb-2 text-neutral-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-xs font-bold"
                             >
-                                <div className="flex items-center gap-3 mb-1">
-                                    <div className={`p-1.5 rounded ${asset.type === 'Purchased' || asset.type === 'Project' ? 'bg-primary/10 text-primary' : 'bg-neutral-800 text-neutral-400'}`}>
-                                        {asset.type === 'Pack' || asset.type === 'Project' ? <Box size={12} /> : <Music size={12} />}
+                                <ArrowLeft size={14} />
+                                <span>{currentFolder?.name || 'Back'}</span>
+                            </button>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-2">
+                            {filteredLibrary.map(asset => (
+                                <div
+                                    key={asset.id}
+                                    draggable={asset.type !== 'folder'}
+                                    onDragStart={(e) => {
+                                        if (asset.type !== 'folder') {
+                                            setDraggingAsset(asset);
+                                        } else {
+                                            e.preventDefault();
+                                        }
+                                    }}
+                                    onDragEnd={() => setDraggingAsset(null)}
+                                    onClick={() => {
+                                        if (asset.type === 'folder') {
+                                            setCurrentLibraryFolderId(asset.id);
+                                        }
+                                    }}
+                                    className={`
+                                        p-3 rounded-xl transition-all group relative border border-transparent
+                                        ${asset.type === 'folder'
+                                            ? 'bg-neutral-900 hover:bg-neutral-800 cursor-pointer hover:border-white/10'
+                                            : 'bg-white/5 hover:bg-white/10 cursor-grab active:cursor-grabbing hover:border-primary/20'
+                                        }
+                                    `}
+                                >
+                                    <div className="mb-3">
+                                        <div className={`
+                                            w-8 h-8 rounded-lg flex items-center justify-center mb-2 transition-colors
+                                            ${asset.type === 'folder' ? 'bg-blue-500/20 text-blue-400' :
+                                                asset.type === 'Purchased' ? 'bg-primary/20 text-primary' : 'bg-neutral-800 text-neutral-400'}
+                                        `}>
+                                            {asset.type === 'folder' ? <Folder size={16} /> :
+                                                asset.type === 'Pack' ? <Box size={16} /> : <Music size={16} />}
+                                        </div>
+                                        <div className="text-xs font-bold text-white truncate pr-2" title={asset.name}>{asset.name}</div>
+                                        <div className="text-[9px] text-neutral-500 truncate">{asset.producer === 'Me' ? 'Uploaded' : asset.producer}</div>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="text-xs font-bold text-white truncate group-hover:text-primary transition-colors">{asset.name}</div>
-                                        <div className="text-[9px] text-neutral-500">{asset.producer} • {asset.date}</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center justify-between mt-1 ml-9">
-                                    <span className="text-[9px] font-mono text-neutral-600 uppercase">{asset.fileType}</span>
-                                    {asset.type === 'Purchased' && (
-                                        <div className="text-[9px] text-green-500 flex items-center gap-1">
-                                            <ShieldCheck size={10} /> License Active
+
+                                    {asset.type !== 'folder' && (
+                                        <div className="flex items-center justify-between mt-1">
+                                            <span className="text-[9px] font-mono text-neutral-600 uppercase bg-black/20 px-1 rounded">{asset.fileType}</span>
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
+
                         {filteredLibrary.length === 0 && (
-                            <div className="text-center py-8 text-neutral-600 text-xs">
-                                No assets found.
+                            <div className="text-center py-12 text-neutral-600 text-xs flex flex-col items-center gap-2">
+                                <Folder size={24} className="opacity-20" />
+                                <span>No items found</span>
                             </div>
                         )}
                     </div>
 
-                    <div className="p-4 border-t border-white/5 bg-neutral-900/30">
-                        <button className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-2 transition-colors">
+                    <div className="p-4 bg-neutral-900/30">
+                        <button className="w-full py-2 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-bold text-white flex items-center justify-center gap-2 transition-colors">
                             <Upload size={14} /> Upload New File
                         </button>
                     </div>

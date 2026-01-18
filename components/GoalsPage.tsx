@@ -70,12 +70,12 @@ const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNaviga
 
   const getGoalColor = (type: string) => {
     switch (type) {
-      case 'revenue': return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
-      case 'followers': return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-      case 'uploads': return 'text-purple-400 bg-purple-400/10 border-purple-400/20';
-      case 'plays': return 'text-orange-400 bg-orange-400/10 border-orange-400/20';
-      case 'sales': return 'text-pink-400 bg-pink-400/10 border-pink-400/20';
-      default: return 'text-neutral-400 bg-neutral-400/10 border-neutral-400/20';
+      case 'revenue': return 'text-emerald-400 bg-emerald-400/10';
+      case 'followers': return 'text-blue-400 bg-blue-400/10';
+      case 'uploads': return 'text-purple-400 bg-purple-400/10';
+      case 'plays': return 'text-orange-400 bg-orange-400/10';
+      case 'sales': return 'text-pink-400 bg-pink-400/10';
+      default: return 'text-neutral-400 bg-neutral-400/10';
     }
   };
 
@@ -219,89 +219,66 @@ const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNaviga
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-blue-400/10 rounded-lg text-blue-400">
-              <Target size={20} />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-neutral-900/40 rounded-2xl p-6 backdrop-blur-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+              <Target size={18} />
             </div>
-            <h3 className="text-sm font-bold text-neutral-400 uppercase">Active Goals</h3>
+            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Active Goals</h3>
           </div>
-          <p className="text-2xl font-black text-white">{activeGoals.length}</p>
+          <p className="text-3xl font-black text-white">{activeGoals.length}</p>
         </div>
 
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-green-400/10 rounded-lg text-green-400">
-              <CheckCircle size={20} />
+        <div className="bg-neutral-900/40 rounded-2xl p-6 backdrop-blur-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-green-500/10 rounded-lg text-green-400">
+              <CheckCircle size={18} />
             </div>
-            <h3 className="text-sm font-bold text-neutral-400 uppercase">Completed</h3>
+            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Completed</h3>
           </div>
-          <p className="text-2xl font-black text-white">{completedGoals.length}</p>
+          <p className="text-3xl font-black text-white">{completedGoals.length}</p>
         </div>
 
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-purple-400/10 rounded-lg text-purple-400">
-              <TrendingUp size={20} />
+        <div className="bg-neutral-900/40 rounded-2xl p-6 backdrop-blur-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400">
+              <TrendingUp size={18} />
             </div>
-            <h3 className="text-sm font-bold text-neutral-400 uppercase">Success Rate</h3>
+            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Success Rate</h3>
           </div>
-          <p className="text-2xl font-black text-white">
+          <p className="text-3xl font-black text-white">
             {goals.length > 0 ? Math.round((completedGoals.length / goals.length) * 100) : 0}%
           </p>
         </div>
 
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-orange-400/10 rounded-lg text-orange-400">
-              <Award size={20} />
+        <div className="bg-neutral-900/40 rounded-2xl p-6 backdrop-blur-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-orange-500/10 rounded-lg text-orange-400">
+              <Award size={18} />
             </div>
-            <h3 className="text-sm font-bold text-neutral-400 uppercase">Avg Progress</h3>
+            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">On Track</h3>
           </div>
-          <p className="text-2xl font-black text-white">
+          <p className="text-3xl font-black text-white">
             {goals.length > 0 ? Math.round((totalCurrentValue / (totalTargetValue || 1)) * 100) : 0}%
           </p>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${filter === 'all' ? 'bg-white text-black' : 'bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10'
-            }`}
-        >
-          All Goals
-        </button>
-        <button
-          onClick={() => setFilter('active')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${filter === 'active' ? 'bg-white text-black' : 'bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10'
-            }`}
-        >
-          Active
-        </button>
-        <button
-          onClick={() => setFilter('completed')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${filter === 'completed' ? 'bg-white text-black' : 'bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10'
-            }`}
-        >
-          Completed
-        </button>
-        <button
-          onClick={() => setFilter('revenue')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${filter === 'revenue' ? 'bg-white text-black' : 'bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10'
-            }`}
-        >
-          Revenue
-        </button>
-        <button
-          onClick={() => setFilter('followers')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${filter === 'followers' ? 'bg-white text-black' : 'bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10'
-            }`}
-        >
-          Followers
-        </button>
+      {/* Filters (Enhanced) */}
+      <div className="flex flex-wrap gap-2 mb-8">
+        {['all', 'active', 'completed', 'revenue', 'followers'].map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 capitalize ${filter === f
+              ? 'bg-white text-black shadow-lg shadow-white/10 scale-105'
+              : 'bg-neutral-900/50 text-neutral-400 hover:text-white hover:bg-neutral-800'
+              }`}
+          >
+            {f === 'all' ? 'All Goals' : f}
+          </button>
+        ))}
       </div>
 
       {/* Goals Grid */}
@@ -312,100 +289,121 @@ const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNaviga
           const isOverdue = daysRemaining < 0 && goal.status === 'active';
 
           return (
-            <div key={goal.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-6 hover:border-white/20 transition-colors">
+            <div
+              key={goal.id}
+              className="group relative bg-gradient-to-br from-neutral-900/80 to-neutral-900/40 rounded-3xl p-8 hover:from-neutral-800 hover:to-neutral-900/60 transition-all duration-300"
+            >
               {/* Goal Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg border ${getGoalColor(goal.type)}`}>
+              <div className="flex items-start justify-between mb-8">
+                <div className="flex items-center gap-5">
+                  <div className={`p-4 rounded-2xl transition-transform group-hover:scale-110 duration-300 ${getGoalColor(goal.type)}`}>
                     {getGoalIcon(goal.type)}
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-white">{goal.title}</h3>
-                    <p className="text-sm text-neutral-400 capitalize">{goal.type} Goal</p>
+                    <h3 className="text-2xl font-black text-white mb-1 tracking-tight">{goal.title}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">{goal.category}</span>
+                      <span className="w-1 h-1 rounded-full bg-neutral-700"></span>
+                      <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">{goal.type}</span>
+                    </div>
                   </div>
                 </div>
-                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold uppercase ${getStatusColor(goal.status)}`}>
-                  {getStatusIcon(goal.status)}
-                  {goal.status}
-                </span>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="mb-4">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-neutral-400">Progress</span>
-                  <span className="text-white font-mono">{goal.current} / {goal.target}</span>
-                </div>
-                <div className="w-full bg-neutral-900 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all duration-500 ${goal.status === 'completed' ? 'bg-green-500' : 'bg-primary'
-                      }`}
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-                <div className="flex justify-between text-xs mt-1">
-                  <span className="text-neutral-500">{Math.round(progress)}% complete</span>
+                <div className="flex flex-col items-end gap-2">
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${getStatusColor(goal.status)}`}>
+                    {getStatusIcon(goal.status)}
+                    {goal.status}
+                  </span>
                   {goal.status === 'active' && (
-                    <span className={`${isOverdue ? 'text-red-400' : 'text-neutral-400'}`}>
-                      {isOverdue ? `${Math.abs(daysRemaining)} days overdue` : `${daysRemaining} days left`}
+                    <span className={`text-xs font-bold ${isOverdue ? 'text-red-400' : 'text-neutral-500'}`}>
+                      {isOverdue ? 'Overdue' : `${daysRemaining} days left`}
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Goal Details */}
-              {goal.description && (
-                <p className="text-sm text-neutral-400 mb-4">{goal.description}</p>
-              )}
+              {/* Progress Section - Big & Bold */}
+              <div className="mb-8">
+                <div className="flex items-end justify-between mb-4">
+                  <div>
+                    <span className="text-4xl font-black text-white tracking-tight leading-none">
+                      {Math.round(progress)}%
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-sm text-neutral-400 font-medium mb-1">Current Progress</span>
+                    <span className="text-white font-mono font-bold">
+                      {goal.current.toLocaleString()} <span className="text-neutral-600">/</span> {goal.target.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
 
-              <div className="flex justify-between items-center text-sm mb-4">
-                <span className="text-neutral-500">Category:</span>
-                <span className="text-white capitalize">{goal.category}</span>
+                <div className="relative w-full h-4 bg-neutral-950 rounded-full overflow-hidden">
+                  <div
+                    className={`absolute inset-y-0 left-0 h-full rounded-full transition-all duration-1000 ease-out ${goal.status === 'completed'
+                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-400'
+                      : 'bg-gradient-to-r from-white via-neutral-200 to-neutral-400'
+                      }`}
+                    style={{ width: `${progress}%` }}
+                  >
+                    <div className="absolute inset-0 bg-white/20 animate-pulse-slow"></div>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex justify-between items-center text-sm mb-6">
-                <span className="text-neutral-500">Deadline:</span>
-                <span className={`${isOverdue ? 'text-red-400' : 'text-white'}`}>
-                  {new Date(goal.deadline).toLocaleDateString()}
-                </span>
-              </div>
+              {/* Separator */}
+              <div className="h-px w-full bg-neutral-800/50 mb-6 group-hover:bg-neutral-700/50 transition-colors"></div>
 
-              {/* Actions */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setSelectedGoal(goal)}
-                  className="flex-1 py-2 px-3 bg-white/5 text-white font-bold rounded-lg text-xs hover:bg-white/10 transition-colors flex items-center justify-center gap-1"
-                >
-                  <Edit size={12} />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleToggleStatus(goal)}
-                  className="flex-1 py-2 px-3 bg-primary text-black font-bold rounded-lg text-xs hover:bg-primary/90 transition-colors flex items-center justify-center gap-1"
-                >
-                  {goal.status === 'active' ? <Clock size={12} /> : <Zap size={12} />}
-                  {goal.status === 'active' ? 'Pause' : 'Resume'}
-                </button>
-                <button
-                  onClick={() => setGoalToDelete(goal.id)}
-                  className="py-2 px-3 bg-red-500/10 text-red-400 font-bold rounded-lg text-xs hover:bg-red-500/20 transition-colors flex items-center justify-center"
-                >
-                  <Trash2 size={12} />
-                </button>
+              {/* Sub-details and Actions */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4 text-sm text-neutral-400">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={14} />
+                    <span className="font-medium">{new Date(goal.deadline).toLocaleDateString()}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-2 group-hover:translate-y-0">
+                  <button
+                    onClick={() => handleToggleStatus(goal)}
+                    className="p-2 text-neutral-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                    title={goal.status === 'active' ? "Pause Goal" : "Resume Goal"}
+                  >
+                    {goal.status === 'active' ? <Clock size={16} /> : <Zap size={16} />}
+                  </button>
+                  <button
+                    onClick={() => setSelectedGoal(goal)}
+                    className="p-2 text-neutral-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                    title="Edit Goal"
+                  >
+                    <Edit size={16} />
+                  </button>
+                  <button
+                    onClick={() => setGoalToDelete(goal.id)}
+                    className="p-2 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    title="Delete Goal"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           );
         })}
 
         {filteredGoals.length === 0 && (
-          <div className="col-span-full py-16 text-center border border-dashed border-neutral-800 rounded-xl bg-white/5">
-            <Target size={48} className="mx-auto mb-4 text-neutral-600" />
-            <p className="text-neutral-500 font-mono mb-4">No goals found.</p>
+          <div className="col-span-full py-24 text-center rounded-3xl bg-neutral-900/20 border-2 border-dashed border-neutral-800/50 flex flex-col items-center justify-center group hover:border-neutral-700 transition-colors">
+            <div className="w-20 h-20 bg-neutral-900 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+              <Target size={32} className="text-neutral-600 group-hover:text-white transition-colors" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">No goals found</h3>
+            <p className="text-neutral-500 max-w-sm mx-auto mb-8">
+              Start tracking your progress by creating your first goal.
+            </p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-primary/10 text-primary border border-primary/50 rounded hover:bg-primary hover:text-black transition-colors font-mono text-xs uppercase tracking-wider"
+              className="px-8 py-3 bg-white text-black font-bold rounded-full hover:scale-105 transition-transform"
             >
-              Create Your First Goal
+              Create New Goal
             </button>
           </div>
         )}
@@ -478,7 +476,7 @@ const CreateGoalModal: React.FC<{ onClose: () => void; onGoalCreated: (goal: Omi
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
-      <div className="w-full max-w-md bg-[#0a0a0a] border border-neutral-700 rounded-xl shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-white">Create New Goal</h2>
           <button onClick={onClose} className="p-1.5 hover:bg-white/10 rounded text-neutral-400 hover:text-white">
@@ -613,7 +611,7 @@ const EditGoalModal: React.FC<{ goal: Goal; onClose: () => void; onGoalUpdated: 
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
-      <div className="w-full max-w-md bg-[#0a0a0a] border border-neutral-700 rounded-xl shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-white">Edit Goal</h2>
           <button onClick={onClose} className="p-1.5 hover:bg-white/10 rounded text-neutral-400 hover:text-white">

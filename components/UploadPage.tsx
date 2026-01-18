@@ -24,7 +24,8 @@ import {
     Columns,
     List,
     AlertCircle,
-    Loader2
+    Loader2,
+    CornerUpLeft
 } from 'lucide-react';
 import { Project, Track } from '../types';
 import { uploadFile, deleteFile, getUserFiles, createFolder, updateAsset } from '../services/supabaseService';
@@ -97,6 +98,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     const [renameValue, setRenameValue] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [anchorSelectedId, setAnchorSelectedId] = useState<string | null>(null);
+    const [dragOverColumnIndex, setDragOverColumnIndex] = useState<number | null>(null);
 
     // Modals State
     const [textEditorItem, setTextEditorItem] = useState<FileSystemItem | null>(null);
@@ -118,6 +120,22 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     const menuRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const renameInputRef = useRef<HTMLInputElement>(null);
+    const columnContainerRef = useRef<HTMLDivElement>(null);
+
+    // Auto-scroll to latest column
+    useEffect(() => {
+        if (viewMode === 'column' && columnContainerRef.current) {
+            // Small timeout to ensure DOM has updated with new column
+            setTimeout(() => {
+                if (columnContainerRef.current) {
+                    columnContainerRef.current.scrollTo({
+                        left: columnContainerRef.current.scrollWidth,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 50);
+        }
+    }, [selectedPath, viewMode]);
 
     // Focus rename input when active - with grace period
     useEffect(() => {
@@ -576,16 +594,19 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     };
 
     // File Upload
-    const handleFileUpload = async (files: FileList | File[]) => {
+    const handleFileUpload = async (files: FileList | File[], targetIdOverride?: string | null) => {
         const fileArray = Array.from(files);
         if (fileArray.length === 0) return;
+
+        // Determine target folder: override takes precedence, otherwise current active folder
+        const uploadTargetId = targetIdOverride !== undefined ? targetIdOverride : currentFolderId;
 
         // Use Global Context for Upload
         // The context handles notifications and state.
         // We just need to trigger it.
         // The 'storage-updated' event listener will handle refreshing the file list when done.
 
-        await uploadFiles(fileArray, currentFolderId);
+        await uploadFiles(fileArray, uploadTargetId);
     };
 
 
@@ -637,12 +658,18 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
         // Check if files are being dropped from desktop
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            handleFileUpload(e.dataTransfer.files);
+            handleFileUpload(e.dataTransfer.files, targetFolderId);
             return;
         }
 
         // Internal drag and drop (moving items between folders)
         if (draggedItemId && draggedItemId !== targetFolderId) {
+            // Check if we're moving to the same folder
+            const draggedItem = items.find(i => i.id === draggedItemId);
+            if (draggedItem && draggedItem.parentId === targetFolderId) {
+                return;
+            }
+
             let itemsToMove: string[] = [];
 
             if (selectedIds.has(draggedItemId)) {
@@ -943,7 +970,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
             {/* Main Content Area */}
             <div
-                className={`min-h-[500px] w-full bg-[#050505] border rounded-xl relative transition-all flex flex-col ${isDraggingFiles ? 'border-primary border-2 bg-primary/5' : 'border-white/5'}`}
+                className={`w-full bg-[#050505] border rounded-xl relative transition-all flex flex-col ${isDraggingFiles ? 'border-primary border-2 bg-primary/5' : 'border-white/5'} ${viewMode === 'column' ? 'h-[calc(100vh-220px)] min-h-[500px]' : 'min-h-[500px]'}`}
                 style={{ overflow: 'hidden' }} // Ensure overflow hidden for column view containment
                 onDragOver={(e) => {
                     e.preventDefault();
@@ -974,257 +1001,292 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
                         </div>
                     </div>
                 )}
-                {currentItems.length === 0 ? (
-                    <div
-                        className={`flex flex-col items-center justify-center h-64 border border-dashed rounded-xl transition-all m-[5px] ${isDraggingFiles ? 'border-primary bg-primary/10' : 'border-neutral-800 text-neutral-600'}`}
-                    >
-                        <UploadIcon size={48} className={`mb-4 ${isDraggingFiles ? 'text-primary animate-bounce' : 'opacity-50'}`} />
-                        <p className="text-sm font-bold">{isDraggingFiles ? 'Drop files here' : 'This folder is empty'}</p>
-                        <p className="text-xs">{isDraggingFiles ? 'Release to upload your files' : 'Drag and drop files here or click Upload Files'}</p>
-                    </div>
-                ) : (
-                    <>
-                        {viewMode === 'list' && (
-                            /* Mobile List View */
-                            <div className="p-4 flex flex-col gap-2">
-                                {/* FOLDERS */}
-                                {currentItems.filter(i => i.type === 'folder').map(folder => {
-                                    const isSelected = selectedIds.has(folder.id);
-                                    return (
-                                        <div
-                                            key={folder.id}
-                                            onClick={(e) => handleItemClick(folder, e)}
-                                            onDoubleClick={() => handleNavigate(folder.id)}
-                                            className={`
+
+                {viewMode === 'list' && (
+                    /* Mobile List View */
+                    <div className="p-4 flex flex-col gap-2">
+                        {/* FOLDERS */}
+                        {currentItems.filter(i => i.type === 'folder').map(folder => {
+                            const isSelected = selectedIds.has(folder.id);
+                            return (
+                                <div
+                                    key={folder.id}
+                                    onClick={(e) => handleItemClick(folder, e)}
+                                    onDoubleClick={() => handleNavigate(folder.id)}
+                                    className={`
                                                 flex items-center gap-4 p-4 rounded-xl active:scale-[0.98] transition-all border
                                                 ${isSelected
-                                                    ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.1)]'
-                                                    : 'bg-neutral-900/50 border-white/5 hover:bg-neutral-900'
-                                                }
+                                            ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.1)]'
+                                            : 'bg-neutral-900/50 border-white/5 hover:bg-neutral-900'
+                                        }
                                             `}
-                                        >
-                                            <div
-                                                className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center text-primary"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleNavigate(folder.id);
-                                                }}
-                                            >
-                                                <Folder size={20} />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className={`font-bold text-sm truncate ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
-                                                    {folder.name}
-                                                </div>
-                                                <div className="text-xs text-neutral-500 font-mono">{folder.size} items</div>
-                                            </div>
-                                            <ChevronRight size={16} className="text-neutral-600" />
+                                >
+                                    <div
+                                        className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center text-primary"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleNavigate(folder.id);
+                                        }}
+                                    >
+                                        <Folder size={20} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className={`font-bold text-sm truncate ${isSelected ? 'text-white' : 'text-zinc-200'}`}>
+                                            {folder.name}
                                         </div>
-                                    );
-                                })}
+                                        <div className="text-xs text-neutral-500 font-mono">{folder.size} items</div>
+                                    </div>
+                                    <ChevronRight size={16} className="text-neutral-600" />
+                                </div>
+                            );
+                        })}
 
-                                {/* FILES */}
-                                {currentItems.filter(i => i.type !== 'folder').map(file => {
-                                    const isPlayingFile = currentProject?.id === 'upload_browser_proj' && currentTrackId === file.id && isPlaying;
-                                    const isSelected = selectedIds.has(file.id);
+                        {/* FILES */}
+                        {currentItems.filter(i => i.type !== 'folder').map(file => {
+                            const isPlayingFile = currentProject?.id === 'upload_browser_proj' && currentTrackId === file.id && isPlaying;
+                            const isSelected = selectedIds.has(file.id);
 
-                                    return (
-                                        <div
-                                            key={file.id}
-                                            className={`
+                            return (
+                                <div
+                                    key={file.id}
+                                    className={`
                                                 flex items-center gap-4 p-3 border rounded-xl transition-all
                                                 ${isSelected
-                                                    ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.1)]'
-                                                    : 'bg-neutral-900/30 border-white/5'
-                                                }
+                                            ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.1)]'
+                                            : 'bg-neutral-900/30 border-white/5'
+                                        }
                                             `}
-                                            onClick={(e) => handleItemClick(file, e)}
-                                            onDoubleClick={() => file.type === 'image' ? openInfo(file) : file.type === 'text' ? openTextEditor(file) : file.type === 'audio' ? handlePlay(file) : null}
-                                        >
-                                            <div
-                                                className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden cursor-pointer active:scale-95 transition-transform ${file.type === 'audio' ? (isPlayingFile ? 'bg-primary text-black animate-pulse' : 'bg-neutral-800/80 text-primary') :
-                                                    file.type === 'image' ? 'bg-purple-500/20 text-purple-400' :
-                                                        'bg-blue-500/20 text-blue-400'
-                                                    }`}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (file.type === 'audio') handlePlay(file);
-                                                    if (file.type === 'text') openTextEditor(file);
-                                                    if (file.type === 'image') openInfo(file);
-                                                }}
-                                            >
-                                                {file.type === 'audio' ? (isPlayingFile ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />) :
-                                                    file.type === 'image' ? (
-                                                        file.src ? (
-                                                            <img src={file.src} className="w-full h-full object-cover" alt="" onError={(e) => {
-                                                                (e.target as HTMLImageElement).src = ''; // Clear src on error to fallback to icon
-                                                            }} />
-                                                        ) : <LayoutGrid size={18} />
-                                                    ) :
-                                                        <FileText size={18} />}
-                                            </div>
+                                    onClick={(e) => handleItemClick(file, e)}
+                                    onDoubleClick={() => file.type === 'image' ? openInfo(file) : file.type === 'text' ? openTextEditor(file) : file.type === 'audio' ? handlePlay(file) : null}
+                                >
+                                    <div
+                                        className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden cursor-pointer active:scale-95 transition-transform ${file.type === 'audio' ? (isPlayingFile ? 'bg-primary text-black animate-pulse' : 'bg-neutral-800/80 text-primary') :
+                                            file.type === 'image' ? 'bg-purple-500/20 text-purple-400' :
+                                                'bg-blue-500/20 text-blue-400'
+                                            }`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (file.type === 'audio') handlePlay(file);
+                                            if (file.type === 'text') openTextEditor(file);
+                                            if (file.type === 'image') openInfo(file);
+                                        }}
+                                    >
+                                        {file.type === 'audio' ? (isPlayingFile ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-0.5" />) :
+                                            file.type === 'image' ? (
+                                                file.src ? (
+                                                    <img src={file.src} className="w-full h-full object-cover" alt="" onError={(e) => {
+                                                        (e.target as HTMLImageElement).src = ''; // Clear src on error to fallback to icon
+                                                    }} />
+                                                ) : <LayoutGrid size={18} />
+                                            ) :
+                                                <FileText size={18} />}
+                                    </div>
 
-                                            <div className="flex-1 min-w-0">
-                                                <div className={`font-bold text-sm truncate ${isPlayingFile || isSelected ? 'text-white' : 'text-zinc-200'}`}>
-                                                    {file.name}
-                                                </div>
-                                                <div className="flex items-center gap-3 mt-1">
-                                                    <span className="text-[10px] uppercase font-bold text-neutral-600 bg-white/5 px-1.5 py-0.5 rounded">{file.format || file.type}</span>
-                                                    <span className="text-[10px] font-mono text-neutral-500">{file.size}</span>
-                                                    {file.type === 'audio' && <span className="text-[10px] font-mono text-neutral-500">{Math.floor(file.duration! / 60)}:{(file.duration! % 60).toString().padStart(2, '0')}</span>}
-                                                </div>
-                                            </div>
-
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleContextMenu(e, 'file', file.id);
-                                                }}
-                                                className="p-2 text-neutral-600 hover:text-white"
-                                            >
-                                                <MoreVertical size={16} />
-                                            </button>
+                                    <div className="flex-1 min-w-0">
+                                        <div className={`font-bold text-sm truncate ${isPlayingFile || isSelected ? 'text-white' : 'text-zinc-200'}`}>
+                                            {file.name}
                                         </div>
-                                    );
-                                })}
+                                        <div className="flex items-center gap-3 mt-1">
+                                            <span className="text-[10px] uppercase font-bold text-neutral-600 bg-white/5 px-1.5 py-0.5 rounded">{file.format || file.type}</span>
+                                            <span className="text-[10px] font-mono text-neutral-500">{file.size}</span>
+                                            {file.type === 'audio' && <span className="text-[10px] font-mono text-neutral-500">{Math.floor(file.duration! / 60)}:{(file.duration! % 60).toString().padStart(2, '0')}</span>}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleContextMenu(e, 'file', file.id);
+                                        }}
+                                        className="p-2 text-neutral-600 hover:text-white"
+                                    >
+                                        <MoreVertical size={16} />
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {viewMode === 'grid' && (
+                    /* Grid View - Terminal Inspired Redesign */
+                    <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-2 content-start">
+
+                        {/* BACK FOLDER (Appears if inside a folder) */}
+                        {currentFolderId && (
+                            <div
+                                onDrop={(e) => {
+                                    if (currentFolder && currentFolder.parentId !== undefined) {
+                                        handleDrop(e, currentFolder.parentId);
+                                    } else {
+                                        handleDrop(e, null); // Move to root
+                                    }
+                                }}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    // Optional: visual feedback
+                                }}
+                                onDoubleClick={handleNavigateUp}
+                                className="group flex items-center gap-2.5 p-2.5 rounded-lg border border-white/5 bg-white/5 hover:bg-neutral-800 hover:border-white/10 text-neutral-400 hover:text-white transition-all cursor-pointer font-mono select-none border-dashed"
+                            >
+                                <CornerUpLeft size={14} className="text-neutral-500 group-hover:text-white" />
+                                <span className="text-xs font-bold truncate">..</span>
                             </div>
                         )}
 
-                        {viewMode === 'grid' && (
-                            /* Grid View - Terminal Inspired Redesign */
-                            <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-2 content-start">
-
-                                {/* FOLDERS */}
-                                {currentItems.filter(i => i.type === 'folder').map(folder => {
-                                    const isSelected = selectedIds.has(folder.id);
-                                    return (
-                                        <div
-                                            key={folder.id}
-                                            draggable
-                                            onDragStart={() => setDraggedItemId(folder.id)}
-                                            onDragOver={(e) => { e.preventDefault(); setDragOverFolderId(folder.id); }}
-                                            onDragLeave={() => setDragOverFolderId(null)}
-                                            onDrop={(e) => handleDrop(e, folder.id)}
-                                            onClick={(e) => handleItemClick(folder, e)}
-                                            onDoubleClick={() => handleNavigate(folder.id)}
-                                            onContextMenu={(e) => handleContextMenu(e, 'folder', folder.id)}
-                                            className={`
+                        {/* FOLDERS */}
+                        {currentItems.filter(i => i.type === 'folder').map(folder => {
+                            const isSelected = selectedIds.has(folder.id);
+                            return (
+                                <div
+                                    key={folder.id}
+                                    draggable
+                                    onDragStart={() => setDraggedItemId(folder.id)}
+                                    onDragOver={(e) => { e.preventDefault(); setDragOverFolderId(folder.id); }}
+                                    onDragLeave={() => setDragOverFolderId(null)}
+                                    onDrop={(e) => handleDrop(e, folder.id)}
+                                    onClick={(e) => handleItemClick(folder, e)}
+                                    onDoubleClick={() => handleNavigate(folder.id)}
+                                    onContextMenu={(e) => handleContextMenu(e, 'folder', folder.id)}
+                                    className={`
                                                 group flex items-center gap-2.5 p-2.5 rounded-lg border transition-all cursor-pointer font-mono select-none
                                                 ${isSelected
-                                                    ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]'
-                                                    : 'bg-neutral-900/40 border-white/5 hover:bg-neutral-800 hover:border-white/10 text-neutral-400 hover:text-white'
-                                                }
+                                            ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]'
+                                            : 'bg-neutral-900/40 border-white/5 hover:bg-neutral-800 hover:border-white/10 text-neutral-400 hover:text-white'
+                                        }
                                                 ${dragOverFolderId === folder.id ? 'ring-2 ring-primary bg-primary/20 scale-105 z-10' : ''}
                                             `}
-                                            data-folder-id={folder.id} // Hook for mobile DnD detection
-                                            onTouchStart={(e) => handleTouchStart(e, folder.id)}
-                                            onTouchMove={handleTouchMove}
-                                            onTouchEnd={handleTouchEnd}
-                                        >
-                                            <Folder size={14} className={isSelected ? 'text-black' : 'text-neutral-500 group-hover:text-white'} fill={isSelected || (dragOverFolderId === folder.id) ? "currentColor" : "none"} />
-                                            {renamingId === folder.id ? (
-                                                <input
-                                                    autoFocus
-                                                    value={renameValue}
-                                                    onChange={(e) => setRenameValue(e.target.value)}
-                                                    onBlur={handleFinishRename}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
-                                                    className="w-full bg-black text-white text-xs border border-white/20 px-1 py-0.5 rounded"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                />
-                                            ) : (
-                                                <span className="text-xs font-bold truncate">{folder.name}</span>
-                                            )}
-                                        </div>
-                                    )
-                                })}
+                                    data-folder-id={folder.id} // Hook for mobile DnD detection
+                                    onTouchStart={(e) => handleTouchStart(e, folder.id)}
+                                    onTouchMove={handleTouchMove}
+                                    onTouchEnd={handleTouchEnd}
+                                >
+                                    <Folder size={14} className={isSelected ? 'text-black' : 'text-neutral-500 group-hover:text-white'} fill={isSelected || (dragOverFolderId === folder.id) ? "currentColor" : "none"} />
+                                    {renamingId === folder.id ? (
+                                        <input
+                                            autoFocus
+                                            value={renameValue}
+                                            onChange={(e) => setRenameValue(e.target.value)}
+                                            onBlur={handleFinishRename}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
+                                            className="w-full bg-black text-white text-xs border border-white/20 px-1 py-0.5 rounded"
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    ) : (
+                                        <span className="text-xs font-bold truncate">{folder.name}</span>
+                                    )}
+                                </div>
+                            )
+                        })}
 
-                                {/* FILES */}
-                                {currentItems.filter(i => i.type !== 'folder').map(file => {
-                                    const isPlayingFile = currentProject?.id === 'upload_browser_proj' && currentTrackId === file.id && isPlaying;
-                                    const isSelected = selectedIds.has(file.id);
+                        {/* FILES */}
+                        {currentItems.filter(i => i.type !== 'folder').map(file => {
+                            const isPlayingFile = currentProject?.id === 'upload_browser_proj' && currentTrackId === file.id && isPlaying;
+                            const isSelected = selectedIds.has(file.id);
 
-                                    return (
-                                        <div
-                                            key={file.id}
-                                            draggable
-                                            onDragStart={() => setDraggedItemId(file.id)}
-                                            onClick={(e) => handleItemClick(file, e)}
-                                            onDoubleClick={() => file.type === 'audio' ? handlePlay(file) : file.type === 'text' ? openTextEditor(file) : openInfo(file)}
-                                            onContextMenu={(e) => handleContextMenu(e, 'file', file.id)}
-                                            className={`
+                            return (
+                                <div
+                                    key={file.id}
+                                    draggable
+                                    onDragStart={() => setDraggedItemId(file.id)}
+                                    onClick={(e) => handleItemClick(file, e)}
+                                    onDoubleClick={() => file.type === 'audio' ? handlePlay(file) : file.type === 'text' ? openTextEditor(file) : openInfo(file)}
+                                    onContextMenu={(e) => handleContextMenu(e, 'file', file.id)}
+                                    className={`
                                                 group flex items-center gap-2.5 p-2.5 rounded-lg border transition-all cursor-pointer font-mono select-none overflow-hidden relative
                                                 ${isSelected
-                                                    ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]'
-                                                    : 'bg-[#0A0A0A] border-white/5 hover:bg-neutral-900 hover:border-white/10 text-neutral-400 hover:text-white'
-                                                }
+                                            ? 'bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]'
+                                            : 'bg-[#0A0A0A] border-white/5 hover:bg-neutral-900 hover:border-white/10 text-neutral-400 hover:text-white'
+                                        }
                                                 ${isPlayingFile ? 'border-primary/50' : ''}
                                                 ${touchDragItem?.id === file.id ? 'opacity-50 scale-95' : ''}
                                             `}
-                                            onTouchStart={(e) => handleTouchStart(e, file.id)}
-                                            onTouchMove={handleTouchMove}
-                                            onTouchEnd={handleTouchEnd}
-                                        >
-                                            {/* Playing Indicator Background */}
-                                            {isPlayingFile && !isSelected && (
-                                                <div className="absolute inset-0 bg-primary/5 animate-pulse pointer-events-none" />
-                                            )}
+                                    onTouchStart={(e) => handleTouchStart(e, file.id)}
+                                    onTouchMove={handleTouchMove}
+                                    onTouchEnd={handleTouchEnd}
+                                >
+                                    {/* Playing Indicator Background */}
+                                    {isPlayingFile && !isSelected && (
+                                        <div className="absolute inset-0 bg-primary/5 animate-pulse pointer-events-none" />
+                                    )}
 
-                                            <div className="flex-shrink-0">
-                                                {file.type === 'audio' ? (
-                                                    isPlayingFile ? <div className="w-3.5 h-3.5 flex items-end gap-0.5"><div className="w-1 bg-primary h-full animate-[music-bar_0.5s_ease-in-out_infinite]" /><div className="w-1 bg-primary h-2/3 animate-[music-bar_0.5s_ease-in-out_infinite_0.1s]" /><div className="w-1 bg-primary h-1/2 animate-[music-bar_0.5s_ease-in-out_infinite_0.2s]" /></div> : <Music size={14} />
-                                                ) : file.type === 'image' ? (
-                                                    file.src ? (
-                                                        <img src={file.src} className="w-3.5 h-3.5 object-cover rounded-[2px]" alt="" />
-                                                    ) : <LayoutGrid size={14} />
-                                                ) : (
-                                                    <FileText size={14} />
+                                    <div className="flex-shrink-0">
+                                        {file.type === 'audio' ? (
+                                            isPlayingFile ? <div className="w-3.5 h-3.5 flex items-end gap-0.5"><div className="w-1 bg-primary h-full animate-[music-bar_0.5s_ease-in-out_infinite]" /><div className="w-1 bg-primary h-2/3 animate-[music-bar_0.5s_ease-in-out_infinite_0.1s]" /><div className="w-1 bg-primary h-1/2 animate-[music-bar_0.5s_ease-in-out_infinite_0.2s]" /></div> : <Music size={14} />
+                                        ) : file.type === 'image' ? (
+                                            file.src ? (
+                                                <img src={file.src} className="w-3.5 h-3.5 object-cover rounded-[2px]" alt="" />
+                                            ) : <LayoutGrid size={14} />
+                                        ) : (
+                                            <FileText size={14} />
+                                        )}
+                                    </div>
+
+                                    {renamingId === file.id ? (
+                                        <input
+                                            autoFocus
+                                            value={renameValue}
+                                            onChange={(e) => setRenameValue(e.target.value)}
+                                            onBlur={handleFinishRename}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
+                                            className="w-full bg-black text-white text-xs border border-white/20 px-1 py-0.5 rounded"
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    ) : (
+                                        <div className="flex flex-col min-w-0 flex-1">
+                                            <span className={`text-xs font-bold truncate ${isPlayingFile && !isSelected ? 'text-primary' : ''}`}>{file.name}</span>
+                                            <div className="flex items-center gap-2 text-[9px] opacity-50">
+                                                <span>{file.size}</span>
+                                                {file.duration && (
+                                                    <span>{Math.floor(file.duration / 60)}:{((file.duration % 60).toString().padStart(2, '0'))}</span>
                                                 )}
                                             </div>
-
-                                            {renamingId === file.id ? (
-                                                <input
-                                                    autoFocus
-                                                    value={renameValue}
-                                                    onChange={(e) => setRenameValue(e.target.value)}
-                                                    onBlur={handleFinishRename}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
-                                                    className="w-full bg-black text-white text-xs border border-white/20 px-1 py-0.5 rounded"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                />
-                                            ) : (
-                                                <div className="flex flex-col min-w-0 flex-1">
-                                                    <span className={`text-xs font-bold truncate ${isPlayingFile && !isSelected ? 'text-primary' : ''}`}>{file.name}</span>
-                                                    <div className="flex items-center gap-2 text-[9px] opacity-50">
-                                                        <span>{file.size}</span>
-                                                        {file.duration && (
-                                                            <span>{Math.floor(file.duration / 60)}:{((file.duration % 60).toString().padStart(2, '0'))}</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
                 )}
+
 
                 {viewMode === 'column' && (
                     // --- COLUMN VIEW ---
-                    <div className="flex-1 w-full overflow-hidden flex flex-row">
+                    <div className="w-full h-full overflow-hidden grid grid-cols-[1fr_20rem] bg-transparent isolate">
                         {/* Scrollable Columns Container */}
-                        <div className="flex-1 overflow-x-auto custom-scrollbar flex divide-x divide-white/5 h-full">
+                        <div ref={columnContainerRef} className="min-w-0 w-full overflow-x-auto no-scrollbar flex divide-x divide-white/5 h-full">
                             {(() => {
                                 const allColumns = getColumns();
-                                const MAX_NAV_COLS = 10; // Increased since we have scroll now
+                                const MAX_NAV_COLS = 10;
                                 const displayCols = allColumns;
 
                                 return displayCols.map((col, i) => {
                                     // Ensure we have a key for every column
+                                    const colFolderId = i === 0 ? null : selectedPath[i - 1];
+                                    const isColumnDropTarget = dragOverColumnIndex === i;
+
                                     return (
-                                        <div key={i} className="min-w-[220px] max-w-[220px] md:min-w-[260px] md:max-w-[260px] flex-shrink-0 overflow-y-auto custom-scrollbar bg-neutral-900/10 relative h-full">
+                                        <div
+                                            key={i}
+                                            className={`flex-none w-[220px] md:w-[260px] overflow-y-auto custom-scrollbar relative h-full transition-colors duration-200
+                                            ${isColumnDropTarget ? 'bg-primary/5 ring-1 ring-inset ring-primary/20' : 'bg-neutral-900/10'}`}
+                                            onDragOver={(e) => {
+                                                e.preventDefault();
+                                                // Only highlight if we are dragging something different and not into itself (roughly)
+                                                // Precise check helps UX but general highlight is fine too
+                                                if (draggedItemId) {
+                                                    setDragOverColumnIndex(i);
+                                                }
+                                            }}
+                                            onDragLeave={(e) => {
+                                                if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                                                setDragOverColumnIndex(null);
+                                            }}
+                                            onDrop={(e) => {
+                                                setDragOverColumnIndex(null);
+                                                handleDrop(e, colFolderId);
+                                            }}
+                                        >
                                             {col.items.length === 0 && (
                                                 <div className="absolute inset-0 flex items-center justify-center text-neutral-800 pointer-events-none">
                                                     <span className="text-xs font-mono opacity-20">Empty</span>
@@ -1313,7 +1375,7 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
 
                         {/* Preview Column (Always Visible - Last in Flex) */}
-                        <div className="w-80 flex-shrink-0 bg-[#080808] p-8 flex flex-col items-center text-center overflow-y-auto custom-scrollbar border-l border-white/10">
+                        <div className="flex-shrink-0 bg-[#080808] p-8 flex flex-col items-center text-center overflow-y-auto custom-scrollbar border-l border-white/10 h-full relative z-10">
                             {lastSelectedItem ? (
                                 <>
                                     <div className="w-32 h-32 bg-neutral-900 rounded-2xl border border-white/10 flex items-center justify-center mb-6 shadow-2xl relative">

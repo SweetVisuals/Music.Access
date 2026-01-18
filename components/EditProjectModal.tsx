@@ -72,7 +72,7 @@ const EditProjectModal: React.FC<EditProjectModalProps> = ({ project, onClose, o
     };
 
     return (
-        <div className={`fixed top-[56px] bottom-0 right-0 left-0 lg:left-[260px] z-[100] bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center`}>
+        <div className={`fixed inset-0 z-[1000] bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center`}>
             {/* Backdrop click to close */}
             <div className="absolute inset-0" onClick={handleClose}></div>
 

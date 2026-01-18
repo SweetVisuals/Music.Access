@@ -101,10 +101,10 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-xl md:p-4 animate-in fade-in duration-300">
-            <div className="w-full h-full md:h-auto md:max-w-lg bg-[#0a0a0a] md:border md:border-neutral-800 md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-xl md:p-4 animate-in fade-in duration-300">
+            <div className="w-full h-full md:h-auto md:max-w-3xl bg-[#0a0a0a] md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-300 flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-4 md:py-3 border-b border-neutral-800 bg-neutral-900/50 sticky top-0 z-10">
+                <div className="flex items-center justify-between px-4 py-4 md:py-3 bg-neutral-900/50 sticky top-0 z-10">
                     <div className="flex items-center gap-3">
                         <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors text-neutral-400 hover:text-white md:hidden">
                             <X size={24} />
@@ -136,7 +136,7 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                         </label>
                         <input
                             type="text"
-                            className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:border-primary/50"
+                            className="w-full bg-neutral-900 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:bg-neutral-800 transition-colors"
                             placeholder="e.g. Teaser Video, Strategy Meeting..."
                             value={formData.title}
                             onChange={e => setFormData({ ...formData, title: e.target.value })}
@@ -176,7 +176,7 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                             </label>
                             <input
                                 type="date"
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:border-primary/50 text-neutral-400"
+                                className="w-full bg-neutral-900 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:bg-neutral-800 transition-colors text-neutral-400"
                                 value={formData.startDate}
                                 onChange={e => setFormData({ ...formData, startDate: e.target.value })}
                             />
@@ -187,7 +187,7 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                             </label>
                             <input
                                 type="date"
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:border-primary/50 text-neutral-400"
+                                className="w-full bg-neutral-900 rounded-xl md:rounded-lg px-4 py-3 md:px-2.5 md:py-1.5 text-base md:text-xs text-white focus:outline-none focus:bg-neutral-800 transition-colors text-neutral-400"
                                 value={formData.endDate}
                                 onChange={e => setFormData({ ...formData, endDate: e.target.value })}
                             />
@@ -213,7 +213,7 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                     )}
 
                     {/* Context Linking */}
-                    <div className="border-t border-neutral-800 pt-6 md:pt-3 mt-2 md:mt-1">
+                    <div className="pt-6 md:pt-3 mt-2 md:mt-1">
                         <h4 className="text-[10px] font-black text-white mb-4 md:mb-2 uppercase tracking-widest text-primary">Context & Strategy Link</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-3">
                             <CustomDropdown
@@ -239,7 +239,7 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                             <AlignLeft size={12} className="md:w-3 md:h-3" /> Description / Notes
                         </label>
                         <textarea
-                            className="w-full bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-lg px-4 py-3 md:px-3 md:py-2 text-base md:text-xs text-white focus:outline-none focus:border-primary/50 min-h-[120px] md:min-h-[80px] resize-none"
+                            className="w-full bg-neutral-900 rounded-xl md:rounded-lg px-4 py-3 md:px-3 md:py-2 text-base md:text-xs text-white focus:outline-none focus:bg-neutral-800 transition-colors min-h-[120px] md:min-h-[80px] resize-none"
                             placeholder="Add details..."
                             value={formData.description}
                             onChange={e => setFormData({ ...formData, description: e.target.value })}
@@ -248,7 +248,7 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
                 </div>
 
                 {/* Desktop Footer (Hidden on mobile as save is in header) */}
-                <div className="hidden md:flex p-3 border-t border-neutral-800 bg-neutral-900/30 justify-end gap-2">
+                <div className="hidden md:flex p-3 bg-neutral-900/30 justify-end gap-2">
                     <button
                         onClick={onClose}
                         className="px-3 py-1.5 rounded-lg text-xs font-bold text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"

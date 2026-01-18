@@ -107,6 +107,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
             hideControls
             fullWidth={false}
           />
+          <span className="text-xs font-bold text-neutral-500 ml-1">BPM</span>
         </div>
 
       </div>

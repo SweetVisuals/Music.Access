@@ -16,10 +16,10 @@ const EraTimeline: React.FC<EraTimelineProps> = ({ strategies, campaigns, onAddC
     // Fallback if no era defined
     if (!eraData) {
         return (
-            <div className="bg-gradient-to-r from-neutral-900 to-neutral-800 border border-neutral-700/50 rounded-xl p-6 mb-8 text-center">
+            <div className="bg-gradient-to-r from-neutral-900 to-neutral-800 rounded-xl p-6 mb-8 text-center">
                 <h3 className="text-xl font-bold text-white mb-2">No Era Defined</h3>
                 <p className="text-neutral-400 text-sm mb-4">Start your roadmap strategy to define your current artist era.</p>
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-neutral-300 text-xs font-mono">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 text-neutral-300 text-xs font-mono">
                     <Flag size={12} /> Stage 4: Define Era
                 </div>
             </div>
@@ -30,7 +30,7 @@ const EraTimeline: React.FC<EraTimelineProps> = ({ strategies, campaigns, onAddC
     const eraEnv = eraData.defined_environment?.[0] || 'Unknown World';
 
     return (
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-6 mb-8 relative overflow-hidden group">
+        <div className="bg-[#0a0a0a] rounded-xl p-6 mb-8 relative overflow-hidden group">
             {/* Background Texture/Gradient */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5 opacity-50 group-hover:opacity-80 transition-opacity pointer-events-none" />
 
@@ -60,7 +60,7 @@ const EraTimeline: React.FC<EraTimelineProps> = ({ strategies, campaigns, onAddC
                     </h4>
 
                     {campaigns.length === 0 ? (
-                        <div className="h-12 border border-dashed border-neutral-800 rounded-lg flex items-center justify-center text-xs text-neutral-500">
+                        <div className="h-12 bg-white/5 rounded-lg flex items-center justify-center text-xs text-neutral-500">
                             No campaigns scheduled. Plan one now!
                         </div>
                     ) : (
@@ -82,12 +82,12 @@ const EraTimeline: React.FC<EraTimelineProps> = ({ strategies, campaigns, onAddC
                                         </div>
 
                                         <div className={`
-                                            flex-1 h-8 rounded-lg border flex items-center px-3 relative overflow-hidden transition-all hover:scale-[1.01] cursor-pointer
+                                            flex-1 h-8 rounded-lg flex items-center px-3 relative overflow-hidden transition-all hover:scale-[1.01] cursor-pointer
                                             ${isActive
-                                                ? 'bg-gradient-to-r from-primary/20 to-primary/5 border-primary/30'
+                                                ? 'bg-gradient-to-r from-primary/20 to-primary/5'
                                                 : isPast
-                                                    ? 'bg-neutral-900 border-neutral-800 opacity-60' // Past
-                                                    : 'bg-neutral-800/50 border-neutral-700' // Future
+                                                    ? 'bg-neutral-900 opacity-60' // Past
+                                                    : 'bg-neutral-800/50' // Future
                                             }
                                         `}>
                                             <span className={`text-xs font-bold truncate z-10 ${isActive ? 'text-primary' : 'text-neutral-300'}`}>

@@ -104,7 +104,7 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
                         <p className="text-neutral-500 text-sm lg:text-base">Plan your career trajectory, manage campaigns, and track goals.</p>
                     </div>
 
-                    <div className="flex w-full md:w-auto bg-neutral-900/50 p-1 rounded-lg border border-neutral-800">
+                    <div className="flex w-full md:w-auto bg-neutral-900/50 p-1 rounded-lg">
                         <button
                             onClick={() => setActiveTab('planner')}
                             className={`flex-1 md:flex-none justify-center px-3 md:px-4 py-2 rounded-md text-[10px] md:text-xs font-bold transition-all flex items-center gap-1.5 md:gap-2 ${activeTab === 'planner' ? 'bg-primary text-black shadow-lg shadow-primary/20' : 'text-neutral-400 hover:text-white hover:bg-white/5'
@@ -136,7 +136,7 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
                 <div className="md:hidden pb-8">
                     <button
                         onClick={() => setShowFullCalendar(true)}
-                        className="w-full py-5 bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800 rounded-xl flex flex-col items-center justify-center gap-3 text-neutral-400 hover:text-white hover:border-primary/50 transition-all shadow-lg active:scale-95 group"
+                        className="w-full py-5 bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-xl flex flex-col items-center justify-center gap-3 text-neutral-400 hover:text-white transition-all shadow-lg active:scale-95 group"
                     >
                         <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-colors shadow-inner">
                             <CalendarIcon size={24} />
@@ -148,7 +148,7 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
                     </button>
                 </div>
 
-                <div className="h-px bg-neutral-800"></div>
+                <div className="h-px bg-neutral-800/20"></div>
             </div>
 
             {/* Main Content Area */}
@@ -306,11 +306,11 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
             const end = c.dates?.to ? new Date(c.dates.to) : undefined;
             // Define styles: [bg, text, border]
             const palettes = [
-                ['bg-indigo-500/10', 'text-indigo-400', 'border-indigo-500/20'],
-                ['bg-emerald-500/10', 'text-emerald-400', 'border-emerald-500/20'],
-                ['bg-orange-500/10', 'text-orange-400', 'border-orange-500/20'],
-                ['bg-pink-500/10', 'text-pink-400', 'border-pink-500/20'],
-                ['bg-cyan-500/10', 'text-cyan-400', 'border-cyan-500/20']
+                ['bg-indigo-500/10', 'text-indigo-400', ''],
+                ['bg-emerald-500/10', 'text-emerald-400', ''],
+                ['bg-orange-500/10', 'text-orange-400', ''],
+                ['bg-pink-500/10', 'text-pink-400', ''],
+                ['bg-cyan-500/10', 'text-cyan-400', '']
             ];
             const theme = palettes[i % palettes.length];
             return {
@@ -324,11 +324,11 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
 
     const getTypeColor = (type: string) => {
         switch (type) {
-            case 'content': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-            case 'campaign': return 'bg-primary/10 text-primary border-primary/20';
-            case 'meeting': return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
-            case 'milestone': return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
-            default: return 'bg-neutral-800 text-neutral-400 border-neutral-700';
+            case 'content': return 'bg-blue-500/10 text-blue-400';
+            case 'campaign': return 'bg-primary/10 text-primary';
+            case 'meeting': return 'bg-purple-500/10 text-purple-400';
+            case 'milestone': return 'bg-yellow-500/10 text-yellow-400';
+            default: return 'bg-neutral-800 text-neutral-400';
         }
     };
 
@@ -369,7 +369,7 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                                 {goals.slice(0, 4).map(goal => { // Show top 4 goals
                                     const progress = calculateProgress(goal.current, goal.target);
                                     return (
-                                        <div key={goal.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-lg p-4 hover:border-neutral-700 transition-colors">
+                                        <div key={goal.id} className="bg-[#0a0a0a] rounded-lg p-4 transition-colors">
                                             <div className="flex items-start justify-between mb-3">
                                                 <div className={`p-1.5 rounded-md border ${getGoalColor(goal.type)}`}>
                                                     {getGoalIcon(goal.type)}
@@ -389,7 +389,7 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                                 })}
 
                                 {/* Add Goal Button */}
-                                <button className="bg-white/5 border border-dashed border-neutral-800 rounded-lg p-4 hover:bg-white/10 hover:border-neutral-600 transition-all flex flex-col items-center justify-center gap-2 group">
+                                <button className="bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-all flex flex-col items-center justify-center gap-2 group">
                                     <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 group-hover:bg-primary group-hover:text-black transition-colors">
                                         <Plus size={16} />
                                     </div>
@@ -402,16 +402,16 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
             </div>
 
             <div className={`
-                bg-[#0a0a0a] border border-neutral-800 transition-all duration-300
+                bg-[#0a0a0a] transition-all duration-300
                 ${showFullCalendar
-                    ? 'fixed top-[60px] bottom-0 inset-x-0 z-[40] flex flex-col border-t border-b border-neutral-800 shadow-2xl'
+                    ? 'fixed top-[60px] bottom-0 inset-x-0 z-[40] flex flex-col shadow-2xl'
                     : 'rounded-xl overflow-hidden shadow-2xl hidden md:block'
                 }
             `}>
 
                 {/* Calendar Header */}
                 <div className={`
-                    border-b border-neutral-800 bg-neutral-900/50 flex items-center justify-between shrink-0
+                    bg-neutral-900/50 flex items-center justify-between shrink-0
                     ${showFullCalendar ? 'p-4' : 'p-6'}
                 `}>
                     {/* Mobile Header View */}
@@ -452,13 +452,13 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                             </p>
                         </div>
                         <div className="flex gap-2">
-                            <button onClick={handlePrevMonth} className="p-2 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white transition-colors border border-transparent hover:border-neutral-700">
+                            <button onClick={handlePrevMonth} className="p-2 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white transition-colors">
                                 <ChevronDown size={20} className="rotate-90" />
                             </button>
-                            <button onClick={() => setCurrentDate(new Date())} className="px-3 py-2 hover:bg-white/10 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors border border-transparent hover:border-neutral-700">
+                            <button onClick={() => setCurrentDate(new Date())} className="px-3 py-2 hover:bg-white/10 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors">
                                 Today
                             </button>
-                            <button onClick={handleNextMonth} className="p-2 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white transition-colors border border-transparent hover:border-neutral-700">
+                            <button onClick={handleNextMonth} className="p-2 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white transition-colors">
                                 <ChevronDown size={20} className="-rotate-90" />
                             </button>
 
@@ -477,7 +477,7 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                 {/* Calendar Grid Wrapper for Scroll */}
                 <div className="overflow-x-auto overflow-y-auto flex-1 relative custom-scrollbar bg-neutral-900/20 overscroll-x-contain">
                     {/* Sticky Days Header */}
-                    <div className="grid grid-cols-7 border-b border-neutral-800 bg-neutral-900/95 backdrop-blur-sm sticky top-0 z-10 min-w-[700px] md:min-w-0">
+                    <div className="grid grid-cols-7 bg-neutral-900/95 backdrop-blur-sm sticky top-0 z-10 min-w-[700px] md:min-w-0">
                         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
                             <div key={day} className="py-3 text-center text-[10px] font-black text-neutral-500 uppercase tracking-widest">
                                 {day}
@@ -493,7 +493,7 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                         <div className="grid grid-cols-7 auto-rows-[140px] min-w-[700px] md:min-w-0 pb-12">
                             {/* Empty slots for start of month */}
                             {[...Array(startDay)].map((_, i) => (
-                                <div key={`empty - ${i} `} className="border-r border-b border-neutral-800/50 bg-neutral-900/40"></div>
+                                <div key={`empty - ${i} `} className="bg-neutral-900/40"></div>
                             ))}
 
                             {/* Days */}
@@ -510,10 +510,10 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                                     <div
                                         key={day.toISOString()}
                                         className={`
-                                            border-r border-b p-2 relative group transition-colors cursor-pointer flex flex-col gap-1
+                                            p-2 relative group transition-colors cursor-pointer flex flex-col gap-1
                                             ${activeStrategyCampaign
-                                                ? `${activeStrategyCampaign.style.bg} ${activeStrategyCampaign.style.border}`
-                                                : `border-neutral-800/50 ${isToday ? 'bg-primary/5' : 'hover:bg-white/5'}`
+                                                ? `${activeStrategyCampaign.style.bg}`
+                                                : `${isToday ? 'bg-primary/5' : 'hover:bg-white/5'}`
                                             }
                                         `}
                                         onClick={() => handleAddEvent(day)}
@@ -542,7 +542,7 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                                                 <div
                                                     key={event.id}
                                                     onClick={(e) => handleEditEvent(event, e)}
-                                                    className={`p-1.5 rounded-md border text-[10px] font-bold truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 ${getTypeColor(event.type)}`}
+                                                    className={`p-1.5 rounded-md text-[10px] font-bold truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 ${getTypeColor(event.type)}`}
                                                 >
                                                     {/* Mini Icons per type */}
                                                     {event.platform === 'instagram' && <Smartphone size={8} />}
@@ -628,14 +628,14 @@ const StrategyTab: React.FC<StrategyTabProps> = ({ strategies, onUpdate, openWiz
     };
 
     return (
-        <div className="space-y-8 max-w-5xl mx-auto">
+        <div className="space-y-8 w-full">
             {!openWizard && (
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h2 className="text-2xl font-black text-white">Strategy Roadmap</h2>
                         <p className="text-neutral-500">Define your artist identity, era, and execution plan.</p>
                     </div>
-                    <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2 text-xs font-mono text-neutral-400">
+                    <div className="bg-neutral-900/50 rounded-lg px-4 py-2 text-xs font-mono text-neutral-400">
                         {strategies.filter(s => s.status === 'completed').length} / {STAGE_TEMPLATES.length} Stages Completed
                     </div>
                 </div>
@@ -675,7 +675,7 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
 
     return (
         <div className="w-full pb-12 pt-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 px-4 w-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4 w-full">
                 {STAGE_TEMPLATES.map((stage: any, index) => {
                     const status = strategyData[stage.id]?.status || 'not_started';
                     const isLocked = false;
@@ -685,44 +685,44 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                         <div key={stage.id} className="flex flex-col group h-full">
                             {/* Card */}
                             <div className={`
-                                w-full h-[220px] md:h-[200px] flex flex-col relative
-                                rounded-xl border backdrop-blur-sm transition-all duration-300
-                                hover:-translate-y-1 hover:shadow-xl
+                                w-full h-[280px] md:h-[260px] flex flex-col relative
+                                rounded-xl backdrop-blur-sm transition-all duration-300
+                                hover:-translate-y-1 hover:shadow-2xl
                                 ${status === 'completed'
-                                    ? 'bg-green-500/10 border-green-500/30 hover:shadow-green-500/20'
+                                    ? 'bg-green-500/10 hover:bg-green-500/15'
                                     : isInProgress
-                                        ? 'bg-primary/5 border-primary/30 shadow-primary/5'
+                                        ? 'bg-primary/10 hover:bg-primary/15'
                                         : isLocked
-                                            ? 'bg-neutral-900/40 border-neutral-800/50 opacity-60'
-                                            : 'bg-neutral-900/60 border-neutral-800 hover:border-primary/50 hover:shadow-primary/10'
+                                            ? 'bg-neutral-900/40 opacity-60'
+                                            : 'bg-[#121212] hover:bg-[#1a1a1a]'
                                 }
                             `}>
                                 {/* Header Image / Icon Area */}
                                 <div className={`
-                                    h-16 w-full border-b flex items-center justify-center relative overflow-hidden
-                                    ${status === 'completed' ? 'border-green-500/20 bg-green-500/5' : isInProgress ? 'border-primary/20 bg-primary/5' : 'border-neutral-800 bg-black/20'}
+                                    h-20 w-full flex items-center justify-center relative overflow-hidden rounded-t-xl
+                                    ${status === 'completed' ? 'bg-green-500/10' : isInProgress ? 'bg-primary/10' : 'bg-white/5'}
                                 `}>
-                                    <div className="absolute top-2 right-2 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
+                                    <div className="absolute top-3 right-3 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
                                         Step {String(index + 1).padStart(2, '0')}
                                     </div>
 
                                     {/* Icon Circle */}
                                     <div className={`
-                                        w-10 h-10 rounded-full flex items-center justify-center border-2 shadow-lg z-10 transition-all duration-500
+                                        w-12 h-12 rounded-full flex items-center justify-center shadow-2xl z-10 transition-all duration-500
                                         ${status === 'completed'
-                                            ? 'bg-green-500 text-black border-green-400'
+                                            ? 'bg-green-500 text-black'
                                             : isInProgress
-                                                ? 'bg-neutral-900 text-primary border-primary animate-pulse'
+                                                ? 'bg-[#1a1a1a] text-primary animate-pulse border border-primary/20'
                                                 : isLocked
-                                                    ? 'bg-neutral-800 text-neutral-600 border-neutral-700'
-                                                    : 'bg-neutral-900 text-primary border-primary/30 group-hover:scale-110'
+                                                    ? 'bg-neutral-800 text-neutral-600'
+                                                    : 'bg-[#1a1a1a] text-primary group-hover:scale-110 group-hover:shadow-primary/20 border border-white/5'
                                         }
                                     `}>
-                                        {status === 'completed' ? <CheckCircle size={18} /> : <div className="text-sm font-bold">{index + 1}</div>}
+                                        {status === 'completed' ? <CheckCircle size={20} /> : <div className="text-base font-bold">{index + 1}</div>}
                                     </div>
 
                                     {/* Background decorative glow */}
-                                    {!isLocked && <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />}
+                                    {!isLocked && <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />}
 
                                     {/* In Progress Indicator */}
                                     {isInProgress && (
@@ -731,11 +731,11 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                 </div>
 
                                 {/* Content */}
-                                <div className="p-3 flex-1 flex flex-col">
-                                    <h3 className={`text-xs font-bold mb-1 ${status === 'completed' ? 'text-green-400' : isInProgress ? 'text-primary' : 'text-white'} `}>
+                                <div className="p-5 flex-1 flex flex-col">
+                                    <h3 className={`text-sm font-bold mb-2 ${status === 'completed' ? 'text-green-400' : isInProgress ? 'text-primary' : 'text-white'} `}>
                                         {stage.title}
                                     </h3>
-                                    <p className="text-[10px] text-neutral-400 leading-snug mb-2 flex-1 line-clamp-2">
+                                    <p className="text-xs text-neutral-400 leading-relaxed mb-4 flex-1 line-clamp-3">
                                         {stage.description}
                                     </p>
 
@@ -745,25 +745,25 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                             onClick={() => onStartStage(stage.id)}
                                             disabled={isLocked}
                                             className={`
-                                                w-full py-2.5 rounded-lg font-bold text-xs tracking-wide transition-all flex items-center justify-center gap-1.5
+                                                w-full py-3 rounded-lg font-bold text-xs tracking-wide transition-all flex items-center justify-center gap-2
                                                 ${status === 'completed'
-                                                    ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/20'
+                                                    ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
                                                     : isInProgress
-                                                        ? 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/20 shadow-lg shadow-primary/5'
+                                                        ? 'bg-primary text-black hover:bg-primary/90 shadow-lg shadow-primary/20'
                                                         : isLocked
-                                                            ? 'bg-neutral-800 text-neutral-500 border border-neutral-700 cursor-not-allowed'
-                                                            : 'bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/10'
+                                                            ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                                                            : 'bg-white text-black hover:bg-neutral-200 shadow-lg shadow-white/5'
                                                 }
                                             `}
                                         >
                                             {status === 'completed' ? (
                                                 <>Edit <div className="w-1.5 h-1.5 rounded-full bg-green-500 ml-1"></div></>
                                             ) : isInProgress ? (
-                                                <>Continue <ArrowRight size={12} className="animate-pulse" /></>
+                                                <>Continue <ArrowRight size={14} className="animate-pulse" /></>
                                             ) : isLocked ? (
-                                                <><Lock size={12} /> Locked</>
+                                                <><Lock size={14} /> Locked</>
                                             ) : (
-                                                <>Start <ArrowRight size={12} /></>
+                                                <>Start <ArrowRight size={14} /></>
                                             )}
                                         </button>
                                     </div>

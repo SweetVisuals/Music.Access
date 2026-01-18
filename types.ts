@@ -316,6 +316,11 @@ export type View =
   | 'notes'
   | 'contracts'
   | 'browse-talent'
+  | 'browse-all-talent'
+  | 'browse-all-projects'
+  | 'browse-all-soundpacks'
+  | 'browse-all-releases'
+  | 'browse-all-services'
   | 'following'
   | 'collaborate'
   | 'library'
@@ -331,6 +336,7 @@ export type View =
   | 'dashboard-analytics'
   | 'dashboard-settings'
   | 'dashboard-roadmap'
+  | 'dashboard-goals'
   | 'dashboard-help'
   | 'subscription'
   | 'settings'
@@ -369,6 +375,7 @@ export interface StageField {
   source?: string; // Source for dynamic options (e.g. 'stage-id.field-id')
   groupBySource?: string; // Source to group array items by (e.g. 'stage-id.field-id')
   fullWidth?: boolean; // Force field to span full width (col-span-2)
+  aiEnabled?: boolean;
 }
 
 export interface StageStep {
@@ -399,7 +406,17 @@ export interface DashboardAnalytics {
   activeOrders: number;
   totalPlays: number;
   totalFollowers: number;
+  chartData: Array<{
+    label: string;
+    date: string;
+    revenue: number;
+    listeners: number;
+    plays: number;
+    orders: number;
+    gems: number;
+  }>;
   monthlyData: Array<{
+    date?: string; // Optional for compatibility
     revenue: number;
     listeners: number;
     plays: number;
@@ -422,6 +439,12 @@ export interface DashboardAnalytics {
     status: string;
     statusColor: string;
   }>;
+  // Percentage Changes (Current Range vs Previous Range)
+  revenueChange: number;
+  ordersChange: number;
+  playsChange: number;
+  followersChange: number;
+  listenersChange: number;
 }
 
 // --- Roadmap & Calendar Types ---

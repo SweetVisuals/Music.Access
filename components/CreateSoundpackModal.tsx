@@ -218,11 +218,14 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
     if (!shouldRender) return null;
 
     return (
-        <div className={`fixed top-[56px] bottom-0 right-0 left-0 lg:left-[260px] z-[150] transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`fixed inset-0 z-[1000] transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}>
             <div className="absolute inset-0 bg-black/40 -z-10" />
-            <div className={`w-full h-full bg-[#0a0a0a] border-0 flex flex-col shadow-2xl overflow-hidden relative ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
+            <div className={`w-full h-[100dvh] bg-[#0a0a0a] border-0 flex flex-col shadow-2xl overflow-hidden relative ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}>
 
-                <div className="h-14 md:h-16 border-b border-transparent flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0">
+                <div
+                    className="h-14 md:h-16 border-b border-transparent flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0"
+                    style={{ paddingTop: 'env(safe-area-inset-top)' }}
+                >
                     <h2 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
                         <Box size={18} className="text-primary" />
                         Create New Sound Pack

@@ -764,9 +764,10 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                         ) : (
                             <button
                                 onClick={handleFinalSave}
-                                className="flex-1 md:flex-none px-8 py-3 bg-primary text-black rounded-lg font-bold text-xs hover:bg-primary/90 transition-colors shadow-[0_0_20px_rgba(var(--primary),0.3)] justify-center"
+                                disabled={isSaving}
+                                className={`flex-1 md:flex-none px-8 py-3 bg-primary text-black rounded-lg font-bold text-xs hover:bg-primary/90 transition-colors shadow-[0_0_20px_rgba(var(--primary),0.3)] justify-center ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                Publish Project
+                                {isSaving ? 'Publishing...' : 'Publish Project'}
                             </button>
                         )}
                     </div>

@@ -205,8 +205,7 @@ export const getProjects = async (): Promise<Project[]> => {
         created_at
       )
     `)
-    .eq('status', 'published') // Only show published projects on public pages
-    .neq('type', 'beat_tape'); // Studio releases are type 'beat_tape' and should remain private to the Studio page
+    .eq('status', 'published'); // Only show published projects on public pages
 
 
   if (error) throw error;
@@ -509,12 +508,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
         avgTurnaround: userData.avg_turnaround || '24h',
         bio: userData.bio,
         website: userData.website,
-        projects: projects.filter(p => {
-          // If viewing self, show everything
-          if (currentUser?.id === targetUserId) return true;
-          // Otherwise, hide Studio (beat_tape) releases
-          return p.type !== 'beat_tape';
-        }),
+        projects: projects,
         services: services,
         soundPacks: projects.filter(p => p.type === 'sound_pack').map(p => ({
           id: p.id,
@@ -666,7 +660,7 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
       avgTurnaround: userData.avg_turnaround || '24h',
       bio: userData.bio,
       website: userData.website,
-      projects: projects.filter(p => p.type === 'release'), // ONLY show releases and hide Studio (beat_tape) from public visitors
+      projects: projects, // Show all projects including beat_tapes
       services: services,
       soundPacks: projects.filter(p => p.type === 'sound_pack').map(p => ({
         id: p.id,

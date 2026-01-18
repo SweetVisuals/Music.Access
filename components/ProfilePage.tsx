@@ -276,10 +276,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             tabs = ['beat_tapes', 'sound_packs', 'services'];
         }
 
-        // Studio releases (beat_tapes) are private to the Studio page and not shown on public profiles
-        if (isViewerMode || !isOwnProfile) {
-            tabs = tabs.filter(t => t !== 'beat_tapes');
-        }
+        // Studio releases (beat_tapes) are now public
+        // if (isViewerMode || !isOwnProfile) {
+        //     tabs = tabs.filter(t => t !== 'beat_tapes');
+        // }
 
         // If private profile and in viewer mode (or not owner), restrict tabs
         if (!isPublic && (isViewerMode || !isOwnProfile)) {

@@ -31,6 +31,7 @@ import NotLoggedInState from './components/NotLoggedInState';
 import { FloatingMessenger } from './components/FloatingMessenger';
 import BottomNav from './components/BottomNav';
 import PullToRefresh from './components/PullToRefresh';
+import ListenPage from './components/ListenPage';
 import { getProjects, getUserProfile, supabase, signOut, updateUserProfile, getCurrentUser, searchProfiles, searchServices, claimDailyReward } from './services/supabaseService';
 import { Project, FilterState, View, UserProfile, TalentProfile, Service } from './types';
 
@@ -113,6 +114,7 @@ const App: React.FC = () => {
       if (pathname === '/dashboard/analytics') return 'dashboard-analytics';
       return 'dashboard-overview';
     }
+    if (pathname.startsWith('/listen/')) return 'listen';
     return 'home';
   };
 
@@ -557,7 +559,8 @@ const App: React.FC = () => {
         'dashboard-settings': '/dashboard/settings',
         'dashboard-roadmap': '/dashboard/roadmap',
         'dashboard-goals': '/dashboard/goals',
-        'dashboard-help': '/dashboard/help'
+        'dashboard-help': '/dashboard/help',
+        'listen': '/listen'
       };
       const path = pathMap[view] || '/';
       navigate(path);
@@ -652,6 +655,16 @@ const App: React.FC = () => {
 
                 <main ref={mainRef} style={{ paddingBottom: getBottomStackHeightCSS() }} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[calc(56px+env(safe-area-inset-top))]' : currentView === 'dashboard-messages' ? 'overflow-hidden pt-[calc(56px+env(safe-area-inset-top))] lg:pt-[80px]' : 'overflow-y-auto overscroll-y-contain pt-[calc(80px+env(safe-area-inset-top))] lg:pt-[80px]'} scroll-smooth`}>
 
+                  {currentView === 'listen' && (
+                    <ListenPage
+                      currentTrackId={currentTrackId}
+                      isPlaying={isPlaying}
+                      onPlayTrack={handlePlayTrack}
+                      onTogglePlay={handleTogglePlay}
+                      currentProject={currentProject}
+                    />
+                  )}
+
                   {currentView === 'home' && (
                     <PullToRefresh onRefresh={fetchProjects}>
                       <div className="w-full max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 pt-4 lg:pt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -670,7 +683,7 @@ const App: React.FC = () => {
                               onClick={handleClaimDailyGems}
                               className="px-3 py-1.5 lg:px-4 lg:py-2 bg-primary text-black font-bold rounded-lg text-xs lg:text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
                             >
-                              Claim 10 Gems
+                              Claim
                             </button>
                           </div>
                         )}

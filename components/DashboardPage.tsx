@@ -960,6 +960,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     borderColor="border-purple-400/20"
                     isActive={selectedStat === 'gems'}
                     onClick={() => setSelectedStat('gems')}
+                    className="hidden md:block"
                 />
             </div>
 

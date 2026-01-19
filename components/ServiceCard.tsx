@@ -4,7 +4,7 @@ import { Service, UserProfile } from '../types';
 
 interface ServiceCardProps {
     service: Service | Partial<Service>;
-    user: UserProfile | null;
+    user: UserProfile | { username: string; handle?: string; avatar?: string; avatar_url?: string; } | null;
     onClick?: () => void; // For booking/viewing details
     isPreview?: boolean;
 }
@@ -88,8 +88,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, user, onClick, isPre
                     <div className="flex items-center gap-3">
                         <div className="relative group/avatar">
                             <div className="w-10 h-10 rounded-xl bg-neutral-800 border-2 border-transparent overflow-hidden transition-all duration-300 group-hover/avatar:border-primary/50">
-                                {user?.avatar_url || user?.avatar ? (
-                                    <img src={user?.avatar_url || user?.avatar} alt={user?.username || 'User'} className="w-full h-full object-cover" />
+                                {((user as any)?.avatar_url || (user as any)?.avatar) ? (
+                                    <img src={(user as any)?.avatar_url || (user as any)?.avatar} alt={user?.username || 'User'} className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center">
                                         <User size={16} className="text-neutral-500" />

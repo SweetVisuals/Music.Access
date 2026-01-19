@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Play, Pause, MoreVertical, Cpu, ShoppingCart, Bookmark, Sparkles, Clock, BookmarkPlus, Lock, Edit, Trash2, Globe, Disc } from 'lucide-react';
 import { Project } from '../types';
 import { generateCreativeDescription } from '../services/geminiService';
@@ -52,6 +53,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
     const { openPurchaseModal } = usePurchaseModal();
     const { showToast } = useToast();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchUserAndStatus = async () => {
@@ -212,7 +214,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 onMouseLeave={() => setIsHovered(false)}
                 onClick={(e) => {
                     e.stopPropagation();
-                    isTrackPlaying ? onTogglePlay() : onPlayTrack(releaseTrack.id || '');
+                    navigate(`/listen/${project.shortId || project.id}`);
                 }}
             >
                 {/* Full Cover Background */}
@@ -343,7 +345,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 onClick={() => {
-                    if (!isOwnProject) openPurchaseModal(project);
+                    navigate(`/listen/${project.shortId || project.id}`);
                 }}
             >
                 {/* Top Gradient Line */}
@@ -573,14 +575,28 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 {/* Footer */}
                 <div className="rounded-b-xl px-3 py-3 bg-neutral-900/90 border-t border-transparent flex items-center justify-between z-20">
                     <div className="flex items-center gap-2.5 overflow-hidden">
-                        <div className="h-5 w-5 rounded bg-neutral-800 text-neutral-400 border border-transparent flex items-center justify-center text-[9px] font-bold uppercase shrink-0 overflow-hidden">
+                        <div
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const handle = project.producerHandle || project.producer;
+                                navigate(`/@${handle}`);
+                            }}
+                            className="h-5 w-5 rounded bg-neutral-800 text-neutral-400 border border-transparent flex items-center justify-center text-[9px] font-bold uppercase shrink-0 overflow-hidden cursor-pointer hover:border-white/20 transition-colors"
+                        >
                             {project.producerAvatar ? (
                                 <img src={project.producerAvatar} alt={project.producer} className="w-full h-full object-cover" />
                             ) : (
                                 project.producer.charAt(0)
                             )}
                         </div>
-                        <span className="text-[10px] font-bold text-neutral-400 hover:text-white transition-colors truncate cursor-pointer">
+                        <span
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const handle = project.producerHandle || project.producer;
+                                navigate(`/@${handle}`);
+                            }}
+                            className="text-[10px] font-bold text-neutral-400 hover:text-white transition-colors truncate cursor-pointer"
+                        >
                             {project.producer}
                         </span>
                     </div>

@@ -162,6 +162,140 @@ const formatDate = (date: Date) => {
 };
 
 // Database functions
+export const getProjectById = async (id: string): Promise<Project> => {
+  let query = supabase.from('projects').select(`
+      *,
+      user:user_id (
+        username,
+        handle,
+        avatar_url
+      ),
+      tracks (
+        id,
+        title,
+        duration_seconds,
+        track_number,
+        note_id,
+        status_tags,
+        assigned_file_id
+      ),
+      project_licenses (
+        license:licenses (
+          id,
+          name,
+          type,
+          default_price,
+          features,
+          file_types_included
+        ),
+        price
+      ),
+      project_tags (
+        tag:tags (
+          name
+        )
+      ),
+      tasks (
+        id,
+        project_id,
+        text,
+        completed,
+        created_at
+      )
+    `);
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+  if (isUuid) {
+    query = query.eq('id', id);
+  } else {
+    query = query.eq('short_id', id);
+  }
+
+  const { data, error } = await query.single(); // Only show published projects on public pages
+
+
+  if (error) throw error;
+
+  // Manual Asset Fetching (Workaround for missing FK)
+  const projectData = data as any;
+  const assetIds = new Set<string>();
+
+  projectData.tracks?.forEach((t: any) => {
+    if (t.assigned_file_id) assetIds.add(t.assigned_file_id);
+  });
+
+  const assetMap = new Map<string, string>();
+  if (assetIds.size > 0) {
+    const { data: assets, error: assetsError } = await supabase
+      .from('assets')
+      .select('id, storage_path')
+      .in('id', Array.from(assetIds));
+
+    if (!assetsError && assets) {
+      assets.forEach((a: any) => {
+        if (a.storage_path) {
+          const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(a.storage_path);
+          assetMap.set(a.id, publicUrl);
+        }
+      });
+    }
+  }
+
+  // Transform data to match Project interface
+  const projectFormatted: Project = {
+    id: projectData.id,
+    shortId: projectData.short_id,
+    title: projectData.title,
+    producer: projectData.user?.username || 'Unknown',
+    producerHandle: projectData.user?.handle,
+    producerAvatar: projectData.user?.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+    coverImage: projectData.cover_image_url,
+    price: projectData.project_licenses?.[0]?.price || projectData.project_licenses?.[0]?.license?.default_price || 0,
+    bpm: projectData.bpm,
+    key: projectData.key,
+    genre: projectData.genre,
+    subGenre: projectData.sub_genre,
+    type: projectData.type,
+    tags: projectData.project_tags?.map((pt: any) => pt.tag?.name).filter(Boolean) || [],
+    tracks: projectData.tracks?.map((track: any) => {
+      // Use manually fetched URL (prioritize) or fallback logic if we kept the join (we removed it)
+      const mp3Url = track.assigned_file_id ? (assetMap.get(track.assigned_file_id) || '') : '';
+
+      return {
+        id: track.id,
+        title: track.title,
+        duration: track.duration_seconds,
+        trackNumber: track.track_number,
+        noteId: track.note_id,
+        statusTags: track.status_tags,
+        assignedFileId: track.assigned_file_id,
+        files: {
+          mp3: mp3Url
+        }
+      };
+    }) || [],
+    description: projectData.description,
+    licenses: projectData.project_licenses?.map((pl: any) => ({
+      id: pl.license?.id,
+      type: pl.license?.type,
+      name: pl.license?.name,
+      price: pl.price || pl.license?.default_price,
+      features: pl.license?.features || [],
+      fileTypesIncluded: pl.license?.file_types_included || []
+    })) || [],
+    status: projectData.status,
+    created: projectData.created_at,
+    userId: projectData.user_id,
+    releaseDate: projectData.release_date,
+    format: projectData.format,
+    progress: projectData.progress,
+    gems: projectData.gems || 0, // Map gems from DB or default to 0
+    tasks: projectData.tasks?.map((t: any) => ({ id: t.id, projectId: t.project_id, text: t.text, completed: t.completed, createdAt: t.created_at })) || []
+  };
+  return projectFormatted;
+};
+
 export const getProjects = async (): Promise<Project[]> => {
   const { data, error } = await supabase
     .from('projects')
@@ -240,8 +374,10 @@ export const getProjects = async (): Promise<Project[]> => {
   // Transform data to match Project interface
   return projectsData.map(project => ({
     id: project.id,
+    shortId: project.short_id,
     title: project.title,
     producer: project.user?.username || 'Unknown',
+    producerHandle: project.user?.handle,
     producerAvatar: project.user?.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
     coverImage: project.cover_image_url,
     price: project.project_licenses?.[0]?.price || project.project_licenses?.[0]?.license?.default_price || 0,
@@ -287,6 +423,7 @@ export const getProjects = async (): Promise<Project[]> => {
     tasks: project.tasks?.map((t: any) => ({ id: t.id, projectId: t.project_id, text: t.text, completed: t.completed, createdAt: t.created_at })) || []
   }));
 };
+
 
 export const giveGemToProject = async (projectId: string) => {
   const currentUser = await ensureUserExists();
@@ -775,7 +912,8 @@ export const createProject = async (project: Partial<Project>) => {
       genre: project.genre,
       sub_genre: project.subGenre,
       cover_image_url: project.coverImage, // Ensure cover image is saved
-      status: project.status || 'published' // Default to published if not specified
+      status: project.status || 'published', // Default to published if not specified
+      short_id: Math.random().toString(36).substring(2, 10) // Generate random 8-char string
     })
     .select()
     .single();
@@ -977,6 +1115,7 @@ export const getProjectsByUserId = async (userId: string): Promise<Project[]> =>
 
   return projectsData.map(project => ({
     id: project.id,
+    shortId: project.short_id,
     title: project.title,
     producer: project.user?.username || 'Unknown',
     producerAvatar: project.user?.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',

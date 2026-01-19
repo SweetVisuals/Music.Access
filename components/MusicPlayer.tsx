@@ -287,12 +287,26 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
                         <img
                             src={displayImage}
                             alt="Producer"
-                            className="w-9 h-9 rounded-full border border-white/10 object-cover shrink-0"
+                            className="w-9 h-9 rounded-full border border-white/10 object-cover shrink-0 cursor-pointer"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const handle = currentProject.producerHandle || currentProject.producer;
+                                navigate(`/@${handle}`);
+                            }}
                         />
 
                         <div className="flex flex-col min-w-0 justify-center">
                             <h4 className="text-sm font-bold text-white truncate leading-tight">{currentTrack.title}</h4>
-                            <p className="text-[10px] text-neutral-400 truncate leading-tight opacity-70">{currentProject.producer}</p>
+                            <p
+                                className="text-[10px] text-neutral-400 truncate leading-tight opacity-70 cursor-pointer hover:text-white transition-colors"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const handle = currentProject.producerHandle || currentProject.producer;
+                                    navigate(`/@${handle}`);
+                                }}
+                            >
+                                {currentProject.producer}
+                            </p>
                         </div>
                     </div>
 
@@ -342,7 +356,15 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
                 <div className="relative z-10 flex-1 flex flex-col px-6 pb-24 pt-2 overflow-hidden" onClick={(e) => e.stopPropagation()}>
 
                     {/* Artwork / Producer Avatar - SOLID Unified Order */}
-                    <div className="w-full max-w-[200px] aspect-square mx-auto relative group shrink-0">
+                    <div
+                        className="w-full max-w-[200px] aspect-square mx-auto relative group shrink-0 cursor-pointer"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsMinimized(true);
+                            const handle = currentProject.producerHandle || currentProject.producer;
+                            navigate(`/@${handle}`);
+                        }}
+                    >
                         {/* Skeleton Loader */}
                         <div className={`absolute inset-0 bg-white/10 rounded-[1.5rem] animate-pulse ${imageLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}></div>
 
@@ -370,7 +392,17 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
                                 <h2 className="text-base font-bold text-white tracking-tight truncate px-4">{currentTrack.title}</h2>
                             )}
                         </div>
-                        <p className="text-xs text-primary font-mono tracking-widest uppercase opacity-90">{currentProject.producer}</p>
+                        <p
+                            className="text-xs text-primary font-mono tracking-widest uppercase opacity-90 cursor-pointer hover:underline"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIsMinimized(true);
+                                const handle = currentProject.producerHandle || currentProject.producer;
+                                navigate(`/@${handle}`);
+                            }}
+                        >
+                            {currentProject.producer}
+                        </p>
                     </div>
 
                     {/* Meta & Controls Wrapper - Grouped closer to top */}
@@ -623,7 +655,14 @@ transition-all duration-500 transform cubic-bezier(0.2, 0.8, 0.2, 1)
                     {/* Top Row: Art & Track */}
                     <div className="flex items-center gap-4 relative z-10">
                         {/* Artwork with playing indicator */}
-                        <div className="h-12 w-12 rounded-lg bg-neutral-900 border border-white/5 overflow-hidden shrink-0 relative group/image shadow-md">
+                        <div
+                            className="h-12 w-12 rounded-lg bg-neutral-900 border border-white/5 overflow-hidden shrink-0 relative group/image shadow-md cursor-pointer"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const handle = currentProject.producerHandle || currentProject.producer;
+                                navigate(`/@${handle}`);
+                            }}
+                        >
                             <img src={currentProject.producerAvatar || currentProject.coverImage || MOCK_USER_PROFILE.avatar} className="w-full h-full object-cover" />
                             {isPlaying && (
                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-0.5">
@@ -638,13 +677,13 @@ transition-all duration-500 transform cubic-bezier(0.2, 0.8, 0.2, 1)
                         <div className="min-w-0 flex-1 flex flex-col justify-center gap-0.5">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-sm font-bold text-white truncate leading-tight tracking-tight">{currentTrack.title}</h4>
-                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <div className="flex items-center gap-3">
                                     <button
                                         onClick={onExpandToggle}
-                                        className="w-6 h-6 flex items-center justify-center rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all hover:scale-105"
+                                        className="text-neutral-500 hover:text-white transition-colors"
                                         title="Expand Player"
                                     >
-                                        <Maximize2 size={12} />
+                                        <Maximize2 size={14} />
                                     </button>
                                     <button
                                         onClick={async () => {
@@ -670,16 +709,23 @@ transition-all duration-500 transform cubic-bezier(0.2, 0.8, 0.2, 1)
                                     >
                                         <BookmarkPlus size={14} fill={isSaved ? "currentColor" : "none"} />
                                     </button>
+                                    <button onClick={onClose} className="text-neutral-500 hover:text-white transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    </button>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <p className="text-[11px] text-neutral-400 font-medium truncate group-hover:text-neutral-300 transition-colors">{currentProject.producer}</p>
-                                {currentProject.bpm && (
-                                    <>
-                                        <span className="text-[10px] text-neutral-600">•</span>
-                                        <span className="text-[10px] text-neutral-500 font-mono bg-white/5 px-1 py-0.5 rounded border border-white/5 leading-none">{currentProject.bpm} BPM</span>
-                                    </>
-                                )}
+                                <p
+                                    className="text-[11px] text-neutral-400 font-medium truncate group-hover:text-neutral-300 transition-colors cursor-pointer hover:underline"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const handle = currentProject.producerHandle || currentProject.producer;
+                                        navigate(`/@${handle}`);
+                                    }}
+                                >
+                                    {currentProject.producer}
+                                </p>
+
                             </div>
                         </div>
                     </div>
@@ -758,9 +804,7 @@ transition-all duration-500 transform cubic-bezier(0.2, 0.8, 0.2, 1)
                             >
                                 <StickyNote size={16} />
                             </button>
-                            <button onClick={onClose} className="p-2 text-neutral-500 hover:text-white transition-colors active:scale-90 hover:bg-white/5 rounded-lg">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            </button>
+
                         </div>
                     </div>
 
@@ -803,12 +847,22 @@ transition-all duration-500 cubic-bezier(0.2, 0.8, 0.2, 1) shadow-[0_-4px_20px_r
 
                 {/* Left: Track Info */}
                 <div className="flex items-center gap-3 w-1/4 min-w-0">
-                    <div className="h-10 w-10 rounded bg-neutral-900 border border-white/5 overflow-hidden shrink-0 relative group">
+                    <div
+                        className="h-10 w-10 rounded bg-neutral-900 border border-white/5 overflow-hidden shrink-0 relative group cursor-pointer"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const handle = currentProject.producerHandle || currentProject.producer;
+                            navigate(`/@${handle}`);
+                        }}
+                    >
                         <img src={currentProject.producerAvatar || currentProject.coverImage || MOCK_USER_PROFILE.avatar} className="w-full h-full object-cover" />
                         {/* Mini Overlay Toggle */}
                         {/* Mini Overlay Toggle */}
                         <button
-                            onClick={onExpandToggle}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onExpandToggle();
+                            }}
                             className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                             <Minimize2 size={18} className="text-white" />
@@ -817,7 +871,16 @@ transition-all duration-500 cubic-bezier(0.2, 0.8, 0.2, 1) shadow-[0_-4px_20px_r
                     <div className="flex flex-col min-w-0 justify-center gap-1">
                         <h4 className="text-sm font-bold text-white truncate leading-tight">{currentTrack.title}</h4>
                         <div className="flex items-center gap-2">
-                            <p className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer truncate">{currentProject.producer}</p>
+                            <p
+                                className="text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer truncate hover:underline"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const handle = currentProject.producerHandle || currentProject.producer;
+                                    navigate(`/@${handle}`);
+                                }}
+                            >
+                                {currentProject.producer}
+                            </p>
                             <button
                                 onClick={async () => {
                                     if (!currentProject?.id) return;

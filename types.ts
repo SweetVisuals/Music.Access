@@ -36,8 +36,10 @@ export interface LicenseInfo {
 
 export interface Project {
   id: string;
+  shortId?: string;
   title: string;
   producer: string;
+  producerHandle?: string;
   producerAvatar?: string;
   coverImage?: string; // Optional now
   price: number; // Display price (usually lowest license)
@@ -342,7 +344,8 @@ export type View =
   | 'settings'
   | 'help'
   | 'terms'
-  | 'privacy';
+  | 'privacy'
+  | 'listen';
 
 export interface Goal {
   id: string;

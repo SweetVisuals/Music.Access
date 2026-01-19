@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { MOCK_TALENT } from '../constants';
 import { Verified, UserPlus, ChevronRight, Star, Music, Zap, MessageCircle, Disc, Package } from 'lucide-react';
 import ProjectCard, { ProjectSkeleton } from './ProjectCard';
+import ServiceCard from './ServiceCard';
 import { Project, TalentProfile, Service } from '../types';
 import { getTalentProfiles, getServices, getProjects, getCurrentUser } from '../services/supabaseService';
 
@@ -353,23 +354,12 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                         [...Array(3)].map((_, i) => <ServiceSkeleton key={i} />)
                     ) : (
                         services.slice(0, 3).map(service => (
-                            <div key={service.id} className="bg-neutral-900/50 border border-transparent p-5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div className="p-2 bg-neutral-800 rounded-lg text-neutral-300">
-                                        <Star size={16} />
-                                    </div>
-                                    <span className="text-xs font-bold text-white bg-primary/20 px-2 py-1 rounded border border-primary/30 font-mono">${service.price}+</span>
-                                </div>
-                                <h3 className="text-sm font-bold text-white mb-1">{service.title}</h3>
-                                <p className="text-[10px] text-neutral-400 mb-3 line-clamp-2">{service.description}</p>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[8px] text-white">
-                                        {/* Placeholder for user avatar if not available in service object directly */}
-                                        ?
-                                    </div>
-                                    <span className="text-[10px] text-neutral-500">by Service Provider</span>
-                                </div>
-                            </div>
+                            <ServiceCard
+                                key={service.id}
+                                service={service}
+                                user={service.user || { username: 'Unknown', handle: 'unknown' }}
+                                onClick={() => navigate(`/services/${service.id}`)}
+                            />
                         ))
                     )}
                     {!loading && services.length === 0 && (

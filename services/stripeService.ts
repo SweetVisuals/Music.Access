@@ -165,7 +165,8 @@ export const processMarketplacePayment = async (
     totalAmount: number,
     paymentMethod: 'card' | 'crypto' | 'gems',
     purchaseId?: string,
-    useDirectFlow: boolean = false
+    useDirectFlow: boolean = false,
+    guestEmail?: string
 ): Promise<PaymentResult & { clientSecret?: string }> => {
     if (paymentMethod === 'gems') {
         return { success: true, transactionId: `txn_gem_${Date.now()}` };
@@ -181,7 +182,7 @@ export const processMarketplacePayment = async (
         const result = await callStripeAction<{ clientSecret: string }>('create-marketplace-payment-intent', {
             items,
             userId: user?.id || 'guest',
-            email: user?.email || (items as any).guestEmail,
+            email: user?.email || guestEmail,
             purchaseId
         });
         return { success: true, clientSecret: result.clientSecret };

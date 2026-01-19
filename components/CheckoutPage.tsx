@@ -230,21 +230,21 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                     <div className="grid grid-cols-2 gap-4">
                         <button
                             onClick={() => setPaymentMethod('card')}
-                            className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === 'card' ? 'bg-primary/10 border-primary text-white ring-1 ring-primary/50' : 'bg-[#0a0a0a] border-neutral-800 text-neutral-500 hover:bg-white/5'}`}
+                            className={`p-3 rounded-xl flex items-center justify-center gap-2 transition-all ${paymentMethod === 'card' ? 'bg-primary/10 text-white ring-1 ring-primary/50' : 'bg-[#0a0a0a] text-neutral-500 hover:bg-white/5'}`}
                         >
                             <CreditCard size={18} />
                             <span className="font-bold text-sm">Credit Card</span>
                         </button>
                         <button
                             onClick={() => setPaymentMethod('crypto')}
-                            className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === 'crypto' ? 'bg-primary/10 border-primary text-white ring-1 ring-primary/50' : 'bg-[#0a0a0a] border-neutral-800 text-neutral-500 hover:bg-white/5'}`}
+                            className={`p-3 rounded-xl flex items-center justify-center gap-2 transition-all ${paymentMethod === 'crypto' ? 'bg-primary/10 text-white ring-1 ring-primary/50' : 'bg-[#0a0a0a] text-neutral-500 hover:bg-white/5'}`}
                         >
                             <Bitcoin size={18} />
                             <span className="font-bold text-sm">Crypto</span>
                         </button>
                         <button
                             onClick={() => setPaymentMethod('test')}
-                            className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === 'test' ? 'bg-primary/10 border-primary text-white ring-1 ring-primary/50' : 'bg-[#0a0a0a] border-neutral-800 text-neutral-500 hover:bg-white/5'}`}
+                            className={`p-3 rounded-xl flex items-center justify-center gap-2 transition-all ${paymentMethod === 'test' ? 'bg-primary/10 text-white ring-1 ring-primary/50' : 'bg-[#0a0a0a] text-neutral-500 hover:bg-white/5'}`}
                         >
                             <Beaker size={18} />
                             <span className="font-bold text-sm">Test Pay</span>
@@ -252,7 +252,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                     </div>
 
                     {/* Payment Form */}
-                    <div className={`bg-[#0a0a0a] border border-neutral-800 rounded-xl ${paymentMethod === 'card' ? 'p-0 overflow-hidden' : 'p-4 lg:p-6'}`}>
+                    <div className={`bg-[#0a0a0a] rounded-xl ${paymentMethod === 'card' ? 'p-0 overflow-hidden' : 'p-4 lg:p-6'}`}>
                         {paymentMethod === 'card' ? (
                             <div className="animate-in fade-in slide-in-from-left-4 duration-300">
                                 {userProfile ? (
@@ -480,7 +480,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
 
                 {/* Right Column: Order Summary */}
                 <div className="lg:col-span-1">
-                    <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-6 sticky top-24">
+                    <div className="bg-[#0a0a0a] rounded-xl p-6 sticky top-24">
                         <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-6">Order Summary</h3>
 
                         <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto custom-scrollbar">

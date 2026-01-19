@@ -258,8 +258,8 @@ const App: React.FC = () => {
 
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
-      // EXCLUDE STUDIO PROJECTS ('beat_tape') FROM DISCOVER
-      if (p.type === 'beat_tape') return false;
+      // EXCLUDE STUDIO PROJECTS ('beat_tape') FROM DISCOVER - REMOVED per user request
+      // if (p.type === 'beat_tape') return false;
 
       const matchesGenre = filters.genre === "All Genres" || p.genre === filters.genre;
       // Key Filtering Logic

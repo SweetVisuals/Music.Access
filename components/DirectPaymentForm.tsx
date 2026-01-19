@@ -97,8 +97,7 @@ const DirectPaymentContent: React.FC<DirectPaymentFormProps> = ({
                 clientSecret = result.clientSecret;
             } else {
                 // For marketplace payment, we pass guestEmail if userId is null
-                const itemsWithEmail = guestEmail ? { ...items, guestEmail } : items;
-                const result = await processMarketplacePayment(itemsWithEmail as any, total, 'card', purchaseId, true);
+                const result = await processMarketplacePayment(items as any, total, 'card', purchaseId, true, guestEmail);
                 clientSecret = result.clientSecret;
             }
 

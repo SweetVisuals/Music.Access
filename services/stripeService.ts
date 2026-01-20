@@ -63,5 +63,73 @@ export const stripeService = {
         });
         if (error) throw error;
         return data;
+    },
+
+    createSetupIntent: async (userId: string) => {
+        const { data, error } = await supabase.functions.invoke('stripe-actions', {
+            body: { action: 'create-setup-intent', userId }
+        });
+        if (error) throw error;
+        return data;
     }
+};
+
+// Types for Payment Methods
+export interface SavedPaymentMethod {
+    id: string;
+    brand: string;
+    last4: string;
+    exp_month: number;
+    exp_year: number;
+}
+
+// Direct Payment Helper Functions
+export const listPaymentMethods = async (userId: string): Promise<SavedPaymentMethod[]> => {
+    const { data, error } = await supabase.functions.invoke('stripe-connect', {
+        body: { action: 'list-payment-methods', userId }
+    });
+    if (error) throw error;
+    return data || [];
+};
+
+export const createDirectSubscription = async (
+    userId: string,
+    planName: string,
+    billingCycle: string,
+    paymentMethodId?: string
+) => {
+    const { data, error } = await supabase.functions.invoke('stripe-connect', {
+        body: {
+            action: 'create-subscription',
+            userId,
+            planName,
+            billingCycle,
+            paymentMethodId
+        }
+    });
+    if (error) throw error;
+    return data;
+};
+
+export const processMarketplacePayment = async (
+    items: any[],
+    total: number,
+    type: string,
+    purchaseId?: string,
+    isDirect?: boolean,
+    guestEmail?: string
+) => {
+    const { data, error } = await supabase.functions.invoke('stripe-connect', {
+        body: {
+            action: 'create-payment-intent',
+            items,
+            total,
+            type,
+            purchaseId,
+            isDirect,
+            guestEmail
+        }
+    });
+    if (error) throw error;
+    return data;
 };

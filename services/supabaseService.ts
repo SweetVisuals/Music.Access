@@ -3514,6 +3514,7 @@ type PurchaseStatus = 'Processing' | 'Completed' | 'Failed';
 
 
 export const signContract = async (contractId: string, signature: string) => {
+  // 1. Sign the contract
   const { error } = await supabase
     .from('contracts')
     .update({
@@ -3524,6 +3525,44 @@ export const signContract = async (contractId: string, signature: string) => {
     .eq('id', contractId);
 
   if (error) throw error;
+
+  // 2. Notify the seller (Find the seller via purchase_items)
+  try {
+    const { data: purchaseItem, error: piError } = await supabase
+      .from('purchase_items')
+      .select('seller_id, name, purchase_id')
+      .eq('contract_id', contractId)
+      .single();
+
+    if (purchaseItem && !piError) {
+      // Get Buyer Name (Current User)
+      const { data: { user } } = await supabase.auth.getUser();
+      const buyerName = user?.user_metadata?.username || user?.email || 'A buyer';
+
+      // Use the existing createNotification function (defined later in file)
+      // We rely on hoisting or module imports if it was separate, but since it's in same file used via internal ref or just needs to be called after definition?
+      // Actually `const` functions are not hoisted. If `createNotification` is defined at line 4945, and we are at line 3516, we cannot call it if it's `const`.
+      // We might need to move `signContract` down or move `createNotification` up.
+
+      // Since moving large blocks is risky, I will reimplement the insert logic directly inside signContract to avoid reference issues.
+      // This is safer and avoids reordering the whole file.
+
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: purchaseItem.seller_id,
+          type: 'alert',
+          title: 'Contract Signed',
+          message: `${buyerName} has signed the contract for ${purchaseItem.name}.`,
+          link: `/dashboard/orders`,
+          data: { contractId, purchaseId: purchaseItem.purchase_id },
+          read: false
+        });
+    }
+  } catch (err) {
+    console.error('Error notifying seller of signed contract:', err);
+    // Don't fail the signing process just because notification failed
+  }
 };
 
 export const createPurchase = async (
@@ -3700,8 +3739,7 @@ export const getSales = async (): Promise<Purchase[]> => {
         item_name,
         contract_id,
         contracts (
-          status,
-          signed_at
+          status
         )
       )
     `)
@@ -3760,7 +3798,7 @@ export const getSales = async (): Promise<Purchase[]> => {
       projectId: p.project_id,
       contractId: p.purchase_items?.[0]?.contract_id,
       contractStatus: p.purchase_items?.[0]?.contracts?.status,
-      signedAt: p.purchase_items?.[0]?.contracts?.signed_at
+      createdAt: p.created_at // Expose raw timestamp for filtering
     };
   });
 };
@@ -3780,8 +3818,7 @@ export const getPurchases = async (): Promise<Purchase[]> => {
         item_type,
         contract_id,
         contracts (
-          status,
-          signed_at
+          status
         ),
         track_id,
         project_id,
@@ -3889,14 +3926,29 @@ export const getPurchases = async (): Promise<Purchase[]> => {
 
   const finalRawPurchases = Object.values(bySignature);
 
+  // Filter out stale "Processing" orders (older than 15 mins) that still have 'pending_stripe' ID
+  // This cleans up abandoned checkout drafts from the Order History
+  const NOW = new Date().getTime();
+  const FIFTEEN_MINS = 15 * 60 * 1000;
+
+  const cleanPurchases = finalRawPurchases.filter((p: any) => {
+    if (p.status === 'Processing' && p.stripe_payment_id === 'pending_stripe') {
+      const createdTime = new Date(p.created_at).getTime();
+      if ((NOW - createdTime) > FIFTEEN_MINS) {
+        return false; // Hide stale draft
+      }
+    }
+    return true;
+  });
+
   // Sort by date desc
-  finalRawPurchases.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  cleanPurchases.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   // --- End of Grouping Logic ---
 
   // items collection for seller lookup
   const sellerIds = new Set<string>();
-  finalRawPurchases.forEach((p: any) => {
+  cleanPurchases.forEach((p: any) => {
     p.purchase_items?.forEach((pi: any) => {
       if (pi.seller_id) sellerIds.add(pi.seller_id);
     });
@@ -3916,7 +3968,7 @@ export const getPurchases = async (): Promise<Purchase[]> => {
     }
   }
 
-  return finalRawPurchases.map((p: any) => {
+  return cleanPurchases.map((p: any) => {
     let amount = 0; // sum of items
     let mainSellerId = null;
     let itemName = 'Unknown Item';
@@ -3971,7 +4023,6 @@ export const getPurchases = async (): Promise<Purchase[]> => {
       projectId: p.purchase_items?.[0]?.project_id,
       contractId: p.purchase_items?.[0]?.contract_id,
       contractStatus: p.purchase_items?.[0]?.contracts?.status,
-      signedAt: p.purchase_items?.[0]?.contracts?.signed_at,
       purchaseItems: purchaseItems,
       tracks: p.purchase_items?.[0]?.projects?.tracks?.map((t: any) => {
         // Generate Public URL for playback
@@ -4028,7 +4079,8 @@ export const getDashboardAnalytics = async (timeRange: '7d' | '30d' | '90d' | '6
       purchase_items!inner (
         price,
         seller_id,
-        item_name
+        item_name,
+        archived
       )
     `)
     .eq('purchase_items.seller_id', currentUser.id)
@@ -4226,24 +4278,41 @@ export const getDashboardAnalytics = async (timeRange: '7d' | '30d' | '90d' | '6
   }
 
   // 6. Recent Activity
-  const recentActivity = sales.slice(0, 5).map(sale => ({
-    type: 'sale',
-    title: 'New Sale',
-    description: `Sold ${getMyItemName(sale)}`,
-    time: formatTimeAgo(sale.created_at),
-    icon: 'DollarSign',
-    color: 'green'
+  // Fetch real notifications instead of hardcoded sales
+  const { data: notifications } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .eq('read', false)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  const recentActivity = (notifications || []).map(n => ({
+    type: 'notification',
+    title: n.title || 'New Notification',
+    description: n.message,
+    time: formatTimeAgo(n.created_at),
+    icon: n.title?.includes('Sale') ? 'DollarSign' : 'AlertTriangle', // Simple heuristic
+    color: n.title?.includes('Sale') ? 'green' : 'blue'
   }));
 
-  // 7. Recent Orders
-  const recentOrders = sales.slice(0, 5).map((sale, i) => ({
-    id: `ORD-${sale.created_at.slice(0, 4)}-${i}`,
-    item: getMyItemName(sale),
-    date: formatDate(new Date(sale.created_at)),
-    amount: `$${getMySaleAmount(sale).toFixed(2)}`,
-    status: sale.status,
-    statusColor: sale.status === 'Completed' ? 'bg-green-500/10 text-green-500' : sale.status === 'Processing' ? 'bg-blue-500/10 text-blue-500' : 'bg-red-500/10 text-red-500'
-  }));
+  // 7. Recent Orders (Filter out archived)
+  const recentOrders = sales
+    .filter(sale => {
+      // Check if any of my items in this sale are NOT archived
+      const myItems = sale.purchase_items.filter((i: any) => i.seller_id === currentUser.id);
+      // Show if any item is not archived
+      return myItems.some((i: any) => !i.archived);
+    })
+    .slice(0, 5)
+    .map((sale, i) => ({
+      id: `ORD-${sale.created_at.slice(0, 4)}-${i}`,
+      item: getMyItemName(sale),
+      date: formatDate(new Date(sale.created_at)),
+      amount: `$${getMySaleAmount(sale).toFixed(2)}`,
+      status: sale.status,
+      statusColor: sale.status === 'Completed' ? 'bg-green-500/10 text-green-500' : sale.status === 'Processing' ? 'bg-blue-500/10 text-blue-500' : 'bg-red-500/10 text-red-500'
+    }));
 
   // --- Calculate Percentage Changes ---
   // A. Determine Previous Range

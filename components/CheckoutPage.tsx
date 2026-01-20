@@ -41,26 +41,41 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                 const profile = await getUserProfile(user.id);
                 setUserProfile(profile);
                 setIsGuest(false);
-
-                // Initialize a pending purchase record
-                if (items.length > 0 && !pendingPurchaseId) {
-                    try {
-                        const subtotalVal = items.reduce((sum, i) => sum + i.price, 0);
-                        const feeVal = subtotalVal * 0.02;
-                        const finalTotal = subtotalVal + feeVal;
-
-                        const purchase = await createPurchase(items, finalTotal, 'card', undefined, 'Processing');
-                        if (purchase) setPendingPurchaseId(purchase.id);
-                    } catch (e) {
-                        console.error("Failed to init purchase record", e);
-                    }
-                }
             } else {
                 setIsGuest(true);
             }
         };
         fetchUserAndInitialize();
-    }, [items.length]);
+    }, []);
+
+    // New handler to create purchase on demand (passed to DirectPaymentForm)
+    const handleCreatePurchase = async (): Promise<string | null> => {
+        try {
+            console.log("Creating purchase record on-demand...");
+            // Use current items and total
+            const subtotalVal = items.reduce((sum, i) => sum + i.price, 0);
+            const feeVal = subtotalVal * 0.02;
+            const finalTotal = subtotalVal + feeVal;
+
+            const purchase = await createPurchase(
+                items,
+                finalTotal,
+                'card',
+                undefined,
+                'Processing', // Still created as Processing, but only when user initiates payment
+                isGuest ? guestEmail : undefined
+            );
+
+            if (purchase) {
+                setPendingPurchaseId(purchase.id);
+                return purchase.id;
+            }
+            return null;
+        } catch (e) {
+            console.error("Failed to create purchase record", e);
+            throw e;
+        }
+    };
 
     const handleInitGuestPurchase = async () => {
         if (!guestEmail || !guestEmail.includes('@')) {
@@ -261,6 +276,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                                         mode="payment"
                                         items={items}
                                         purchaseId={pendingPurchaseId || undefined}
+                                        onCreatePurchase={handleCreatePurchase}
                                         total={total}
                                         onSuccess={handleCardSuccess}
                                     />
@@ -316,6 +332,7 @@ const CheckoutPage: React.FC<CheckoutPageProps> = ({ isEmbedded = false }) => {
                                                     mode="payment"
                                                     items={items}
                                                     purchaseId={pendingPurchaseId}
+                                                    onCreatePurchase={handleCreatePurchase}
                                                     total={total}
                                                     onSuccess={handleCardSuccess}
                                                 />

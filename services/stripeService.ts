@@ -65,6 +65,22 @@ export const stripeService = {
         return data;
     },
 
+    getBalance: async (accountId: string) => {
+        const { data, error } = await supabase.functions.invoke('stripe-connect', {
+            body: { action: 'get-balance', accountId }
+        });
+        if (error) throw error;
+        return data;
+    },
+
+    executePayout: async (accountId: string, amount: number) => {
+        const { data, error } = await supabase.functions.invoke('stripe-connect', {
+            body: { action: 'payout', accountId, amount }
+        });
+        if (error) throw error;
+        return data;
+    },
+
     createSetupIntent: async (userId: string) => {
         const { data, error } = await supabase.functions.invoke('stripe-actions', {
             body: { action: 'create-setup-intent', userId }

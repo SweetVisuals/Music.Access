@@ -127,6 +127,18 @@ async function handleMarketplaceSuccess(purchaseId: string, paymentIntentId: any
     console.log(`Processing marketplace success for purchase: ${purchaseId}`);
 
     // 1. Mark Purchase as Completed
+    // First check if already completed to handle idempotent webhook events (Stripe sends both session.completed and payment_intent.succeeded)
+    const { data: existingPurchase } = await supabase
+        .from('purchases')
+        .select('status')
+        .eq('id', purchaseId)
+        .single();
+
+    if (existingPurchase && existingPurchase.status === 'Completed') {
+        console.log(`Purchase ${purchaseId} already completed. Skipping duplicate webhook event.`);
+        return;
+    }
+
     const { data: purchaseData } = await supabase.from('purchases').update({
         status: 'Completed',
         stripe_payment_id: paymentIntentId as string

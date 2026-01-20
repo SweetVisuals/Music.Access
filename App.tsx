@@ -32,6 +32,7 @@ import { FloatingMessenger } from './components/FloatingMessenger';
 import BottomNav from './components/BottomNav';
 import PullToRefresh from './components/PullToRefresh';
 import ListenPage from './components/ListenPage';
+import ConnectStorefront from './components/ConnectStorefront';
 import { getProjects, getUserProfile, supabase, signOut, updateUserProfile, getCurrentUser, searchProfiles, searchServices, claimDailyReward } from './services/supabaseService';
 import { Project, FilterState, View, UserProfile, TalentProfile, Service } from './types';
 
@@ -110,10 +111,12 @@ const App: React.FC = () => {
       if (pathname === '/dashboard/orders') return 'dashboard-orders';
       if (pathname === '/dashboard/studio') return 'dashboard-studio';
       if (pathname === '/dashboard/sales') return 'dashboard-sales';
+
       if (pathname === '/dashboard/wallet') return 'dashboard-wallet';
       if (pathname === '/dashboard/analytics') return 'dashboard-analytics';
       return 'dashboard-overview';
     }
+    if (pathname.startsWith('/store/')) return 'storefront';
     if (pathname.startsWith('/listen/')) return 'listen';
     return 'home';
   };
@@ -148,6 +151,13 @@ const App: React.FC = () => {
         console.warn('Failed to decode profile username:', location.pathname);
         // Fallback to raw username if decoding fails
         newProfileUsername = location.pathname.substring(2);
+      }
+    } else if (location.pathname.startsWith('/store/')) {
+      try {
+        const encodedUsername = location.pathname.substring(7); // /store/ is 7 chars
+        newProfileUsername = decodeURIComponent(encodedUsername);
+      } catch (error) {
+        newProfileUsername = location.pathname.substring(7);
       }
     }
 
@@ -509,6 +519,7 @@ const App: React.FC = () => {
           'dashboard-overview': '/dashboard',
           'dashboard-studio': '/dashboard/studio',
           'dashboard-sales': '/dashboard/sales',
+
           'dashboard-manage': '/dashboard/manage',
           'dashboard-orders': '/dashboard/orders',
           'dashboard-invoices': '/dashboard/invoices',
@@ -550,6 +561,7 @@ const App: React.FC = () => {
         'dashboard-overview': '/dashboard',
         'dashboard-studio': '/dashboard/studio',
         'dashboard-sales': '/dashboard/sales',
+
         'dashboard-manage': '/dashboard/manage',
         'dashboard-orders': '/dashboard/orders',
         'dashboard-invoices': '/dashboard/invoices',
@@ -560,7 +572,8 @@ const App: React.FC = () => {
         'dashboard-roadmap': '/dashboard/roadmap',
         'dashboard-goals': '/dashboard/goals',
         'dashboard-help': '/dashboard/help',
-        'listen': '/listen'
+        'listen': '/listen',
+        'storefront': '/'
       };
       const path = pathMap[view] || '/';
       navigate(path);
@@ -662,6 +675,14 @@ const App: React.FC = () => {
                       onPlayTrack={handlePlayTrack}
                       onTogglePlay={handleTogglePlay}
                       currentProject={currentProject}
+                    />
+                  )}
+
+                  {currentView === 'storefront' && profileUsername && (
+                    <ConnectStorefront
+                      handle={profileUsername}
+                      currentUser={userProfile}
+                      onNavigate={handleNavigate}
                     />
                   )}
 

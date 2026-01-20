@@ -214,6 +214,33 @@ serve(async (req) => {
             });
         }
 
+
+        // 9. Get Balance
+        if (action === 'get-balance') {
+            const { accountId } = params;
+            if (!accountId) throw new Error('Missing accountId');
+
+            const balance = await stripe.balance.retrieve({ stripeAccount: accountId });
+            return new Response(JSON.stringify(balance), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+        }
+
+        // 10. Payout
+        if (action === 'payout') {
+            const { accountId, amount } = params;
+            if (!accountId || !amount) throw new Error('Missing params');
+
+            const payout = await stripe.payouts.create({
+                amount: amount,
+                currency: 'usd',
+            }, { stripeAccount: accountId });
+
+            return new Response(JSON.stringify(payout), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+        }
+
         throw new Error(`Unknown action: ${action}`);
 
     } catch (error) {

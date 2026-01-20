@@ -44,6 +44,7 @@ import {
 import Studio from './Studio';
 import GoalsPage from './GoalsPage';
 import WalletPage from './WalletPage';
+
 import { MOCK_PURCHASES } from '../constants';
 import {
     getPurchases,
@@ -51,6 +52,7 @@ import {
     getDashboardAnalytics,
     subscribeToArtistPresence,
     markNotificationAsRead,
+    markAllNotificationsAsRead,
     archiveSale,
     unarchiveSale,
     supabase,
@@ -130,6 +132,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     const [isTimeRangeOpen, setIsTimeRangeOpen] = useState(false);
     const [analyticsLoading, setAnalyticsLoading] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
+    const [isClearing, setIsClearing] = useState(false);
     const [liveListeners, setLiveListeners] = useState(0);
 
     // Subscribe to live listeners
@@ -169,6 +172,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
     const handleContractSigned = () => {
         fetchCoreData();
+    };
+
+    const handleClearActivity = async () => {
+        if (!userProfile?.id) return;
+        setIsClearing(true);
+        try {
+            await markAllNotificationsAsRead(userProfile.id);
+            // Refresh analytics to show empty list
+            await fetchAnalytics();
+        } catch (error) {
+            console.error("Error clearing activity:", error);
+        } finally {
+            setIsClearing(false);
+        }
     };
     const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
     const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -281,24 +298,28 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
         // Filter Sales Logic
         const filteredSales = sales.filter(sale => {
-            const saleDate = new Date(sale.date);
+            const saleDate = new Date((sale as any).createdAt || sale.date); // Use raw timestamp
             const today = new Date();
+            today.setHours(0, 0, 0, 0); // Start of today
 
             // 1. Archive Filter
             if (!showArchived && (sale as any).archived) return false;
             if (showArchived && !(sale as any).archived) return false;
 
             // 2. Date Filter
+            const saleTime = saleDate.getTime();
             if (filter === 'today') {
-                return saleDate.toDateString() === today.toDateString();
+                return saleTime >= today.getTime();
             }
             if (filter === 'week') {
-                const lastWeek = new Date(today.setDate(today.getDate() - 7));
-                return saleDate >= lastWeek;
+                const lastWeek = new Date(today);
+                lastWeek.setDate(today.getDate() - 7);
+                return saleTime >= lastWeek.getTime();
             }
             if (filter === 'month') {
-                const lastMonth = new Date(today.setMonth(today.getMonth() - 1));
-                return saleDate >= lastMonth;
+                const lastMonth = new Date(today);
+                lastMonth.setMonth(today.getMonth() - 1);
+                return saleTime >= lastMonth.getTime();
             }
             return true;
         });
@@ -345,8 +366,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                    {/* Dynamic Stats Calculation */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                     {(() => {
                         const filteredRevenue = filteredSales.reduce((sum, sale) => sum + (sale.amount || 0), 0);
                         const filteredAvgOrder = filteredSales.length > 0 ? filteredRevenue / filteredSales.length : 0;
@@ -386,107 +406,68 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
 
                 <div className="space-y-8">
-                    {Object.keys(groupedSales).length === 0 ? (
+                    {filteredSales.length === 0 ? (
                         <div className="text-center py-20 bg-neutral-900/30 rounded-2xl border border-white/5 border-dashed">
                             <ShoppingCart size={32} className="mx-auto text-neutral-600 mb-3" />
                             <p className="text-neutral-500 font-medium">No sales found for this period.</p>
                         </div>
                     ) : (
-                        Object.entries(groupedSales).map(([date, dateSales]: [string, Purchase[]]) => (
-                            <div key={date} className='animate-in slide-in-from-bottom-2 duration-500'>
-                                <h3 className="text-neutral-500 text-xs font-bold uppercase tracking-wider mb-3 ml-1 flex items-center gap-2">
-                                    <Calendar size={12} /> {date}
-                                </h3>
-                                <div className="bg-[#0a0a0a] border border-white/5 rounded-xl overflow-hidden">
-                                    <table className="w-full text-left hidden md:table">
-                                        <thead className="bg-neutral-900/50 text-[10px] font-mono uppercase text-neutral-500 border-b border-white/5">
-                                            <tr>
-                                                <th className="px-6 py-3 w-24">Time</th>
-                                                <th className="px-6 py-3">Item</th>
-                                                <th className="px-6 py-3">Customer</th>
-                                                <th className="px-6 py-3 text-right">Amount</th>
-                                                <th className="px-6 py-3 text-center">Status</th>
-                                                <th className="px-6 py-3 text-right">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="text-xs text-neutral-300">
-                                            {dateSales.map((sale) => (
-                                                <tr
-                                                    key={sale.id}
-                                                    onClick={() => setSelectedSale(sale)}
-                                                    className="border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group"
-                                                >
-                                                    <td className="px-6 py-4 font-mono text-neutral-500">
-                                                        {new Date((sale as any).created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </td>
-                                                    <td className="px-6 py-4 font-bold text-white">
-                                                        {sale.item}
-                                                        <div className="text-[10px] text-neutral-500 font-normal mt-0.5">{sale.type}</div>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="flex items-center gap-2">
-                                                            {sale.buyerAvatar && <img src={sale.buyerAvatar} className="w-5 h-5 rounded-full" />}
-                                                            <span className="group-hover:text-white transition-colors">{sale.buyer || 'Guest'}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right font-mono font-bold text-white">${sale.amount.toFixed(2)}</td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${sale.status === 'Completed' ? 'bg-green-500/10 text-green-500' :
-                                                            sale.status === 'Processing' ? 'bg-blue-500/10 text-blue-500' :
-                                                                'bg-red-500/10 text-red-500'
-                                                            }`}>{sale.status}</span>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                                                        {/* Quick Actions (Archive) */}
-                                                        <button
-                                                            className="p-1.5 text-neutral-500 hover:text-amber-500 hover:bg-amber-500/10 rounded transition-colors"
-                                                            title={showArchived ? "Unarchive" : "Archive"}
-                                                            onClick={async (e) => {
-                                                                e.stopPropagation();
-                                                                if (showArchived) await unarchiveSale(sale.id);
-                                                                else await archiveSale(sale.id);
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredSales.map((sale) => {
+                                // Map Sale to Project structure for ProjectCard
+                                // CRITICAL: We map the *Buyer* to the *Producer* fields so the card shows who BOUGHT it.
+                                const projectData: Project = {
+                                    id: sale.id,
+                                    title: sale.item, // Start with raw item name
+                                    // Use Buyer info for the "Artist" fields
+                                    producer: sale.buyer || 'Guest User',
+                                    producerAvatar: sale.buyerAvatar || undefined,
+                                    price: sale.amount,
+                                    bpm: 0,
+                                    genre: sale.type, // e.g. "Beat License", "Sound Kit"
+                                    type: sale.type === 'Sound Kit' ? 'sound_pack' : 'beat_tape', // Map types to fit ProjectCard logic
+                                    tags: [sale.status],
+                                    tracks: [],
+                                    coverImage: sale.image,
+                                    status: 'published'
+                                };
 
-                                                                // Optimistic Update
-                                                                setSales(prev => prev.map(p =>
-                                                                    p.id === sale.id ? { ...p, archived: !showArchived } : p
-                                                                ));
-                                                            }}
-                                                        >
-                                                            {showArchived ? <ArrowUpRight size={14} /> : <Package size={14} />}
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                    {/* Mobile Card View */}
-                                    <div className="md:hidden">
-                                        {dateSales.map((sale) => (
-                                            <div
-                                                key={sale.id}
-                                                onClick={() => setSelectedSale(sale)}
-                                                className="p-4 border-b border-white/5 flex flex-col gap-3 active:bg-white/5 transition-colors"
-                                            >
-                                                <div className="flex justify-between items-start">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center border border-white/5 ${sale.status === 'Completed' ? 'bg-green-500/10 text-green-500' : 'bg-neutral-800 text-neutral-500'}`}>
-                                                            <DollarSign size={16} />
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-sm font-bold text-white line-clamp-1">{sale.item}</div>
-                                                            <div className="text-[10px] text-neutral-500 font-mono">{new Date((sale as any).created_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {sale.buyer}</div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <div className="font-mono font-bold text-white">${sale.amount.toFixed(2)}</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        ))
+                                return (
+                                    <ProjectCard
+                                        key={sale.id}
+                                        project={projectData}
+                                        isPurchased={true}
+                                        // Overriding the default "purchased" look slightly to fit "Sold" context if needed, 
+                                        // but ProjectCard handles "isPurchased" by hiding price usually. 
+                                        // actually we might want to show price for sales.
+                                        // For now, let's use the standard card.
+
+                                        customMenuItems={[
+                                            {
+                                                label: 'Transaction Details',
+                                                icon: <Info size={14} />,
+                                                onClick: () => setSelectedSale(sale)
+                                            },
+                                            {
+                                                label: (sale as any).archived ? 'Unarchive' : 'Archive',
+                                                icon: (sale as any).archived ? <ArrowUpRight size={14} /> : <Package size={14} />,
+                                                onClick: async () => {
+                                                    if ((sale as any).archived) await unarchiveSale(sale.id);
+                                                    else await archiveSale(sale.id);
+
+                                                    // Optimistic Update
+                                                    setSales(prev => prev.map(p =>
+                                                        p.id === sale.id ? { ...p, archived: !(sale as any).archived } : p
+                                                    ));
+                                                }
+                                            }
+                                        ]}
+                                        onPlay={() => { }} // No playback for sales items usually, unless we have the track ID
+                                        onAction={() => setSelectedSale(sale)}
+                                    />
+                                );
+                            })}
+                        </div>
                     )}
                 </div>
 
@@ -629,6 +610,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     if (view === 'dashboard-wallet') {
         return <WalletPage userProfile={userProfile} />;
     }
+
+
 
     if (view === 'dashboard-manage') {
         // Fallback or specific view for managing orders as a seller
@@ -981,9 +964,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
                 {/* Recent Activity */}
                 <div className="lg:col-span-1 bg-[#0a0a0a] border border-transparent rounded-xl p-6 flex flex-col">
-                    <div className="mb-6">
-                        <h3 className="text-sm font-bold text-white">Recent Activity</h3>
-                        <p className="text-[10px] text-neutral-500 font-mono">Latest notifications</p>
+                    <div className="mb-6 flex justify-between items-start">
+                        <div>
+                            <h3 className="text-sm font-bold text-white">Recent Activity</h3>
+                            <p className="text-[10px] text-neutral-500 font-mono">Latest notifications</p>
+                        </div>
+                        {(dashboardAnalytics?.recentActivity || []).length > 0 && (
+                            <button
+                                onClick={handleClearActivity}
+                                disabled={isClearing}
+                                className="text-[10px] font-bold text-neutral-500 hover:text-white transition-colors disabled:opacity-50"
+                            >
+                                {isClearing ? 'CLEARING...' : 'CLEAR'}
+                            </button>
+                        )}
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 -mr-2 space-y-6 relative">

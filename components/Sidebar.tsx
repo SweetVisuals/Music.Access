@@ -297,6 +297,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                 <nav className="space-y-1">
                                     <SidebarItem icon={<LayoutDashboard size={15} />} label="Overview" active={currentView === 'dashboard-overview'} onClick={() => onNavigate('dashboard-overview')} />
                                     <SidebarItem icon={<Headphones size={15} />} label="My Studio" active={currentView === 'dashboard-studio'} onClick={() => onNavigate('dashboard-studio')} />
+
                                     <SidebarItem icon={<DollarSign size={15} />} label="Sales" active={currentView === 'dashboard-sales'} onClick={() => onNavigate('dashboard-sales')} badge={unreadCounts.sale} />
                                     <SidebarItem icon={<Briefcase size={15} />} label="Manage Orders" active={currentView === 'dashboard-manage'} onClick={() => onNavigate('dashboard-manage')} badge={unreadCounts.manage_order} />
                                     <SidebarItem icon={<Map size={15} />} label="Roadmap" active={currentView === 'dashboard-roadmap'} onClick={() => onNavigate('dashboard-roadmap')} />

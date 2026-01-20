@@ -19,6 +19,7 @@ interface DirectPaymentFormProps {
     billingCycle?: 'monthly' | 'yearly';
     items?: any[];
     purchaseId?: string;
+    onCreatePurchase?: () => Promise<string | null>;
     total: number;
     onSuccess: (txnId?: string) => void;
 }
@@ -32,6 +33,7 @@ const DirectPaymentContent: React.FC<DirectPaymentFormProps> = ({
     billingCycle,
     items = [],
     purchaseId,
+    onCreatePurchase,
     total,
     onSuccess
 }) => {
@@ -84,6 +86,17 @@ const DirectPaymentContent: React.FC<DirectPaymentFormProps> = ({
                 if (submitError) throw submitError;
             }
 
+            // Create purchase record on demand if not provided
+            let currentPurchaseId = purchaseId;
+            if (!currentPurchaseId && onCreatePurchase) {
+                try {
+                    const newId = await onCreatePurchase();
+                    if (newId) currentPurchaseId = newId;
+                } catch (creationErr: any) {
+                    throw new Error(creationErr.message || "Failed to create order record.");
+                }
+            }
+
             let clientSecret: string | undefined;
 
             if (mode === 'subscription') {
@@ -97,7 +110,7 @@ const DirectPaymentContent: React.FC<DirectPaymentFormProps> = ({
                 clientSecret = result.clientSecret;
             } else {
                 // For marketplace payment, we pass guestEmail if userId is null
-                const result = await processMarketplacePayment(items as any, total, 'card', purchaseId, true, guestEmail);
+                const result = await processMarketplacePayment(items as any, total, 'card', currentPurchaseId, true, guestEmail);
                 clientSecret = result.clientSecret;
             }
 

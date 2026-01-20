@@ -343,6 +343,8 @@ export type View =
   | 'dashboard-settings'
   | 'dashboard-roadmap'
   | 'dashboard-goals'
+
+  | 'storefront'
   | 'dashboard-help'
   | 'subscription'
   | 'settings'

@@ -258,6 +258,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 onMouseLeave={() => setIsHovered(false)}
                 onClick={(e) => {
                     e.stopPropagation();
+                    if (onAction) {
+                        onAction(project);
+                        return;
+                    }
                     navigate(`/listen/${project.shortId || project.id}`);
                 }}
             >

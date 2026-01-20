@@ -286,6 +286,20 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             return []; // No tabs when private for visitors
         }
 
+        // Dynamically show Releases tab if user has content (even if role doesn't default to it)
+        const hasReleases = localProjects.some(p => p.type === 'release' && p.status === 'published');
+        if (hasReleases && !tabs.includes('releases')) {
+            // Insert releases in logical order (usually after beat_tapes loop kits)
+            // Or just push it - simplest approach
+            // A better place might be second if beat_tapes exists, or first
+            if (tabs.includes('beat_tapes')) {
+                const idx = tabs.indexOf('beat_tapes');
+                tabs.splice(idx + 1, 0, 'releases');
+            } else {
+                tabs.unshift('releases');
+            }
+        }
+
         if (isOwner) {
             tabs.push('private');
         }

@@ -118,7 +118,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
         })) || []
     );
     const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
-    const [fileSelectorOpen, setFileSelectorOpen] = useState<'mp3' | 'wav' | 'stems' | null>(null);
+    const [fileSelectorOpen, setFileSelectorOpen] = useState<'mp3' | 'wav' | 'stems' | 'cover' | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isUploadingCover, setIsUploadingCover] = useState(false);
     const coverInputRef = React.useRef<HTMLInputElement>(null);
@@ -138,7 +138,11 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                     const mapped = dbFiles.map((f: any) => ({
                         id: f.id,
                         name: f.name,
-                        type: (f.type?.includes('audio') || f.name.endsWith('.mp3') || f.name.endsWith('.wav')) ? (f.name.endsWith('.wav') ? 'WAV' : 'MP3') : (f.name.endsWith('.zip') ? 'ZIP' : 'FILE'),
+                        url: f.url,
+                        type: (f.type?.includes('audio') || f.name.endsWith('.mp3') || f.name.endsWith('.wav'))
+                            ? (f.name.endsWith('.wav') ? 'WAV' : 'MP3')
+                            : (f.name.endsWith('.zip') ? 'ZIP'
+                                : ((f.type?.includes('image') || /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name)) ? 'IMAGE' : 'FILE')),
                         size: f.size ? f.size : 'Unknown', // formatFileSize(f.size) if size is number
                         original: f
                     }));
@@ -218,11 +222,17 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     };
 
     const selectFile = (fileId: string) => {
-        if (currentTrackIndex !== null && fileSelectorOpen) {
+        if (fileSelectorOpen === 'cover') {
+            const file = userFiles.find(f => f.id === fileId);
+            if (file && file.url) {
+                setProjectData(prev => ({ ...prev, coverImage: file.url }));
+            }
+        } else {
             const newTracks = [...tracks];
-            const track = newTracks[currentTrackIndex];
+            const track = newTracks[currentTrackIndex!];
             if (!track.files) track.files = {};
-            track.files[fileSelectorOpen] = fileId;
+            // @ts-ignore
+            track.files[fileSelectorOpen!] = fileId;
 
             if (Object.keys(track.files).length === 1) {
                 const file = userFiles.find(f => f.id === fileId);
@@ -237,9 +247,9 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                             // To be safe, let's update state again
                             setTracks(currentTracks => {
                                 const tracksCopy = [...currentTracks];
-                                if (tracksCopy[currentTrackIndex]) {
-                                    tracksCopy[currentTrackIndex] = {
-                                        ...tracksCopy[currentTrackIndex],
+                                if (tracksCopy[currentTrackIndex!]) {
+                                    tracksCopy[currentTrackIndex!] = {
+                                        ...tracksCopy[currentTrackIndex!],
                                         duration: Math.round(duration)
                                     };
                                 }
@@ -255,11 +265,11 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                     track.duration = 180;
                 }
             }
-
             setTracks(newTracks);
-            setFileSelectorOpen(null);
-            setCurrentTrackIndex(null);
         }
+
+        setFileSelectorOpen(null);
+        setCurrentTrackIndex(null);
     };
 
     const updateLicense = (index: number, field: keyof LicenseInfo, value: any) => {
@@ -449,6 +459,15 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                         <ImageIcon size={32} />
                                                     )}
                                                     <span className="text-xs font-bold uppercase tracking-wider">Upload Cover Art</span>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setFileSelectorOpen('cover');
+                                                        }}
+                                                        className="mt-2 text-[10px] text-primary hover:underline z-20 relative"
+                                                    >
+                                                        Select from Library
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
@@ -835,6 +854,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                 if (fileSelectorOpen === 'mp3') return f.type === 'MP3' || f.name.toLowerCase().endsWith('.mp3');
                                                 if (fileSelectorOpen === 'wav') return f.type === 'WAV' || f.name.toLowerCase().endsWith('.wav');
                                                 if (fileSelectorOpen === 'stems') return f.type === 'ZIP' || f.name.toLowerCase().endsWith('.zip');
+                                                if (fileSelectorOpen === 'cover') return f.type === 'IMAGE' || /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name);
                                                 return true;
                                             })
                                             .map(file => (
@@ -844,12 +864,17 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                     className="flex items-center gap-3 p-3 hover:bg-white/5 rounded-lg cursor-pointer border border-transparent hover:border-white/10 group"
                                                 >
                                                     <div className="w-8 h-8 bg-neutral-900 rounded flex items-center justify-center text-neutral-500 group-hover:text-primary">
-                                                        {file.type === 'ZIP' ? <Folder size={16} /> : <FileAudio size={16} />}
+                                                        {file.type === 'ZIP' ? <Folder size={16} /> : (file.type === 'IMAGE' ? <ImageIcon size={16} /> : <FileAudio size={16} />)}
                                                     </div>
                                                     <div className="flex-1">
                                                         <div className="text-sm font-bold text-neutral-300 group-hover:text-white">{file.name}</div>
                                                         <div className="text-[10px] text-neutral-500">{file.size} • {file.type}</div>
                                                     </div>
+                                                    {file.type === 'IMAGE' && file.url && (
+                                                        <div className="w-10 h-10 rounded overflow-hidden">
+                                                            <img src={file.url} className="w-full h-full object-cover" alt="Preview" />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))
                                     )}

@@ -18,9 +18,14 @@ import {
     AlertCircle
 } from 'lucide-react';
 import * as supabaseService from '../services/supabaseService';
-import { stripeService } from '../services/stripeService';
+import { stripeService, listPaymentMethods, SavedPaymentMethod } from '../services/stripeService';
 import { useToast } from '../contexts/ToastContext';
 import ConnectOnboarding from './ConnectOnboarding';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+import AddPaymentMethodForm from './AddPaymentMethodForm';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 interface WalletPageProps {
     userProfile: UserProfile | null;
@@ -47,6 +52,12 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
     // Stripe Connect State
     const [stripeBalance, setStripeBalance] = useState<{ available: number; pending: number } | null>(null);
     const [isStripeLoading, setIsStripeLoading] = useState(false);
+
+    // Payment Methods State
+    const [paymentMethods, setPaymentMethods] = useState<SavedPaymentMethod[]>([]);
+    const [isMethodsLoading, setIsMethodsLoading] = useState(false);
+    const [setupIntentSecret, setSetupIntentSecret] = useState<string | null>(null);
+
     const { showToast } = useToast();
 
     // Track status from ConnectOnboarding
@@ -122,12 +133,44 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
         }, 1500);
     };
 
-    const handleAddMethod = () => {
-        setIsProcessing(true);
-        setTimeout(() => {
-            setIsProcessing(false);
+    const fetchPaymentMethods = async () => {
+        if (!userProfile?.id) return;
+        setIsMethodsLoading(true);
+        try {
+            const methods = await listPaymentMethods(userProfile.id);
+            setPaymentMethods(methods);
+        } catch (error) {
+            console.error("Failed to fetch payment methods:", error);
+            // Don't show toast on load error to avoid spam, just log it
+        } finally {
+            setIsMethodsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'methods' && userProfile?.id) {
+            fetchPaymentMethods();
+        }
+    }, [activeTab, userProfile?.id]);
+
+    const handleOpenAddMethod = async () => {
+        setIsAddMethodOpen(true);
+        setSetupIntentSecret(null); // Reset
+        if (!userProfile?.id) return;
+
+        try {
+            const { clientSecret } = await stripeService.createSetupIntent(userProfile.id);
+            setSetupIntentSecret(clientSecret);
+        } catch (error) {
+            console.error("Failed to create setup intent", error);
+            showToast("Could not initialize payment form", "error");
             setIsAddMethodOpen(false);
-        }, 1500);
+        }
+    };
+
+    const handleMethodAdded = () => {
+        setIsAddMethodOpen(false);
+        fetchPaymentMethods(); // Refresh list
     };
 
     const formatCurrency = (amount: number) => {
@@ -281,7 +324,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                         <div className="p-6 border-b border-transparent flex items-center justify-between">
                             <h3 className="font-bold text-white">Payment Methods</h3>
                             <button
-                                onClick={() => setIsAddMethodOpen(true)}
+                                onClick={handleOpenAddMethod}
                                 className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:bg-neutral-200 transition-colors"
                             >
                                 <Plus size={16} />
@@ -291,18 +334,43 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                         <div className="p-4 space-y-4 flex-1 overflow-y-auto">
 
                             {/* Payment Methods List (Currently Empty) */}
-                            <div className="flex flex-col items-center justify-center py-10 text-center space-y-3">
-                                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-neutral-500">
-                                    <CreditCard size={20} />
+                            {/* Payment Methods List */}
+                            {isMethodsLoading ? (
+                                <div className="flex flex-col items-center justify-center py-10 space-y-3">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                                    <p className="text-neutral-500 text-xs">Loading methods...</p>
                                 </div>
-                                <div>
-                                    <p className="text-white font-bold text-sm">No Payment Methods</p>
-                                    <p className="text-neutral-500 text-xs">Add a card to purchase items quickly.</p>
+                            ) : paymentMethods.length > 0 ? (
+                                <div className="space-y-3">
+                                    {paymentMethods.map((pm) => (
+                                        <div key={pm.id} className="bg-neutral-900/50 p-4 rounded-xl flex items-center justify-between group hover:bg-neutral-900 transition-colors border border-transparent hover:border-neutral-800">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white">
+                                                    <CreditCard size={18} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-white font-bold text-sm capitalize">{pm.brand} •••• {pm.last4}</p>
+                                                    <p className="text-neutral-500 text-xs">Expires {pm.exp_month}/{pm.exp_year}</p>
+                                                </div>
+                                            </div>
+                                            {/* Could add delete button here later */}
+                                        </div>
+                                    ))}
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-10 text-center space-y-3">
+                                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-neutral-500">
+                                        <CreditCard size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-white font-bold text-sm">No Payment Methods</p>
+                                        <p className="text-neutral-500 text-xs">Add a card to purchase items quickly.</p>
+                                    </div>
+                                </div>
+                            )}
 
                             <button
-                                onClick={() => setIsAddMethodOpen(true)}
+                                onClick={handleOpenAddMethod}
                                 className="w-full py-4 border border-dashed border-transparent rounded-xl flex items-center justify-center gap-2 text-neutral-500 hover:text-white hover:border-neutral-700 hover:bg-white/5 transition-all text-sm font-medium"
                             >
                                 <Plus size={16} /> Add Payment Method
@@ -330,8 +398,31 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
                             <button onClick={() => setIsAddMethodOpen(false)} className="p-1 text-neutral-500 hover:text-white"><X size={20} /></button>
                         </div>
                         <div className="p-6">
-                            <p className="text-neutral-500 text-sm text-center">Demo: Payment method addition is simulated.</p>
-                            <button onClick={handleAddMethod} className="w-full mt-4 bg-white text-black py-2 rounded font-bold">Simulate Add</button>
+                            {setupIntentSecret ? (
+                                <Elements stripe={stripePromise} options={{
+                                    clientSecret: setupIntentSecret,
+                                    appearance: {
+                                        theme: 'night',
+                                        variables: {
+                                            colorPrimary: '#ffffff',
+                                            colorBackground: '#171717',
+                                            colorText: '#ffffff',
+                                            colorDanger: '#ef4444',
+                                            fontFamily: 'Instrument Sans, system-ui, sans-serif',
+                                        }
+                                    }
+                                }}>
+                                    <AddPaymentMethodForm
+                                        onSuccess={handleMethodAdded}
+                                        onCancel={() => setIsAddMethodOpen(false)}
+                                    />
+                                </Elements>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                                    <p className="text-neutral-500 text-sm">Initializing secure connection...</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -186,7 +186,8 @@ export const getProjectById = async (id: string): Promise<Project> => {
           type,
           default_price,
           features,
-          file_types_included
+          file_types_included,
+          contract_id
         ),
         price
       ),
@@ -282,7 +283,8 @@ export const getProjectById = async (id: string): Promise<Project> => {
       name: pl.license?.name,
       price: pl.price || pl.license?.default_price,
       features: pl.license?.features || [],
-      fileTypesIncluded: pl.license?.file_types_included || []
+      fileTypesIncluded: pl.license?.file_types_included || [],
+      contractId: pl.license?.contract_id
     })) || [],
     status: projectData.status,
     created: projectData.created_at,
@@ -322,7 +324,8 @@ export const getProjects = async (): Promise<Project[]> => {
           type,
           default_price,
           features,
-          file_types_included
+          file_types_included,
+          contract_id
         ),
         price
       ),
@@ -411,7 +414,8 @@ export const getProjects = async (): Promise<Project[]> => {
       name: pl.license?.name,
       price: pl.price || pl.license?.default_price,
       features: pl.license?.features || [],
-      fileTypesIncluded: pl.license?.file_types_included || []
+      fileTypesIncluded: pl.license?.file_types_included || [],
+      contractId: pl.license?.contract_id
     })) || [],
     status: project.status,
     created: project.created_at,
@@ -1036,7 +1040,8 @@ export const getProjectsByUserId = async (userId: string): Promise<Project[]> =>
           type,
           default_price,
           features,
-          file_types_included
+          file_types_included,
+          contract_id
         ),
         price
       ),
@@ -1104,7 +1109,8 @@ export const getProjectsByUserId = async (userId: string): Promise<Project[]> =>
       name: pl.license?.name,
       price: pl.price || pl.license?.default_price,
       features: pl.license?.features || [],
-      fileTypesIncluded: pl.license?.file_types_included || []
+      fileTypesIncluded: pl.license?.file_types_included || [],
+      contractId: pl.license?.contract_id
     })) || [],
     status: project.status,
     created: project.created_at,
@@ -1148,7 +1154,8 @@ export const getSavedProjects = async (): Promise<Project[]> => {
             type,
             default_price,
             features,
-            file_types_included
+            file_types_included,
+            contract_id
           ),
           price
         ),
@@ -1195,7 +1202,8 @@ export const getSavedProjects = async (): Promise<Project[]> => {
         name: pl.license?.name,
         price: pl.price || pl.license?.default_price,
         features: pl.license?.features || [],
-        fileTypesIncluded: pl.license?.file_types_included || []
+        fileTypesIncluded: pl.license?.file_types_included || [],
+        contractId: pl.license?.contract_id
       })) || [],
       status: project.status,
       created: project.created_at,
@@ -3597,7 +3605,7 @@ export const createPurchase = async (
 
   // 2. Create Purchase Items
   if (items && items.length > 0) {
-    const purchaseItems = items.map(item => {
+    const purchaseItems = await Promise.all(items.map(async (item) => {
       let projectId = null;
       let serviceId = null;
 
@@ -3629,6 +3637,54 @@ export const createPurchase = async (
         console.error(`[createPurchase] Critical: Missing seller_id for item: "${itemName}". This may cause insert failure.`);
       }
 
+      // CONTRACT CLONING LOGIC
+      // If the item has a contract template, we must create a unique instance for this purchase
+      // so it can be signed independently.
+      let contractIdToLink = item.contractId;
+
+      if (contractIdToLink) {
+        try {
+          // 1. Fetch Template
+          const { data: template } = await supabase
+            .from('contracts')
+            .select('*')
+            .eq('id', contractIdToLink)
+            .single();
+
+          if (template) {
+            // 2. Create Instance (Owned by Buyer for now, or Seller? Usually Buyer signs it.)
+            // We'll trust RLS allows Buyer to create 'contracts' rows.
+            const newContractPayload = {
+              user_id: currentUser?.id, // Buyer owns this copy
+              title: `${template.title} - ${itemName}`,
+              type: template.type,
+              status: 'pending', // Important: Start as pending
+              content: template.content || template.terms || '',
+              client_name: currentUser?.user_metadata?.username || currentUser?.email || 'Valued Client',
+              royalty_split: template.royalty_split,
+              revenue_split: template.revenue_split,
+              notes: template.notes
+              // Signature fields blank
+            };
+
+            const { data: newContract, error: cloneError } = await supabase
+              .from('contracts')
+              .insert(newContractPayload)
+              .select()
+              .single();
+
+            if (newContract && !cloneError) {
+              console.log(`[createPurchase] Cloned contract template ${contractIdToLink} to new instance ${newContract.id}`);
+              contractIdToLink = newContract.id;
+            } else {
+              console.warn('[createPurchase] Failed to clone contract:', cloneError);
+            }
+          }
+        } catch (err) {
+          console.error('[createPurchase] Error cloning contract:', err);
+        }
+      }
+
       return {
         purchase_id: purchaseId,
         project_id: projectId,
@@ -3648,10 +3704,10 @@ export const createPurchase = async (
         })(),
         price: item.price,
 
-        contract_id: item.contractId, // Only pass contract ID if it exists, do not fallback to licenseId as it's not a FK
+        contract_id: contractIdToLink, // Use the NEW instance ID
         track_id: item.trackId // Save track ID link
       };
-    });
+    }));
 
     console.log('[createPurchase] Inserting items payload:', purchaseItems);
 
@@ -3738,8 +3794,17 @@ export const getSales = async (): Promise<Purchase[]> => {
         seller_id,
         item_name,
         contract_id,
+        project_id,
         contracts (
           status
+        ),
+        projects (
+          id,
+          title,
+          cover_image_url,
+          tracks (
+            *
+          )
         )
       )
     `)
@@ -3772,13 +3837,26 @@ export const getSales = async (): Promise<Purchase[]> => {
   return salesData.map((p: any) => {
     let amount = 0;
     let itemName = 'Unknown Item';
+    let tracks: any[] = [];
+    let coverImage = p.image_url;
+
     // Calculate total amount for this seller specifically? 
     // Or total purchase amount? Usually dashboard shows total related to seller.
     // For now taking sum of items sold by THIS seller.
     if (p.purchase_items && p.purchase_items.length > 0) {
       const myItems = p.purchase_items.filter((i: any) => i.seller_id === currentUser.id);
       amount = myItems.reduce((sum: number, item: any) => sum + (Number(item.price) || 0), 0);
-      if (myItems.length > 0) itemName = myItems[0].item_name || 'Item';
+      if (myItems.length > 0) {
+        itemName = myItems[0].item_name || 'Item';
+        // Try to get cover image from project if purchase image is missing
+        if (myItems[0].projects?.cover_image_url) {
+          coverImage = myItems[0].projects.cover_image_url;
+        }
+        // Extract tracks
+        if (myItems[0].projects?.tracks) {
+          tracks = myItems[0].projects.tracks;
+        }
+      }
     }
 
     const buyer = buyersMap[p.buyer_id];
@@ -3793,12 +3871,23 @@ export const getSales = async (): Promise<Purchase[]> => {
       buyerAvatar: buyer?.avatar_url,
       amount: amount,
       status: p.status,
-      image: p.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop',
+      image: coverImage || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop',
       type: p.type,
       projectId: p.project_id,
+      contracts: p.purchase_items?.[0]?.contracts, // Pass full contract obj if needed
       contractId: p.purchase_items?.[0]?.contract_id,
       contractStatus: p.purchase_items?.[0]?.contracts?.status,
-      createdAt: p.created_at // Expose raw timestamp for filtering
+      createdAt: p.created_at, // Expose raw timestamp for filtering
+      tracks: tracks,
+      purchaseItems: (p.purchase_items || []).map((item: any) => ({
+        name: item.item_name,
+        price: Number(item.price),
+        type: p.type,
+        seller: sellerProfile.username,
+        sellerId: item.seller_id,
+        contractId: item.contract_id,
+        trackId: item.track_id
+      }))
     };
   });
 };
@@ -3968,25 +4057,90 @@ export const getPurchases = async (): Promise<Purchase[]> => {
     }
   }
 
+  // MANUAL ASSET FETCHING (Reliable Playback Fix)
+  // detailed lookup for assets since FK relations can be unreliable
+  const assetIds = new Set<string>();
+  cleanPurchases.forEach((p: any) => {
+    p.purchase_items?.forEach((pi: any) => {
+      pi.projects?.tracks?.forEach((t: any) => {
+        if (t.mp3_asset_id) assetIds.add(t.mp3_asset_id);
+        if (t.assigned_file_id) assetIds.add(t.assigned_file_id);
+      });
+    });
+  });
+
+  const assetMap = new Map<string, string>();
+  if (assetIds.size > 0) {
+    const { data: assets } = await supabase
+      .from('assets')
+      .select('id, storage_path')
+      .in('id', Array.from(assetIds));
+
+    if (assets) {
+      assets.forEach((a: any) => {
+        if (a.storage_path) {
+          const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(a.storage_path);
+          assetMap.set(a.id, publicUrl);
+        }
+      });
+    }
+  }
+
   return cleanPurchases.map((p: any) => {
-    let amount = 0; // sum of items
-    let mainSellerId = null;
-    let itemName = 'Unknown Item';
-    let mainType = p.type; // Default to top-level type if available
+    let itemName = '';
+    let projectTitle = '';
+    let coverImage = '';
+    let amount = 0;
+
+    // Default to 'Beat License' if not specified, but try to detect from item_type
+    let mainType: any = p.type;
+    let mainSellerId = '';
+
+    // Collect all track IDs purchased in this order to filter the display
+    const purchasedTrackIds = new Set<string>();
+    const purchasedProjectIds = new Set<string>();
+
+    let mainContractId = p.contract_id; // Try top level first
+    let mainContractStatus = p.contracts?.status; // Try top level
 
     if (p.purchase_items && p.purchase_items.length > 0) {
       amount = p.purchase_items.reduce((sum: number, item: any) => sum + (Number(item.price) || 0), 0);
       mainSellerId = p.purchase_items[0].seller_id; // Assume primary seller from first item
-      itemName = p.purchase_items[0].item_name || 'Unknown Item';
+
+      // Collect IDs and find contract
+      p.purchase_items.forEach((pi: any) => {
+        if (pi.track_id) purchasedTrackIds.add(pi.track_id);
+        if (pi.project_id) purchasedProjectIds.add(pi.project_id);
+
+        // Look for a contract if we don't have one yet
+        if (!mainContractId && pi.contract_id) {
+          mainContractId = pi.contract_id;
+          // Handle relation vs array
+          const contractData = Array.isArray(pi.contracts) ? pi.contracts[0] : pi.contracts;
+          mainContractStatus = contractData?.status;
+        }
+      });
+
+      // INTELLIGENT TITLE LOGIC
+      // Prefer project title if available
+      const projectTitleCandidate = p.purchase_items.find((pi: any) => pi.projects?.title)?.projects?.title;
+
+      if (projectTitleCandidate) {
+        itemName = projectTitleCandidate;
+        projectTitle = projectTitleCandidate;
+        // Update cover image if we found a project
+        const projectItem = p.purchase_items.find((pi: any) => pi.projects?.title === projectTitleCandidate);
+        if (projectItem?.projects?.cover_image_url) {
+          coverImage = projectItem.projects.cover_image_url;
+        }
+      } else {
+        // Fallback to first item name
+        itemName = p.purchase_items[0].item_name || 'Unknown Item';
+      }
 
       // If p.type is missing/null, assume it from the first item
       if (!mainType && p.purchase_items[0].item_type) {
         mainType = p.purchase_items[0].item_type;
-      }
-
-      // If multiple items, maybe summarize title? "Item 1 + 2 others"
-      if (p.purchase_items.length > 1) {
-        itemName = `${itemName} + ${p.purchase_items.length - 1} more`;
       }
 
     } else if (p.amount !== undefined) {
@@ -4005,10 +4159,41 @@ export const getPurchases = async (): Promise<Purchase[]> => {
       trackId: pi.track_id
     })) || [];
 
-    // Debug logging for verified items
-    if (purchaseItems.length > 0) {
-      console.log(`[getPurchases] Mapped items for ${p.id}:`, purchaseItems);
+    // Filter tracks to only include those purchased
+    const allProjectTracks = p.purchase_items?.[0]?.projects?.tracks || [];
+
+    let displayTracks = [];
+    if (purchasedTrackIds.size > 0) {
+      displayTracks = allProjectTracks.filter((t: any) => purchasedTrackIds.has(t.id));
+    } else if (p.type === 'Sound Kit' || p.type === 'beat_tape') {
+      // Fallback for full project types if no individual tracks tracked (legacy?)
+      displayTracks = allProjectTracks;
     }
+
+    const mappedTracks = displayTracks.map((t: any) => {
+      // Generate Public URL for playback using ASSET MAP
+      let mp3Url = t.mp3_url || '';
+      if (!mp3Url) {
+        const assetId = t.mp3_asset_id || t.assigned_file_id;
+        if (assetId && assetMap.has(assetId)) {
+          mp3Url = assetMap.get(assetId) || '';
+        } else if (t.assigned_file?.storage_path) {
+          // Fallback to relation if manual fetch missed it (unlikely)
+          const { data } = supabase.storage.from('assets').getPublicUrl(t.assigned_file.storage_path);
+          mp3Url = data.publicUrl;
+        }
+      }
+
+      return {
+        ...t,
+        duration: t.duration_seconds || 180, // Default to 3:00 if 0 or null
+        files: {
+          mp3: mp3Url,
+          wav: '', // Could implement similar logic for wav assets if DB schema supports it in future
+          stems: ''
+        }
+      };
+    });
 
     return {
       id: p.id,
@@ -4018,30 +4203,14 @@ export const getPurchases = async (): Promise<Purchase[]> => {
       sellerAvatar: seller?.avatar_url,
       amount: amount,
       status: p.status,
-      image: p.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop',
+      // Use project cover if available, else purchase image, else generic
+      image: coverImage || p.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop',
       type: mainType, // Use resolved type
       projectId: p.purchase_items?.[0]?.project_id,
-      contractId: p.purchase_items?.[0]?.contract_id,
-      contractStatus: p.purchase_items?.[0]?.contracts?.status,
+      contractId: mainContractId,
+      contractStatus: mainContractStatus,
       purchaseItems: purchaseItems,
-      tracks: p.purchase_items?.[0]?.projects?.tracks?.map((t: any) => {
-        // Generate Public URL for playback
-        let mp3Url = t.mp3_url || '';
-        if (t.assigned_file?.storage_path) {
-          const { data } = supabase.storage.from('assets').getPublicUrl(t.assigned_file.storage_path);
-          mp3Url = data.publicUrl;
-        }
-
-        return {
-          ...t,
-          duration: t.duration_seconds || 180, // Default to 3:00 if 0 or null
-          files: {
-            mp3: mp3Url,
-            wav: '', // Could implement similar logic for wav assets if DB schema supports it in future
-            stems: ''
-          }
-        };
-      }) || []
+      tracks: mappedTracks
     };
   });
 };
@@ -4320,17 +4489,7 @@ export const getDashboardAnalytics = async (timeRange: '7d' | '30d' | '90d' | '6
   const prevEnd = new Date(start.getTime()); // Previous end is current start
   const prevStart = new Date(prevEnd.getTime() - durationMs);
 
-  // B. Fetch Previous Data (Simple aggregates)
-  //   We need Sales (Revenue & Orders) and Plays for previous period
-  const { count: prevOrdersCount } = await supabase
-    .from('purchases')
-    .select('id', { count: 'exact', head: true })
-    .eq('purchase_items.seller_id', currentUser.id)
-    .gte('created_at', prevStart.toISOString())
-    .lt('created_at', prevEnd.toISOString()); // Use lt to avoid overlap
-
-  // For Revenue, we need to fetch the sums. 
-  // Optimization: Just fetch all sales for prev period. If load is high, use RPC. For now, fetch is fine.
+  // B. Fetch Previous Data (Simple aggregates) - Simplified to avoid 400 errors with head counts on relations
   const { data: prevSales } = await supabase
     .from('purchases')
     .select(`
@@ -4344,16 +4503,22 @@ export const getDashboardAnalytics = async (timeRange: '7d' | '30d' | '90d' | '6
     .gte('created_at', prevStart.toISOString())
     .lt('created_at', prevEnd.toISOString());
 
+  // (merged with above)
+
   const prevTotalRevenue = (prevSales || []).reduce((sum, s) => sum + getMySaleAmount(s), 0);
   const prevOrders = prevSales?.length || 0;
 
-  // Prev Plays using RPC if available or just count
-  const { count: prevPlaysCount } = await supabase
-    .from('plays')
-    .select('id', { count: 'exact', head: true })
-    .eq('artist_id', currentUser.id)
-    .gte('created_at', prevStart.toISOString())
-    .lt('created_at', prevEnd.toISOString());
+  // Prev Plays using track filters
+  let prevPlaysCount = 0;
+  if (trackIds.length > 0) {
+    const { count } = await supabase
+      .from('plays')
+      .select('id', { count: 'exact', head: true })
+      .in('track_id', trackIds)
+      .gte('created_at', prevStart.toISOString())
+      .lt('created_at', prevEnd.toISOString());
+    prevPlaysCount = count || 0;
+  }
 
   const prevPlays = prevPlaysCount || 1; // Avoid divide by zero for first meaningful change
 

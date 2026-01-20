@@ -62,6 +62,7 @@ export interface Project {
   gems?: number;
   tasks?: Task[];
   fileSize?: string; // e.g. "450 MB"
+  contractId?: string; // Optional context for orders
 }
 
 export interface Service {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Pause, MoreVertical, Cpu, ShoppingCart, Bookmark, Sparkles, Clock, BookmarkPlus, Lock, Edit, Trash2, Globe, Disc, Info } from 'lucide-react';
+import { Play, Pause, MoreVertical, Cpu, ShoppingCart, Bookmark, Sparkles, Clock, BookmarkPlus, Lock, Edit, Trash2, Globe, Disc, Info, ArrowDownToLine } from 'lucide-react';
 import { Project } from '../types';
 import { generateCreativeDescription } from '../services/geminiService';
 import { usePurchaseModal } from '../contexts/PurchaseModalContext';
@@ -16,6 +16,8 @@ interface ProjectCardProps {
     onTogglePlay: () => void;
     renderTrackAction?: (track: any) => React.ReactNode;
     isPurchased?: boolean;
+    isLocked?: boolean;
+    onUnlock?: () => void;
     onEdit?: (project: Project) => void;
     onDelete?: (project: Project) => void;
     showStatusTags?: boolean;
@@ -27,6 +29,7 @@ interface ProjectCardProps {
         variant?: 'default' | 'danger' | 'success' | 'warning';
     }[];
     onAction?: (project: Project) => void;
+    hideEmptySlots?: boolean;
 }
 
 
@@ -45,12 +48,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     onTogglePlay,
     renderTrackAction,
     isPurchased,
+    isLocked,
+    onUnlock,
     onEdit,
     onDelete,
-    showStatusTags = true,
     onStatusChange,
     customMenuItems,
-    onAction
+    onAction,
+    hideEmptySlots = false
 }) => {
     const [description, setDescription] = useState<string | null>(null);
     const [loadingDesc, setLoadingDesc] = useState(false);
@@ -388,11 +393,18 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         <>
             <div
                 // ... (rest of the file as is)
-                className="group h-full flex flex-col bg-neutral-950/50 border border-transparent rounded-xl hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.05)] relative backdrop-blur-sm cursor-pointer"
+                className={`
+                    group h-full flex flex-col bg-neutral-950/50 border border-transparent rounded-xl transition-all duration-300 relative backdrop-blur-sm cursor-pointer
+                    ${isLocked ? 'grayscale opacity-75 border-neutral-800' : 'hover:border-primary/40 hover:shadow-[0_0_30px_rgba(var(--primary),0.05)]'}
+                `}
                 style={{ zoom: '110%' }}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 onClick={() => {
+                    if (isLocked) {
+                        if (onUnlock) onUnlock();
+                        return;
+                    }
                     if (onAction) {
                         onAction(project);
                         return;
@@ -400,6 +412,27 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                     navigate(`/listen/${project.shortId || project.id}`);
                 }}
             >
+                {/* Background Image - Added to prevent empty look */}
+                <div className="absolute inset-0 z-0 rounded-xl overflow-hidden">
+                    {project.coverImage ? (
+                        <>
+                            <img src={project.coverImage} alt={project.title} className="w-full h-full object-cover opacity-40 blur-sm scale-110 group-hover:scale-100 transition-all duration-700" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/80 to-[#0a0a0a]/40" />
+                        </>
+                    ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-neutral-800/20 to-neutral-900/20" />
+                    )}
+                </div>
+
+                {/* Locked Overlay */}
+                {isLocked && (
+                    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/20 backdrop-blur-[1px] rounded-xl">
+                        <div className="w-12 h-12 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-2 shadow-lg group-hover:scale-110 transition-transform">
+                            <Lock size={20} className="text-neutral-400" />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-300 bg-black/60 px-2 py-1 rounded">Sign to Unlock</span>
+                    </div>
+                )}
                 {/* Top Gradient Line */}
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/0 to-transparent group-hover:via-primary/50 transition-all duration-700"></div>
 
@@ -482,8 +515,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                     </div>
                                 </div>
                             </div>
-                            {/* More Menu - Only show if actions exist */}
-                            {(onEdit || onDelete) && (
+                            {/* More Menu - Show if actions OR custom items exist */}
+                            {(onEdit || onDelete || (customMenuItems && customMenuItems.length > 0)) && (
                                 <div className="relative" ref={menuRef}>
                                     <button
                                         className="text-neutral-600 hover:text-white transition-colors p-1"
@@ -499,6 +532,25 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                     {showMenu && (
                                         <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-transparent rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
                                             <div className="p-1">
+                                                {/* Custom Menu Items */}
+                                                {customMenuItems?.map((item, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-colors text-left ${item.variant === 'danger' ? 'text-red-400 hover:text-red-300 hover:bg-red-500/10' :
+                                                            item.variant === 'success' ? 'text-green-400 hover:text-green-300 hover:bg-green-500/10' :
+                                                                'text-neutral-300 hover:text-white hover:bg-white/10'
+                                                            }`}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setShowMenu(false);
+                                                            item.onClick(project);
+                                                        }}
+                                                    >
+                                                        {item.icon}
+                                                        <span>{item.label}</span>
+                                                    </button>
+                                                ))}
+
                                                 {onEdit && (
                                                     <button
                                                         className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-neutral-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors text-left"
@@ -566,13 +618,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 </div>
 
                 {/* Tracklist */}
-                <div className="flex-1 bg-[#050505] overflow-y-auto custom-scrollbar relative h-56">
+                <div className="flex-1 bg-[#050505] overflow-y-auto custom-scrollbar relative min-h-0">
                     <div className="p-2 space-y-2">
                         {(() => {
                             const tracksToShow = [...project.tracks];
-                            // Ensure 5 slots are always shown on mobile
-                            while (tracksToShow.length < 5) {
-                                tracksToShow.push({ id: `empty-${tracksToShow.length}`, title: 'Empty Slot', duration: 0, isPlaceholder: true } as any);
+                            // Ensure 5 slots are always shown on mobile (unless hidden)
+                            if (!hideEmptySlots) {
+                                while (tracksToShow.length < 5) {
+                                    tracksToShow.push({ id: `empty-${tracksToShow.length}`, title: 'Empty Slot', duration: 0, isPlaceholder: true } as any);
+                                }
                             }
 
                             return tracksToShow.map((track, idx) => {
@@ -642,6 +696,17 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
                                         {/* Duration */}
                                         <div className="flex items-center text-neutral-700 group-hover/track:text-neutral-500 transition-colors">
+                                            {isPurchased && track.files?.mp3 && (
+                                                <a
+                                                    href={track.files.mp3}
+                                                    download
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="mr-3 p-1 text-neutral-500 hover:text-white hover:bg-white/10 rounded transition-colors"
+                                                    title="Download MP3"
+                                                >
+                                                    <ArrowDownToLine size={12} />
+                                                </a>
+                                            )}
                                             <Clock size={10} className="mr-1.5" />
                                             <span className="text-[8px] md:text-[9px] font-mono">
                                                 {formatDuration(track.duration)}

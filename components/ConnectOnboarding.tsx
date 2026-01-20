@@ -86,7 +86,7 @@ const ConnectOnboarding: React.FC<ConnectOnboardingProps> = ({ userProfile, onSt
     const isReady = status?.ready;
 
     return (
-        <div className="bg-[#111] border border-neutral-800 rounded-xl p-6 max-w-2xl">
+        <div className="bg-[#111] rounded-xl p-6 max-w-2xl">
             <div className="flex items-start justify-between mb-6">
                 <div>
                     <h2 className="text-xl font-bold text-white mb-2">Payout Settings</h2>
@@ -95,11 +95,11 @@ const ConnectOnboarding: React.FC<ConnectOnboardingProps> = ({ userProfile, onSt
                     </p>
                 </div>
                 {isReady ? (
-                    <div className="flex items-center gap-2 text-green-400 bg-green-400/10 px-3 py-1 rounded-full text-xs font-bold border border-green-400/20">
+                    <div className="flex items-center gap-2 text-green-400 bg-green-400/10 px-3 py-1 rounded-full text-xs font-bold border border-green-400/20 whitespace-nowrap shrink-0">
                         <CheckCircle2 size={14} /> Active
                     </div>
                 ) : (
-                    <div className="flex items-center gap-2 text-yellow-400 bg-yellow-400/10 px-3 py-1 rounded-full text-xs font-bold border border-yellow-400/20">
+                    <div className="flex items-center gap-2 text-yellow-400 bg-yellow-400/10 px-3 py-1 rounded-full text-xs font-bold border border-yellow-400/20 whitespace-nowrap shrink-0">
                         <AlertCircle size={14} /> Setup Required
                     </div>
                 )}
@@ -113,7 +113,7 @@ const ConnectOnboarding: React.FC<ConnectOnboardingProps> = ({ userProfile, onSt
                 )}
 
                 {!isReady ? (
-                    <div className="bg-neutral-900 rounded-lg p-4 border border-neutral-800">
+                    <div className="bg-neutral-900 rounded-lg p-4">
                         <h3 className="text-white font-bold mb-2">Complete your setup</h3>
                         <p className="text-neutral-400 text-sm mb-4">
                             You need to provide some information to Stripe before you can start accepting payments.
@@ -121,10 +121,10 @@ const ConnectOnboarding: React.FC<ConnectOnboardingProps> = ({ userProfile, onSt
                         <button
                             onClick={handleOnboard}
                             disabled={loading}
-                            className="bg-primary text-black font-bold px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
+                            className="w-full bg-white text-black font-bold px-4 py-3 rounded-xl hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
                         >
                             {loading ? <Loader2 className="animate-spin" size={16} /> : null}
-                            {userProfile.stripe_account_id ? 'Continue Onboarding' : 'Onboard to collect payments'}
+                            {userProfile.stripe_account_id ? 'Continue Onboarding' : 'Setup Payments'}
                         </button>
                     </div>
                 ) : (

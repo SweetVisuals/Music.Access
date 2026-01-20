@@ -270,8 +270,8 @@ const App: React.FC = () => {
 
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
-      // EXCLUDE STUDIO PROJECTS ('beat_tape') FROM DISCOVER - REMOVED per user request
-      // if (p.type === 'beat_tape') return false;
+      // EXCLUDE RELEASES FROM DISCOVER - Show them only on Browse page per user request
+      if (p.type === 'release') return false;
 
       const matchesGenre = filters.genre === "All Genres" || p.genre === filters.genre;
       // Key Filtering Logic
@@ -666,7 +666,7 @@ const App: React.FC = () => {
                   onMenuClick={() => setIsMobileMenuOpen(true)}
                 />
 
-                <main ref={mainRef} style={{ paddingBottom: getBottomStackHeightCSS() }} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[calc(56px+env(safe-area-inset-top))]' : currentView === 'dashboard-messages' ? 'overflow-hidden pt-[calc(56px+env(safe-area-inset-top))] lg:pt-[80px]' : 'overflow-y-auto overscroll-y-contain pt-[calc(80px+env(safe-area-inset-top))] lg:pt-[80px]'} scroll-smooth`}>
+                <main ref={mainRef} style={{ paddingBottom: getBottomStackHeightCSS() }} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[calc(56px+env(safe-area-inset-top))]' : (currentView === 'dashboard-messages' || currentView === 'dashboard-orders') ? 'overflow-hidden pt-[calc(56px+env(safe-area-inset-top))] lg:pt-[80px]' : 'overflow-y-auto overscroll-y-contain pt-[calc(80px+env(safe-area-inset-top))] lg:pt-[80px]'} scroll-smooth`}>
 
                   {currentView === 'listen' && (
                     <ListenPage

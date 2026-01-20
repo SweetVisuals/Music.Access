@@ -216,7 +216,7 @@ Status: ${invoice.status.toUpperCase()}
             placeholder="Search invoices..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
+            className="w-full bg-neutral-900 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
           />
         </div>
 
@@ -240,7 +240,7 @@ Status: ${invoice.status.toUpperCase()}
       {/* Invoices Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredInvoices.map((invoice) => (
-          <div key={invoice.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-6 hover:border-white/20 transition-colors">
+          <div key={invoice.id} className="bg-[#0a0a0a] rounded-xl p-6 hover:bg-white/5 transition-colors">
             {/* Invoice Header */}
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -290,7 +290,7 @@ Status: ${invoice.status.toUpperCase()}
         ))}
 
         {filteredInvoices.length === 0 && (
-          <div className="col-span-full py-16 text-center border border-dashed border-neutral-800 rounded-xl bg-white/5">
+          <div className="col-span-full py-16 text-center rounded-xl bg-white/5">
             <FileText size={48} className="mx-auto mb-4 text-neutral-600" />
             <p className="text-neutral-500 font-mono mb-4">No invoices found.</p>
             <button
@@ -306,8 +306,8 @@ Status: ${invoice.status.toUpperCase()}
       {/* Invoice Detail Modal */}
       {selectedInvoice && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setSelectedInvoice(null)}>
-          <div className="w-full max-w-2xl bg-[#0a0a0a] border border-neutral-700 rounded-xl shadow-2xl flex flex-col max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="w-full max-w-2xl bg-[#0a0a0a] rounded-xl shadow-2xl flex flex-col max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-6">
               <h2 className="text-xl font-bold text-white">Invoice {selectedInvoice.invoiceNumber}</h2>
               <button onClick={() => setSelectedInvoice(null)} className="p-1.5 hover:bg-white/10 rounded text-neutral-400 hover:text-white">
                 <X size={20} />
@@ -350,7 +350,7 @@ Status: ${invoice.status.toUpperCase()}
                   <span className="text-neutral-400">Tax:</span>
                   <span className="text-white">${selectedInvoice.tax.toFixed(2)}</span>
                 </div>
-                <div className="border-t border-white/10 pt-2">
+                <div className="pt-2">
                   <div className="flex justify-between">
                     <span className="text-white font-bold">Total:</span>
                     <span className="text-white font-mono text-lg">${selectedInvoice.total.toFixed(2)}</span>
@@ -366,7 +366,7 @@ Status: ${invoice.status.toUpperCase()}
               )}
             </div>
 
-            <div className="p-6 border-t border-white/10 flex gap-3">
+            <div className="p-6 flex gap-3">
               <button
                 onClick={() => handleDownloadInvoice(selectedInvoice)}
                 className="flex-1 py-2 px-4 bg-primary text-black font-bold rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
@@ -386,7 +386,7 @@ Status: ${invoice.status.toUpperCase()}
       {/* Create Invoice Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setShowCreateModal(false)}>
-          <div className="w-full max-w-md bg-[#0a0a0a] border border-neutral-700 rounded-xl shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-md bg-[#0a0a0a] rounded-xl shadow-2xl p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">Create New Invoice</h2>
               <button onClick={() => setShowCreateModal(false)} className="p-1.5 hover:bg-white/10 rounded text-neutral-400 hover:text-white">
@@ -400,7 +400,7 @@ Status: ${invoice.status.toUpperCase()}
                 <input
                   type="text"
                   placeholder="Enter client name"
-                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
+                  className="w-full bg-neutral-900 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none"
                 />
               </div>
 
@@ -412,7 +412,7 @@ Status: ${invoice.status.toUpperCase()}
                     e.target.style.height = 'auto';
                     e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
                   }}
-                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none min-h-[5rem] h-auto max-h-40 resize-none custom-scrollbar"
+                  className="w-full bg-neutral-900 rounded-lg px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none min-h-[5rem] h-auto max-h-40 resize-none custom-scrollbar"
                 />
               </div>
 

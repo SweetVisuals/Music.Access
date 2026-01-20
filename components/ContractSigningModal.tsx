@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, FileText, CheckCircle, AlertCircle, Loader } from 'lucide-react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../services/supabaseService';
 import { Contract } from '../types';
 import { signContract } from '../services/supabaseService';
 
@@ -146,8 +146,8 @@ export const ContractSigningModal: React.FC<ContractSigningModalProps> = ({
 
                                         <label className="flex items-start gap-3 cursor-pointer group">
                                             <div className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center transition-colors ${agreed
-                                                    ? 'bg-blue-500 border-blue-500'
-                                                    : 'border-zinc-600 group-hover:border-zinc-400'
+                                                ? 'bg-blue-500 border-blue-500'
+                                                : 'border-zinc-600 group-hover:border-zinc-400'
                                                 }`}>
                                                 {agreed && <CheckCircle size={12} className="text-white" />}
                                             </div>
@@ -193,8 +193,8 @@ export const ContractSigningModal: React.FC<ContractSigningModalProps> = ({
                             onClick={handleSign}
                             disabled={!signatureName.trim() || !agreed || signing}
                             className={`px-8 py-2.5 rounded-xl text-sm font-medium text-black transition-all flex items-center gap-2 ${!signatureName.trim() || !agreed || signing
-                                    ? 'bg-zinc-700 cursor-not-allowed opacity-50'
-                                    : 'bg-white hover:bg-zinc-200 shadow-lg shadow-white/5'
+                                ? 'bg-zinc-700 cursor-not-allowed opacity-50'
+                                : 'bg-white hover:bg-zinc-200 shadow-lg shadow-white/5'
                                 }`}
                         >
                             {signing ? (

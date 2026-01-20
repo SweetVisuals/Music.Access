@@ -165,6 +165,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     const [viewingReceipt, setViewingReceipt] = useState<Purchase | null>(null);
     const [signingContractId, setSigningContractId] = useState<string | null>(null);
     const [viewingContractId, setViewingContractId] = useState<string | null>(null);
+    const [selectedSale, setSelectedSale] = useState<Purchase | null>(null); // Lifted state
 
     const handleSignContract = (contractId: string) => {
         setSigningContractId(contractId);
@@ -289,12 +290,32 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         return value === null || value === undefined ? fallback : value;
     };
 
+    // --- ORDER VIEW LOGIC (Lifted to top level to avoid hook errors) ---
+    // Filter Purchases
+    const filteredOrders = purchases.filter(p => {
+        if (activePurchaseTab === 'all') return true;
+        if (activePurchaseTab === 'beats') return p.type === 'Beat License';
+        if (activePurchaseTab === 'kits') return p.type === 'Sound Kit';
+        if (activePurchaseTab === 'services') return p.type === 'Service' || p.type === 'Mixing';
+        return true;
+    });
+
+    // Auto-select first order on desktop if none selected
+    useEffect(() => {
+        if (view === 'dashboard-orders') {
+            if (window.innerWidth >= 1024 && !selectedOrder && filteredOrders.length > 0) {
+                // Determine if we should auto-select logic here if desired
+                // setSelectedOrder(filteredOrders[0]);
+            }
+        }
+    }, [view, filteredOrders, selectedOrder]);
+
     // --- SUB-COMPONENTS FOR SIMPLE VIEWS ---
 
     const SalesView = () => {
         const [filter, setFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
         const [showArchived, setShowArchived] = useState(false);
-        const [selectedSale, setSelectedSale] = useState<Purchase | null>(null);
+        // selectedSale uses parent state now
 
         // Filter Sales Logic
         const filteredSales = sales.filter(sale => {
@@ -412,59 +433,84 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                             <p className="text-neutral-500 font-medium">No sales found for this period.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                             {filteredSales.map((sale) => {
                                 // Map Sale to Project structure for ProjectCard
                                 // CRITICAL: We map the *Buyer* to the *Producer* fields so the card shows who BOUGHT it.
+
+                                // Filter tracks to only show what was purchased
+                                let displayTracks = sale.tracks || [];
+                                if (sale.type === 'Beat License' || sale.type === 'Exclusive License') {
+                                    // 1. Try precise matching if trackId is available
+                                    const purchasedTrackId = sale.purchaseItems?.[0]?.trackId;
+                                    const preciseMatch = sale.tracks?.find(t => t.id === purchasedTrackId);
+
+                                    if (preciseMatch) {
+                                        displayTracks = [preciseMatch];
+                                    } else {
+                                        // 2. Fallback to robust name matching
+                                        const normalize = (s: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                                        const saleItemNorm = normalize(sale.item);
+
+                                        const matchedTrack = sale.tracks?.find(t => {
+                                            const trackTitleNorm = normalize(t.title);
+                                            return saleItemNorm.includes(trackTitleNorm) || trackTitleNorm.includes(saleItemNorm);
+                                        });
+
+                                        if (matchedTrack) {
+                                            displayTracks = [matchedTrack];
+                                        } else if (sale.tracks && sale.tracks.length > 0) {
+                                            // 3. Last resort fallback to first track
+                                            displayTracks = [sale.tracks[0]];
+                                        }
+                                    }
+                                }
+
                                 const projectData: Project = {
                                     id: sale.id,
-                                    title: sale.item, // Start with raw item name
-                                    // Use Buyer info for the "Artist" fields
+                                    title: sale.item,
                                     producer: sale.buyer || 'Guest User',
                                     producerAvatar: sale.buyerAvatar || undefined,
                                     price: sale.amount,
                                     bpm: 0,
-                                    genre: sale.type, // e.g. "Beat License", "Sound Kit"
-                                    type: sale.type === 'Sound Kit' ? 'sound_pack' : 'beat_tape', // Map types to fit ProjectCard logic
+                                    genre: sale.type,
+                                    type: sale.type === 'Sound Kit' ? 'sound_pack' : 'beat_tape',
                                     tags: [sale.status],
-                                    tracks: [],
+                                    tracks: displayTracks,
                                     coverImage: sale.image,
                                     status: 'published'
                                 };
 
                                 return (
-                                    <ProjectCard
-                                        key={sale.id}
-                                        project={projectData}
-                                        isPurchased={true}
-                                        // Overriding the default "purchased" look slightly to fit "Sold" context if needed, 
-                                        // but ProjectCard handles "isPurchased" by hiding price usually. 
-                                        // actually we might want to show price for sales.
-                                        // For now, let's use the standard card.
+                                    <div key={sale.id} className="h-[282px]">
+                                        <ProjectCard
+                                            project={projectData}
+                                            isPurchased={true}
+                                            hideEmptySlots={true}
+                                            customMenuItems={[
+                                                {
+                                                    label: 'Transaction Details',
+                                                    icon: <Info size={14} />,
+                                                    onClick: () => setSelectedSale(sale)
+                                                },
+                                                {
+                                                    label: (sale as any).archived ? 'Unarchive' : 'Archive',
+                                                    icon: (sale as any).archived ? <ArrowUpRight size={14} /> : <Package size={14} />,
+                                                    onClick: async () => {
+                                                        if ((sale as any).archived) await unarchiveSale(sale.id);
+                                                        else await archiveSale(sale.id);
 
-                                        customMenuItems={[
-                                            {
-                                                label: 'Transaction Details',
-                                                icon: <Info size={14} />,
-                                                onClick: () => setSelectedSale(sale)
-                                            },
-                                            {
-                                                label: (sale as any).archived ? 'Unarchive' : 'Archive',
-                                                icon: (sale as any).archived ? <ArrowUpRight size={14} /> : <Package size={14} />,
-                                                onClick: async () => {
-                                                    if ((sale as any).archived) await unarchiveSale(sale.id);
-                                                    else await archiveSale(sale.id);
-
-                                                    // Optimistic Update
-                                                    setSales(prev => prev.map(p =>
-                                                        p.id === sale.id ? { ...p, archived: !(sale as any).archived } : p
-                                                    ));
+                                                        // Optimistic Update
+                                                        setSales(prev => prev.map(p =>
+                                                            p.id === sale.id ? { ...p, archived: !(sale as any).archived } : p
+                                                        ));
+                                                    }
                                                 }
-                                            }
-                                        ]}
-                                        onPlay={() => { }} // No playback for sales items usually, unless we have the track ID
-                                        onAction={() => setSelectedSale(sale)}
-                                    />
+                                            ]}
+                                            onPlay={() => { }} // No playback for sales items usually, unless we have the track ID
+                                            onAction={() => setSelectedSale(sale)}
+                                        />
+                                    </div>
                                 );
                             })}
                         </div>
@@ -611,147 +657,106 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         return <WalletPage userProfile={userProfile} />;
     }
 
-
-
     if (view === 'dashboard-manage') {
-        // Fallback or specific view for managing orders as a seller
-        return <SalesView />; // For now SalesView handles transactions, we might want a specific ManageOrders view later
+        return <SalesView />;
     }
 
     if (view === 'dashboard-orders') {
-        if (selectedOrder) {
-            return <CustomerOrderDetail purchase={selectedOrder} onBack={() => setSelectedOrder(null)} />;
-        }
+        // --- NEW ORDERS VIEW IMPLEMENTATION ---
 
-        const filteredPurchases = purchases.filter(p => {
-            if (activePurchaseTab === 'all') return true;
-            if (activePurchaseTab === 'beats') return p.type === 'Beat License';
-            if (activePurchaseTab === 'kits') return p.type === 'Sound Kit';
-            if (activePurchaseTab === 'services') return p.type === 'Service' || p.type === 'Mixing';
-            return true;
-        });
 
-        const getProjectTitle = (itemTitle: string) => {
-            const match = itemTitle.match(/\((.*?)\)$/);
-            return match ? match[1] : itemTitle;
-        };
 
         return (
-            <div className="w-full max-w-[1600px] mx-auto pb-32 lg:pb-8 pt-6 px-6 lg:px-8 animate-in fade-in duration-500 relative">
+            <div className="flex h-full w-full overflow-hidden bg-[#050505]">
+                {/* Orders View - Grid Mode vs Detail Mode */}
+                <div className="flex-1 flex flex-col min-h-0">
+                    {!selectedOrder ? (
+                        /* Grid View */
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8">
+                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                                <div>
+                                    <h1 className="text-3xl font-black text-white tracking-tighter mb-1">My Orders</h1>
+                                    <p className="text-neutral-500 text-sm max-w-2xl">
+                                        Manage your purchased beats, kits, and services.
+                                    </p>
+                                </div>
+                                <div className="flex bg-neutral-900 p-1 rounded-lg border border-white/5 self-start md:self-auto">
+                                    {(['all', 'beats', 'kits', 'services'] as const).map((tab) => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setActivePurchaseTab(tab)}
+                                            className={`px-4 py-1.5 rounded-md text-xs font-bold capitalize transition-all ${activePurchaseTab === tab ? 'bg-white text-black shadow-sm' : 'text-neutral-500 hover:text-white'}`}
+                                        >
+                                            {tab === 'all' ? 'All Orders' : tab}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
 
-                <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
-                    <div>
-                        <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">My Purchases</h1>
-                        <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Manage your orders, download files, and communicate with sellers.</p>
-                    </div>
-                    <div className="flex bg-neutral-900 p-1 rounded-lg border border-neutral-800 hidden md:flex">
-                        <TabButton active={activePurchaseTab === 'all'} onClick={() => setActivePurchaseTab('all')} label="All Items" />
-                        <TabButton active={activePurchaseTab === 'beats'} onClick={() => setActivePurchaseTab('beats')} label="Beats & Projects" />
-                        <TabButton active={activePurchaseTab === 'kits'} onClick={() => setActivePurchaseTab('kits')} label="Sound Packs" />
-                        <TabButton active={activePurchaseTab === 'services'} onClick={() => setActivePurchaseTab('services')} label="Services & Orders" />
-                    </div>
+                            {isLoading ? (
+                                <div className="text-center py-20 text-neutral-500">Loading orders...</div>
+                            ) : filteredOrders.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
+                                    {filteredOrders.map((purchase) => {
+                                        // Determine Lock State
+                                        const isLocked = purchase.contractId && purchase.contractStatus !== 'signed';
+
+                                        // Convert Purchase to Project for Card
+                                        const projectData: Project = {
+                                            id: purchase.id,
+                                            title: purchase.item,
+                                            producer: purchase.seller,
+                                            producerAvatar: purchase.sellerAvatar,
+                                            price: purchase.amount,
+                                            bpm: purchase.metadata?.bpm || 0,
+                                            key: purchase.metadata?.key || undefined,
+                                            genre: purchase.type,
+                                            type: purchase.type === 'Sound Kit' ? 'sound_pack' : 'beat_tape',
+                                            tags: [purchase.status],
+                                            tracks: purchase.tracks || [],
+                                            coverImage: purchase.image,
+                                            status: 'published',
+                                            contractId: purchase.contractId,
+                                            userId: purchase.sellerId || 'unknown' // Required for Project type but used for context
+                                        };
+
+                                        return (
+                                            <div key={purchase.id} className="h-full">
+                                                <ProjectCard
+                                                    project={projectData}
+                                                    currentTrackId={currentTrackId}
+                                                    isPlaying={isPlaying}
+                                                    onPlayTrack={(trackId) => onPlayTrack(projectData, trackId)}
+                                                    onTogglePlay={onTogglePlay}
+                                                    isPurchased={true}
+                                                    isLocked={!!isLocked}
+                                                    onUnlock={() => purchase.contractId && handleSignContract(purchase.contractId)}
+                                                    onAction={(!isLocked) ? (() => setSelectedOrder(purchase)) : undefined}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="text-center py-20 bg-neutral-900/30 rounded-2xl border border-white/5 border-dashed">
+                                    <ShoppingBag size={32} className="mx-auto text-neutral-600 mb-3" />
+                                    <p className="text-neutral-500 font-medium">No orders found.</p>
+                                    <button onClick={() => onNavigate('home')} className="mt-4 px-4 py-2 bg-white text-black text-xs font-bold rounded-lg hover:bg-neutral-200 transition-colors">
+                                        Browse Marketplace
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        /* Detail View - Full Screen */
+                        <CustomerOrderDetail
+                            purchase={selectedOrder}
+                            onBack={() => setSelectedOrder(null)}
+                            onSignContract={handleSignContract}
+                            onViewContract={(id) => setViewingContractId(id)}
+                        />
+                    )}
                 </div>
-
-                {/* Mobile Tabs Layout (Grid) */}
-                <div className="md:hidden relative pb-2 overflow-x-auto no-scrollbar w-auto -mx-4 px-4 mb-4">
-                    <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5 min-w-[320px]">
-                        <button onClick={() => setActivePurchaseTab('all')} className={`flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all ${activePurchaseTab === 'all' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}>
-                            <LayoutGrid size={14} className={activePurchaseTab === 'all' ? 'text-primary' : ''} />
-                            <span className="text-[9px] font-bold uppercase tracking-tight">All</span>
-                        </button>
-                        <button onClick={() => setActivePurchaseTab('beats')} className={`flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all ${activePurchaseTab === 'beats' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}>
-                            <Music size={14} className={activePurchaseTab === 'beats' ? 'text-primary' : ''} />
-                            <span className="text-[9px] font-bold uppercase tracking-tight">Beats</span>
-                        </button>
-                        <button onClick={() => setActivePurchaseTab('kits')} className={`flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all ${activePurchaseTab === 'kits' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}>
-                            <Package size={14} className={activePurchaseTab === 'kits' ? 'text-primary' : ''} />
-                            <span className="text-[9px] font-bold uppercase tracking-tight">Kits</span>
-                        </button>
-                        <button onClick={() => setActivePurchaseTab('services')} className={`flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all ${activePurchaseTab === 'services' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}>
-                            <Briefcase size={14} className={activePurchaseTab === 'services' ? 'text-primary' : ''} />
-                            <span className="text-[9px] font-bold uppercase tracking-tight">Services</span>
-                        </button>
-                    </div>
-                </div>
-
-                {isLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {[1, 2, 3].map(i => (
-                            <div key={i} className="aspect-square bg-neutral-900/50 rounded-xl animate-pulse" />
-                        ))}
-                    </div>
-                ) : filteredPurchases.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredPurchases.map((purchase) => {
-                            const projectTitle = getProjectTitle(purchase.item);
-                            const projectData: Project = {
-                                id: purchase.projectId || purchase.id,
-                                title: projectTitle,
-                                producer: purchase.seller,
-                                producerAvatar: purchase.sellerAvatar,
-                                price: purchase.amount,
-                                bpm: 0,
-                                genre: purchase.type,
-                                type: purchase.type === 'Sound Kit' ? 'sound_pack' : 'beat_tape',
-                                tags: [],
-                                tracks: purchase.tracks || [],
-                                coverImage: purchase.image,
-                                status: 'published'
-                            };
-
-                            return (
-                                <ProjectCard
-                                    key={purchase.id}
-                                    project={projectData}
-                                    isPurchased={true}
-                                    customMenuItems={[
-                                        {
-                                            label: 'View Receipt',
-                                            icon: <FileText size={14} />,
-                                            onClick: () => setViewingReceipt(purchase)
-                                        },
-                                        purchase.contractId ? {
-                                            label: purchase.contractStatus === 'signed' ? 'View Contract' : 'Sign Contract',
-                                            icon: <FileText size={14} />,
-                                            onClick: () => purchase.contractStatus === 'signed'
-                                                ? setViewingContractId(purchase.contractId!)
-                                                : handleSignContract(purchase.contractId!)
-                                        } : null,
-                                        {
-                                            label: 'Details',
-                                            icon: <Info size={14} />,
-                                            onClick: () => setSelectedOrder(purchase)
-                                        }
-                                    ].filter(Boolean) as any[]}
-                                    onPlay={() => { }}
-                                    onAction={() => {
-                                        if (purchase.contractId && purchase.contractStatus !== 'signed') {
-                                            handleSignContract(purchase.contractId);
-                                            return;
-                                        }
-                                        setSelectedOrder(purchase);
-                                    }}
-                                />
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <div className="text-center py-20 text-neutral-500">
-                        <ShoppingBag size={48} className="mx-auto mb-4 opacity-50" />
-                        <p className="font-mono text-sm">No purchases found.</p>
-                    </div>
-                )}
-
-                {viewingReceipt && (
-                    <ReceiptModal purchase={viewingReceipt} onClose={() => setViewingReceipt(null)} />
-                )}
-
-                <ContractSigningModal
-                    isOpen={!!signingContractId}
-                    onClose={() => setSigningContractId(null)}
-                    contractId={signingContractId || ''}
-                    onSigned={handleContractSigned}
-                />
 
                 <ContractSigningModal
                     isOpen={!!viewingContractId}
@@ -759,6 +764,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     contractId={viewingContractId || ''}
                     onSigned={() => { }}
                     isReadOnly={true}
+                />
+
+                <ContractSigningModal
+                    isOpen={!!signingContractId}
+                    onClose={() => setSigningContractId(null)}
+                    contractId={signingContractId || ''}
+                    onSigned={handleContractSigned}
+                    isReadOnly={false}
                 />
             </div>
         );
@@ -1044,6 +1057,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                                 amount={order.amount}
                                                 status={order.status}
                                                 statusColor={order.statusColor}
+                                                onClick={() => {
+                                                    const sale = sales.find(s => s.id === order.id);
+                                                    if (sale) {
+                                                        setSelectedSale(sale);
+                                                        onNavigate('dashboard-sales');
+                                                    }
+                                                }}
                                             />
                                         ))}
                                     </tbody>
@@ -1051,7 +1071,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                 {/* Mobile Card View */}
                                 <div className="md:hidden">
                                     {dashboardAnalytics!.recentOrders.map((order, idx) => (
-                                        <div key={order.id} className="p-4 border-b border-white/5 flex flex-col gap-3 hover:bg-white/5 transition-colors">
+                                        <div
+                                            key={order.id}
+                                            onClick={() => {
+                                                const sale = sales.find(s => s.id === order.id);
+                                                if (sale) {
+                                                    setSelectedSale(sale);
+                                                    onNavigate('dashboard-sales');
+                                                }
+                                            }}
+                                            className="p-4 border-b border-white/5 flex flex-col gap-3 hover:bg-white/5 transition-colors cursor-pointer"
+                                        >
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <div className="text-sm font-bold text-white">{order.item}</div>
@@ -1208,9 +1238,9 @@ function ActivityItem({ icon, iconColor, title, desc, time }: any) {
     );
 }
 
-function TableRow({ id, item, date, amount, status, statusColor }: any) {
+function TableRow({ id, item, date, amount, status, statusColor, onClick }: any) {
     return (
-        <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group cursor-pointer">
+        <tr onClick={onClick} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group cursor-pointer">
             <td className="px-6 py-3 font-mono text-neutral-500 group-hover:text-white transition-colors">{id}</td>
             <td className="px-6 py-3 font-bold text-white">{item}</td>
             <td className="px-6 py-3 text-neutral-500">{date}</td>
@@ -1251,108 +1281,259 @@ function TabButton({ active, onClick, label }: any) {
     );
 }
 
-function CustomerOrderDetail({ purchase, onBack }: { purchase: Purchase, onBack: () => void }) {
-    // Mock Timeline
+
+function CustomerOrderDetail({ purchase, onBack, onSignContract, onViewContract }: { purchase: Purchase, onBack: () => void, onSignContract: (id: string) => void, onViewContract: (id: string) => void }) {
+    // Determine stages based on purchase state
+    const hasContract = !!purchase.contractId;
+    const isSigned = !hasContract || purchase.contractStatus === 'signed';
+    const isCompleted = purchase.status === 'Completed';
+
+    // Timeline Logic
     const timeline = [
         { title: 'Order Placed', date: purchase.date, status: 'completed' },
-        { title: 'Requirements Submitted', date: purchase.date, status: 'completed' },
-        { title: 'Order in Progress', date: 'In Progress', status: purchase.status === 'Completed' ? 'completed' : 'active' },
-        { title: 'Delivery', date: purchase.status === 'Completed' ? 'Delivered' : 'Pending', status: purchase.status === 'Completed' ? 'completed' : 'pending' }
+        ...(hasContract ? [{
+            title: 'Contract Signed',
+            date: isSigned ? (purchase.signedAt || 'Signed') : 'Waitig for Signature',
+            status: isSigned ? 'completed' : 'active'
+        }] : []),
+        { title: 'Processing', date: 'In Progress', status: isSigned ? (isCompleted ? 'completed' : 'active') : 'pending' },
+        { title: 'Delivery', date: isCompleted ? 'Delivered' : 'Pending', status: isCompleted ? 'completed' : 'pending' }
     ];
 
-    return (
-        <div className="w-full max-w-[1600px] mx-auto pb-4 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
-            {/* Top Navigation */}
-            <button onClick={onBack} className="flex items-center gap-2 text-neutral-500 hover:text-white mb-6 text-xs font-bold">
-                <ArrowLeft size={14} /> Back to Purchases
-            </button>
+    const canDispute = isSigned;
+    const canDownload = isSigned && isCompleted;
 
-            <div className="flex flex-col lg:flex-row gap-8">
-                {/* Main Content */}
-                <div className="flex-1 space-y-6">
-                    {/* Header Card */}
-                    <div className="bg-[#0a0a0a] border border-transparent rounded-xl p-6 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-20 bg-blue-500/5 rounded-full blur-3xl"></div>
-                        <div className="relative z-10 flex justify-between items-start">
-                            <div className="flex gap-4">
-                                <div className="w-16 h-16 rounded-lg overflow-hidden border border-white/10">
-                                    <img src={purchase.image} className="w-full h-full object-cover" />
+    // Chat state
+    const [chatText, setChatText] = useState('');
+
+    return (
+        <div className="flex-1 flex flex-col h-full bg-[#050505]">
+            {/* Header / Nav */}
+            <div className="h-16 lg:h-20 flex items-center justify-between px-6 bg-neutral-900/30 backdrop-blur-md shrink-0">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={onBack}
+                        className="group flex items-center gap-2 p-2 -ml-2 text-neutral-400 hover:text-white transition-all duration-300"
+                    >
+                        <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                        <span className="hidden lg:inline text-xs font-bold uppercase tracking-wider">Back to Orders</span>
+                    </button>
+                    <div>
+                        <h1 className="text-lg lg:text-xl font-bold text-white flex items-center gap-2">
+                            {purchase.item}
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/5 text-neutral-400 border border-white/5 uppercase">{purchase.type}</span>
+                        </h1>
+                        <p className="text-xs text-neutral-500 font-mono">Order {purchase.id.slice(0, 12)}</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <button
+                        disabled={!canDispute}
+                        title={!canDispute ? "Contract must be signed to dispute" : "Open Dispute"}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${canDispute
+                            ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                            : 'bg-neutral-900 text-neutral-600 cursor-not-allowed opacity-50'
+                            }`}
+                    >
+                        <AlertTriangle size={14} />
+                        <span className="hidden sm:inline">Report Issue</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Split Content: Main (Scrollable) | Chat (Fixed Right) */}
+            <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
+
+                {/* Main Content Area */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+
+                    {/* Status Banner */}
+                    <div className="bg-neutral-900/50 rounded-xl p-6">
+                        {/* Enhanced Tracker */}
+                        <div className="w-full">
+                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-6">Order Status</h3>
+                            <div className="flex items-start justify-between relative">
+                                <div className="absolute top-3 left-0 w-full h-0.5 bg-neutral-800 -z-10 rounded"></div>
+                                {/* Active Line */}
+                                <div
+                                    className="absolute top-3 left-0 h-0.5 bg-green-500 -z-10 rounded transition-all duration-500"
+                                    style={{ width: `${(timeline.filter(t => t.status === 'completed').length / (timeline.length - 1)) * 100}%` }}
+                                ></div>
+
+                                {timeline.map((step, idx) => (
+                                    <div key={idx} className="flex flex-col items-center gap-2 z-10 group min-w-[60px]">
+                                        <div className={`
+                                            w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 bg-[#0a0a0a]
+                                            ${step.status === 'completed' ? 'border-green-500 text-green-500' :
+                                                step.status === 'active' ? 'border-primary text-primary shadow-[0_0_10px_rgba(var(--primary),0.5)] scale-110' :
+                                                    'border-neutral-800 text-neutral-700'
+                                            }
+                                        `}>
+                                            {step.status === 'completed' ? <CheckCircle size={12} fill="currentColor" className="text-black" /> : <div className="w-1.5 h-1.5 rounded-full bg-current" />}
+                                        </div>
+                                        <span className={`text-[10px] font-bold text-center ${step.status === 'pending' ? 'text-neutral-600' : 'text-white'}`}>{step.title}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Actions Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Contract Card */}
+                        <div className="bg-neutral-900/30 rounded-xl p-5 relative overflow-hidden group">
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className={`p-2 rounded-lg ${isSigned ? 'bg-green-500/10 text-green-500' : 'bg-amber-500/10 text-amber-500'} `}>
+                                        <FileText size={18} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-white">License Agreement</h4>
+                                        <p className="text-[10px] text-neutral-500">{isSigned ? 'Signed & Active' : 'Action Required'}</p>
+                                    </div>
+                                </div>
+
+                                {hasContract ? (
+                                    <button
+                                        onClick={() => purchase.contractId ? (isSigned ? onViewContract(purchase.contractId) : onSignContract(purchase.contractId)) : null}
+                                        className={`w-full py-2.5 rounded-lg text-xs font-bold transition-all ${isSigned ? 'bg-white/5 text-white hover:bg-white/10' : 'bg-primary text-black hover:brightness-110'}`}
+                                    >
+                                        {isSigned ? 'View Contract' : 'Sign Contract'}
+                                    </button>
+                                ) : (
+                                    <div className="py-2.5 text-center text-xs text-neutral-600 italic">No contract required</div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Deliverables Card */}
+                        <div className={`bg-neutral-900/30 rounded-xl p-5 relative overflow-hidden ${!canDownload ? 'opacity-70' : ''}`}>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="p-2 bg-blue-500/10 text-blue-500 rounded-lg">
+                                    <Package size={18} />
                                 </div>
                                 <div>
-                                    <h1 className="text-xl font-black text-white mb-1">{purchase.item}</h1>
-                                    <p className="text-sm text-neutral-400">Order #{purchase.id.slice(0, 8)} • Sold by {purchase.seller}</p>
+                                    <h4 className="text-sm font-bold text-white">Deliverables</h4>
+                                    <p className="text-[10px] text-neutral-500">{purchase.tracks?.length || 1} Files Included</p>
                                 </div>
                             </div>
-                            <div className={`px-3 py-1 rounded border text-xs font-bold uppercase ${purchase.status === 'Completed' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-blue-500/10 text-blue-500 border-blue-500/20'}`}>
-                                {purchase.status}
-                            </div>
+
+                            <button
+                                disabled={!canDownload}
+                                className={`w-full py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${canDownload ? 'bg-white text-black hover:bg-neutral-200' : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'}`}
+                            >
+                                {canDownload ? <><Download size={14} /> Download All</> : <><Lock size={14} />Locked</>}
+                            </button>
                         </div>
                     </div>
 
-                    {/* Timeline & Requirements */}
-                    <div className="bg-[#0a0a0a] border border-transparent rounded-xl p-6">
-                        <h3 className="text-sm font-bold text-white mb-6 uppercase tracking-wider">Order Status</h3>
-                        <div className="relative pl-4 border-l border-neutral-800 space-y-8">
-                            {timeline.map((step, idx) => (
-                                <div key={idx} className="relative pl-6">
-                                    <div className={`absolute -left-[21px] top-0 w-3 h-3 rounded-full border-2 ${step.status === 'completed' ? 'bg-green-500 border-green-500' : step.status === 'active' ? 'bg-blue-500 border-blue-500 animate-pulse' : 'bg-neutral-900 border-neutral-700'}`}></div>
-                                    <div className="text-sm font-bold text-white">{step.title}</div>
-                                    <div className="text-xs text-neutral-500">{step.date}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Delivery Files (If Completed) */}
-                    {purchase.status === 'Completed' && (
-                        <div className="bg-[#0a0a0a] border border-transparent rounded-xl p-6">
-                            <h3 className="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center gap-2">
-                                <Package size={16} className="text-primary" /> Delivered Files
-                            </h3>
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-neutral-900 rounded text-white"><Music size={16} /></div>
-                                        <div>
-                                            <div className="text-sm font-bold text-white">Mixed_Master_Final.wav</div>
-                                            <div className="text-[10px] text-neutral-500">45 MB</div>
+                    {/* Files List */}
+                    {purchase.tracks && purchase.tracks.length > 0 && (
+                        <div className="bg-[#0a0a0a] rounded-xl overflow-hidden">
+                            <div className="px-5 py-3 bg-neutral-900/30 flex justify-between items-center">
+                                <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Start Files</h3>
+                                {!canDownload && <span className="text-[10px] text-amber-500 font-bold flex items-center gap-1"><Lock size={10} /> Contract Required</span>}
+                            </div>
+                            <div className="divide-y divide-white/5">
+                                {purchase.tracks.map((track, i) => (
+                                    <div key={i} className={`flex items-center justify-between p-4 ${canDownload ? 'hover:bg-white/5 group' : 'opacity-50'}`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 flex items-center justify-center bg-neutral-900 rounded text-neutral-500 group-hover:text-primary transition-colors">
+                                                <Music size={14} />
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-bold text-white">{track.title}</div>
+                                                <div className="text-[10px] text-neutral-500 flex gap-2">
+                                                    <span>WAV</span>
+                                                    <span>•</span>
+                                                    <span>MP3</span>
+                                                </div>
+                                            </div>
                                         </div>
+                                        <button disabled={!canDownload} className="p-2 hover:bg-white/10 rounded-lg text-neutral-500 hover:text-white transition-colors disabled:cursor-not-allowed">
+                                            {canDownload ? <Download size={16} /> : <Lock size={14} />}
+                                        </button>
                                     </div>
-                                    <button className="px-3 py-1.5 bg-white text-black text-xs font-bold rounded hover:bg-neutral-200 flex items-center gap-2">
-                                        <Download size={12} /> Download
-                                    </button>
-                                </div>
+                                ))}
                             </div>
                         </div>
                     )}
                 </div>
 
-                {/* Sidebar Chat */}
-                <div className="w-full lg:w-96 bg-[#0a0a0a] border border-transparent rounded-xl flex flex-col h-[600px]">
-                    <div className="p-4 border-b border-neutral-800 bg-neutral-900/30">
-                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                            <MessageSquare size={16} /> Chat with {purchase.seller}
-                        </h3>
-                    </div>
-                    <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-dot-grid">
-                        <div className="flex justify-center"><span className="text-[10px] text-neutral-500 bg-neutral-900 px-2 py-1 rounded">Order Started {purchase.date}</span></div>
-                        <div className="flex gap-3">
-                            <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-xs font-bold text-white shrink-0">{purchase.seller[0]}</div>
-                            <div className="bg-neutral-800 p-3 rounded-xl rounded-tl-none text-sm text-neutral-300">
-                                Thanks for your order! Please submit your requirements and files so I can get started.
+                {/* Right Chat Column - Production Grade */}
+                <div className="w-full lg:w-[360px] flex flex-col bg-[#080808] h-[500px] lg:h-auto">
+                    <div className="p-4 bg-neutral-900/20 flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <div className="relative">
+                                <div className="w-8 h-8 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-xs font-bold text-white">
+                                    {purchase.seller.charAt(0)}
+                                </div>
+                                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-[#0a0a0a] rounded-full"></span>
+                            </div>
+                            <div>
+                                <div className="text-sm font-bold text-white leading-none mb-1">{purchase.seller}</div>
+                                <div className="text-[10px] text-neutral-500 font-mono">Usually replies in 1h</div>
                             </div>
                         </div>
-                        <div className="flex gap-3 flex-row-reverse">
-                            <div className="bg-primary p-3 rounded-xl rounded-tr-none text-sm text-black">
-                                Just uploaded the vocal stems. Let me know if you need anything else!
+                        <button className="p-2 hover:bg-white/5 rounded-lg text-neutral-400 hover:text-white transition-colors">
+                            <MoreHorizontal size={16} />
+                        </button>
+                    </div>
+
+                    {/* Chat Messages Area */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-6 bg-dot-grid custom-scrollbar">
+                        <div className="flex justify-center my-4">
+                            <span className="text-[10px] font-mono text-neutral-500 bg-neutral-900/80 px-3 py-1 rounded-full border border-white/5 backdrop-blur-sm">
+                                Order Created on {purchase.date}
+                            </span>
+                        </div>
+
+                        {/* Seller Message */}
+                        <div className="flex gap-3 max-w-[90%]">
+                            <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-xs font-bold text-white shrink-0 border border-white/5 mt-auto">
+                                {purchase.seller.charAt(0)}
+                            </div>
+                            <div className="space-y-1">
+                                <div className="bg-neutral-800 p-3 rounded-2xl rounded-bl-none text-sm text-neutral-200 leading-relaxed shadow-sm">
+                                    Hey! Thanks for the order. I've just sent over the files. Please review the contract when you get a chance!
+                                </div>
+                                <div className="text-[10px] text-neutral-600 ml-1">10:30 AM</div>
+                            </div>
+                        </div>
+
+                        {/* Buyer Message (Mock) */}
+                        <div className="flex gap-3 flex-row-reverse max-w-[90%] ml-auto">
+                            <div className="space-y-1 text-right">
+                                <div className="bg-primary p-3 rounded-2xl rounded-br-none text-sm text-black font-medium leading-relaxed shadow-sm">
+                                    Awesome, checking them now!
+                                </div>
+                                <div className="text-[10px] text-neutral-600 mr-1 flex items-center justify-end gap-1">
+                                    10:32 AM <span className="text-primary font-bold">Read</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div className="p-4 border-t border-neutral-800 bg-neutral-900/30">
-                        <div className="flex gap-2">
-                            <button className="p-2 text-neutral-500 hover:text-white hover:bg-white/5 rounded"><Paperclip size={18} /></button>
-                            <input className="flex-1 bg-transparent text-sm text-white placeholder-neutral-600 focus:outline-none" placeholder="Type a message..." />
-                            <button className="p-2 text-primary hover:bg-primary/10 rounded"><Send size={18} /></button>
+
+                    {/* Chat Input */}
+                    <div className="p-4 bg-neutral-900/30">
+                        <div className="flex items-end gap-2 bg-neutral-900 rounded-xl p-2 shadow-inner">
+                            <button className="p-2 text-neutral-500 hover:text-white transition-colors hover:bg-white/5 rounded-lg h-9 w-9 flex items-center justify-center">
+                                <Paperclip size={18} />
+                            </button>
+                            <textarea
+                                value={chatText}
+                                onChange={(e) => setChatText(e.target.value)}
+                                className="flex-1 bg-transparent text-sm text-white placeholder-neutral-600 focus:outline-none py-2 resize-none h-9 max-h-24 custom-scrollbar"
+                                placeholder="Send a message..."
+                                rows={1}
+                            />
+                            <button
+                                disabled={!chatText.trim()}
+                                className={`h-9 w-9 rounded-lg flex items-center justify-center transition-all ${chatText.trim() ? 'bg-primary text-black hover:scale-105' : 'bg-white/5 text-neutral-600'}`}
+                            >
+                                <Send size={16} />
+                            </button>
                         </div>
                     </div>
                 </div>

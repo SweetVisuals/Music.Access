@@ -288,20 +288,49 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
     // --- Load Files on Mount ---
     // --- Load Files on Mount & Listen for Updates ---
+    // --- Load Files on Mount & Listen for Updates ---
+    const getAudioDuration = (url: string): Promise<number> => {
+        return new Promise((resolve) => {
+            const audio = new Audio(url);
+            audio.onloadedmetadata = () => resolve(audio.duration);
+            audio.onerror = () => resolve(0); // Fail silently
+        });
+    };
+
     const loadFiles = async () => {
         try {
             const dbFiles = await getUserFiles();
-            const mappedFiles: FileSystemItem[] = dbFiles.map((f: any) => ({
-                id: f.id,
-                parentId: f.parentId || null,
-                name: f.name,
-                type: (f.type === 'folder') ? 'folder' : (f.type && f.type.startsWith('audio')) ? 'audio' : (f.type && f.type.startsWith('image')) ? 'image' : 'text',
-                size: f.size,
-                created: new Date().toLocaleDateString(), // TODO: use f.created_at
-                format: f.name.split('.').pop()?.toUpperCase(),
-                duration: 180, // detailed duration not yet available
-                src: f.url
-            }));
+
+            // Map initial structure
+            const mappedFilesPromise = dbFiles.map(async (f: any) => {
+                let duration = 180; // Default fallback
+                const isAudio = f.type && f.type.startsWith('audio');
+
+                // Try to calc duration if audio
+                if (isAudio && f.url) {
+                    try {
+                        const d = await getAudioDuration(f.url);
+                        if (d > 0) duration = Math.round(d);
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+
+                return {
+                    id: f.id,
+                    parentId: f.parentId || null,
+                    name: f.name,
+                    type: (f.type === 'folder') ? 'folder' : (isAudio) ? 'audio' : (f.type && f.type.startsWith('image')) ? 'image' : 'text',
+                    size: f.size,
+                    created: new Date().toLocaleDateString(), // TODO: use f.created_at
+                    format: f.name.split('.').pop()?.toUpperCase(),
+                    duration: duration,
+                    src: f.url
+                } as FileSystemItem;
+            });
+
+            const mappedFiles = await Promise.all(mappedFilesPromise);
+
             // Force state update with new files
             setItems(mappedFiles);
         } catch (error) {

@@ -104,6 +104,18 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                     }
                 )
                 .subscribe();
+
+            // Listen for local updates (e.g. from Dashboard)
+            const handleLocalUpdate = () => {
+                console.log('Sidebar: Notification update event received');
+                fetchUnreadCounts();
+            };
+            window.addEventListener('notifications-updated', handleLocalUpdate);
+
+            return () => {
+                if (notifSubscription) supabase.removeChannel(notifSubscription);
+                window.removeEventListener('notifications-updated', handleLocalUpdate);
+            };
         }
     }, [isLoggedIn, userProfile?.id]);
 
@@ -598,7 +610,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, onClick,
             <span className={`relative z-10 text-[11px] font-medium tracking-wide transition-all ${active ? 'font-bold translate-x-0.5' : ''}`}>{label}</span>
 
             {badge !== undefined && badge > 0 && (
-                <span className="relative z-10 ml-auto bg-primary text-black text-[9px] font-bold px-1 py-0 rounded-full leading-none min-w-[14px] flex items-center justify-center">
+                <span className="relative z-10 ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1.5 bg-primary text-black text-[9px] font-bold rounded-full shadow-[0_0_12px_rgba(var(--primary),0.6)] border border-white/20 animate-in zoom-in-50 duration-300">
                     {badge > 99 ? '99+' : badge}
                 </span>
             )}

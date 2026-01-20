@@ -426,99 +426,49 @@ export const getProjects = async (): Promise<Project[]> => {
 
 
 export const giveGemToProject = async (projectId: string) => {
-  const currentUser = await ensureUserExists();
-  if (!currentUser) throw new Error('User not authenticated');
+  // Call the atomic RPC function
+  const { error } = await supabase.rpc('give_gem', { project_id_arg: projectId });
 
-  // 1. Fetch project to check owner and current gems
-  const { data: project, error: projectError } = await supabase
-    .from('projects')
-    .select('user_id, gems')
-    .eq('id', projectId)
-    .single();
-
-  if (projectError) {
-    console.error('Error fetching project for gem:', projectError);
-    // Explicitly throw the detailed error
-    throw new Error(`Database error: ${projectError.message}`);
+  if (error) {
+    console.error('Error giving gem:', error);
+    throw new Error(error.message || 'Failed to give gem');
   }
 
-  if (!project) throw new Error('Project not found');
-
-  // 2. Prevent self-giving
-  if (project.user_id === currentUser.id) {
-    throw new Error('You cannot give gems to your own project');
-  }
-
-  // 3. Update Transaction (Client-side logic for MVP - moving towards RPC ideally later)
-  // Get current user profile for gem balance
-  const { data: userProfile, error: userError } = await supabase
-    .from('users')
-    .select('gems')
-    .eq('id', currentUser.id)
-    .single();
-
-  if (userError || !userProfile) throw new Error('User profile not found');
-
-  if (userProfile.gems < 1) {
-    throw new Error('Insufficient gems');
-  }
-
-  // Decrement User Gems
-  const { error: updateUserError } = await supabase
-    .from('users')
-    .update({ gems: userProfile.gems - 1 })
-    .eq('id', currentUser.id);
-
-  if (updateUserError) throw updateUserError;
-
-  // Increment Project Gems
-  const { error: updateProjectError } = await supabase
-    .from('projects')
-    .update({ gems: (project.gems || 0) + 1 })
-    .eq('id', projectId);
-
-  if (updateProjectError) {
-    // Rollback user gem deduction
-    await supabase.from('users').update({ gems: userProfile.gems }).eq('id', currentUser.id);
-    throw updateProjectError;
-  }
+  // Dispatch event to refresh global profile (gem balance)
+  window.dispatchEvent(new Event('profile-updated'));
 };
 
 export const undoGiveGem = async (projectId: string) => {
-  const currentUser = await ensureUserExists();
-  if (!currentUser) throw new Error('User not authenticated');
+  // Call the atomic RPC function for undo
+  const { error } = await supabase.rpc('undo_give_gem', { project_id_arg: projectId });
 
-  const { data: project, error: projectError } = await supabase
-    .from('projects')
-    .select('gems')
-    .eq('id', projectId)
-    .single();
-
-  if (projectError) {
-    console.error('Error fetching project for undo gem:', projectError);
-    throw new Error(`Database error: ${projectError.message}`);
+  if (error) {
+    console.error('Error undoing gem:', error);
+    throw new Error(error.message || 'Failed to undo gem');
   }
 
-  if (!project) throw new Error('Project not found');
+  // Dispatch event to refresh global profile (gem balance)
+  window.dispatchEvent(new Event('profile-updated'));
+};
 
-  const { data: userProfile, error: userError } = await supabase
-    .from('users')
-    .select('gems')
-    .eq('id', currentUser.id)
-    .single();
+export const checkIsGemGiven = async (projectId: string) => {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return false;
 
-  if (userError || !userProfile) throw new Error('User profile not found');
+  const { count, error } = await supabase
+    .from('project_gem_givers')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', currentUser.id)
+    .eq('project_id', projectId);
 
-  // Revert changes
-  await supabase
-    .from('users')
-    .update({ gems: userProfile.gems + 1 })
-    .eq('id', currentUser.id);
+  if (error) {
+    if (error.code !== 'PGRST116') { // Ignore if not found which might be common if RLS blocks or table missing
+      console.warn('Error checking gem status:', error.message);
+    }
+    return false;
+  }
 
-  await supabase
-    .from('projects')
-    .update({ gems: Math.max(0, (project.gems || 0) - 1) })
-    .eq('id', projectId);
+  return (count || 0) > 0;
 };
 
 // Helper: Ensure user exists in 'users' table (JIT Provisioning)
@@ -1891,7 +1841,8 @@ export const getServices = async (): Promise<Service[]> => {
       *,
       user:user_id (
         username,
-        handle
+        handle,
+        avatar_url
       )
     `);
 
@@ -1907,7 +1858,8 @@ export const getServices = async (): Promise<Service[]> => {
     user: {
       username: service.user?.username || 'Unknown',
       handle: service.user?.handle || 'unknown',
-      avatar: (service.user as any)?.avatar_url
+      avatar: (service.user as any)?.avatar_url,
+      avatar_url: (service.user as any)?.avatar_url
     }
   }));
 };
@@ -3560,6 +3512,20 @@ export const cleanupOldNotes = async () => {
 // Define types for clarity
 type PurchaseStatus = 'Processing' | 'Completed' | 'Failed';
 
+
+export const signContract = async (contractId: string, signature: string) => {
+  const { error } = await supabase
+    .from('contracts')
+    .update({
+      status: 'signed',
+      signed_at: new Date().toISOString(),
+      client_signature: signature
+    })
+    .eq('id', contractId);
+
+  if (error) throw error;
+};
+
 export const createPurchase = async (
   items: any[],
   total: number,
@@ -3630,8 +3596,21 @@ export const createPurchase = async (
         service_id: serviceId,
         seller_id: sellerId,
         item_name: itemName,
-        item_type: item.type || 'Unknown',
-        price: item.price
+        item_type: (() => {
+          const typeMap: Record<string, string> = {
+            'Exclusive License': 'Beat License',
+            'Lease License': 'Beat License',
+            'Sound Kit': 'Sound Kit',
+            'Service': 'Service',
+            'Mixing': 'Service',
+            'Mastering': 'Service'
+          };
+          return typeMap[item.type] || 'Beat License'; // Default to Beat License if unknown, or maybe handle error
+        })(),
+        price: item.price,
+
+        contract_id: item.contractId, // Only pass contract ID if it exists, do not fallback to licenseId as it's not a FK
+        track_id: item.trackId // Save track ID link
       };
     });
 
@@ -3719,7 +3698,11 @@ export const getSales = async (): Promise<Purchase[]> => {
         price,
         seller_id,
         item_name,
-        contract_id
+        contract_id,
+        contracts (
+          status,
+          signed_at
+        )
       )
     `)
     .eq('purchase_items.seller_id', currentUser.id)
@@ -3775,7 +3758,9 @@ export const getSales = async (): Promise<Purchase[]> => {
       image: p.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop',
       type: p.type,
       projectId: p.project_id,
-      contractId: p.purchase_items?.[0]?.contract_id
+      contractId: p.purchase_items?.[0]?.contract_id,
+      contractStatus: p.purchase_items?.[0]?.contracts?.status,
+      signedAt: p.purchase_items?.[0]?.contracts?.signed_at
     };
   });
 };
@@ -3792,7 +3777,21 @@ export const getPurchases = async (): Promise<Purchase[]> => {
         price,
         seller_id,
         item_name,
-        contract_id
+        item_type,
+        contract_id,
+        contracts (
+          status,
+          signed_at
+        ),
+        track_id,
+        project_id,
+        projects (
+          *,
+          tracks (
+            *,
+            assigned_file:assets!tracks_mp3_asset_id_fkey(storage_path)
+          )
+        )
       )
     `)
     .eq('buyer_id', currentUser.id)
@@ -3803,9 +3802,101 @@ export const getPurchases = async (): Promise<Purchase[]> => {
     return [];
   }
 
-  // extract seller IDs from purchase items
-  const sellerIds = new Set<string>();
+  console.log('[getPurchases] Raw Data:', purchasesData.map(p => ({
+    id: p.id,
+    status: p.status,
+    payment_id: p.stripe_payment_id,
+    amount: p.amount,
+    created: p.created_at
+  })));
+
+  // --- Start of Grouping Logic ---
+
+  // Helper to generate a content signature for a purchase
+  const getSignature = (p: any) => {
+    if (!p.purchase_items || p.purchase_items.length === 0) return `amount-${p.amount}`;
+    // Signature based on sorted seller_id + item_name + price. 
+    // Using project_id might be better but sometimes it's null for services.
+    const itemSigs = p.purchase_items.map((pi: any) =>
+      `${pi.seller_id || 'noseller'}-${pi.item_name || 'noitem'}-${pi.price}`
+    ).sort().join('|');
+    return itemSigs;
+  };
+
+  // Phase 1: Group by strict Payment ID (merges status updates for same ID)
+  const byPaymentId: Record<string, any> = {};
+  const noPaymentId: any[] = [];
+
   purchasesData.forEach((p: any) => {
+    const pid = p.stripe_payment_id;
+    if (pid && pid !== 'pending_stripe' && pid !== 'crypto_txn') {
+      if (!byPaymentId[pid]) {
+        byPaymentId[pid] = p;
+      } else {
+        // Keep the one that is Completed, or if same, the newest (first one since sorted desc)
+        if (byPaymentId[pid].status !== 'Completed' && p.status === 'Completed') {
+          byPaymentId[pid] = p;
+        }
+      }
+    } else {
+      noPaymentId.push(p);
+    }
+  });
+
+  let candidates = [...Object.values(byPaymentId), ...noPaymentId];
+
+  // Phase 2: Group by Content Signature (deduplicate 'pending_stripe' vs real 'pi_xxx')
+  // We want to keep the "best" version for each signature.
+  // Best = Completed. If both Completed, Newest.
+  const bySignature: Record<string, any> = {};
+
+  candidates.forEach((p: any) => {
+    const sig = getSignature(p);
+
+    if (!bySignature[sig]) {
+      bySignature[sig] = p;
+    } else {
+      const existing = bySignature[sig];
+
+      // Logic:
+      // 1. Prefer Completed over Processing/Failed
+      // 2. If same status, prefer the one with a Real Payment ID over 'pending_stripe'
+      // 3. If same ID type, prefer Newest (which is 'existing' because we iterate candidates which are roughly time-sorted but candidates array was mixed. 
+      //    Wait, candidates array order is not guaranteed time-sorted anymore.
+      //    We should compare created_at.
+
+      const isComp = p.status === 'Completed';
+      const exComp = existing.status === 'Completed';
+
+      if (isComp && !exComp) {
+        bySignature[sig] = p;
+      } else if (isComp === exComp) {
+        // Same status priority. Check Payment ID quality.
+        const pHasRealId = p.stripe_payment_id && !p.stripe_payment_id.startsWith('pending_') && !p.stripe_payment_id.startsWith('txn_test');
+        const exHasRealId = existing.stripe_payment_id && !existing.stripe_payment_id.startsWith('pending_') && !existing.stripe_payment_id.startsWith('txn_test');
+
+        if (pHasRealId && !exHasRealId) {
+          bySignature[sig] = p;
+        } else if (pHasRealId === exHasRealId) {
+          // Both real or both pending. Keep newest.
+          if (new Date(p.created_at).getTime() > new Date(existing.created_at).getTime()) {
+            bySignature[sig] = p;
+          }
+        }
+      }
+    }
+  });
+
+  const finalRawPurchases = Object.values(bySignature);
+
+  // Sort by date desc
+  finalRawPurchases.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  // --- End of Grouping Logic ---
+
+  // items collection for seller lookup
+  const sellerIds = new Set<string>();
+  finalRawPurchases.forEach((p: any) => {
     p.purchase_items?.forEach((pi: any) => {
       if (pi.seller_id) sellerIds.add(pi.seller_id);
     });
@@ -3825,19 +3916,29 @@ export const getPurchases = async (): Promise<Purchase[]> => {
     }
   }
 
-  return purchasesData.map((p: any) => {
+  return finalRawPurchases.map((p: any) => {
     let amount = 0; // sum of items
     let mainSellerId = null;
     let itemName = 'Unknown Item';
+    let mainType = p.type; // Default to top-level type if available
 
     if (p.purchase_items && p.purchase_items.length > 0) {
       amount = p.purchase_items.reduce((sum: number, item: any) => sum + (Number(item.price) || 0), 0);
       mainSellerId = p.purchase_items[0].seller_id; // Assume primary seller from first item
       itemName = p.purchase_items[0].item_name || 'Unknown Item';
+
+      // If p.type is missing/null, assume it from the first item
+      if (!mainType && p.purchase_items[0].item_type) {
+        mainType = p.purchase_items[0].item_type;
+      }
+
+      // If multiple items, maybe summarize title? "Item 1 + 2 others"
+      if (p.purchase_items.length > 1) {
+        itemName = `${itemName} + ${p.purchase_items.length - 1} more`;
+      }
+
     } else if (p.amount !== undefined) {
       amount = Number(p.amount);
-      // Fallback if item column existed previously but we know it doesn't now. 
-      // Safe to leave empty or use default.
     }
 
     const seller = mainSellerId ? sellersMap[mainSellerId] : null;
@@ -3845,10 +3946,11 @@ export const getPurchases = async (): Promise<Purchase[]> => {
     const purchaseItems = p.purchase_items?.map((pi: any) => ({
       name: pi.item_name || 'Unknown Item',
       price: pi.price,
-      type: 'Item',
+      type: pi.item_type || 'Item',
       seller: sellersMap[pi.seller_id]?.username || 'Unknown',
       sellerId: pi.seller_id,
-      contractId: pi.contract_id
+      contractId: pi.contract_id,
+      trackId: pi.track_id
     })) || [];
 
     // Debug logging for verified items
@@ -3859,16 +3961,36 @@ export const getPurchases = async (): Promise<Purchase[]> => {
     return {
       id: p.id,
       date: formatDate(new Date(p.created_at)),
-      item: itemName || 'Unknown Item', // Double safety
+      item: itemName || 'Unknown Item',
       seller: seller?.username || 'Unknown',
       sellerAvatar: seller?.avatar_url,
       amount: amount,
       status: p.status,
       image: p.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=200&h=200&fit=crop',
-      type: p.type,
-      projectId: p.project_id,
+      type: mainType, // Use resolved type
+      projectId: p.purchase_items?.[0]?.project_id,
       contractId: p.purchase_items?.[0]?.contract_id,
-      purchaseItems: purchaseItems
+      contractStatus: p.purchase_items?.[0]?.contracts?.status,
+      signedAt: p.purchase_items?.[0]?.contracts?.signed_at,
+      purchaseItems: purchaseItems,
+      tracks: p.purchase_items?.[0]?.projects?.tracks?.map((t: any) => {
+        // Generate Public URL for playback
+        let mp3Url = t.mp3_url || '';
+        if (t.assigned_file?.storage_path) {
+          const { data } = supabase.storage.from('assets').getPublicUrl(t.assigned_file.storage_path);
+          mp3Url = data.publicUrl;
+        }
+
+        return {
+          ...t,
+          duration: t.duration_seconds || 180, // Default to 3:00 if 0 or null
+          files: {
+            mp3: mp3Url,
+            wav: '', // Could implement similar logic for wav assets if DB schema supports it in future
+            stems: ''
+          }
+        };
+      }) || []
     };
   });
 };

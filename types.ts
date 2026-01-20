@@ -61,6 +61,7 @@ export interface Project {
   progress?: number;
   gems?: number;
   tasks?: Task[];
+  fileSize?: string; // e.g. "450 MB"
 }
 
 export interface Service {
@@ -221,6 +222,8 @@ export interface Purchase {
   type: 'Beat License' | 'Sound Kit' | 'Mixing' | 'Service';
   projectId?: string;
   contractId?: string;
+  contractStatus?: 'pending' | 'signed' | 'rejected';
+  signedAt?: string | null;
   coverImage?: string;
   sellerAvatar?: string;
   buyer?: string;
@@ -242,6 +245,7 @@ export interface Purchase {
     seller: string;
     sellerId?: string;
     contractId?: string;
+    trackId?: string;
   }[];
   archived?: boolean; // Added for sales management
 }

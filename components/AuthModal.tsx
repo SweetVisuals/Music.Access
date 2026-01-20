@@ -135,7 +135,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
 
     return (
         <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-            <div className="w-full max-w-[480px] bg-[#0a0a0a] rounded-2xl shadow-2xl flex flex-col relative max-h-[90vh] overflow-hidden">
+            <div className="w-full max-w-[550px] min-h-[550px] bg-[#0a0a0a] rounded-2xl shadow-2xl flex flex-col relative max-h-[90vh] overflow-hidden">
 
                 <button
                     onClick={onClose}

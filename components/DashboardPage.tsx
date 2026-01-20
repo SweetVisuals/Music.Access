@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Project, Purchase, UserProfile, DashboardAnalytics } from '../types';
 import ProjectCard from './ProjectCard';
+// CustomerOrderDetail is defined properly in this file now
+import { ContractSigningModal } from './ContractSigningModal';
 import {
     DollarSign,
     ShoppingCart,
@@ -35,7 +37,9 @@ import {
     Link,
     X,
     Terminal,
-    LayoutGrid
+    LayoutGrid,
+    Info,
+    ShoppingBag
 } from 'lucide-react';
 import Studio from './Studio';
 import GoalsPage from './GoalsPage';
@@ -125,6 +129,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '6m' | '12m' | 'all'>('7d');
     const [isTimeRangeOpen, setIsTimeRangeOpen] = useState(false);
     const [analyticsLoading, setAnalyticsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
     const [liveListeners, setLiveListeners] = useState(0);
 
     // Subscribe to live listeners
@@ -155,29 +160,49 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     const [activePurchaseTab, setActivePurchaseTab] = useState<'all' | 'beats' | 'kits' | 'services'>('all');
     const [selectedOrder, setSelectedOrder] = useState<Purchase | null>(null);
     const [viewingReceipt, setViewingReceipt] = useState<Purchase | null>(null);
+    const [signingContractId, setSigningContractId] = useState<string | null>(null);
+    const [viewingContractId, setViewingContractId] = useState<string | null>(null);
+
+    const handleSignContract = (contractId: string) => {
+        setSigningContractId(contractId);
+    };
+
+    const handleContractSigned = () => {
+        fetchCoreData();
+    };
     const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
     const [purchases, setPurchases] = useState<Purchase[]>([]);
     const [sales, setSales] = useState<Purchase[]>([]);
 
     // Fetch purchases and sales (independent of timeRange)
     // Fetch purchases and sales (Core Data - Once)
-    useEffect(() => {
-        const fetchCoreData = async () => {
-            try {
-                const [purchasesData, salesData] = await Promise.all([
-                    getPurchases(),
-                    getSales(),
-                ]);
-                setPurchases(purchasesData);
-                setSales(salesData);
-            } catch (error) {
-                console.error('Error fetching core data:', error);
-                setPurchases(MOCK_PURCHASES);
-            }
-        };
+    const fetchCoreData = async () => {
+        setIsLoading(true);
+        try {
+            console.log("Fetching core dashboard data...");
+            const [purchasesData, salesData] = await Promise.all([
+                getPurchases(),
+                getSales(),
+            ]);
+            setPurchases(purchasesData);
+            setSales(salesData);
+        } catch (error) {
+            console.error('Error fetching core data:', error);
+            setPurchases(MOCK_PURCHASES);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchCoreData();
     }, []);
+
+    useEffect(() => {
+        if (view === 'dashboard-sales' || view === 'dashboard-orders') {
+            fetchCoreData();
+        }
+    }, [view]);
 
     // Fetch Analytics (Depends on timeRange)
     const fetchAnalytics = async () => {
@@ -623,11 +648,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             return true;
         });
 
+        const getProjectTitle = (itemTitle: string) => {
+            const match = itemTitle.match(/\((.*?)\)$/);
+            return match ? match[1] : itemTitle;
+        };
+
         return (
             <div className="w-full max-w-[1600px] mx-auto pb-32 lg:pb-8 pt-6 px-6 lg:px-8 animate-in fade-in duration-500 relative">
-                {viewingReceipt && (
-                    <ReceiptModal purchase={viewingReceipt} onClose={() => setViewingReceipt(null)} />
-                )}
 
                 <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
                     <div>
@@ -645,175 +672,112 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 {/* Mobile Tabs Layout (Grid) */}
                 <div className="md:hidden relative pb-2 overflow-x-auto no-scrollbar w-auto -mx-4 px-4 mb-4">
                     <div className="grid grid-cols-4 gap-1 p-1 bg-neutral-900/50 rounded-lg border border-white/5 min-w-[320px]">
-                        <button
-                            onClick={() => setActivePurchaseTab('all')}
-                            className={`
-                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
-                                ${activePurchaseTab === 'all' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
-                            `}
-                        >
+                        <button onClick={() => setActivePurchaseTab('all')} className={`flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all ${activePurchaseTab === 'all' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}>
                             <LayoutGrid size={14} className={activePurchaseTab === 'all' ? 'text-primary' : ''} />
                             <span className="text-[9px] font-bold uppercase tracking-tight">All</span>
                         </button>
-
-                        <button
-                            onClick={() => setActivePurchaseTab('beats')}
-                            className={`
-                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
-                                ${activePurchaseTab === 'beats' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
-                            `}
-                        >
+                        <button onClick={() => setActivePurchaseTab('beats')} className={`flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all ${activePurchaseTab === 'beats' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}>
                             <Music size={14} className={activePurchaseTab === 'beats' ? 'text-primary' : ''} />
                             <span className="text-[9px] font-bold uppercase tracking-tight">Beats</span>
                         </button>
-
-                        <button
-                            onClick={() => setActivePurchaseTab('kits')}
-                            className={`
-                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
-                                ${activePurchaseTab === 'kits' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
-                            `}
-                        >
+                        <button onClick={() => setActivePurchaseTab('kits')} className={`flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all ${activePurchaseTab === 'kits' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}>
                             <Package size={14} className={activePurchaseTab === 'kits' ? 'text-primary' : ''} />
                             <span className="text-[9px] font-bold uppercase tracking-tight">Kits</span>
                         </button>
-
-                        <button
-                            onClick={() => setActivePurchaseTab('services')}
-                            className={`
-                                flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all
-                                ${activePurchaseTab === 'services' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}
-                            `}
-                        >
+                        <button onClick={() => setActivePurchaseTab('services')} className={`flex flex-col items-center justify-center gap-1 py-1.5 rounded transition-all ${activePurchaseTab === 'services' ? 'bg-white/10 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}>
                             <Briefcase size={14} className={activePurchaseTab === 'services' ? 'text-primary' : ''} />
                             <span className="text-[9px] font-bold uppercase tracking-tight">Services</span>
                         </button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
-                    {(filteredPurchases || []).map(purchase => (
-                        <div key={purchase.id} className="bg-[#0a0a0a] border border-transparent rounded-xl overflow-hidden hover:border-white/10 transition-colors group">
-                            <div className="p-4 flex flex-col md:flex-row items-center gap-6">
-                                {/* Info */}
-                                <div className="flex-1 min-w-0 text-center md:text-left">
-                                    <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
-                                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border ${(purchase.type || '').includes('Service') || purchase.type === 'Mixing' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                                            purchase.type === 'Sound Kit' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                                'bg-green-500/10 text-green-400 border-green-500/20'
-                                            }`}>
-                                            {purchase.type || 'Unknown'}
-                                        </span>
-                                        <span className="text-[10px] text-neutral-500 font-mono">{purchase.date}</span>
-                                    </div>
-                                    <h3 className="text-lg font-bold text-white mb-1">{purchase.item}</h3>
-                                    <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-neutral-400">
-                                        {purchase.sellerAvatar && (
-                                            <img src={purchase.sellerAvatar} alt={purchase.seller} className="w-4 h-4 rounded-full" />
-                                        )}
-                                        <span>Sold by <span className="text-white">{purchase.seller}</span></span>
-                                    </div>
-                                </div>
+                {isLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="aspect-square bg-neutral-900/50 rounded-xl animate-pulse" />
+                        ))}
+                    </div>
+                ) : filteredPurchases.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredPurchases.map((purchase) => {
+                            const projectTitle = getProjectTitle(purchase.item);
+                            const projectData: Project = {
+                                id: purchase.projectId || purchase.id,
+                                title: projectTitle,
+                                producer: purchase.seller,
+                                producerAvatar: purchase.sellerAvatar,
+                                price: purchase.amount,
+                                bpm: 0,
+                                genre: purchase.type,
+                                type: purchase.type === 'Sound Kit' ? 'sound_pack' : 'beat_tape',
+                                tags: [],
+                                tracks: purchase.tracks || [],
+                                coverImage: purchase.image,
+                                status: 'published'
+                            };
 
-                                {/* Price & Status */}
-                                <div className="text-center md:text-right px-4 md:border-l border-neutral-800 min-w-[120px]">
-                                    <div className="text-xl font-mono font-bold text-white mb-1">${purchase.amount.toFixed(2)}</div>
-                                    <div className={`text-[10px] font-bold uppercase ${purchase.status === 'Completed' ? 'text-green-500' : purchase.status === 'Processing' ? 'text-blue-400' : 'text-red-500'}`}>
-                                        {purchase.status}
-                                    </div>
-                                </div>
+                            return (
+                                <ProjectCard
+                                    key={purchase.id}
+                                    project={projectData}
+                                    isPurchased={true}
+                                    customMenuItems={[
+                                        {
+                                            label: 'View Receipt',
+                                            icon: <FileText size={14} />,
+                                            onClick: () => setViewingReceipt(purchase)
+                                        },
+                                        purchase.contractId ? {
+                                            label: purchase.contractStatus === 'signed' ? 'View Contract' : 'Sign Contract',
+                                            icon: <FileText size={14} />,
+                                            onClick: () => purchase.contractStatus === 'signed'
+                                                ? setViewingContractId(purchase.contractId!)
+                                                : handleSignContract(purchase.contractId!)
+                                        } : null,
+                                        {
+                                            label: 'Details',
+                                            icon: <Info size={14} />,
+                                            onClick: () => setSelectedOrder(purchase)
+                                        }
+                                    ].filter(Boolean) as any[]}
+                                    onPlay={() => { }}
+                                    onAction={() => {
+                                        if (purchase.contractId && purchase.contractStatus !== 'signed') {
+                                            handleSignContract(purchase.contractId);
+                                            return;
+                                        }
+                                        setSelectedOrder(purchase);
+                                    }}
+                                />
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="text-center py-20 text-neutral-500">
+                        <ShoppingBag size={48} className="mx-auto mb-4 opacity-50" />
+                        <p className="font-mono text-sm">No purchases found.</p>
+                    </div>
+                )}
 
-                                {/* Actions */}
-                                <div className="flex flex-col gap-2 w-full md:w-auto min-w-[140px]">
-                                    {(purchase.type || '').includes('Service') || purchase.type === 'Mixing' ? (
-                                        // Services don't expand for downloads in this view
-                                        <>
-                                            <button
-                                                onClick={() => setSelectedOrder(purchase)}
-                                                className="w-full py-2.5 bg-white text-black font-bold rounded-lg text-xs hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2"
-                                            >
-                                                <Briefcase size={14} /> Manage Order
-                                            </button>
-                                            <button
-                                                onClick={() => setViewingReceipt(purchase)}
-                                                className="w-full py-2.5 text-neutral-500 font-bold rounded-lg text-xs hover:text-white transition-colors border border-transparent hover:border-white/10"
-                                            >
-                                                View Receipt
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <button
-                                                onClick={() => setExpandedOrderId(expandedOrderId === purchase.id ? null : purchase.id)}
-                                                className={`w-full py-2.5 font-bold rounded-lg text-xs border transition-all flex items-center justify-center gap-2 ${expandedOrderId === purchase.id
-                                                    ? 'bg-neutral-800 text-white border-neutral-700'
-                                                    : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
-                                                    }`}
-                                            >
-                                                {expandedOrderId === purchase.id ? (
-                                                    <>Close Files <ChevronDown size={14} className="rotate-180 transition-transform" /></>
-                                                ) : (
-                                                    <>Download Files <ChevronDown size={14} className="transition-transform" /></>
-                                                )}
-                                            </button>
-                                            {purchase.contractId && (
-                                                <button
-                                                    onClick={() => onNavigate(`contracts?id=${purchase.contractId}`)}
-                                                    className="w-full py-2.5 bg-primary/10 text-primary font-bold rounded-lg text-xs hover:bg-primary hover:text-black transition-colors flex items-center justify-center gap-2"
-                                                >
-                                                    <FileText size={14} /> View Contract
-                                                </button>
-                                            )}
-                                            <button
-                                                onClick={() => setViewingReceipt(purchase)}
-                                                className="w-full py-2.5 text-neutral-500 font-bold rounded-lg text-xs hover:text-white transition-colors"
-                                            >
-                                                View Receipt
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
+                {viewingReceipt && (
+                    <ReceiptModal purchase={viewingReceipt} onClose={() => setViewingReceipt(null)} />
+                )}
 
-                            {/* Expanded Content */}
-                            {expandedOrderId === purchase.id && !(purchase.type || '').includes('Service') && (
-                                <div className="border-t border-neutral-800 bg-[#050505] p-6 animate-in slide-in-from-top-2 duration-300">
-                                    <div className="w-full max-w-md">
-                                        <ProjectCard
-                                            project={{
-                                                id: purchase.projectId || purchase.id,
-                                                title: purchase.item,
-                                                producer: purchase.seller,
-                                                price: purchase.amount,
-                                                bpm: 140, // Mock or fetch if available
-                                                key: 'Am',
-                                                genre: purchase.type,
-                                                type: purchase.type === 'Sound Kit' ? 'sound_pack' : 'beat_tape',
-                                                tracks: purchase.tracks || [],
-                                                tags: [],
-                                                licenses: []
-                                            } as any}
-                                            currentTrackId={null}
-                                            isPlaying={false}
-                                            onPlayTrack={() => { }}
-                                            onTogglePlay={() => { }}
-                                            isPurchased={true}
-                                            renderTrackAction={(track: any) => (
-                                                <button
-                                                    className="p-1.5 bg-neutral-800 hover:bg-white text-neutral-400 hover:text-black rounded transition-colors group/dl"
-                                                    title="Download File"
-                                                >
-                                                    <Download size={14} />
-                                                </button>
-                                            )}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </div >
+                <ContractSigningModal
+                    isOpen={!!signingContractId}
+                    onClose={() => setSigningContractId(null)}
+                    contractId={signingContractId || ''}
+                    onSigned={handleContractSigned}
+                />
+
+                <ContractSigningModal
+                    isOpen={!!viewingContractId}
+                    onClose={() => setViewingContractId(null)}
+                    contractId={viewingContractId || ''}
+                    onSigned={() => { }}
+                    isReadOnly={true}
+                />
+            </div>
         );
     }
 
@@ -1171,7 +1135,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 }
 
 // Helper functions for icons and colors
-const getActivityIcon = (iconName: string) => {
+function getActivityIcon(iconName: string) {
     const iconMap = {
         ShoppingCart: <ShoppingCart size={12} />,
         User: <User size={12} />,
@@ -1180,9 +1144,9 @@ const getActivityIcon = (iconName: string) => {
         Briefcase: <Briefcase size={12} />
     };
     return iconMap[iconName as keyof typeof iconMap] || <ShoppingCart size={12} />;
-};
+}
 
-const getActivityColor = (colorName: string) => {
+function getActivityColor(colorName: string) {
     const colorMap = {
         green: 'bg-green-500',
         blue: 'bg-blue-500',
@@ -1191,99 +1155,109 @@ const getActivityColor = (colorName: string) => {
         purple: 'bg-purple-500'
     };
     return colorMap[colorName as keyof typeof colorMap] || 'bg-green-500';
-};
+}
 
-const StatCard = ({ title, value, icon, trend, positive, live, subtext, color, bgColor, borderColor, isActive, onClick, className }: any) => (
-    <div
-        onClick={onClick}
-        className={`
+function StatCard({ title, value, icon, trend, positive, live, subtext, color, bgColor, borderColor, isActive, onClick, className }: any) {
+    return (
+        <div
+            onClick={onClick}
+            className={`
             bg-[#0a0a0a] border rounded-xl p-4 md:p-5 transition-all duration-300 hover:shadow-lg group relative overflow-hidden cursor-pointer
             ${isActive ? 'border-primary ring-1 ring-primary/50' : 'border-transparent hover:border-white/20'}
             ${className || ''}
         `}
-    >
-        <div className={`absolute top-0 right-0 p-20 rounded-full blur-3xl opacity-5 transition-opacity group-hover:opacity-10 ${color ? color.replace('text-', 'bg-') : 'bg-white'}`}></div>
+        >
+            <div className={`absolute top-0 right-0 p-20 rounded-full blur-3xl opacity-5 transition-opacity group-hover:opacity-10 ${color ? color.replace('text-', 'bg-') : 'bg-white'}`}></div>
 
-        <div className="relative z-10">
-            <div className="flex justify-between items-start mb-3">
-                <div className={`p-2 rounded-lg ${bgColor} ${color}`}>
-                    {icon}
+            <div className="relative z-10">
+                <div className="flex justify-between items-start mb-3">
+                    <div className={`p-2 rounded-lg ${bgColor} ${color}`}>
+                        {icon}
+                    </div>
+                    {live ? (
+                        <div className="flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full text-red-500 bg-red-500/10 border border-red-500/20 animate-pulse">
+                            <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1.5"></div>
+                            LIVE
+                        </div>
+                    ) : trend && (
+                        <div className={`flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded ${positive ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10'}`}>
+                            {positive ? <TrendingUp size={10} className="mr-1" /> : <TrendingUp size={10} className="mr-1 rotate-180" />}
+                            {trend}
+                        </div>
+                    )}
                 </div>
-                {live ? (
-                    <div className="flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full text-red-500 bg-red-500/10 border border-red-500/20 animate-pulse">
-                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-1.5"></div>
-                        LIVE
-                    </div>
-                ) : trend && (
-                    <div className={`flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded ${positive ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10'}`}>
-                        {positive ? <TrendingUp size={10} className="mr-1" /> : <TrendingUp size={10} className="mr-1 rotate-180" />}
-                        {trend}
-                    </div>
-                )}
-            </div>
 
-            <div>
-                <div className="text-[11px] font-medium text-neutral-500 font-mono uppercase tracking-wider mb-0.5">{title}</div>
-                <div className="text-2xl font-black text-white tracking-tight">{value}</div>
-                {subtext && <div className="text-[10px] text-neutral-500 mt-1">{subtext}</div>}
+                <div>
+                    <div className="text-[11px] font-medium text-neutral-500 font-mono uppercase tracking-wider mb-0.5">{title}</div>
+                    <div className="text-2xl font-black text-white tracking-tight">{value}</div>
+                    {subtext && <div className="text-[10px] text-neutral-500 mt-1">{subtext}</div>}
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
+}
 
-const ActivityItem = ({ icon, iconColor, title, desc, time }: any) => (
-    <div className="relative flex gap-3 group cursor-pointer">
-        <div className={`w-6 h-6 rounded-full ${iconColor} flex items-center justify-center text-black shadow-[0_0_10px_rgba(0,0,0,0.5)] shrink-0 relative z-10 ring-4 ring-[#0a0a0a]`}>
-            {icon}
-        </div>
-        <div className="flex-1 min-w-0 pb-4 border-b border-neutral-800/50 group-last:border-0">
-            <div className="flex justify-between items-start">
-                <p className="text-xs font-bold text-white group-hover:text-primary transition-colors">{title}</p>
-                <span className="text-[9px] text-neutral-600 whitespace-nowrap ml-2">{time}</span>
+function ActivityItem({ icon, iconColor, title, desc, time }: any) {
+    return (
+        <div className="relative flex gap-3 group cursor-pointer">
+            <div className={`w-6 h-6 rounded-full ${iconColor} flex items-center justify-center text-black shadow-[0_0_10px_rgba(0,0,0,0.5)] shrink-0 relative z-10 ring-4 ring-[#0a0a0a]`}>
+                {icon}
             </div>
-            <p className="text-[11px] text-neutral-500 truncate">{desc}</p>
+            <div className="flex-1 min-w-0 pb-4 border-b border-neutral-800/50 group-last:border-0">
+                <div className="flex justify-between items-start">
+                    <p className="text-xs font-bold text-white group-hover:text-primary transition-colors">{title}</p>
+                    <span className="text-[9px] text-neutral-600 whitespace-nowrap ml-2">{time}</span>
+                </div>
+                <p className="text-[11px] text-neutral-500 truncate">{desc}</p>
+            </div>
         </div>
-    </div>
-);
+    );
+}
 
-const TableRow = ({ id, item, date, amount, status, statusColor }: any) => (
-    <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group cursor-pointer">
-        <td className="px-6 py-3 font-mono text-neutral-500 group-hover:text-white transition-colors">{id}</td>
-        <td className="px-6 py-3 font-bold text-white">{item}</td>
-        <td className="px-6 py-3 text-neutral-500">{date}</td>
-        <td className="px-6 py-3 font-mono text-white">{amount}</td>
-        <td className="px-6 py-3 text-right">
-            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${statusColor}`}>
-                {status}
-            </span>
-        </td>
-    </tr>
-);
+function TableRow({ id, item, date, amount, status, statusColor }: any) {
+    return (
+        <tr className="border-b border-white/5 hover:bg-white/[0.02] transition-colors group cursor-pointer">
+            <td className="px-6 py-3 font-mono text-neutral-500 group-hover:text-white transition-colors">{id}</td>
+            <td className="px-6 py-3 font-bold text-white">{item}</td>
+            <td className="px-6 py-3 text-neutral-500">{date}</td>
+            <td className="px-6 py-3 font-mono text-white">{amount}</td>
+            <td className="px-6 py-3 text-right">
+                <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${statusColor}`}>
+                    {status}
+                </span>
+            </td>
+        </tr>
+    );
+}
 
-const QuickActionTile = ({ icon, label, onClick }: any) => (
-    <button
-        onClick={onClick}
-        className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 hover:scale-[1.02] transition-all group"
-    >
-        <div className="text-neutral-400 group-hover:text-primary transition-colors">
-            {icon}
-        </div>
-        <span className="text-[10px] font-bold text-neutral-300 group-hover:text-white uppercase tracking-wider">{label}</span>
-    </button>
-);
+function QuickActionTile({ icon, label, onClick }: any) {
+    return (
+        <button
+            onClick={onClick}
+            className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 hover:scale-[1.02] transition-all group"
+        >
+            <div className="text-neutral-400 group-hover:text-primary transition-colors">
+                {icon}
+            </div>
+            <span className="text-[10px] font-bold text-neutral-300 group-hover:text-white uppercase tracking-wider">{label}</span>
+        </button>
+    );
+}
 
 // --- HELPER COMPONENTS FOR ORDERS VIEW ---
 
-const TabButton = ({ active, onClick, label }: any) => (
-    <button
-        onClick={onClick}
-        className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${active ? 'bg-neutral-800 text-white shadow' : 'text-neutral-500 hover:text-neutral-300'}`}
-    >
-        {label}
-    </button>
-);
+function TabButton({ active, onClick, label }: any) {
+    return (
+        <button
+            onClick={onClick}
+            className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${active ? 'bg-neutral-800 text-white shadow' : 'text-neutral-500 hover:text-neutral-300'}`}
+        >
+            {label}
+        </button>
+    );
+}
 
-const CustomerOrderDetail = ({ purchase, onBack }: { purchase: Purchase, onBack: () => void }) => {
+function CustomerOrderDetail({ purchase, onBack }: { purchase: Purchase, onBack: () => void }) {
     // Mock Timeline
     const timeline = [
         { title: 'Order Placed', date: purchase.date, status: 'completed' },
@@ -1393,7 +1367,7 @@ const CustomerOrderDetail = ({ purchase, onBack }: { purchase: Purchase, onBack:
     );
 }
 
-const FileDownloadModal = ({ purchase, onClose }: { purchase: Purchase, onClose: () => void }) => {
+function FileDownloadModal({ purchase, onClose }: { purchase: Purchase, onClose: () => void }) {
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-[#0a0a0a] border border-transparent rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl scale-100 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
@@ -1469,79 +1443,81 @@ const FileDownloadModal = ({ purchase, onClose }: { purchase: Purchase, onClose:
     );
 };
 
-const ReceiptModal = ({ purchase, onClose }: { purchase: Purchase, onClose: () => void }) => (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
-        <div className="w-full max-w-md bg-[#111] text-white border border-transparent rounded-xl shadow-2xl overflow-hidden relative flex flex-col" onClick={e => e.stopPropagation()}>
+function ReceiptModal({ purchase, onClose }: { purchase: Purchase, onClose: () => void }) {
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
+            <div className="w-full max-w-md bg-[#111] text-white border border-transparent rounded-xl shadow-2xl overflow-hidden relative flex flex-col" onClick={e => e.stopPropagation()}>
 
-            {/* Receipt Header */}
-            <div className="p-6 border-b border-white/10 text-center bg-white/5 relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors">
-                    <X size={20} />
-                </button>
-                <div className="w-10 h-10 bg-primary text-black rounded-lg flex items-center justify-center mx-auto mb-3 shadow-[0_0_15px_rgba(var(--primary),0.4)]">
-                    <Terminal size={20} />
-                </div>
-                <h2 className="text-xl font-black tracking-tight mb-1">PAYMENT RECEIPT</h2>
-                <p className="text-[10px] text-neutral-400 font-mono uppercase tracking-widest">MusicAccess Terminal</p>
-            </div>
-
-            <div className="p-8 space-y-8 bg-dot-grid relative">
-                {/* Details */}
-                <div className="flex justify-between items-start">
-                    <div className="text-left">
-                        <p className="text-[10px] font-bold text-neutral-500 uppercase mb-1">Billed To</p>
-                        <p className="text-sm font-bold text-white">{purchase.seller}</p>
-                        <p className="text-xs text-neutral-400">buyer@example.com</p>
+                {/* Receipt Header */}
+                <div className="p-6 border-b border-white/10 text-center bg-white/5 relative">
+                    <button onClick={onClose} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors">
+                        <X size={20} />
+                    </button>
+                    <div className="w-10 h-10 bg-primary text-black rounded-lg flex items-center justify-center mx-auto mb-3 shadow-[0_0_15px_rgba(var(--primary),0.4)]">
+                        <Terminal size={20} />
                     </div>
-                    <div className="text-right">
-                        <p className="text-[10px] font-bold text-neutral-500 uppercase mb-1">Receipt ID</p>
-                        <p className="text-sm font-mono text-primary">{purchase.id.slice(0, 8)}</p>
-                    </div>
+                    <h2 className="text-xl font-black tracking-tight mb-1">PAYMENT RECEIPT</h2>
+                    <p className="text-[10px] text-neutral-400 font-mono uppercase tracking-widest">MusicAccess Terminal</p>
                 </div>
 
-                {/* Line Item */}
-                <div className="py-4 border-t border-b border-dashed border-white/10 space-y-3">
+                <div className="p-8 space-y-8 bg-dot-grid relative">
+                    {/* Details */}
                     <div className="flex justify-between items-start">
-                        <div className="flex-1 pr-4">
-                            <p className="text-sm font-bold text-white">{purchase.item}</p>
-                            <p className="text-[10px] text-neutral-500 mt-0.5 uppercase">{purchase.type} • {purchase.seller}</p>
+                        <div className="text-left">
+                            <p className="text-[10px] font-bold text-neutral-500 uppercase mb-1">Billed To</p>
+                            <p className="text-sm font-bold text-white">{purchase.seller}</p>
+                            <p className="text-xs text-neutral-400">buyer@example.com</p>
                         </div>
-                        <p className="font-mono font-bold text-white">${purchase.amount.toFixed(2)}</p>
+                        <div className="text-right">
+                            <p className="text-[10px] font-bold text-neutral-500 uppercase mb-1">Receipt ID</p>
+                            <p className="text-sm font-mono text-primary">{purchase.id.slice(0, 8)}</p>
+                        </div>
                     </div>
-                    {/* Tax */}
-                    <div className="flex justify-between items-center text-xs text-neutral-500">
-                        <span>Processing Fee (0%)</span>
-                        <span>$0.00</span>
+
+                    {/* Line Item */}
+                    <div className="py-4 border-t border-b border-dashed border-white/10 space-y-3">
+                        <div className="flex justify-between items-start">
+                            <div className="flex-1 pr-4">
+                                <p className="text-sm font-bold text-white">{purchase.item}</p>
+                                <p className="text-[10px] text-neutral-500 mt-0.5 uppercase">{purchase.type} • {purchase.seller}</p>
+                            </div>
+                            <p className="font-mono font-bold text-white">${purchase.amount.toFixed(2)}</p>
+                        </div>
+                        {/* Tax */}
+                        <div className="flex justify-between items-center text-xs text-neutral-500">
+                            <span>Processing Fee (0%)</span>
+                            <span>$0.00</span>
+                        </div>
+                    </div>
+
+                    {/* Total */}
+                    <div className="flex justify-between items-end">
+                        <div>
+                            <p className="text-[10px] font-bold text-neutral-500 uppercase mb-1">Date Paid</p>
+                            <p className="text-xs font-medium text-neutral-300 flex items-center gap-1.5">
+                                <Calendar size={12} /> {purchase.date}
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[10px] font-bold text-neutral-500 uppercase mb-1">Total Paid</p>
+                            <p className="text-3xl font-black tracking-tighter text-white">${purchase.amount.toFixed(2)}</p>
+                        </div>
                     </div>
                 </div>
 
-                {/* Total */}
-                <div className="flex justify-between items-end">
-                    <div>
-                        <p className="text-[10px] font-bold text-neutral-500 uppercase mb-1">Date Paid</p>
-                        <p className="text-xs font-medium text-neutral-300 flex items-center gap-1.5">
-                            <Calendar size={12} /> {purchase.date}
-                        </p>
+                {/* Footer */}
+                <div className="p-4 bg-white/5 border-t border-white/10 flex justify-between items-center">
+                    <div className="flex items-center gap-2 text-neutral-400">
+                        <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_5px_rgba(34,197,94,0.5)]"></div>
+                        <span className="text-[10px] font-bold uppercase">Payment Successful</span>
                     </div>
-                    <div className="text-right">
-                        <p className="text-[10px] font-bold text-neutral-500 uppercase mb-1">Total Paid</p>
-                        <p className="text-3xl font-black tracking-tighter text-white">${purchase.amount.toFixed(2)}</p>
-                    </div>
+                    <button className="px-3 py-1.5 bg-white text-black text-[10px] font-bold rounded hover:bg-neutral-200 flex items-center gap-1.5 transition-colors">
+                        <Download size={12} /> DOWNLOAD PDF
+                    </button>
                 </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 bg-white/5 border-t border-white/10 flex justify-between items-center">
-                <div className="flex items-center gap-2 text-neutral-400">
-                    <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_5px_rgba(34,197,94,0.5)]"></div>
-                    <span className="text-[10px] font-bold uppercase">Payment Successful</span>
-                </div>
-                <button className="px-3 py-1.5 bg-white text-black text-[10px] font-bold rounded hover:bg-neutral-200 flex items-center gap-1.5 transition-colors">
-                    <Download size={12} /> DOWNLOAD PDF
-                </button>
             </div>
         </div>
-    </div>
-);
+    );
+}
 
 export default DashboardPage;

@@ -153,6 +153,16 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
         }
     }, [fileSelectorOpen]);
 
+    const getAudioDuration = (url: string): Promise<number> => {
+        return new Promise((resolve, reject) => {
+            const audio = new Audio(url);
+            audio.onloadedmetadata = () => {
+                resolve(audio.duration);
+            };
+            audio.onerror = (e) => reject(e);
+        });
+    };
+
     const handleTagInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if ((e.key === 'Enter' || e.key === ',') && e.currentTarget.value) {
             e.preventDefault();
@@ -215,8 +225,35 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
             track.files[fileSelectorOpen] = fileId;
 
             if (Object.keys(track.files).length === 1) {
-                track.title = userFiles.find(f => f.id === fileId)?.name.split('.')[0] || track.title;
-                track.duration = 180;
+                const file = userFiles.find(f => f.id === fileId);
+                track.title = file?.name.split('.')[0] || track.title || 'Untitled Track';
+
+                // Calculate duration if valid audio
+                if (file?.url) {
+                    getAudioDuration(file.url)
+                        .then(duration => {
+                            const newTracksAsync = [...tracks];
+                            // We need to find the track again in case state changed, but for now we assume index/id stability within this short time
+                            // To be safe, let's update state again
+                            setTracks(currentTracks => {
+                                const tracksCopy = [...currentTracks];
+                                if (tracksCopy[currentTrackIndex]) {
+                                    tracksCopy[currentTrackIndex] = {
+                                        ...tracksCopy[currentTrackIndex],
+                                        duration: Math.round(duration)
+                                    };
+                                }
+                                return tracksCopy;
+                            });
+                        })
+                        .catch(err => {
+                            console.warn("Failed to separate audio duration", err);
+                            // Keep default or set to 180 if 0
+                        });
+                    track.duration = 180; // Placeholder until async load finishes
+                } else {
+                    track.duration = 180;
+                }
             }
 
             setTracks(newTracks);
@@ -384,7 +421,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                         <div
                                             onClick={() => coverInputRef.current?.click()}
                                             className={`
-                                                relative w-full h-40 md:h-48 rounded-xl border border-dashed flex flex-col items-center justify-center cursor-pointer overflow-hidden group transition-all
+                                                relative w-64 h-64 rounded-xl border border-dashed flex flex-col items-center justify-center cursor-pointer overflow-hidden group transition-all mx-auto
                                                 ${projectData.coverImage ? 'border-transparent' : 'border-neutral-700 hover:border-neutral-500 hover:bg-white/5'}
                                             `}
                                         >

@@ -4,6 +4,7 @@ import { ArrowLeft, Search, Verified, UserPlus, MessageCircle, UserMinus, Star, 
 import { TalentProfile, Project, Service } from '../types';
 import { getTalentProfiles, getServices, getProjects, followUser, unfollowUser, getUserProfile } from '../services/supabaseService';
 import ProjectCard, { ProjectSkeleton } from './ProjectCard';
+import ServiceCard from './ServiceCard';
 
 interface ViewAllPageProps {
     type: 'talent' | 'projects' | 'soundpacks' | 'releases' | 'services';
@@ -207,10 +208,17 @@ const ViewAllPage: React.FC<ViewAllPageProps> = ({
                         )}
 
                         {type === 'services' && (
-                            <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                                {filteredServices.map(service => (
-                                    <ServiceCard key={service.id} service={service} />
-                                ))}
+                            <div className="flex flex-col gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    {filteredServices.map(service => (
+                                        <ServiceCard
+                                            key={service.id}
+                                            service={service}
+                                            user={service.user}
+                                            onClick={() => navigate(`/@${service.user?.handle}`)} // Or specific service page if available
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         )}
 
@@ -288,24 +296,7 @@ const TalentCard = ({ talent, currentUserId, onFollow, navigate }: { talent: Tal
     </div>
 );
 
-const ServiceCard = ({ service }: { service: Service, key?: any }) => (
-    <div className="bg-neutral-900/50 border border-transparent p-5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer flex flex-col h-full">
-        <div className="flex justify-between items-start mb-2">
-            <div className="p-2 bg-neutral-800 rounded-lg text-neutral-300">
-                <Star size={16} />
-            </div>
-            <span className="text-xs font-bold text-white bg-primary/20 px-2 py-1 rounded border border-primary/30 font-mono">${service.price}+</span>
-        </div>
-        <h3 className="text-sm font-bold text-white mb-1">{service.title}</h3>
-        <p className="text-[10px] text-neutral-400 mb-3 line-clamp-2 flex-1">{service.description}</p>
-        <div className="flex items-center gap-2 pt-3 border-t border-white/5">
-            <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center text-[8px] text-white">
-                {service.user?.avatar ? <img src={service.user.avatar} className="w-full h-full rounded-full object-cover" /> : (service.user?.username?.[0] || '?')}
-            </div>
-            <span className="text-[10px] text-neutral-500">by {service.user?.username || 'Service Provider'}</span>
-        </div>
-    </div>
-);
+
 
 const EmptyState = ({ term }: { term: string }) => (
     <div className="col-span-full py-20 text-center flex flex-col items-center justify-center">

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Pause, MoreVertical, Cpu, ShoppingCart, Bookmark, Sparkles, Clock, BookmarkPlus, Lock, Edit, Trash2, Globe, Disc } from 'lucide-react';
+import { Play, Pause, MoreVertical, Cpu, ShoppingCart, Bookmark, Sparkles, Clock, BookmarkPlus, Lock, Edit, Trash2, Globe, Disc, Info } from 'lucide-react';
 import { Project } from '../types';
 import { generateCreativeDescription } from '../services/geminiService';
 import { usePurchaseModal } from '../contexts/PurchaseModalContext';
 import { useToast } from '../contexts/ToastContext';
-import { checkIsProjectSaved, saveProject, unsaveProject, giveGemToProject, undoGiveGem, getCurrentUser, updateProjectStatus } from '../services/supabaseService';
+import { checkIsProjectSaved, saveProject, unsaveProject, giveGemToProject, undoGiveGem, checkIsGemGiven, getCurrentUser, updateProjectStatus } from '../services/supabaseService';
 import { Gem } from 'lucide-react';
 
 interface ProjectCardProps {
@@ -20,7 +20,21 @@ interface ProjectCardProps {
     onDelete?: (project: Project) => void;
     showStatusTags?: boolean;
     onStatusChange?: (project: Project, newStatus: string) => void;
+    customMenuItems?: {
+        label: string;
+        icon: React.ReactNode;
+        onClick: (project: Project) => void;
+        variant?: 'default' | 'danger' | 'success' | 'warning';
+    }[];
+    onAction?: (project: Project) => void;
 }
+
+
+const formatDuration = (seconds: number) => {
+    const min = Math.floor(seconds / 60);
+    const sec = Math.floor(seconds % 60);
+    return `${min}:${sec.toString().padStart(2, '0')}`;
+};
 
 
 const ProjectCard: React.FC<ProjectCardProps> = ({
@@ -34,16 +48,16 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     onEdit,
     onDelete,
     showStatusTags = true,
-    onStatusChange
+    onStatusChange,
+    customMenuItems,
+    onAction
 }) => {
     const [description, setDescription] = useState<string | null>(null);
     const [loadingDesc, setLoadingDesc] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
     const [localGems, setLocalGems] = useState(project.gems || 0);
-    const [hasGivenGem, setHasGivenGem] = useState(false); // Local tracking for interaction feedback
-    const [showUndo, setShowUndo] = useState(false);
-    const undoTimerRef = useRef<NodeJS.Timeout | null>(null);
+
 
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -87,6 +101,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [showMenu]);
+
+
 
     const handleMenuAction = async (action: 'edit' | 'delete' | 'make_private' | 'publish', e: React.MouseEvent) => {
         e.stopPropagation();
@@ -141,6 +157,35 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
     const isOwnProject = currentUserId && project.userId === currentUserId;
 
+    const [hasGivenGem, setHasGivenGem] = useState(false);
+    const [canUndo, setCanUndo] = useState(false); // Only allowed for 15s after giving
+    const undoTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // ... (existing code)
+
+    useEffect(() => {
+        const fetchUserAndStatus = async () => {
+            try {
+                const user = await getCurrentUser();
+                setCurrentUserId(user?.id || null);
+
+                if (project.id && user) {
+                    const [saved, given] = await Promise.all([
+                        checkIsProjectSaved(project.id),
+                        checkIsGemGiven(project.id)
+                    ]);
+                    setIsSaved(saved);
+                    setHasGivenGem(given);
+                }
+            } catch (error) {
+                console.error('Error fetching user:', error);
+            }
+        };
+        fetchUserAndStatus();
+    }, [project.id]);
+
+    // ... (existing code)
+
     const handleGiveGem = async (e: React.MouseEvent) => {
         e.stopPropagation();
         if (!project.id || hasGivenGem || isOwnProject) return;
@@ -148,14 +193,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         // Optimistic update
         setLocalGems(prev => prev + 1);
         setHasGivenGem(true);
-        setShowUndo(true);
-        // Toast removed as requested
+        setCanUndo(true);
 
-        // Start 1 minute timer to remove undo option
+        // Start 15s timer to remove undo option
         if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
         undoTimerRef.current = setTimeout(() => {
-            setShowUndo(false);
-        }, 60000);
+            setCanUndo(false);
+        }, 15000); // 15 seconds
 
         try {
             await giveGemToProject(project.id);
@@ -164,9 +208,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             // Revert state
             setLocalGems(prev => prev - 1);
             setHasGivenGem(false);
-            setShowUndo(false);
+            setCanUndo(false);
             if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-            // Optional: Show toast error
             showToast(error.message || "Failed to give gem", 'error');
         }
     };
@@ -178,16 +221,17 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         // Optimistic revert
         setLocalGems(prev => prev - 1);
         setHasGivenGem(false);
-        setShowUndo(false);
+        setCanUndo(false);
         if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
 
         try {
             await undoGiveGem(project.id);
         } catch (error) {
             console.error('Failed to undo gem:', error);
-            // Revert optimistic update if API fails (set back to given state)
+            // Revert optimistic update
             setLocalGems(prev => prev + 1);
             setHasGivenGem(true);
+            setCanUndo(true); // Allow retrying undo? Or just fail.
         }
     };
 
@@ -307,8 +351,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                         {/* Actions Row */}
                         <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                             <button
-                                onClick={showUndo ? handleUndoGem : handleGiveGem}
-                                disabled={isOwnProject && !showUndo}
+                                onClick={canUndo ? handleUndoGem : handleGiveGem}
+                                disabled={isOwnProject && !canUndo}
                                 className={`
                                     flex items-center gap-1 px-2.5 py-1.5 rounded-full backdrop-blur-md border transition-all
                                     ${hasGivenGem
@@ -345,6 +389,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 onClick={() => {
+                    if (onAction) {
+                        onAction(project);
+                        return;
+                    }
                     navigate(`/listen/${project.shortId || project.id}`);
                 }}
             >
@@ -354,46 +402,82 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 {/* Header Section */}
                 <div className="p-4 pb-2 space-y-2 flex flex-col relative z-10 bg-gradient-to-b from-white/[0.02] to-transparent rounded-t-xl">
                     {/* Metadata Row - Moved Above Title */}
-                    <div className="flex items-center gap-2 text-[10px] font-medium text-neutral-400 font-mono">
-                        {project.status && project.status !== 'published' && showStatusTags && (
-                            <div className="p-1 rounded bg-neutral-900 border border-transparent text-neutral-500" title="Private Project">
-                                <Lock size={12} />
-                            </div>
-                        )}
 
-                        {project.genre === 'Uploads' ? (
-                            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold uppercase tracking-wider text-[9px]">
-                                Upload
-                            </span>
-                        ) : (
-                            <>
-                                {project.genre && (
-                                    <span className="px-1.5 py-0.5 rounded bg-neutral-900/80 text-neutral-400 hover:text-neutral-300 transition-colors">
-                                        {project.genre}
-                                    </span>
-                                )}
-
-                                {(typeof project.bpm === 'string' ? project.bpm.length > 0 : project.bpm > 0) && project.type !== 'release' && (
-                                    <span className="px-1.5 py-0.5 rounded bg-neutral-900/80 text-neutral-300">
-                                        {project.bpm} <span className="text-neutral-600">BPM</span>
-                                    </span>
-                                )}
-
-                                {project.key && project.key !== 'C' && (
-                                    <span className="px-1.5 py-0.5 rounded bg-neutral-900/80 text-neutral-400">
-                                        {project.key}
-                                    </span>
-                                )}
-                            </>
-                        )}
-                    </div>
-
-                    <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-base font-bold text-white truncate tracking-tight group-hover:text-primary transition-colors duration-300 flex-1 leading-tight">
+                    <div className="flex items-start justify-between gap-3 pt-2 pb-1">
+                        <h3 className="text-base font-bold text-white truncate tracking-tight group-hover:text-primary transition-colors duration-300 flex-1 leading-tight py-1">
                             {project.title}
                         </h3>
 
                         <div className="flex items-center gap-2 shrink-0">
+                            {/* Metadata Info Icon */}
+                            <div className="relative group/info">
+                                <button
+                                    className="text-neutral-600 hover:text-white transition-colors p-1"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <Info size={14} />
+                                </button>
+                                <div className="absolute right-0 top-full mt-2 w-48 bg-[#0a0a0a]/95 backdrop-blur-xl rounded-lg shadow-2xl overflow-hidden z-50 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-300 transform translate-y-2 group-hover/info:translate-y-0 p-3 pointer-events-none group-hover/info:pointer-events-auto border border-white/5">
+                                    <div className="flex flex-col gap-2.5">
+                                        {/* Header */}
+                                        <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                                            <span className="text-[10px] uppercase tracking-wider font-bold text-neutral-500">Includes</span>
+                                            {project.fileSize && <span className="text-[10px] font-mono text-neutral-400">{project.fileSize}</span>}
+                                        </div>
+
+                                        {/* Formats Row */}
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            {(() => {
+                                                const hasWav = project.licenses?.some(l => l.fileTypesIncluded.includes('WAV')) || project.files?.wav;
+                                                const hasStems = project.licenses?.some(l => l.fileTypesIncluded.includes('STEMS')) || project.files?.stems;
+                                                // Always assume MP3 is available if it's a valid project
+                                                return (
+                                                    <>
+                                                        <span className="px-1.5 py-0.5 rounded bg-white/5 text-[10px] font-medium text-neutral-300 border border-white/5">MP3</span>
+                                                        {hasWav && <span className="px-1.5 py-0.5 rounded bg-purple-500/10 text-[10px] font-medium text-purple-200 border border-purple-500/20">WAV</span>}
+                                                        {hasStems && <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-[10px] font-medium text-blue-200 border border-blue-500/20">STEMS</span>}
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
+
+                                        {/* Stats Row */}
+                                        <div className="grid grid-cols-2 gap-2 pt-1">
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[9px] text-neutral-600 uppercase">Tracks</span>
+                                                <span className="text-xs font-medium text-neutral-300">{project.tracks.length}</span>
+                                            </div>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-[9px] text-neutral-600 uppercase">Duration</span>
+                                                <span className="text-xs font-medium text-neutral-300">
+                                                    {(() => {
+                                                        const totalSeconds = project.tracks.reduce((acc, t) => acc + t.duration, 0);
+                                                        const minutes = Math.floor(totalSeconds / 60);
+                                                        const seconds = Math.floor(totalSeconds % 60);
+                                                        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                                                    })()}
+                                                </span>
+                                            </div>
+                                            {(project.bpm || project.key) && (
+                                                <div className="col-span-2 flex items-center gap-3 pt-1 border-t border-white/5 mt-1">
+                                                    {(typeof project.bpm === 'string' ? project.bpm.length > 0 : project.bpm > 0) && (
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-[9px] text-neutral-600">BPM</span>
+                                                            <span className="text-[10px] font-mono text-neutral-400">{project.bpm}</span>
+                                                        </div>
+                                                    )}
+                                                    {project.key && project.key !== 'C' && (
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-[9px] text-neutral-600">KEY</span>
+                                                            <span className="text-[10px] font-mono text-neutral-400">{project.key}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             {/* More Menu - Only show if actions exist */}
                             {(onEdit || onDelete) && (
                                 <div className="relative" ref={menuRef}>
@@ -478,10 +562,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 </div>
 
                 {/* Tracklist */}
-                <div className="flex-1 bg-[#050505] overflow-y-auto custom-scrollbar relative">
+                <div className="flex-1 bg-[#050505] overflow-y-auto custom-scrollbar relative h-56">
                     <div className="p-2 space-y-2">
                         {(() => {
-                            const tracksToShow = project.tracks.slice(0, 5);
+                            const tracksToShow = [...project.tracks];
                             // Ensure 5 slots are always shown on mobile
                             while (tracksToShow.length < 5) {
                                 tracksToShow.push({ id: `empty-${tracksToShow.length}`, title: 'Empty Slot', duration: 0, isPlaceholder: true } as any);
@@ -547,7 +631,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
                                         {/* Track Info */}
                                         <div className="flex-1 min-w-0 mr-3">
-                                            <div className={`text-[10px] md:text-xs font-medium truncate transition-colors ${isTrackPlaying ? 'text-primary' : 'text-neutral-400 group-hover/track:text-white'}`}>
+                                            <div className={`text-[10px] md:text-xs font-display font-semibold tracking-wide truncate transition-colors ${isTrackPlaying ? 'text-primary' : 'text-neutral-400 group-hover/track:text-white'}`}>
                                                 {track.title}
                                             </div>
                                         </div>
@@ -556,7 +640,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                         <div className="flex items-center text-neutral-700 group-hover/track:text-neutral-500 transition-colors">
                                             <Clock size={10} className="mr-1.5" />
                                             <span className="text-[8px] md:text-[9px] font-mono">
-                                                {Math.floor(track.duration / 60)}:{(track.duration % 60).toString().padStart(2, '0')}
+                                                {formatDuration(track.duration)}
                                             </span>
                                         </div>
 
@@ -631,8 +715,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
                         {/* Gem Button */}
                         <button
-                            onClick={showUndo ? handleUndoGem : handleGiveGem}
-                            disabled={isOwnProject && !showUndo}
+                            onClick={canUndo ? handleUndoGem : handleGiveGem}
+                            disabled={isOwnProject && !canUndo}
                             className={`
                                 flex items-center gap-1 p-1.5 rounded transition-all active:scale-75
                                 ${isOwnProject
@@ -645,14 +729,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                             title={
                                 isOwnProject
                                     ? "Cannot give gems to own project"
-                                    : showUndo
-                                        ? "Take Gem Back (1m)"
+                                    : canUndo
+                                        ? "Take Gem Back (15s)"
                                         : "Give Gem"
                             }
                         >
                             <Gem size={12} fill={hasGivenGem ? "currentColor" : "none"} />
                             <span className={`text-[9px] font-mono font-bold ${hasGivenGem ? 'text-primary' : 'text-neutral-500'}`}>
-                                {showUndo ? "UNDO" : localGems}
+                                {canUndo ? "UNDO" : localGems}
                             </span>
                         </button>
 

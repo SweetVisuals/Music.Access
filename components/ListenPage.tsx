@@ -207,7 +207,7 @@ const ListenPage: React.FC<ListenPageProps> = ({
                     </div>
 
                     {/* Scrollable Tracklist */}
-                    <div className="w-full flex-none max-h-[340px] overflow-y-auto custom-scrollbar p-0">
+                    <div className="w-full flex-none max-h-[340px] overflow-y-auto p-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         <div className="flex flex-col w-full pb-4">
                             {project.tracks.map((track, idx) => {
                                 const isTrackActive = isCurrentProjectActive && currentTrackId === track.id;
@@ -350,7 +350,7 @@ const ListenPage: React.FC<ListenPageProps> = ({
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pt-2">
+                    <div className="flex-1 overflow-y-auto p-6 pt-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         <div className="flex flex-col gap-3">
                             {suggestedProjects.map((p) => (
                                 <div

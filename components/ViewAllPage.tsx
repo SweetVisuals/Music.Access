@@ -172,7 +172,7 @@ const ViewAllPage: React.FC<ViewAllPageProps> = ({
                         {[...Array(8)].map((_, i) => (
                             type === 'talent' ? <TalentSkeleton key={i} /> :
                                 type === 'services' ? <ServiceSkeleton key={i} /> :
-                                    <div key={i} className="h-auto md:h-[282px]"><ProjectSkeleton /></div>
+                                    <div key={i} className="h-[282px]"><ProjectSkeleton /></div>
                         ))}
                     </div>
                 ) : (
@@ -194,7 +194,7 @@ const ViewAllPage: React.FC<ViewAllPageProps> = ({
                         {(type === 'projects' || type === 'soundpacks' || type === 'releases') && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                                 {filteredProjects.map(project => (
-                                    <div key={project.id} className="h-auto md:h-[282px]">
+                                    <div key={project.id} className="h-[282px]">
                                         <ProjectCard
                                             project={project}
                                             currentTrackId={currentTrackId}

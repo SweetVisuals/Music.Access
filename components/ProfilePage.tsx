@@ -1120,7 +1120,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                     setCreateModalInitialType('beat_tape');
                                                     setIsCreateModalOpen(true);
                                                 }}
-                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                             >
                                                 <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                                     <Box size={24} />
@@ -1141,7 +1141,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             localProjects
                                                 .filter(project => project.status === 'published' && project.type === 'beat_tape')
                                                 .map(project => (
-                                                    <div key={project.id} className="h-auto md:h-[282px]">
+                                                    <div key={project.id} className="h-[282px]">
                                                         <ProjectCard
                                                             project={project}
                                                             currentTrackId={currentTrackId}
@@ -1180,7 +1180,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                     setCreateModalInitialType('release');
                                                     setIsCreateModalOpen(true);
                                                 }}
-                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                             >
                                                 <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                                     <Disc size={24} />
@@ -1201,7 +1201,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             localProjects
                                                 .filter(project => project.status === 'published' && project.type === 'release')
                                                 .map(project => (
-                                                    <div key={project.id} className="h-auto md:h-[282px]">
+                                                    <div key={project.id} className="h-[282px]">
                                                         <ProjectCard
                                                             project={project}
                                                             currentTrackId={currentTrackId}
@@ -1237,7 +1237,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                         {!isViewerMode && isOwnProfile && (
                                             <div
                                                 onClick={() => setIsCreateServiceModalOpen(true)}
-                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                             >
                                                 <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                                     <Mic2 size={24} />
@@ -1289,7 +1289,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                         {!isViewerMode && isOwnProfile && (
                                             <div
                                                 onClick={() => setIsCreateSoundpackModalOpen(true)}
-                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[220px] md:h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                             >
                                                 <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                                     <Box size={24} />
@@ -1368,7 +1368,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             localProjects
                                                 .filter(p => p.status !== 'published')
                                                 .map(project => (
-                                                    <div key={project.id} className="h-auto md:h-[282px]">
+                                                    <div key={project.id} className="h-[282px]">
                                                         <ProjectCard
                                                             project={project}
                                                             currentTrackId={currentTrackId}
@@ -1540,7 +1540,7 @@ const ProfileSkeleton = () => (
             {[...Array(4)].map((_, i) => <div key={i} className="h-6 w-24 bg-neutral-900 rounded"></div>)}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => <div key={i} className="h-auto md:h-[282px] bg-neutral-900/50 rounded-xl border border-white/10"><ProjectSkeleton /></div>)}
+            {[...Array(4)].map((_, i) => <div key={i} className="h-[282px] bg-neutral-900/50 rounded-xl border border-white/10"><ProjectSkeleton /></div>)}
         </div>
     </div>
 );

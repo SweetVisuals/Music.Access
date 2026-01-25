@@ -875,7 +875,7 @@ const App: React.FC = () => {
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                                   {filteredProjects.filter(p => p.type === 'sound_pack').map(project => (
-                                    <div key={project.id} className="h-auto md:h-[282px]">
+                                    <div key={project.id} className="h-[282px]">
                                       <ProjectCard
                                         project={project}
                                         currentTrackId={currentTrackId}
@@ -900,7 +900,7 @@ const App: React.FC = () => {
                               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                                 {filteredProjects.filter(p => p.type !== 'sound_pack').length > 0 ? (
                                   filteredProjects.filter(p => p.type !== 'sound_pack').map(project => (
-                                    <div key={project.id} className="h-auto md:h-[282px]">
+                                    <div key={project.id} className="h-[282px]">
                                       <ProjectCard
                                         project={project}
                                         currentTrackId={currentTrackId}
@@ -926,7 +926,7 @@ const App: React.FC = () => {
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mt-6 pb-20">
                             {filteredProjects.length > 0 ? (
                               filteredProjects.map(project => (
-                                <div key={project.id} className="h-auto md:h-[282px]">
+                                <div key={project.id} className="h-[282px]">
                                   <ProjectCard
                                     project={project}
                                     currentTrackId={currentTrackId}

@@ -3643,28 +3643,37 @@ export const createPurchase = async (
       let contractIdToLink = item.contractId;
 
       if (contractIdToLink) {
-        try {
-          // 1. Fetch Template
-          const { data: template } = await supabase
-            .from('contracts')
-            .select('*')
-            .eq('id', contractIdToLink)
-            .single();
+        if (!currentUser) {
+          // GUEST CHECKOUT: Cannot create/own a contract record easily.
+          // Fallback: Skip contract attachment to prevent "Locked" state on Master Template.
+          // Trade-off: Guests get files without digital signature record for now.
+          console.warn('[createPurchase] Guest checkout: Skipping contract attachment.');
+          contractIdToLink = null;
+        } else {
+          // REGISTERED USER: Must clone template.
+          try {
+            // 1. Fetch Template
+            const { data: template, error: templateError } = await supabase
+              .from('contracts')
+              .select('*')
+              .eq('id', contractIdToLink)
+              .single();
 
-          if (template) {
-            // 2. Create Instance (Owned by Buyer for now, or Seller? Usually Buyer signs it.)
-            // We'll trust RLS allows Buyer to create 'contracts' rows.
+            if (templateError || !template) {
+              throw new Error(`Failed to fetch contract template: ${templateError?.message}`);
+            }
+
+            // 2. Create Instance (Owned by Buyer)
             const newContractPayload = {
-              user_id: currentUser?.id, // Buyer owns this copy
+              user_id: currentUser.id,
               title: `${template.title} - ${itemName}`,
               type: template.type,
               status: 'pending', // Important: Start as pending
               content: template.content || template.terms || '',
-              client_name: currentUser?.user_metadata?.username || currentUser?.email || 'Valued Client',
+              client_name: currentUser.user_metadata?.username || currentUser.email || 'Valued Client',
               royalty_split: template.royalty_split,
               revenue_split: template.revenue_split,
               notes: template.notes
-              // Signature fields blank
             };
 
             const { data: newContract, error: cloneError } = await supabase
@@ -3673,15 +3682,18 @@ export const createPurchase = async (
               .select()
               .single();
 
-            if (newContract && !cloneError) {
-              console.log(`[createPurchase] Cloned contract template ${contractIdToLink} to new instance ${newContract.id}`);
-              contractIdToLink = newContract.id;
-            } else {
-              console.warn('[createPurchase] Failed to clone contract:', cloneError);
+            if (cloneError || !newContract) {
+              throw new Error(`Failed to clone contract: ${cloneError?.message}`);
             }
+
+            console.log(`[createPurchase] Cloned contract template ${contractIdToLink} to new instance ${newContract.id}`);
+            contractIdToLink = newContract.id;
+
+          } catch (err: any) {
+            console.error('[createPurchase] Critical: Contract cloning failed.', err);
+            // CRITICAL CHANGE: Do not fail silently. Abort purchase to prevent data corruption (unlocked items without contract, or locked items with master template).
+            throw new Error(`Contract initialization failed: ${err.message}`);
           }
-        } catch (err) {
-          console.error('[createPurchase] Error cloning contract:', err);
         }
       }
 
@@ -3710,6 +3722,7 @@ export const createPurchase = async (
     }));
 
     console.log('[createPurchase] Inserting items payload:', purchaseItems);
+    purchaseItems.forEach(pi => console.log('Item Contract ID:', pi.contract_id));
 
     const { error: itemsError } = await supabase
       .from('purchase_items')

@@ -365,7 +365,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                 className={`
                                     flex items-center gap-1 px-2.5 py-1.5 rounded-full backdrop-blur-md border transition-all
                                     ${hasGivenGem
-                                        ? 'bg-primary/20 border-primary/40 text-primary'
+                                        ? 'bg-primary/10 border-primary/30 text-primary shadow-[0_0_15px_rgba(var(--primary),0.15)]'
                                         : 'bg-white/10 border-white/10 text-white hover:bg-white/20'
                                     }
                                     ${isOwnProject ? 'opacity-50 cursor-not-allowed' : ''}
@@ -459,7 +459,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                         {/* Header */}
                                         <div className="flex items-center justify-between pb-2 border-b border-white/5">
                                             <span className="text-[10px] uppercase tracking-wider font-bold text-neutral-500">Includes</span>
-                                            {project.fileSize && <span className="text-[10px] font-mono text-neutral-400">{project.fileSize}</span>}
+                                            {project.fileSize && <span className="text-[10px] text-neutral-400">{project.fileSize}</span>}
                                         </div>
 
                                         {/* Formats Row */}
@@ -500,13 +500,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                                     {(typeof project.bpm === 'string' ? project.bpm.length > 0 : project.bpm > 0) && (
                                                         <div className="flex items-center gap-1">
                                                             <span className="text-[9px] text-neutral-600">BPM</span>
-                                                            <span className="text-[10px] font-mono text-neutral-400">{project.bpm}</span>
+                                                            <span className="text-[10px] text-neutral-400">{project.bpm}</span>
                                                         </div>
                                                     )}
                                                     {project.key && project.key !== 'C' && (
                                                         <div className="flex items-center gap-1">
                                                             <span className="text-[9px] text-neutral-600">KEY</span>
-                                                            <span className="text-[10px] font-mono text-neutral-400">{project.key}</span>
+                                                            <span className="text-[10px] text-neutral-400">{project.key}</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -609,8 +609,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                             <Sparkles size={10} className="text-primary animate-pulse" />
                         </div>
                         <div className="flex-1">
-                            <div className="text-[7px] text-primary/50 font-mono uppercase tracking-wider mb-0.5">System Analysis</div>
-                            <p className="text-[9px] text-neutral-200 font-mono leading-relaxed line-clamp-2">
+                            <div className="text-[7px] text-primary/50 uppercase tracking-wider mb-0.5">System Analysis</div>
+                            <p className="text-[9px] text-neutral-200 leading-relaxed line-clamp-2">
                                 {description}
                             </p>
                         </div>
@@ -638,7 +638,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                             className="flex items-center px-3 py-2 rounded-md border border-transparent opacity-20 pointer-events-none"
                                         >
                                             <div className="w-6 flex items-center justify-center mr-1">
-                                                <span className="text-[9px] md:text-[10px] font-mono text-neutral-700">
+                                                <span className="text-[9px] md:text-[10px] text-neutral-700">
                                                     {(idx + 1).toString().padStart(2, '0')}
                                                 </span>
                                             </div>
@@ -649,7 +649,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                             </div>
                                             <div className="flex items-center text-neutral-900">
                                                 <Clock size={10} className="mr-1.5" />
-                                                <span className="text-[8px] md:text-[9px] font-mono">--:--</span>
+                                                <span className="text-[8px] md:text-[9px]">--:--</span>
                                             </div>
                                         </div>
                                     );
@@ -680,7 +680,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                                     <Pause size={10} className="text-primary fill-primary relative z-10" />
                                                 </div>
                                             ) : (
-                                                <span className="text-[9px] md:text-[10px] font-mono text-neutral-700 group-hover/track:hidden">
+                                                <span className="text-[9px] md:text-[10px] text-neutral-700 group-hover/track:hidden">
                                                     {(idx + 1).toString().padStart(2, '0')}
                                                 </span>
                                             )}
@@ -689,7 +689,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
                                         {/* Track Info */}
                                         <div className="flex-1 min-w-0 mr-3">
-                                            <div className={`text-[10px] md:text-xs font-display font-semibold tracking-wide truncate transition-colors ${isTrackPlaying ? 'text-primary' : 'text-neutral-400 group-hover/track:text-white'}`}>
+                                            <div className={`text-[10px] md:text-xs font-semibold tracking-wide truncate transition-colors ${isTrackPlaying ? 'text-primary' : 'text-neutral-400 group-hover/track:text-white'}`}>
                                                 {track.title}
                                             </div>
                                         </div>
@@ -708,7 +708,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                                 </a>
                                             )}
                                             <Clock size={10} className="mr-1.5" />
-                                            <span className="text-[8px] md:text-[9px] font-mono">
+                                            <span className="text-[8px] md:text-[9px]">
                                                 {formatDuration(track.duration)}
                                             </span>
                                         </div>
@@ -791,7 +791,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                 ${isOwnProject
                                     ? 'text-neutral-600 cursor-not-allowed opacity-50'
                                     : hasGivenGem
-                                        ? 'text-primary bg-primary/10 border border-primary/20'
+                                        ? 'text-primary bg-primary/5 border border-primary/20 shadow-[0_0_10px_rgba(var(--primary),0.1)]'
                                         : 'text-neutral-500 hover:text-primary hover:bg-primary/5'
                                 }
                             `}

@@ -650,7 +650,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
 transition-all duration-500 transform cubic-bezier(0.2, 0.8, 0.2, 1) 
                 ${isExpanded ? 'translate-y-24 opacity-0 pointer-events-none' : (isMinimized ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0 pointer-events-none')}
 `}>
-                <div className="w-full bg-[#050505] border border-white/10 rounded-2xl shadow-2xl p-5 flex flex-col gap-4 relative overflow-hidden group">
+                <div className="w-full bg-[#050505] rounded-2xl shadow-2xl p-5 flex flex-col gap-4 relative overflow-hidden group">
 
                     {/* Top Row: Art & Track */}
                     <div className="flex items-center gap-4 relative z-10">

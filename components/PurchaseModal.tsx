@@ -374,6 +374,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                                 const track = project.tracks.find((t, idx) => (t.id || `track-${idx}`) === trackId);
                                                 const effectiveLicense = (wantsStems[trackId] && stemsLicense) ? stemsLicense : selectedLicense;
 
+                                                console.log('Adding to cart with contractId:', effectiveLicense.contractId);
                                                 onAddToCart({
                                                     // If editing, use existing ID to replacing it, OR create new ID if user wants that...
                                                     // But here we want to replace.
@@ -396,6 +397,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                                 });
                                             });
                                         } else {
+                                            console.log('Adding pack to cart with contractId:', selectedLicense.contractId);
                                             onAddToCart({
                                                 id: initialCartItem ? initialCartItem.id : `${project.id}-pack-${selectedLicense.id}-${Date.now()}`,
                                                 title: project.title,

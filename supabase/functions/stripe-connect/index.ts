@@ -1,8 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@16.2.0?target=deno";
+import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+    // This is needed to use the Fetch API rather than Node's http client
     httpClient: Stripe.createFetchHttpClient(),
+    apiVersion: '2023-10-16',
 });
 
 const corsHeaders = {
@@ -31,13 +33,7 @@ serve(async (req) => {
             let event;
 
             try {
-                try {
-                    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-                } catch (err) {
-                    // Try thin event parsing
-                    const thinEvent = stripe.parseThinEvent(body, signature, webhookSecret);
-                    event = await stripe.v2.core.events.retrieve(thinEvent.id);
-                }
+                event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
             } catch (err) {
                 console.error("Webhook Error", err);
                 return new Response(`Webhook Error: ${err.message}`, { status: 400 });
@@ -45,13 +41,13 @@ serve(async (req) => {
 
             console.log("Received event:", event.type);
 
+            // Handle Standard Connect Webhooks
             switch (event.type) {
-                case 'v2.core.account.requirements.updated':
-                case 'v2.core.account.capability_status_updated':
-                    console.log("Account status updated", event);
+                case 'account.updated':
+                    console.log("Account updated", event.data.object);
                     break;
-                case 'customer.subscription.updated':
-                    console.log("Subscription updated", event);
+                case 'capability.updated':
+                    console.log("Capability updated", event.data.object);
                     break;
                 default:
                     console.log(`Unhandled event type ${event.type}`);
@@ -63,47 +59,65 @@ serve(async (req) => {
         }
 
         // Standard API calls - Expect JSON body with 'action'
-        const { action, ...params } = await req.json();
-
-        // 1. Create Connected Account (V2)
-        if (action === 'create-account') {
-            const { display_name, contact_email, user_id } = params;
-            if (!display_name || !contact_email) throw new Error('Missing display_name or contact_email');
-
-            const account = await stripe.v2.core.accounts.create({
-                display_name: display_name,
-                contact_email: contact_email,
-                identity: { country: 'us' },
-                dashboard: 'full',
-                defaults: {
-                    responsibilities: { fees_collector: 'stripe', losses_collector: 'stripe' },
-                },
-                configuration: {
-                    customer: {},
-                    merchant: { capabilities: { card_payments: { requested: true } } },
-                },
-            });
-
-            return new Response(JSON.stringify({ accountId: account.id }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
+        let action, params;
+        try {
+            const body = await req.json();
+            action = body.action;
+            params = body; // params includes action but we destructure later
+            console.log(`[Stripe Connect] Request received. Action: ${action}`);
+        } catch (e) {
+            console.error("[Stripe Connect] Failed to parse JSON body", e);
+            throw new Error("Invalid JSON body");
         }
 
-        // 2. Onboard Account
+        const { ...paramData } = params; // redeclare to avoid conflict if I used let above differently, but actually let's just stick to the flow.
+
+        // Debug Env
+        if (!Deno.env.get('STRIPE_SECRET_KEY')) {
+            console.error("[Stripe Connect] CRITICAL: STRIPE_SECRET_KEY is not set!");
+        }
+
+        // 1. Create Connected Account (Standard Express V1)
+        if (action === 'create-account') {
+            console.log("[Stripe Connect] Creating account with params:", JSON.stringify(params));
+            const { display_name, contact_email, user_id } = params;
+
+            if (!contact_email) throw new Error('Missing contact_email');
+
+            try {
+                const account = await stripe.accounts.create({
+                    type: 'express',
+                    country: 'US',
+                    email: contact_email,
+                    capabilities: {
+                        card_payments: { requested: true },
+                        transfers: { requested: true },
+                    },
+                    metadata: {
+                        user_id: user_id,
+                        display_name: display_name,
+                    },
+                });
+                console.log("[Stripe Connect] Account created:", account.id);
+                return new Response(JSON.stringify({ accountId: account.id }), {
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                });
+            } catch (stripeError) {
+                console.error("[Stripe Connect] Stripe API Error (create-account):", stripeError);
+                throw stripeError;
+            }
+        }
+
+        // 2. Onboard Account (Account Link V1)
         if (action === 'onboard-account') {
             const { accountId, returnUrl } = params;
             if (!accountId) throw new Error('Missing accountId');
 
-            const accountLink = await stripe.v2.core.accountLinks.create({
+            const accountLink = await stripe.accountLinks.create({
                 account: accountId,
-                use_case: {
-                    type: 'account_onboarding',
-                    account_onboarding: {
-                        configurations: ['merchant', 'customer'],
-                        refresh_url: returnUrl || 'https://example.com/error',
-                        return_url: returnUrl || `https://example.com/success`,
-                    },
-                },
+                refresh_url: returnUrl || 'https://example.com/error',
+                return_url: returnUrl || `https://example.com/success`,
+                type: 'account_onboarding',
             });
 
             return new Response(JSON.stringify({ url: accountLink.url }), {
@@ -111,18 +125,19 @@ serve(async (req) => {
             });
         }
 
-        // 3. Get Account Status
+        // 3. Get Account Status (V1)
         if (action === 'account-status') {
             const { accountId } = params;
             if (!accountId) throw new Error('Missing accountId');
 
-            const account = await stripe.v2.core.accounts.retrieve(accountId, {
-                include: ["configuration.merchant", "requirements"],
-            });
+            const account = await stripe.accounts.retrieve(accountId);
 
-            const readyToProcessPayments = account?.configuration?.merchant?.capabilities?.card_payments?.status === "active";
-            const requirementsStatus = account.requirements?.summary?.minimum_deadline?.status;
-            const onboardingComplete = requirementsStatus !== "currently_due" && requirementsStatus !== "past_due";
+            const readyToProcessPayments =
+                account.payouts_enabled &&
+                account.details_submitted;
+
+            // For Express accounts, 'details_submitted' is a good proxy for onboarding complete
+            const onboardingComplete = account.details_submitted;
 
             return new Response(JSON.stringify({
                 readyToProcessPayments,
@@ -192,7 +207,12 @@ serve(async (req) => {
             if (!priceId) throw new Error('Missing Price ID');
 
             const session = await stripe.checkout.sessions.create({
-                customer_account: customerAccountId,
+                customer: customerAccountId, // If the customer is on the PLATFORM account but subscribing to a service? 
+                // Wait, typically for platform subscriptions, we might not need 'customer_account' unless using specific Connect flows.
+                // Assuming standard Direct Charge or Destination Charge.
+                // If this is a subscription FOR the platform (like Spotify Premium), no stripeAccount header needed.
+                // If this is a subscription TO a connected account, we need more context.
+                // Keeping it vague as per original code, but 'customer_account' might be 'customer' if passed as ID.
                 mode: 'subscription',
                 line_items: [{ price: priceId, quantity: 1 }],
                 success_url: successUrl + '?session_id={CHECKOUT_SESSION_ID}',
@@ -207,8 +227,9 @@ serve(async (req) => {
         // 8. Billing Portal
         if (action === 'create-portal-session') {
             const { accountId, returnUrl } = params;
+            // This assumes the customer is on the platform account.
             const session = await stripe.billingPortal.sessions.create({
-                customer_account: accountId,
+                customer: accountId, // This param name 'accountId' suggests it might be a stripe Customer ID (`cus_...`) not a Connect Account ID (`acct_...`)
                 return_url: returnUrl,
             });
             return new Response(JSON.stringify({ url: session.url }), {
@@ -253,3 +274,4 @@ serve(async (req) => {
         });
     }
 });
+

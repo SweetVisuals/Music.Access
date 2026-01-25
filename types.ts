@@ -267,6 +267,7 @@ export interface CartItem {
   licenseId?: string;
   trackId?: string | null;
   sellerAvatar?: string;
+  contractId?: string;
 }
 
 export interface Contract {

@@ -47,6 +47,26 @@ export const FileOperationProvider: React.FC<{ children: ReactNode }> = ({ child
         setState(prev => ({ ...prev, isActive: false }));
     }, []);
 
+    const getAudioDuration = (file: File): Promise<number> => {
+        return new Promise((resolve) => {
+            if (!file.type.startsWith('audio')) {
+                resolve(0);
+                return;
+            }
+            const url = URL.createObjectURL(file);
+            const audio = new Audio(url);
+            audio.onloadedmetadata = () => {
+                const duration = audio.duration;
+                URL.revokeObjectURL(url);
+                resolve(Math.round(duration));
+            };
+            audio.onerror = () => {
+                URL.revokeObjectURL(url);
+                resolve(0);
+            };
+        });
+    };
+
     const uploadFiles = useCallback(async (fileArray: File[], targetFolderId?: string | null) => {
         if (fileArray.length === 0) return;
 
@@ -83,6 +103,9 @@ export const FileOperationProvider: React.FC<{ children: ReactNode }> = ({ child
             }));
 
             try {
+                // Get duration if audio
+                const duration = await getAudioDuration(file);
+
                 // Simulate progress
                 const interval = setInterval(() => {
                     setState(prev => {
@@ -97,7 +120,7 @@ export const FileOperationProvider: React.FC<{ children: ReactNode }> = ({ child
                     });
                 }, 200);
 
-                const result = await uploadFile(file);
+                const result = await uploadFile(file, duration > 0 ? duration : undefined);
 
                 // If uploading to a specific folder, update the asset immediately
                 if (targetFolderId) {
@@ -143,7 +166,7 @@ export const FileOperationProvider: React.FC<{ children: ReactNode }> = ({ child
                 setState(prev => ({ ...prev, isActive: false }));
             }, 3000);
         }
-    }, []);
+    }, [setState]);
 
     const deleteFiles = useCallback(async (idsToDelete: string[], itemsMap: Map<string, any>) => {
         if (idsToDelete.length === 0) return;

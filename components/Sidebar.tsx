@@ -44,7 +44,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, onOpenAuth, userProfile, profileLoading = false, isOpen, onClose, isPlayerActive }) => {
-    const isDashboard = currentView.startsWith('dashboard');
+    const isDashboard = currentView.startsWith('dashboard') && currentView !== 'dashboard-messages';
     const [following, setFollowing] = useState<TalentProfile[]>([]);
     const [loadingFollowing, setLoadingFollowing] = useState(false);
     const [storageUsage, setStorageUsage] = useState<{ used: number; limit: number }>({ used: 0, limit: 500 * 1024 * 1024 });
@@ -311,7 +311,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                     <SidebarItem icon={<Users size={15} />} label="Profile" onClick={() => onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile')} />
                                     <SidebarItem icon={<Wallet size={15} />} label="Wallet" active={currentView === 'dashboard-wallet'} onClick={() => onNavigate('dashboard-wallet')} />
                                     <SidebarItem icon={<ShoppingBag size={15} />} label="Orders" active={currentView === 'dashboard-orders'} onClick={() => onNavigate('dashboard-orders')} badge={unreadCounts.order} />
-                                    <SidebarItem icon={<MessageSquare size={15} />} label="Messages" active={currentView === 'dashboard-messages'} onClick={() => onNavigate('dashboard-messages')} badge={unreadCounts.message} />
+
                                 </nav >
                             </div >
 
@@ -430,7 +430,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                     <h3 className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.2em] mb-2 pl-3">Library</h3>
                                     <nav className="space-y-1">
                                         <SidebarItem icon={<LayoutGrid size={15} />} label="My Library" active={currentView === 'library'} onClick={() => onNavigate('library')} />
-                                        <SidebarItem icon={<FileText size={15} />} label="Contracts" onClick={() => onNavigate('contracts')} />
+                                        <SidebarItem icon={<MessageSquare size={15} />} label="Messages" active={currentView === 'dashboard-messages'} onClick={() => onNavigate('dashboard-messages')} badge={unreadCounts.message} />
                                         <SidebarItem icon={<Clipboard size={15} />} label="Notes" onClick={() => onNavigate('notes')} />
                                     </nav>
                                 </div>

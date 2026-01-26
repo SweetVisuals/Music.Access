@@ -143,310 +143,313 @@ const RightActions: React.FC<{
 
                 <div className="h-5 w-px bg-white/10 mx-1 hidden sm:block"></div>
 
-                {/* Group 2: Icons */}
-                <div className={`flex items-center gap-1 ${currentView === 'notes' ? 'hidden lg:flex' : ''}`}>
-                    {/* Mobile Search Icon */}
-                    <button
-                        onClick={isSpacer ? undefined : onMobileSearchOpen}
-                        className="lg:hidden p-2 text-neutral-400 hover:text-white"
-                    >
-                        <Search size={18} />
-                    </button>
-
-                    {/* Color Picker */}
-                    <div className="relative" ref={isSpacer ? null : themeRef}>
+                {/* Right Side Icons & Profile Wrapper */}
+                <div className="flex items-center gap-1">
+                    {/* Group 2: Icons */}
+                    <div className={`flex items-center gap-1 ${currentView === 'notes' ? 'hidden lg:flex' : ''}`}>
+                        {/* Mobile Search Icon */}
                         <button
-                            onClick={isSpacer ? undefined : () => setIsThemeOpen(!isThemeOpen)}
-                            className={`p-2 rounded-xl transition-all duration-200 ${isThemeOpen && !isSpacer ? 'bg-white/10 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+                            onClick={isSpacer ? undefined : onMobileSearchOpen}
+                            className="lg:hidden p-2 text-neutral-400 hover:text-white"
                         >
-                            <Palette size={16} />
+                            <Search size={18} />
                         </button>
-                        {isThemeOpen && !isSpacer && (
-                            <div className="absolute right-0 top-full mt-3 w-56 p-4 rounded-2xl border border-transparent bg-[#0a0a0a] shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
-                                <div className="text-[10px] font-black font-mono text-neutral-500 uppercase mb-3 px-1 tracking-widest">Accent Color</div>
-                                <div className="grid grid-cols-5 gap-3 px-1">
-                                    {THEMES.map(theme => (
-                                        <button
-                                            key={theme.name}
-                                            onClick={() => handleThemeChange(theme.value)}
-                                            className="w-7 h-7 rounded-full border border-white/20 hover:scale-125 transition-all shadow-lg active:scale-95"
-                                            style={{ backgroundColor: theme.color }}
-                                            title={theme.name}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
 
-                    {/* Notifications */}
-                    {isLoggedIn && (
-                        <div className="relative" ref={isSpacer ? null : notifRef}>
+                        {/* Color Picker */}
+                        <div className="relative" ref={isSpacer ? null : themeRef}>
                             <button
-                                onClick={isSpacer ? undefined : () => setIsNotificationsOpen(!isNotificationsOpen)}
-                                className={`relative p-2 rounded-xl transition-all duration-200 ${isNotificationsOpen && !isSpacer ? 'bg-white/10 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+                                onClick={isSpacer ? undefined : () => setIsThemeOpen(!isThemeOpen)}
+                                className={`p-2 rounded-xl transition-all duration-200 ${isThemeOpen && !isSpacer ? 'bg-white/10 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
                             >
-                                <Bell size={16} />
-                                {notifications.some(n => !n.read) && (
-                                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)] animate-pulse border border-[#050505]"></span>
-                                )}
+                                <Palette size={16} />
                             </button>
+                            {isThemeOpen && !isSpacer && (
+                                <div className="absolute right-0 top-full mt-3 w-56 p-4 rounded-2xl border border-transparent bg-[#0a0a0a] shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="text-[10px] font-black font-mono text-neutral-500 uppercase mb-3 px-1 tracking-widest">Accent Color</div>
+                                    <div className="grid grid-cols-5 gap-3 px-1">
+                                        {THEMES.map(theme => (
+                                            <button
+                                                key={theme.name}
+                                                onClick={() => handleThemeChange(theme.value)}
+                                                className="w-7 h-7 rounded-full border border-white/20 hover:scale-125 transition-all shadow-lg active:scale-95"
+                                                style={{ backgroundColor: theme.color }}
+                                                title={theme.name}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
-                            {isNotificationsOpen && !isSpacer && (
-                                <>
-                                    {/* Desktop Dropdown */}
-                                    <div className="hidden lg:block absolute right-0 top-full mt-3 w-96 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                                        <div className="p-4 border-b border-white/5 flex justify-between items-center">
-                                            <h3 className="text-sm font-bold text-white tracking-tight">Notifications</h3>
-                                            {notifications.some(n => !n.read) && (
-                                                <button
-                                                    onClick={handleMarkAllRead}
-                                                    className="text-[10px] text-primary hover:underline font-bold uppercase tracking-wider"
-                                                >
-                                                    Mark all read
-                                                </button>
-                                            )}
-                                        </div>
-                                        <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                                            {notifications.filter(n => !n.read).length === 0 ? (
-                                                <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                                                    <div className="w-12 h-12 bg-neutral-900 rounded-full flex items-center justify-center text-neutral-600 mb-3 border border-white/5">
-                                                        <Bell size={20} />
-                                                    </div>
-                                                    <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-1">All Caught Up</h4>
-                                                    <p className="text-[10px] text-neutral-500 max-w-[150px] leading-relaxed">
-                                                        You have no new notifications at the moment.
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                notifications.filter(n => !n.read).map(notif => (
-                                                    <div
-                                                        key={notif.id}
-                                                        onClick={() => handleNotificationClick(notif)}
-                                                        className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!notif.read ? 'bg-white/[0.03]' : ''}`}
+                        {/* Notifications */}
+                        {isLoggedIn && (
+                            <div className="relative" ref={isSpacer ? null : notifRef}>
+                                <button
+                                    onClick={isSpacer ? undefined : () => setIsNotificationsOpen(!isNotificationsOpen)}
+                                    className={`relative p-2 rounded-xl transition-all duration-200 ${isNotificationsOpen && !isSpacer ? 'bg-white/10 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+                                >
+                                    <Bell size={16} />
+                                    {notifications.some(n => !n.read) && (
+                                        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)] animate-pulse border border-[#050505]"></span>
+                                    )}
+                                </button>
+
+                                {isNotificationsOpen && !isSpacer && (
+                                    <>
+                                        {/* Desktop Dropdown */}
+                                        <div className="hidden lg:block absolute right-0 top-full mt-3 w-96 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="p-4 border-b border-white/5 flex justify-between items-center">
+                                                <h3 className="text-sm font-bold text-white tracking-tight">Notifications</h3>
+                                                {notifications.some(n => !n.read) && (
+                                                    <button
+                                                        onClick={handleMarkAllRead}
+                                                        className="text-[10px] text-primary hover:underline font-bold uppercase tracking-wider"
                                                     >
-                                                        <div className="flex gap-4">
-                                                            <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${notif.type === 'sale' ? 'bg-green-500' : notif.type === 'system' ? 'bg-blue-500' : 'bg-purple-500'} shadow-[0_0_8px_rgba(0,0,0,0.5)]`}></div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <h4 className="text-sm font-bold text-white mb-0.5 leading-tight">{notif.title}</h4>
-                                                                <p className="text-xs text-neutral-400 leading-relaxed mb-2">{notif.message}</p>
-                                                                <div className="flex items-center gap-1 text-[10px] text-neutral-600 font-mono">
-                                                                    <Clock size={10} /> {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        Mark all read
+                                                    </button>
+                                                )}
+                                            </div>
+                                            <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                                                {notifications.filter(n => !n.read).length === 0 ? (
+                                                    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                                                        <div className="w-12 h-12 bg-neutral-900 rounded-full flex items-center justify-center text-neutral-600 mb-3 border border-white/5">
+                                                            <Bell size={20} />
+                                                        </div>
+                                                        <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-1">All Caught Up</h4>
+                                                        <p className="text-[10px] text-neutral-500 max-w-[150px] leading-relaxed">
+                                                            You have no new notifications at the moment.
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    notifications.filter(n => !n.read).map(notif => (
+                                                        <div
+                                                            key={notif.id}
+                                                            onClick={() => handleNotificationClick(notif)}
+                                                            className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!notif.read ? 'bg-white/[0.03]' : ''}`}
+                                                        >
+                                                            <div className="flex gap-4">
+                                                                <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${notif.type === 'sale' ? 'bg-green-500' : notif.type === 'system' ? 'bg-blue-500' : 'bg-purple-500'} shadow-[0_0_8px_rgba(0,0,0,0.5)]`}></div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <h4 className="text-sm font-bold text-white mb-0.5 leading-tight">{notif.title}</h4>
+                                                                    <p className="text-xs text-neutral-400 leading-relaxed mb-2">{notif.message}</p>
+                                                                    <div className="flex items-center gap-1 text-[10px] text-neutral-600 font-mono">
+                                                                        <Clock size={10} /> {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                ))
-                                            )}
+                                                    ))
+                                                )}
+                                            </div>
+                                            <div className="p-3 bg-neutral-900/50 text-center border-t border-white/5">
+                                                <button className="text-[10px] font-black text-neutral-500 hover:text-white transition-colors uppercase tracking-widest">View Activity Log</button>
+                                            </div>
                                         </div>
-                                        <div className="p-3 bg-neutral-900/50 text-center border-t border-white/5">
-                                            <button className="text-[10px] font-black text-neutral-500 hover:text-white transition-colors uppercase tracking-widest">View Activity Log</button>
-                                        </div>
-                                    </div>
 
 
-                                </>
-                            )}
-                        </div>
-                    )}
+                                    </>
+                                )}
+                            </div>
+                        )}
 
-                    {/* Cart Section */}
-                    <div className="relative" ref={isSpacer ? null : cartRef}>
-                        <button
-                            onClick={isSpacer ? undefined : () => setIsCartOpen(!isCartOpen)}
-                            className={`
+                        {/* Cart Section */}
+                        <div className="relative" ref={isSpacer ? null : cartRef}>
+                            <button
+                                onClick={isSpacer ? undefined : () => setIsCartOpen(!isCartOpen)}
+                                className={`
                                 relative p-2 rounded-xl transition-all duration-200 group 
                                 ${isCartOpen && !isSpacer ? 'bg-white/10 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/10'}
                                 ${isCartAnimating ? 'animate-[bounce_0.5s_ease-in-out]' : ''}
                             `}
-                        >
-                            <ShoppingBag size={16} className={`${isCartAnimating ? 'text-primary scale-110' : ''} transition-all duration-300`} />
-                            {cartItems.length > 0 && (
-                                <span className={`absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary shadow-[0_0_6px_rgb(var(--primary)/0.6)] border border-[#050505] ${isCartAnimating ? 'scale-150' : ''} transition-transform duration-300`}></span>
-                            )}
-                        </button>
+                            >
+                                <ShoppingBag size={16} className={`${isCartAnimating ? 'text-primary scale-110' : ''} transition-all duration-300`} />
+                                {cartItems.length > 0 && (
+                                    <span className={`absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary shadow-[0_0_6px_rgb(var(--primary)/0.6)] border border-[#050505] ${isCartAnimating ? 'scale-150' : ''} transition-transform duration-300`}></span>
+                                )}
+                            </button>
 
-                        {isCartOpen && !isSpacer && (
-                            <div className="hidden lg:block absolute right-0 top-full mt-3 w-96 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                                <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
-                                    <h3 className="text-sm font-bold text-white tracking-tight">Your Cart ({cartItems.length})</h3>
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-[10px] font-mono text-neutral-500 uppercase">Subtotal: ${cartTotal.toFixed(2)}</span>
-                                        <span className="text-[11px] font-mono font-bold text-primary">Total: ${(cartTotal * 1.02).toFixed(2)}</span>
+                            {isCartOpen && !isSpacer && (
+                                <div className="hidden lg:block absolute right-0 top-full mt-3 w-96 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                                        <h3 className="text-sm font-bold text-white tracking-tight">Your Cart ({cartItems.length})</h3>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[10px] font-mono text-neutral-500 uppercase">Subtotal: ${cartTotal.toFixed(2)}</span>
+                                            <span className="text-[11px] font-mono font-bold text-primary">Total: ${(cartTotal * 1.02).toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                    <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                                        {cartItems.length === 0 ? (
+                                            <div className="p-12 text-center text-neutral-500 text-sm">Your cart is currently empty</div>
+                                        ) : (
+                                            cartItems.map((item: any) => {
+                                                let TypeIcon = Music;
+                                                if (item.type.includes('Sound Kit')) TypeIcon = Package;
+                                                if (item.type.includes('Service') || item.type.includes('Mixing')) TypeIcon = Mic;
+
+                                                return (
+                                                    <div
+                                                        key={item.id}
+                                                        onClick={() => {
+                                                            const project = projects.find(p => p.id === item.projectId);
+                                                            if (project) {
+                                                                openPurchaseModal(project, item);
+                                                                setIsCartOpen(false);
+                                                            }
+                                                        }}
+                                                        className="p-4 border-b border-white/5 flex gap-4 hover:bg-white/5 transition-colors group items-center cursor-pointer"
+                                                    >
+                                                        <div className="relative shrink-0">
+                                                            <div className="w-12 h-12 bg-neutral-800 rounded-lg flex items-center justify-center text-neutral-400 group-hover:text-primary group-hover:bg-primary/10 transition-all overflow-hidden border border-white/5">
+                                                                {item.sellerAvatar ? (
+                                                                    <img src={item.sellerAvatar} alt={item.sellerName} className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <TypeIcon size={20} />
+                                                                )}
+                                                            </div>
+                                                            {item.sellerAvatar && (
+                                                                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-black border border-white/10 rounded-full flex items-center justify-center text-primary shadow-lg">
+                                                                    <TypeIcon size={10} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex justify-between items-center mb-1">
+                                                                <h4 className="text-sm font-bold text-white truncate max-w-[140px]">{item.title}</h4>
+                                                                <span className="text-sm font-mono font-black text-primary">${item.price.toFixed(2)}</span>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-[9px] font-black text-neutral-400 px-1 py-0.5 rounded bg-white/5 border border-white/5 uppercase tracking-tighter whitespace-nowrap shrink-0">
+                                                                    {item.type}
+                                                                </span>
+                                                                {item.licenseType && (
+                                                                    <span className="text-[9px] font-bold text-neutral-600 truncate max-w-[90px] uppercase tracking-tighter shrink-0">
+                                                                        {item.licenseType}
+                                                                    </span>
+                                                                )}
+                                                                <div className="flex-1"></div>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        removeFromCart(item.id);
+                                                                    }}
+                                                                    className="text-neutral-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-1 bg-white/5 rounded-md"
+                                                                >
+                                                                    <Trash2 size={10} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                    <div className="p-4 bg-neutral-900/80 border-t border-white/5">
+                                        <button
+                                            onClick={() => {
+                                                setIsCartOpen(false);
+                                                onNavigate('checkout');
+                                            }}
+                                            className="w-full py-3 bg-primary text-black font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-[0_10px_20px_rgba(0,255,163,0.15)]"
+                                            disabled={cartItems.length === 0}
+                                        >
+                                            Go to Checkout <ArrowRight size={14} />
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
-                                    {cartItems.length === 0 ? (
-                                        <div className="p-12 text-center text-neutral-500 text-sm">Your cart is currently empty</div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Mobile Nav Actions Portal Target */}
+                    <div id="mobile-nav-actions" className="lg:hidden flex items-center gap-1"></div>
+
+                    {/* Group 3: Profile */}
+                    <div className="relative" ref={isSpacer ? null : dropdownRef}>
+                        <button
+                            onClick={isSpacer ? undefined : (isLoggedIn ? () => {
+                                if (isMobile || (currentView === 'notes' && window.innerWidth < 1024)) {
+                                    onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile');
+                                } else {
+                                    setIsProfileOpen(!isProfileOpen);
+                                }
+                            } : onOpenAuth)}
+                            className="flex items-center gap-3 pl-2 group"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-neutral-800 border border-transparent overflow-hidden group-hover:border-primary/50 transition-all shadow-lg">
+                                    {isLoggedIn && userProfile ? (
+                                        <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
                                     ) : (
-                                        cartItems.map((item: any) => {
-                                            let TypeIcon = Music;
-                                            if (item.type.includes('Sound Kit')) TypeIcon = Package;
-                                            if (item.type.includes('Service') || item.type.includes('Mixing')) TypeIcon = Mic;
-
-                                            return (
-                                                <div
-                                                    key={item.id}
-                                                    onClick={() => {
-                                                        const project = projects.find(p => p.id === item.projectId);
-                                                        if (project) {
-                                                            openPurchaseModal(project, item);
-                                                            setIsCartOpen(false);
-                                                        }
-                                                    }}
-                                                    className="p-4 border-b border-white/5 flex gap-4 hover:bg-white/5 transition-colors group items-center cursor-pointer"
-                                                >
-                                                    <div className="relative shrink-0">
-                                                        <div className="w-12 h-12 bg-neutral-800 rounded-lg flex items-center justify-center text-neutral-400 group-hover:text-primary group-hover:bg-primary/10 transition-all overflow-hidden border border-white/5">
-                                                            {item.sellerAvatar ? (
-                                                                <img src={item.sellerAvatar} alt={item.sellerName} className="w-full h-full object-cover" />
-                                                            ) : (
-                                                                <TypeIcon size={20} />
-                                                            )}
-                                                        </div>
-                                                        {item.sellerAvatar && (
-                                                            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-black border border-white/10 rounded-full flex items-center justify-center text-primary shadow-lg">
-                                                                <TypeIcon size={10} />
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex justify-between items-center mb-1">
-                                                            <h4 className="text-sm font-bold text-white truncate max-w-[140px]">{item.title}</h4>
-                                                            <span className="text-sm font-mono font-black text-primary">${item.price.toFixed(2)}</span>
-                                                        </div>
-
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-[9px] font-black text-neutral-400 px-1 py-0.5 rounded bg-white/5 border border-white/5 uppercase tracking-tighter whitespace-nowrap shrink-0">
-                                                                {item.type}
-                                                            </span>
-                                                            {item.licenseType && (
-                                                                <span className="text-[9px] font-bold text-neutral-600 truncate max-w-[90px] uppercase tracking-tighter shrink-0">
-                                                                    {item.licenseType}
-                                                                </span>
-                                                            )}
-                                                            <div className="flex-1"></div>
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    removeFromCart(item.id);
-                                                                }}
-                                                                className="text-neutral-600 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-1 bg-white/5 rounded-md"
-                                                            >
-                                                                <Trash2 size={10} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
+                                        <div className="w-full h-full flex items-center justify-center text-neutral-500 bg-neutral-900">
+                                            <User size={14} />
+                                        </div>
                                     )}
                                 </div>
-                                <div className="p-4 bg-neutral-900/80 border-t border-white/5">
-                                    <button
-                                        onClick={() => {
-                                            setIsCartOpen(false);
-                                            onNavigate('checkout');
-                                        }}
-                                        className="w-full py-3 bg-primary text-black font-black text-xs uppercase tracking-[0.2em] rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-[0_10px_20px_rgba(0,255,163,0.15)]"
-                                        disabled={cartItems.length === 0}
-                                    >
-                                        Go to Checkout <ArrowRight size={14} />
+                            </div>
+                            {isLoggedIn && !isMobile && <ChevronDown size={12} className="text-neutral-500 group-hover:text-white transition-colors" />}
+                        </button>
+
+                        {/* Profile Dropdown */}
+                        {isLoggedIn && isProfileOpen && !isSpacer && (
+                            <div className="absolute right-0 top-full mt-6 lg:mt-3 w-64 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                                <div className="p-4 border-b border-white/5 bg-white/[0.02]">
+                                    <div className="text-lg font-bold text-white truncate tracking-tight">{userProfile?.username || 'User'}</div>
+                                </div>
+                                <div className="p-2">
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
+                                        <User size={16} /> My Profile
+                                    </button>
+
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('dashboard-overview'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
+                                        <LayoutDashboard size={16} /> Dashboard
+                                    </button>
+
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('settings'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
+                                        <Settings size={16} /> Settings
+                                    </button>
+
+                                    <div className="space-y-2 mt-2 px-1">
+                                        <div
+                                            onClick={(e) => {
+                                                if (isSpacer) return;
+                                                e.stopPropagation();
+                                                setIsProfileOpen(false);
+                                                onNavigate('dashboard-wallet');
+                                            }}
+                                            className="flex items-center justify-between bg-neutral-900/80 p-3 rounded-xl border border-transparent cursor-pointer hover:bg-neutral-800 transition-colors shadow-inner"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Wallet size={16} className="text-emerald-500" />
+                                                <span className="text-xs font-mono font-black text-white px-1">
+                                                    {showBalance
+                                                        ? `$${(userProfile?.balance !== undefined ? userProfile.balance : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                                        : '$••••••'}
+                                                </span>
+                                            </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    if (isSpacer) return;
+                                                    e.stopPropagation();
+                                                    setShowBalance(!showBalance);
+                                                }}
+                                                className="p-1.5 -mr-1 text-neutral-500 hover:text-primary transition-colors bg-white/5 rounded-md"
+                                                title={showBalance ? "Hide Balance" : "Show Balance"}
+                                            >
+                                                {showBalance ? <EyeOff size={12} /> : <Eye size={12} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-2 border-t border-white/5">
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onLogout(); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-colors text-left font-bold uppercase tracking-wider">
+                                        <LogOut size={16} /> Sign Out
                                     </button>
                                 </div>
                             </div>
                         )}
                     </div>
-                </div>
-
-                {/* Mobile Nav Actions Portal Target */}
-                <div id="mobile-nav-actions" className="lg:hidden flex items-center gap-1"></div>
-
-                {/* Group 3: Profile */}
-                <div className="relative ml-2" ref={isSpacer ? null : dropdownRef}>
-                    <button
-                        onClick={isSpacer ? undefined : (isLoggedIn ? () => {
-                            if (isMobile || (currentView === 'notes' && window.innerWidth < 1024)) {
-                                onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile');
-                            } else {
-                                setIsProfileOpen(!isProfileOpen);
-                            }
-                        } : onOpenAuth)}
-                        className="flex items-center gap-3 pl-2 group"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-xl bg-neutral-800 border border-transparent overflow-hidden group-hover:border-primary/50 transition-all shadow-lg">
-                                {isLoggedIn && userProfile ? (
-                                    <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-neutral-500 bg-neutral-900">
-                                        <User size={14} />
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        {isLoggedIn && !isMobile && <ChevronDown size={12} className="text-neutral-500 group-hover:text-white transition-colors" />}
-                    </button>
-
-                    {/* Profile Dropdown */}
-                    {isLoggedIn && isProfileOpen && !isSpacer && (
-                        <div className="absolute right-0 top-full mt-6 lg:mt-3 w-64 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                            <div className="p-4 border-b border-white/5 bg-white/[0.02]">
-                                <div className="text-lg font-bold text-white truncate tracking-tight">{userProfile?.username || 'User'}</div>
-                            </div>
-                            <div className="p-2">
-                                <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
-                                    <User size={16} /> My Profile
-                                </button>
-
-                                <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('dashboard-overview'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
-                                    <LayoutDashboard size={16} /> Dashboard
-                                </button>
-
-                                <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('settings'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
-                                    <Settings size={16} /> Settings
-                                </button>
-
-                                <div className="space-y-2 mt-2 px-1">
-                                    <div
-                                        onClick={(e) => {
-                                            if (isSpacer) return;
-                                            e.stopPropagation();
-                                            setIsProfileOpen(false);
-                                            onNavigate('dashboard-wallet');
-                                        }}
-                                        className="flex items-center justify-between bg-neutral-900/80 p-3 rounded-xl border border-transparent cursor-pointer hover:bg-neutral-800 transition-colors shadow-inner"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <Wallet size={16} className="text-emerald-500" />
-                                            <span className="text-xs font-mono font-black text-white px-1">
-                                                {showBalance
-                                                    ? `$${(userProfile?.balance !== undefined ? userProfile.balance : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                                                    : '$••••••'}
-                                            </span>
-                                        </div>
-                                        <button
-                                            onClick={(e) => {
-                                                if (isSpacer) return;
-                                                e.stopPropagation();
-                                                setShowBalance(!showBalance);
-                                            }}
-                                            className="p-1.5 -mr-1 text-neutral-500 hover:text-primary transition-colors bg-white/5 rounded-md"
-                                            title={showBalance ? "Hide Balance" : "Show Balance"}
-                                        >
-                                            {showBalance ? <EyeOff size={12} /> : <Eye size={12} />}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="p-2 border-t border-white/5">
-                                <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onLogout(); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-colors text-left font-bold uppercase tracking-wider">
-                                    <LogOut size={16} /> Sign Out
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
         );
@@ -722,7 +725,7 @@ const TopBar: React.FC<TopBarProps> = ({
                 </button>
 
                 {/* Back Button - Show only on detail pages (Listen, etc.) - Hidden on Main Tabs, Dashboard & Profile */}
-                {!['home', 'notes', 'browse-talent', 'browse-all-talent', 'browse-all-projects', 'browse-all-soundpacks', 'browse-all-releases', 'browse-all-services', 'collaborate', 'following', 'library', 'profile'].includes(currentView) && !currentView.startsWith('dashboard') && (
+                {!['home', 'notes', 'upload', 'browse-talent', 'browse-all-talent', 'browse-all-projects', 'browse-all-soundpacks', 'browse-all-releases', 'browse-all-services', 'collaborate', 'following', 'library', 'profile'].includes(currentView) && !currentView.startsWith('dashboard') && (
                     <button
                         onClick={() => onNavigate('BACK')}
                         className={`

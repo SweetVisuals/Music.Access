@@ -331,17 +331,11 @@ const Studio: React.FC<StudioProps> = ({
             {activeView === 'dashboard' ? (
                 <div className="w-full flex-1 flex flex-col pb-40 lg:pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
-                        <div className="hidden lg:block">
+                        <div className="hidden">
                             <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">My Studio</h1>
                             <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Your professional creative workspace for loop kits & projects.</p>
                         </div>
-                        <button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-black rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgb(var(--primary)/0.3)] w-full sm:w-auto"
-                        >
-                            <Plus size={16} />
-                            <span>NEW PROJECT</span>
-                        </button>
+
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -1338,9 +1332,9 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                             {filteredLibrary.map(asset => (
                                 <div
                                     key={asset.id}
-                                    draggable={asset.type !== 'folder'}
+                                    draggable={asset.type !== 'folder' && asset.type !== 'Project'}
                                     onDragStart={(e) => {
-                                        if (asset.type !== 'folder') {
+                                        if (asset.type !== 'folder' && asset.type !== 'Project') {
                                             setDraggingAsset(asset);
                                         } else {
                                             e.preventDefault();
@@ -1348,13 +1342,13 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                     }}
                                     onDragEnd={() => setDraggingAsset(null)}
                                     onClick={() => {
-                                        if (asset.type === 'folder') {
+                                        if (asset.type === 'folder' || asset.type === 'Project') {
                                             setCurrentLibraryFolderId(asset.id);
                                         }
                                     }}
                                     className={`
                                         p-3 rounded-xl transition-all group relative border border-transparent
-                                        ${asset.type === 'folder'
+                                        ${(asset.type === 'folder' || asset.type === 'Project')
                                             ? 'bg-neutral-900 hover:bg-neutral-800 cursor-pointer hover:border-white/10'
                                             : 'bg-white/5 hover:bg-white/10 cursor-grab active:cursor-grabbing hover:border-primary/20'
                                         }
@@ -1364,16 +1358,17 @@ const WorkspaceView: React.FC<WorkspaceViewProps> = ({
                                         <div className={`
                                             w-8 h-8 rounded-lg flex items-center justify-center mb-2 transition-colors
                                             ${asset.type === 'folder' ? 'bg-blue-500/20 text-blue-400' :
-                                                asset.type === 'Purchased' ? 'bg-primary/20 text-primary' : 'bg-neutral-800 text-neutral-400'}
+                                                asset.type === 'Project' ? 'bg-purple-500/20 text-purple-400' :
+                                                    asset.type === 'Purchased' ? 'bg-primary/20 text-primary' : 'bg-neutral-800 text-neutral-400'}
                                         `}>
-                                            {asset.type === 'folder' ? <Folder size={16} /> :
+                                            {(asset.type === 'folder' || asset.type === 'Project') ? <Folder size={16} /> :
                                                 asset.type === 'Pack' ? <Box size={16} /> : <Music size={16} />}
                                         </div>
                                         <div className="text-xs font-bold text-white truncate pr-2" title={asset.name}>{asset.name}</div>
                                         <div className="text-[9px] text-neutral-500 truncate">{asset.producer === 'Me' ? 'Uploaded' : asset.producer}</div>
                                     </div>
 
-                                    {asset.type !== 'folder' && (
+                                    {(asset.type !== 'folder' && asset.type !== 'Project') && (
                                         <div className="flex items-center justify-between mt-1">
                                             <span className="text-[9px] font-mono text-neutral-600 uppercase bg-black/20 px-1 rounded">{asset.fileType}</span>
                                         </div>

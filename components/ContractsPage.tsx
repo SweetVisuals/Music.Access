@@ -220,7 +220,7 @@ const ContractsPage: React.FC = () => {
     return (
         <div className="w-full h-[calc(100vh-5rem)] lg:h-[calc(100vh-10rem)] max-w-[1900px] mx-auto pb-4 pt-4 lg:pt-6 px-4 lg:px-10 xl:px-14 animate-in fade-in duration-500 flex flex-col">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 lg:mb-8 shrink-0 gap-4">
-                <div className="hidden lg:block">
+                <div className="hidden">
                     <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Contracts</h1>
                     <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Manage your legal agreements, splits, and ownership rights.</p>
                 </div>

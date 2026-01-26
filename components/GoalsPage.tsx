@@ -202,7 +202,7 @@ const GoalsPage: React.FC<{ onNavigate?: (view: string) => void }> = ({ onNaviga
 
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div className="hidden lg:block">
+        <div className="hidden">
           <h1 className="text-3xl font-black text-white mb-2">Goals</h1>
           <p className="text-neutral-500 text-sm">Set and track your music career goals.</p>
         </div>

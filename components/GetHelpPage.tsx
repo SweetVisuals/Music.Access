@@ -11,7 +11,7 @@ const GetHelpPage: React.FC<GetHelpPageProps> = ({ onNavigate }) => {
     return (
         <div className="w-full max-w-7xl mx-auto pb-12 lg:pb-32 pt-8 px-6 lg:px-12 animate-in fade-in slide-in-from-bottom-2 duration-700">
             {/* Header Section */}
-            <div className="hidden lg:block text-center mb-16 px-4">
+            <div className="hidden">
                 <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex items-center justify-center mx-auto mb-8 border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] ring-1 ring-white/5">
                     <HelpCircle size={28} className="text-primary drop-shadow-[0_0_8px_rgba(var(--primary),0.4)]" />
                 </div>

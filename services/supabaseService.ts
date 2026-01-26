@@ -226,18 +226,18 @@ export const getProjectById = async (id: string): Promise<Project> => {
     if (t.assigned_file_id) assetIds.add(t.assigned_file_id);
   });
 
-  const assetMap = new Map<string, string>();
+  const assetMap = new Map<string, { url: string, duration: number | null }>();
   if (assetIds.size > 0) {
     const { data: assets, error: assetsError } = await supabase
       .from('assets')
-      .select('id, storage_path')
+      .select('id, storage_path, duration_seconds')
       .in('id', Array.from(assetIds));
 
     if (!assetsError && assets) {
       assets.forEach((a: any) => {
         if (a.storage_path) {
           const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(a.storage_path);
-          assetMap.set(a.id, publicUrl);
+          assetMap.set(a.id, { url: publicUrl, duration: a.duration_seconds });
         }
       });
     }
@@ -261,12 +261,14 @@ export const getProjectById = async (id: string): Promise<Project> => {
     tags: projectData.project_tags?.map((pt: any) => pt.tag?.name).filter(Boolean) || [],
     tracks: projectData.tracks?.map((track: any) => {
       // Use manually fetched URL (prioritize) or fallback logic if we kept the join (we removed it)
-      const mp3Url = track.assigned_file_id ? (assetMap.get(track.assigned_file_id) || '') : '';
+      const assetInfo = track.assigned_file_id ? assetMap.get(track.assigned_file_id) : null;
+      const mp3Url = assetInfo?.url || '';
+      const actualDuration = assetInfo?.duration || track.duration_seconds;
 
       return {
         id: track.id,
         title: track.title,
-        duration: track.duration_seconds,
+        duration: actualDuration,
         trackNumber: track.track_number,
         noteId: track.note_id,
         statusTags: track.status_tags,
@@ -359,18 +361,18 @@ export const getProjects = async (): Promise<Project[]> => {
     });
   });
 
-  const assetMap = new Map<string, string>();
+  const assetMap = new Map<string, { url: string, duration: number | null }>();
   if (assetIds.size > 0) {
     const { data: assets, error: assetsError } = await supabase
       .from('assets')
-      .select('id, storage_path')
+      .select('id, storage_path, duration_seconds')
       .in('id', Array.from(assetIds));
 
     if (!assetsError && assets) {
       assets.forEach((a: any) => {
         if (a.storage_path) {
           const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(a.storage_path);
-          assetMap.set(a.id, publicUrl);
+          assetMap.set(a.id, { url: publicUrl, duration: a.duration_seconds });
         }
       });
     }
@@ -400,12 +402,14 @@ export const getProjects = async (): Promise<Project[]> => {
       tags: project.project_tags?.map((pt: any) => pt.tag?.name).filter(Boolean) || [],
       tracks: project.tracks?.map((track: any) => {
         // Use manually fetched URL (prioritize) or fallback logic if we kept the join (we removed it)
-        const mp3Url = track.assigned_file_id ? (assetMap.get(track.assigned_file_id) || '') : '';
+        const assetInfo = track.assigned_file_id ? assetMap.get(track.assigned_file_id) : null;
+        const mp3Url = assetInfo?.url || '';
+        const actualDuration = assetInfo?.duration || track.duration_seconds;
 
         return {
           id: track.id,
           title: track.title,
-          duration: track.duration_seconds,
+          duration: actualDuration,
           trackNumber: track.track_number,
           noteId: track.note_id,
           statusTags: track.status_tags,
@@ -1089,6 +1093,7 @@ export const getProjectsByUserId = async (userId: string): Promise<Project[]> =>
       )
     `)
     .eq('user_id', userId)
+    .neq('status', 'archived')
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -2775,7 +2780,7 @@ export const initializeStorage = async () => {
   }
 }
 
-export const uploadFile = async (file: File): Promise<{ assetId: string; storagePath: string; publicUrl: string }> => {
+export const uploadFile = async (file: File, duration?: number): Promise<{ assetId: string; storagePath: string; publicUrl: string }> => {
   const currentUser = await ensureUserExists(); // Use global JIT check
   if (!currentUser) throw new Error('User not authenticated');
 
@@ -2820,7 +2825,8 @@ export const uploadFile = async (file: File): Promise<{ assetId: string; storage
         storage_path: storagePath,
         file_name: file.name,
         mime_type: file.type,
-        size_bytes: file.size
+        size_bytes: file.size,
+        duration_seconds: duration
       })
       .select()
       .single();
@@ -2987,7 +2993,7 @@ export const getUserFiles = async (): Promise<any[]> => {
       id: asset.id,
       name: asset.file_name,
       size: isFolder ? '-' : (asset.size_bytes / (1024 * 1024)).toFixed(2) + ' MB',
-      duration: '--:--',
+      duration: asset.duration_seconds || 0,
       url: publicUrl,
       type: isFolder ? 'folder' : (asset.mime_type.startsWith('audio') ? 'audio' : asset.mime_type.startsWith('image') ? 'image' : 'text'),
       parentId: asset.parent_id,
@@ -3241,6 +3247,7 @@ export const getDeletedNotes = async (): Promise<Note[]> => {
     .from('notes')
     .select('*')
     .eq('user_id', user.id)
+    .contains('tags', ['TRASH'])
     .order('updated_at', { ascending: false });
 
   if (error) {
@@ -3248,10 +3255,7 @@ export const getDeletedNotes = async (): Promise<Note[]> => {
     return [];
   }
 
-  // Filter FOR trash tag
-  const deletedNotes = data.filter((n: any) => n.tags?.includes('TRASH'));
-
-  return deletedNotes.map((n: any) => ({
+  return data.map((n: any) => ({
     id: n.id,
     title: n.title,
     content: n.content || '',
@@ -3261,7 +3265,9 @@ export const getDeletedNotes = async (): Promise<Note[]> => {
     attachedAudio: n.attached_audio,
     attachedAudioName: n.attached_audio_name,
     attachedAudioProducer: n.attached_audio_producer,
-    attachedAudioAvatar: n.attached_audio_avatar
+    attachedAudioAvatar: n.attached_audio_avatar,
+    parentId: n.parent_id,
+    type: n.type || 'note'
   }));
 };
 
@@ -3373,9 +3379,10 @@ export const deleteProject = async (projectId: string) => {
   const currentUser = await getCurrentUser();
   if (!currentUser) throw new Error('User not authenticated');
 
+  // Soft delete (archive) instead of hard delete to preserve purchase history
   const { error } = await supabase
     .from('projects')
-    .delete()
+    .update({ status: 'archived' })
     .eq('id', projectId)
     .eq('user_id', currentUser.id);
 
@@ -3477,6 +3484,30 @@ export const deleteNote = async (id: string, permanent: boolean = false) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not logged in');
 
+  // Fetch item to check if it's a folder
+  const { data: item } = await supabase
+    .from('notes')
+    .select('type, tags')
+    .eq('id', id)
+    .single();
+
+  if (!item) return;
+
+  // If it's a folder, handle children recursively
+  if (item.type === 'folder') {
+    const { data: children } = await supabase
+      .from('notes')
+      .select('id')
+      .eq('parent_id', id);
+
+    if (children && children.length > 0) {
+      for (const child of children) {
+        // Recursive call handles children's roles and tags
+        await deleteNote(child.id, permanent);
+      }
+    }
+  }
+
   if (permanent) {
     // Hard delete
     const { error } = await supabase
@@ -3488,20 +3519,13 @@ export const deleteNote = async (id: string, permanent: boolean = false) => {
     if (error) throw error;
   } else {
     // Soft delete - Add TRASH tag
-    // First fetch current tags to append
-    const { data: note } = await supabase
-      .from('notes')
-      .select('tags')
-      .eq('id', id)
-      .single();
-
-    const currentTags = note?.tags || [];
+    const currentTags = item.tags || [];
     if (!currentTags.includes('TRASH')) {
       const { error } = await supabase
         .from('notes')
         .update({
           tags: [...currentTags, 'TRASH'],
-          updated_at: new Date().toISOString() // Update timestamp to track when it was binned
+          updated_at: new Date().toISOString()
         })
         .eq('id', id)
         .eq('user_id', user.id);
@@ -3517,18 +3541,34 @@ export const restoreNote = async (id: string) => {
 
   const { data: note } = await supabase
     .from('notes')
-    .select('tags')
+    .select('type, tags')
     .eq('id', id)
     .single();
 
-  const currentTags = note?.tags || [];
+  if (!note) return;
+
+  // If it's a folder, restore children recursively
+  if (note.type === 'folder') {
+    const { data: children } = await supabase
+      .from('notes')
+      .select('id')
+      .eq('parent_id', id);
+
+    if (children && children.length > 0) {
+      for (const child of children) {
+        await restoreNote(child.id);
+      }
+    }
+  }
+
+  const currentTags = note.tags || [];
   const newTags = currentTags.filter((t: string) => t !== 'TRASH');
 
   const { error } = await supabase
     .from('notes')
     .update({
       tags: newTags,
-      updated_at: new Date().toISOString() // Update timestamp to bring it to top
+      updated_at: new Date().toISOString()
     })
     .eq('id', id)
     .eq('user_id', user.id);
@@ -5083,7 +5123,7 @@ export const emptyTrashNotes = async () => {
     .from('notes')
     .delete()
     .eq('user_id', currentUser.id)
-    .eq('deleted', true);
+    .contains('tags', ['TRASH']);
 
   if (error) throw error;
 };
@@ -5183,6 +5223,9 @@ export const getLibraryAssets = async () => {
     .select(`
       id,
       created_at,
+      type,
+      project_id,
+      item,
       purchase_items (
         id,
         item_name,
@@ -5205,32 +5248,71 @@ export const getLibraryAssets = async () => {
   if (uploadsError) console.error('Error fetching uploads:', uploadsError);
 
   // Map to LibraryAsset format
-  const libraryAssets = [
-    ...(purchases || []).flatMap((p: any) =>
-      (p.purchase_items || []).map((pi: any) => ({
-        id: pi.id, // Use unique item ID 
-        name: pi.item_name || 'Untitled Purchase',
-        type: 'Purchased' as const,
-        producer: 'Unknown',
+  const libraryAssets: any[] = [];
+
+  // Process Purchases
+  (purchases || []).forEach((p: any) => {
+    // Determine if this purchase should be a folder
+    // It's a folder if it has a project_id OR it's a collection type OR it has multiple items
+    const isProject = !!p.project_id || (p.type && ['Sound Kit', 'Beat Tape', 'Album', 'EP', 'Project'].includes(p.type)) || (p.purchase_items && p.purchase_items.length > 1);
+
+    if (isProject) {
+      // Create a Folder Asset for the Project
+      // We use 'Project' type which we'll handle in UI to act like a folder
+      const folderId = `proj-${p.id}`;
+
+      libraryAssets.push({
+        id: folderId,
+        name: p.item || 'Untitled Project',
+        type: 'Project', // Special folder type
+        producer: 'Unknown', // We could fetch seller name if needed
         date: formatDate(new Date(p.created_at)),
-        fileType: 'zip' as const,
+        fileType: 'zip',
         parentId: null
-      }))
-    ),
-    ...(uploads || []).map((u: any) => {
-      const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(u.storage_path);
-      return {
-        id: u.id,
-        name: u.file_name || 'Untitled Upload',
-        type: u.mime_type === 'application/vnd.antigravity.folder' ? 'folder' : 'Upload',
-        producer: 'Me',
-        date: formatDate(new Date(u.created_at)),
-        fileType: (u.file_name?.split('.').pop() || 'wav') as 'mp3' | 'wav' | 'zip',
-        parentId: u.parent_id || null,
-        url: publicUrl
-      };
-    })
-  ];
+      });
+
+      // Add items as children
+      (p.purchase_items || []).forEach((pi: any) => {
+        libraryAssets.push({
+          id: pi.id,
+          name: pi.item_name || 'Untitled Item',
+          type: 'Purchased',
+          producer: 'Unknown',
+          date: formatDate(new Date(p.created_at)),
+          fileType: 'wav',
+          parentId: folderId // Link to project folder
+        });
+      });
+    } else {
+      // Single item purchase -> Flat
+      (p.purchase_items || []).forEach((pi: any) => {
+        libraryAssets.push({
+          id: pi.id,
+          name: pi.item_name || p.item || 'Untitled',
+          type: 'Purchased',
+          producer: 'Unknown',
+          date: formatDate(new Date(p.created_at)),
+          fileType: 'wav',
+          parentId: null
+        });
+      });
+    }
+  });
+
+  // Process Uploads
+  (uploads || []).forEach((u: any) => {
+    const { data: { publicUrl } } = supabase.storage.from('assets').getPublicUrl(u.storage_path);
+    libraryAssets.push({
+      id: u.id,
+      name: u.file_name || 'Untitled Upload',
+      type: u.mime_type === 'application/vnd.antigravity.folder' ? 'folder' : 'Upload',
+      producer: 'Me',
+      date: formatDate(new Date(u.created_at)),
+      fileType: (u.file_name?.split('.').pop() || 'wav') as 'mp3' | 'wav' | 'zip',
+      parentId: u.parent_id || null, // Respect existing folder structure for uploads
+      url: publicUrl
+    });
+  });
 
   return libraryAssets;
 };

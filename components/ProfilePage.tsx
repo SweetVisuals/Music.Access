@@ -69,6 +69,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     onTogglePlay
 }) => {
     const navigate = useNavigate();
+    const { addToCart } = useCart();
     const [activeTab, setActiveTab] = useState<Tab>('beat_tapes');
     const [isFollowing, setIsFollowing] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -81,6 +82,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(false);
     const [isOwnProfile, setIsOwnProfile] = useState(false);
+    const [isOwnershipLoading, setIsOwnershipLoading] = useState(true);
 
     // Service Booking State
     const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -181,6 +183,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     // Check if the viewed profile is the current user's profile
     useEffect(() => {
         const checkOwnership = async () => {
+            setIsOwnershipLoading(true);
             try {
                 const currentUser = await getCurrentUser();
                 if (currentUser && userProfile && userProfile.handle === currentUser.user_metadata?.handle) {
@@ -191,6 +194,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             } catch (error) {
                 console.error('Error checking profile ownership:', error);
                 setIsOwnProfile(false);
+            } finally {
+                setIsOwnershipLoading(false);
             }
         };
 
@@ -201,7 +206,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
     // Check if following
     // Initial check handled by the effect below that depends on userProfile?.id
-
     // Re-check follow status when the component mounts or userProfile ID changes specifically
     useEffect(() => {
         if (userProfile?.id && !isOwnProfile) {
@@ -224,6 +228,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     // Check Gem Status for Completion Alert
     useEffect(() => {
         const checkGemStatus = async () => {
+            if (isOwnershipLoading) return; // Wait for ownership check
+
             if (isOwnProfile && userProfile?.id) {
                 try {
                     const status = await checkHasGivenAnyGem(userProfile.id);
@@ -238,12 +244,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             }
         };
 
-        if (userProfile && isOwnProfile) {
+        if (userProfile) {
             checkGemStatus();
-        } else if (userProfile && !isOwnProfile) {
-            setIsGemStatusLoading(false);
         }
-    }, [userProfile, isOwnProfile]);
+    }, [userProfile, isOwnProfile, isOwnershipLoading]);
 
     const handleToggleFollow = async () => {
         if (!userProfile?.id) {
@@ -566,7 +570,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         setLocalProjects(prev => prev.map(p => p.id === project.id ? { ...p, status: newStatus as any } : p));
     };
 
-    const { addToCart } = useCart();
+
 
     const handleAddToCart = (service: Service, notes: string) => {
         if (!service || !userProfile) return;
@@ -1106,7 +1110,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                 ) : (
                     <>
                         {/* Profile Completion Alert (Owner Only) */}
-                        {!isViewerMode && isOwnProfile && !isGemStatusLoading && (
+                        {!isViewerMode && isOwnProfile && !isGemStatusLoading && !isOwnershipLoading && (
                             <div className="mb-6 -mt-2">
                                 <ProfileCompletionAlert userProfile={userProfile} hasGivenGem={hasGivenGem} />
                             </div>

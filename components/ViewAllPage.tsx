@@ -176,7 +176,7 @@ const ViewAllPage: React.FC<ViewAllPageProps> = ({
                     <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back
                 </button>
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <div className="hidden lg:block">
+                    <div className="hidden">
                         <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">{title}</h1>
                         <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">{description}</p>
                     </div>

@@ -680,6 +680,7 @@ const App: React.FC = () => {
                       onPlayTrack={handlePlayTrack}
                       onTogglePlay={handleTogglePlay}
                       currentProject={currentProject}
+                      onNavigate={handleNavigate}
                     />
                   )}
 
@@ -714,7 +715,7 @@ const App: React.FC = () => {
                           </div>
                         )}
 
-                        <div className="hidden lg:block mb-8 px-4 lg:px-8">
+                        <div className="hidden mb-8 px-4 lg:px-8">
                           <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Discover</h1>
                           <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">
                             The future of sound is here. Browse trending loop kits, beats, and collaborative projects from the industries top creators.

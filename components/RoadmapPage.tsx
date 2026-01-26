@@ -102,7 +102,7 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
             <div className={`px-6 lg:px-8 pt-6 transition-all duration-700 ease-in-out overflow-hidden ${openStrategyWizard ? 'max-h-0 opacity-0 mb-0' : 'max-h-[800px] opacity-100 mb-8'}`}>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
 
-                    <div>
+                    <div className="hidden">
                         <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter flex items-center gap-3">
                             <Map className="text-primary" size={32} />
                             Roadmap
@@ -335,10 +335,17 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
         if (!stage4?.data) return null;
 
         // 1. Prioritize explicit era_dates (New)
-        if (stage4.data.era_dates?.from && stage4.data.era_dates?.to) {
-            // Strings are already YYYY-MM-DD. Just return them.
+        if (stage4.data.era_dates?.from) {
+            const fromDate = stage4.data.era_dates.from;
+            let toDate = stage4.data.era_dates.to;
+
+            // FIX: If toDate is empty OR equals fromDate, treat as open-ended (start date only)
+            if (!toDate || toDate === fromDate) {
+                toDate = undefined;
+            }
+
             // Validate they look like dates at least.
-            if (stage4.data.era_dates.from.length === 10 && stage4.data.era_dates.to.length === 10) {
+            if (fromDate.length === 10) {
                 // Determine Color
                 let bgClass = 'bg-yellow-500/10'; // Default
                 if (stage4.data.era_color) {
@@ -350,8 +357,8 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                 }
 
                 return {
-                    from: stage4.data.era_dates.from,
-                    to: stage4.data.era_dates.to,
+                    from: fromDate,
+                    to: toDate,
                     style: bgClass
                 };
             }

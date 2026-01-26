@@ -4,7 +4,7 @@ import {
     Play, Pause, Bookmark, Share2, MoreHorizontal,
     ShoppingCart, User, Disc, Box, Gem, ArrowLeft, Check, ChevronRight, X, Link as LinkIcon, Facebook, Twitter, Mail
 } from 'lucide-react';
-import { Project } from '../types';
+import { Project, View } from '../types';
 import { getProjectById, saveProject, unsaveProject, checkIsProjectSaved, getProjects, giveGemToProject, undoGiveGem, checkIsGemGiven, getCurrentUser } from '../services/supabaseService';
 import WaveformVisualizer from './WaveformVisualizer';
 import { usePurchaseModal } from '../contexts/PurchaseModalContext';
@@ -16,6 +16,7 @@ interface ListenPageProps {
     onPlayTrack: (project: Project, trackId: string) => void;
     onTogglePlay: () => void;
     currentProject: Project | null;
+    onNavigate?: (view: View | string) => void;
 }
 
 const ListenPage: React.FC<ListenPageProps> = ({
@@ -23,7 +24,8 @@ const ListenPage: React.FC<ListenPageProps> = ({
     isPlaying,
     onPlayTrack,
     onTogglePlay,
-    currentProject: globalCurrentProject
+    currentProject: globalCurrentProject,
+    onNavigate
 }) => {
     const { id: paramsId } = useParams<{ id: string }>();
     const location = useLocation();
@@ -386,7 +388,8 @@ const ListenPage: React.FC<ListenPageProps> = ({
                                 <div
                                     key={p.id}
                                     onClick={() => {
-                                        navigate(`/listen/${p.shortId || p.id}`);
+                                        // Ensure we push a new entry to history for the breadcrumb effect
+                                        navigate(`/listen/${p.shortId || p.id}`, { replace: false });
                                         window.scrollTo(0, 0);
                                     }}
                                     className="group bg-neutral-900/20 rounded-xl overflow-hidden cursor-pointer hover:bg-white/5 transition-all shrink-0"

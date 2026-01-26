@@ -63,8 +63,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     const [isSaved, setIsSaved] = useState(false);
     const [localGems, setLocalGems] = useState(project.gems || 0);
 
-
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [isGemLoading, setIsGemLoading] = useState(true);
 
     // Menu State
     const [showMenu, setShowMenu] = useState(false);
@@ -166,11 +166,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     const [canUndo, setCanUndo] = useState(false); // Only allowed for 15s after giving
     const undoTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // ... (existing code)
-
     useEffect(() => {
         const fetchUserAndStatus = async () => {
             try {
+                setIsGemLoading(true);
                 const user = await getCurrentUser();
                 setCurrentUserId(user?.id || null);
 
@@ -184,6 +183,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 }
             } catch (error) {
                 console.error('Error fetching user:', error);
+            } finally {
+                setIsGemLoading(false);
             }
         };
         fetchUserAndStatus();
@@ -368,17 +369,17 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                         <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                             <button
                                 onClick={canUndo ? handleUndoGem : handleGiveGem}
-                                disabled={isOwnProject && !canUndo}
+                                disabled={(isOwnProject && !canUndo) || isGemLoading}
                                 className={`
                                     flex items-center gap-1 px-2.5 py-1.5 rounded-full backdrop-blur-md border transition-all
                                     ${hasGivenGem
                                         ? 'text-primary border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.3)] bg-black/40'
                                         : 'bg-white/10 border-white/10 text-white hover:bg-white/20'
                                     }
-                                    ${isOwnProject ? 'opacity-50 cursor-not-allowed' : ''}
+                                    ${(isOwnProject || isGemLoading) ? 'opacity-50 cursor-not-allowed' : ''}
                                 `}
                             >
-                                <Gem size={12} className={hasGivenGem ? "text-primary drop-shadow-[0_0_5px_rgba(var(--primary),0.5)]" : "text-white"} />
+                                <Gem size={12} className={`${hasGivenGem ? "text-primary drop-shadow-[0_0_5px_rgba(var(--primary),0.5)]" : "text-white"} ${isGemLoading ? 'animate-pulse' : ''}`} />
                                 <span className="text-[10px] font-bold">{localGems}</span>
                             </button>
 
@@ -791,10 +792,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                         {/* Gem Button */}
                         <button
                             onClick={canUndo ? handleUndoGem : handleGiveGem}
-                            disabled={isOwnProject && !canUndo}
+                            disabled={(isOwnProject && !canUndo) || isGemLoading}
                             className={`
                                 flex items-center gap-1 p-1.5 rounded transition-all active:scale-75
-                                ${isOwnProject
+                                ${isOwnProject && !canUndo
                                     ? 'text-neutral-600 cursor-not-allowed opacity-50'
                                     : hasGivenGem
                                         ? 'text-primary bg-primary/5 border border-primary/20'

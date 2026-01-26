@@ -80,7 +80,7 @@ const PostServicePage: React.FC = () => {
     return (
         <div className="w-full min-h-screen bg-black -mt-[80px]">
             {/* Hero Section - Seamless Integration */}
-            <div className="hidden lg:block relative w-full bg-neutral-900/40 pt-[90px] lg:pt-[120px] pb-6 lg:pb-10 px-4 lg:px-10 xl:px-14 backdrop-blur-sm">
+            <div className="hidden">
                 <div className="max-w-[1900px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
                         <div className="flex items-center gap-2 mb-3">

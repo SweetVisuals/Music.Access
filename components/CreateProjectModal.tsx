@@ -144,6 +144,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                             : (f.name.endsWith('.zip') ? 'ZIP'
                                 : ((f.type?.includes('image') || /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name)) ? 'IMAGE' : 'FILE')),
                         size: f.size ? f.size : 'Unknown', // formatFileSize(f.size) if size is number
+                        duration: f.duration,
                         original: f
                     }));
                     setUserFiles(mapped);
@@ -238,13 +239,12 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                 const file = userFiles.find(f => f.id === fileId);
                 track.title = file?.name.split('.')[0] || track.title || 'Untitled Track';
 
-                // Calculate duration if valid audio
-                if (file?.url) {
+                // Use stored duration if available, otherwise try to calculate it
+                if (file?.duration && file.duration > 0) {
+                    track.duration = file.duration;
+                } else if (file?.url) {
                     getAudioDuration(file.url)
                         .then(duration => {
-                            const newTracksAsync = [...tracks];
-                            // We need to find the track again in case state changed, but for now we assume index/id stability within this short time
-                            // To be safe, let's update state again
                             setTracks(currentTracks => {
                                 const tracksCopy = [...currentTracks];
                                 if (tracksCopy[currentTrackIndex!]) {
@@ -258,7 +258,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                         })
                         .catch(err => {
                             console.warn("Failed to separate audio duration", err);
-                            // Keep default or set to 180 if 0
                         });
                     track.duration = 180; // Placeholder until async load finishes
                 } else {

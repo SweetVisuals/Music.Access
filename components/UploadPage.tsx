@@ -356,11 +356,11 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
 
             // Map initial structure
             const mappedFilesPromise = dbFiles.map(async (f: any) => {
-                let duration = 180; // Default fallback
+                let duration = f.duration || 180; // Use stored duration or fallback
                 const isAudio = f.type && f.type.startsWith('audio');
 
-                // Try to calc duration if audio
-                if (isAudio && f.url) {
+                // Try to calc duration if audio and not already in DB
+                if (isAudio && (!f.duration || f.duration === 180) && f.url) {
                     try {
                         const d = await getAudioDuration(f.url);
                         if (d > 0) duration = Math.round(d);

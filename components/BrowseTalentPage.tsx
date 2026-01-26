@@ -175,8 +175,10 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
 
             {/* Header */}
             <div className="mb-6 lg:mb-8">
-                <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">Browse Talent</h1>
-                <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Discover the best emerging producers, vocalists, and engineers.</p>
+                <div className="hidden lg:block">
+                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Browse Talent</h1>
+                    <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Discover top-rated producers, artists, and sound engineers.</p>
+                </div>
             </div>
 
             {/* Featured Talent Section */}

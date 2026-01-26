@@ -305,7 +305,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 </div>
 
                 {/* Top Actions */}
-                <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute top-0 left-0 right-0 p-4 md:p-5 flex justify-between items-start z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="flex gap-2">
                         {project.status !== 'published' && (
                             <div className="p-1 rounded-md bg-black/50 backdrop-blur border border-transparent text-neutral-400">
@@ -352,7 +352,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 </div>
 
                 {/* Bottom Info */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 z-20 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5 z-20 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                     <h3 className="text-xl font-bold text-white mb-1 truncate drop-shadow-md">{project.title}</h3>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -443,11 +443,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/0 to-transparent group-hover:via-primary/50 transition-all duration-700"></div>
 
                 {/* Header Section */}
-                <div className="p-4 pb-2 space-y-2 flex flex-col relative z-10 bg-gradient-to-b from-white/[0.02] to-transparent rounded-t-xl">
+                <div className="p-4 md:p-5 flex flex-col relative z-10 bg-gradient-to-b from-white/[0.02] to-transparent rounded-t-xl">
                     {/* Metadata Row - Moved Above Title */}
 
-                    <div className="flex items-start justify-between gap-3 pt-2 pb-1">
-                        <h3 className="text-base font-bold text-white truncate tracking-tight group-hover:text-primary transition-colors duration-300 flex-1 leading-tight py-1">
+                    <div className="flex items-center justify-between gap-3">
+                        <h3 className="text-base font-bold text-white truncate tracking-tight group-hover:text-primary transition-colors duration-300 flex-1 leading-tight">
                             {project.title}
                         </h3>
 
@@ -610,7 +610,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] bg-[#080808] border-y border-dashed border-neutral-900
             ${description ? 'max-h-24 opacity-100 border-primary/20' : 'max-h-0 opacity-0'}
        `}>
-                    <div className="px-4 py-3 flex items-start gap-3">
+                    <div className="px-4 py-3 md:px-5 md:py-4 flex items-start gap-3">
                         <div className="mt-0.5 p-1 rounded-md bg-primary/10">
                             <Sparkles size={10} className="text-primary animate-pulse" />
                         </div>
@@ -732,7 +732,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 </div>
 
                 {/* Footer */}
-                <div className="rounded-b-xl px-3 py-3 bg-neutral-900/90 border-t border-transparent flex items-center justify-between z-20">
+                <div className="rounded-b-xl p-4 md:p-5 bg-neutral-900/90 border-t border-transparent flex items-center justify-between z-20">
                     <div className="flex items-center gap-2.5 overflow-hidden">
                         <div
                             onClick={(e) => {

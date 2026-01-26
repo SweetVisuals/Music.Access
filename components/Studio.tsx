@@ -331,9 +331,9 @@ const Studio: React.FC<StudioProps> = ({
             {activeView === 'dashboard' ? (
                 <div className="w-full flex-1 flex flex-col pb-40 lg:pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
-                        <div>
+                        <div className="hidden lg:block">
                             <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">My Studio</h1>
-                            <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Manage your releases, organize purchased beats, and track contracts.</p>
+                            <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Your professional creative workspace for loop kits & projects.</p>
                         </div>
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
@@ -443,7 +443,8 @@ const Studio: React.FC<StudioProps> = ({
                         setProjectToDelete={setProjectToDelete}
                     />
                 )
-            )}
+            )
+            }
 
             {/* Project Delete Confirmation Modal */}
             <ConfirmationModal
@@ -456,7 +457,7 @@ const Studio: React.FC<StudioProps> = ({
                 cancelLabel="Cancel"
                 isDestructive={true}
             />
-        </div>
+        </div >
     );
 };
 

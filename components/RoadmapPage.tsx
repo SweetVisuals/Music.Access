@@ -688,6 +688,10 @@ const StrategyTab: React.FC<StrategyTabProps> = ({ strategies, onUpdate, openWiz
     return (
         <div className="space-y-8 w-full">
             <div className="flex items-center justify-between mb-8 px-6 lg:px-8">
+                <div className="hidden lg:block">
+                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Roadmap</h1>
+                    <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Strategic planning and long-term release schedule.</p>
+                </div>
                 <div>
                     <h2 className="text-2xl font-black text-white">Strategy Roadmap</h2>
                     <p className="text-neutral-500">Define your artist identity, era, and execution plan.</p>

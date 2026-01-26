@@ -190,7 +190,7 @@ const WalletPage: React.FC<WalletPageProps> = ({ userProfile }) => {
 
             {/* Header / Title */}
             <div className="flex items-center justify-between mb-6">
-                <div>
+                <div className="hidden lg:block">
                     <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Wallet</h1>
                     <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Manage balance & payment methods</p>
                 </div>

@@ -180,7 +180,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
 
     return (
         <div className="w-full max-w-7xl mx-auto pb-4 lg:pb-32 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
-            <div className="mb-10">
+            <div className="hidden lg:block mb-10">
                 <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">Settings</h1>
                 <p className="text-neutral-400 text-lg max-w-2xl leading-relaxed">Manage your profile, preferences, and account security.</p>
             </div>

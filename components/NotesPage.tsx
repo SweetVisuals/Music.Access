@@ -31,6 +31,7 @@ import {
     Minus,
     MessageSquare,
     ArrowRight,
+    ArrowLeft,
     ChevronDown,
     RotateCcw,
     Trash,
@@ -202,6 +203,41 @@ const MobileTitlePortal = ({
     );
 };
 
+const MobileActionsPortal = ({
+    rhymeMode,
+    setRhymeMode,
+    setTextSize,
+    isVisible
+}: {
+    rhymeMode: boolean,
+    setRhymeMode: (val: boolean) => void,
+    setTextSize: React.Dispatch<React.SetStateAction<'xs' | 'sm' | 'base' | 'lg'>>,
+    isVisible: boolean
+}) => {
+    const [target, setTarget] = useState<HTMLElement | null>(null);
+
+    useEffect(() => {
+        setTarget(document.getElementById('mobile-nav-actions'));
+    }, []);
+
+    if (!target || !isVisible) return null;
+
+    return createPortal(
+        <div className="flex items-center gap-1 animate-in fade-in duration-300">
+            <button
+                onClick={() => setRhymeMode(!rhymeMode)}
+                className={`p-2 rounded-xl transition-all ${rhymeMode ? 'bg-primary text-black' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+            >
+                <Highlighter size={18} />
+            </button>
+            <div className="w-px h-4 bg-white/10 mx-1" />
+            <button onClick={() => setTextSize(prev => prev === 'xs' ? 'xs' : prev === 'sm' ? 'xs' : prev === 'base' ? 'sm' : 'base')} className="p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"><Minus size={18} /></button>
+            <button onClick={() => setTextSize(prev => prev === 'xs' ? 'sm' : prev === 'sm' ? 'base' : prev === 'base' ? 'lg' : 'lg')} className="p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"><Plus size={18} /></button>
+        </div>,
+        target
+    );
+};
+
 interface NotesPageProps {
     userProfile: UserProfile | null;
     currentProject: Project | null;
@@ -266,6 +302,12 @@ const NotesPage: React.FC<NotesPageProps> = ({
         y: number;
         note: Note | null;
     }>({ isOpen: false, x: 0, y: 0, note: null });
+
+    // Inline Editing State
+    const [editingItemId, setEditingItemId] = useState<string | null>(null);
+    const [editingValue, setEditingValue] = useState('');
+    const editInputRef = useRef<HTMLInputElement>(null);
+    const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         const handleClickOutside = () => setContextMenu({ ...contextMenu, isOpen: false });
@@ -459,6 +501,21 @@ const NotesPage: React.FC<NotesPageProps> = ({
     const [isSizeExpanded, setIsSizeExpanded] = useState(false);
 
     // AI Chat State
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const touchStartRef = useRef<number | null>(null);
+
+    const onTouchStart = (e: React.TouchEvent) => {
+        touchStartRef.current = e.touches[0].clientX;
+    };
+
+    const onTouchEnd = (e: React.TouchEvent) => {
+        if (!touchStartRef.current) return;
+        const diff = touchStartRef.current - e.changedTouches[0].clientX;
+        if (diff > 50) setIsChatOpen(true); // Swiped Left
+        if (diff < -50) setIsChatOpen(false); // Swiped Right
+        touchStartRef.current = null;
+    };
+
     const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'model', text: string }[]>([]);
     const [chatInput, setChatInput] = useState('');
     const [chatLoading, setChatLoading] = useState(false);
@@ -509,6 +566,33 @@ const NotesPage: React.FC<NotesPageProps> = ({
         const newHeight = sheetStartHeight.current - vhDelta;
         if (newHeight >= 25 && newHeight <= 90) {
             setMobileSheetHeight(newHeight);
+        }
+    };
+
+    // Mobile Rhyme Tray State
+    const [rhymeTrayHeight, setRhymeTrayHeight] = useState(180);
+    const rhymeTrayDragStart = useRef<number>(0);
+    const rhymeTrayStartHeight = useRef<number>(0);
+
+    const handleRhymeTrayDragStart = (e: React.TouchEvent) => {
+        e.stopPropagation();
+        rhymeTrayDragStart.current = e.touches[0].clientY;
+        rhymeTrayStartHeight.current = rhymeTrayHeight;
+    };
+
+    const handleRhymeTrayDragMove = (e: React.TouchEvent) => {
+        e.stopPropagation();
+        // Dragging UP decreases clientY, so delta is negative.
+        // We want height to INCREASE when dragging UP.
+        // deltaY = current - start.
+        // newHeight = startHeight - deltaY.
+        const deltaY = e.touches[0].clientY - rhymeTrayDragStart.current;
+        const newHeight = rhymeTrayStartHeight.current - deltaY;
+
+        // Limits: Min 100px, Max 80vh
+        const maxHeight = window.innerHeight * 0.8;
+        if (newHeight >= 100 && newHeight <= maxHeight) {
+            setRhymeTrayHeight(newHeight);
         }
     };
 
@@ -715,26 +799,37 @@ const NotesPage: React.FC<NotesPageProps> = ({
         onConfirm: () => { }
     });
 
-    const handleCreateFolderClick = () => {
-        setInputModal({
-            isOpen: true,
-            type: 'create',
-            title: 'Create New Folder',
-            message: 'Enter a name for your new folder.',
-            initialValue: 'New Folder',
-            onConfirm: async (name) => {
-                try {
-                    const newFolder = await createNoteFolder(name, currentFolderId);
-                    setNotes(prev => [newFolder, ...prev]);
-                } catch (error) {
-                    console.error('Failed to create folder', error);
-                }
+    const handleCreateFolderClick = async () => {
+        try {
+            const newFolder = await createNoteFolder('New Folder', currentFolderId);
+            setNotes(prev => [newFolder, ...prev]);
+
+            // If on desktop, edit instantly
+            const isMobile = window.innerWidth < 1024;
+            if (!isMobile) {
+                setEditingItemId(newFolder.id);
+                setEditingValue('New Folder');
+                // Use a timeout to ensure the element is rendered before focusing
+                setTimeout(() => editInputRef.current?.focus(), 50);
+                setTimeout(() => editInputRef.current?.select(), 60);
             }
-        });
+        } catch (error) {
+            console.error('Failed to create folder', error);
+        }
     };
 
     const handleRenameClick = (e: React.MouseEvent, note: Note) => {
         e.stopPropagation();
+        if (note.type === 'folder') {
+            setEditingItemId(note.id);
+            setEditingValue(note.title);
+            setTimeout(() => {
+                editInputRef.current?.focus();
+                editInputRef.current?.select();
+            }, 50);
+            return;
+        }
+
         setInputModal({
             isOpen: true,
             type: 'rename',
@@ -747,9 +842,6 @@ const NotesPage: React.FC<NotesPageProps> = ({
                     // Update state optimistically
                     setNotes(prev => prev.map(n => n.id === note.id ? { ...n, title: newName } : n));
                     await updateNote(note.id, { title: newName });
-
-                    // If active note was renamed, update input title too? 
-                    // (Not strictly necessary as activeNote derived from notes state will update)
                 } catch (error) {
                     console.error('Failed to rename item', error);
                     fetchNotes(); // Revert on error
@@ -856,6 +948,12 @@ const NotesPage: React.FC<NotesPageProps> = ({
                 onUpdateTitle={handleUpdateTitle}
                 onOpenSidebar={() => setIsSidebarOpen(true)}
             />
+            <MobileActionsPortal
+                rhymeMode={rhymeMode}
+                setRhymeMode={setRhymeMode}
+                setTextSize={setTextSize}
+                isVisible={!isSidebarOpen}
+            />
 
             {activeNote && activeNote.attachedAudio && (
                 <div className="h-12 bg-neutral-900 border-b border-white/5 flex items-center justify-between px-3 lg:px-6 shrink-0 z-20">
@@ -953,9 +1051,10 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                 <div
                                     ref={backdropRef}
                                     className={`
-                                        col-start-1 row-start-1 p-5 pb-64 lg:p-10 lg:pb-10 lg:px-10 xl:px-12 mx-auto max-w-6xl w-full whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono leading-relaxed text-transparent
+                                        col-start-1 row-start-1 p-5 lg:p-10 lg:pb-10 lg:px-10 xl:px-12 mx-auto max-w-6xl w-full whitespace-pre-wrap break-words overflow-visible pointer-events-none z-0 font-mono leading-relaxed text-transparent
                                         ${textSize === 'xs' ? 'text-[11px] lg:text-[1.2rem]' : textSize === 'sm' ? 'text-[13px] lg:text-[1.4rem]' : textSize === 'base' ? 'text-[15px] lg:text-[1.6rem]' : 'text-[17px] lg:text-[1.9rem]'}
                                     `}
+                                    style={{ paddingBottom: `${rhymeTrayHeight + 120}px` }}
                                 >
                                     {activeNote && renderHighlightedText(activeNote.content + ' ')}
                                 </div>
@@ -963,10 +1062,11 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                 <textarea
                                     ref={textareaRef}
                                     className={`
-                                        col-start-1 row-start-1 w-full h-full bg-transparent p-5 pb-64 lg:p-10 lg:pb-10 lg:px-10 xl:px-12 mx-auto max-w-6xl resize-none overflow-hidden focus:outline-none z-10 font-mono leading-relaxed whitespace-pre-wrap break-words
+                                        col-start-1 row-start-1 w-full h-full bg-transparent p-5 lg:p-10 lg:pb-10 lg:px-10 xl:px-12 mx-auto max-w-6xl resize-none overflow-hidden focus:outline-none z-10 font-mono leading-relaxed whitespace-pre-wrap break-words
                                         ${textSize === 'xs' ? 'text-[11px] lg:text-[1.2rem]' : textSize === 'sm' ? 'text-[13px] lg:text-[1.4rem]' : textSize === 'base' ? 'text-[15px] lg:text-[1.6rem]' : 'text-[17px] lg:text-[1.9rem]'}
                                         ${rhymeMode ? 'text-transparent caret-white' : 'text-neutral-300 caret-white'}
                                     `}
+                                    style={{ paddingBottom: `${rhymeTrayHeight + 120}px` }}
                                     value={activeNote ? activeNote.content : ''}
                                     onChange={(e) => {
                                         handleUpdateContentWrapper(e.target.value);
@@ -984,83 +1084,142 @@ const NotesPage: React.FC<NotesPageProps> = ({
                         </div>
                     </div>
 
-                    <div className="h-32 lg:hidden shrink-0" />
+                    <div className="h-64 lg:hidden shrink-0" />
 
-                    <div className="lg:hidden fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-0 right-0 z-[48] bg-[#050505] border-t border-white/5 pb-0">
-                        <div className="flex flex-col">
-                            {isSizeExpanded && (
-                                <div className="absolute bottom-[calc(100%+1px)] left-0 right-0 bg-[#0A0A0A] border-t border-white/5 p-4 z-[60] animate-in slide-in-from-bottom-2 fade-in duration-200 flex justify-center shadow-2xl">
-                                    <div className="flex items-center gap-6 bg-white/5 rounded-full px-4 py-2 border border-white/10">
+                    {/* Mobile Bottom Bar: Rhymes & Swipe */}
+                    <div className="lg:hidden fixed bottom-[env(safe-area-inset-bottom)] left-0 right-0 z-[60] flex flex-col bg-[#050505] border-t border-white/5">
+
+                        {/* Always-Visible Rhyme Engine */}
+                        <div
+                            className="w-full flex flex-col bg-[#0A0A0A] relative border-t border-white/5"
+                            style={{ height: `${rhymeTrayHeight}px` }}
+                        >
+                            {/* Drag Handle - Minimal & Clean */}
+                            <div
+                                className="absolute -top-4 left-0 right-0 h-8 z-[70] flex items-center justify-center cursor-row-resize touch-action-none"
+                                onTouchStart={handleRhymeTrayDragStart}
+                                onTouchMove={handleRhymeTrayDragMove}
+                            >
+                                <div className="w-12 h-1 bg-white/30 rounded-full backdrop-blur-sm shadow-sm" />
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-0">
+                                <div className="p-4 pb-12 min-h-full flex flex-col">
+                                    {/* Minimal Inline Header */}
+                                    <div className="flex items-center justify-between mb-4 shrink-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] uppercase font-bold text-neutral-600 tracking-wider">Target</span>
+                                            <span className="text-sm font-black text-white">{currentWord || "..."}</span>
+                                        </div>
                                         <button
-                                            onClick={() => setTextSize(prev => prev === 'xs' ? 'xs' : prev === 'sm' ? 'xs' : prev === 'base' ? 'sm' : 'base')}
-                                            className={`p-2 rounded-full transition-colors ${textSize === 'xs' ? 'text-neutral-600 cursor-not-allowed' : 'text-white hover:bg-white/10 active:bg-white/20'}`}
-                                            disabled={textSize === 'xs'}
+                                            onClick={() => setAccent(accent === 'US' ? 'UK' : 'US')}
+                                            className="text-[9px] font-bold text-neutral-500 bg-white/5 px-2 py-1 rounded border border-white/5 hover:text-white transition-colors"
                                         >
-                                            <Minus size={18} />
+                                            {accent}
                                         </button>
-                                        <span className="text-xs font-mono font-bold text-primary w-16 text-center uppercase tracking-wider">
-                                            {textSize === 'xs' && 'Small'}
-                                            {textSize === 'sm' && 'Medium'}
-                                            {textSize === 'base' && 'Large'}
-                                            {textSize === 'lg' && 'Huge'}
-                                        </span>
-                                        <button
-                                            onClick={() => setTextSize(prev => prev === 'xs' ? 'sm' : prev === 'sm' ? 'base' : prev === 'base' ? 'lg' : 'lg')}
-                                            className={`p-2 rounded-full transition-colors ${textSize === 'lg' ? 'text-neutral-600 cursor-not-allowed' : 'text-white hover:bg-white/10 active:bg-white/20'}`}
-                                            disabled={textSize === 'lg'}
-                                        >
-                                            <Plus size={18} />
-                                        </button>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2 content-start w-full">
+                                        {suggestions.length > 0 ? (
+                                            suggestions.map((word, i) => (
+                                                <button
+                                                    key={i}
+                                                    className="inline-flex px-3 py-2 bg-neutral-900 border border-white/5 rounded-lg text-xs font-medium text-neutral-300 active:bg-primary active:text-black transition-colors shrink-0"
+                                                    onClick={() => {
+                                                        if (activeNote) {
+                                                            const newContent = activeNote.content + " " + word;
+                                                            handleUpdateContent(newContent);
+                                                        }
+                                                    }}
+                                                >
+                                                    {word}
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="w-full flex items-center justify-center py-10 text-neutral-600 italic text-[10px]">
+                                                Tap a word to see rhymes
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                            )}
-
-                            <div className="h-16 flex items-center justify-between px-2 w-full max-sm mx-auto">
-                                <button
-                                    onClick={() => handleCreateNote()}
-                                    className="flex-1 group flex flex-col items-center gap-1 transition-all py-1"
-                                >
-                                    <div className="w-9 h-9 rounded-lg flex items-center justify-center transition-all bg-white/5 border border-white/5 group-active:bg-primary group-active:text-black group-active:border-primary group-active:scale-95">
-                                        <Plus size={18} className="stroke-[2.5px]" />
-                                    </div>
-                                    <span className="text-[9px] uppercase tracking-wider font-mono font-bold text-neutral-400 group-active:text-primary">New</span>
-                                </button>
-
-                                <button
-                                    onClick={() => { setIsSizeExpanded(!isSizeExpanded); setMobileAssistantOpen(false); }}
-                                    className={`flex-1 group flex flex-col items-center gap-1 transition-all py-1`}
-                                >
-                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${isSizeExpanded ? 'bg-primary text-black border-primary' : 'bg-transparent text-neutral-400 border-transparent group-hover:text-white'}`}>
-                                        <Type size={18} className="stroke-[2.5px]" />
-                                    </div>
-                                    <span className={`text-[9px] uppercase tracking-wider font-mono font-bold ${isSizeExpanded ? 'text-primary' : 'text-neutral-500'}`}>Size</span>
-                                </button>
-
-                                <button
-                                    onClick={() => {
-                                        setToolkitOpen(!isToolkitOpen);
-                                        setIsSizeExpanded(false);
-                                    }}
-                                    className={`flex-1 group flex flex-col items-center gap-1 transition-all py-1`}
-                                >
-                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${isToolkitOpen ? 'bg-primary text-black border-primary' : 'bg-transparent text-neutral-400 border-transparent group-hover:text-white'}`}>
-                                        <Globe size={18} className="stroke-[2.5px]" />
-                                    </div>
-                                    <span className={`text-[9px] uppercase tracking-wider font-mono font-bold ${isToolkitOpen ? 'text-primary' : 'text-neutral-500'}`}>Tools</span>
-                                </button>
-
-                                <button
-                                    onClick={() => setRhymeMode(!rhymeMode)}
-                                    className={`flex-1 group flex flex-col items-center gap-1 transition-all py-1`}
-                                >
-                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${rhymeMode ? 'bg-primary text-black border-primary' : 'bg-transparent text-neutral-400 border-transparent group-hover:text-white'}`}>
-                                        <Highlighter size={18} className="stroke-[2.5px]" />
-                                    </div>
-                                    <span className={`text-[9px] uppercase tracking-wider font-mono font-bold ${rhymeMode ? 'text-primary' : 'text-neutral-500'}`}>Rhyme</span>
-                                </button>
                             </div>
                         </div>
+
+                        {/* Swipe to Chat Trigger */}
+                        <div
+                            className="w-full py-4 bg-black border-t border-white/5 flex items-center justify-center gap-3 relative overflow-hidden active:bg-neutral-900 transition-colors cursor-pointer"
+                            onTouchStart={onTouchStart}
+                            onTouchEnd={onTouchEnd}
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></div>
+                            <ArrowLeft size={16} className="text-primary animate-pulse" />
+                            <span className="text-xs font-bold text-white uppercase tracking-widest">Swipe Left to AI Chat</span>
+                        </div>
                     </div>
+
+                    {/* AI Chat Full Screen Overlay */}
+                    {isChatOpen && (
+                        <div className="lg:hidden fixed inset-0 z-[100] bg-[#050505] flex flex-col animate-in slide-in-from-right duration-300">
+                            {/* Header */}
+                            <div className="h-14 shrink-0 flex items-center justify-between px-4 border-b border-white/5 bg-black/50 backdrop-blur">
+                                <button onClick={() => setIsChatOpen(false)} className="p-2 -ml-2 text-neutral-400 hover:text-white">
+                                    <ChevronLeft size={24} />
+                                </button>
+                                <span className="text-sm font-bold text-white uppercase tracking-widest">AI Assistant</span>
+                                <div className="w-8" />
+                            </div>
+
+                            {/* Chat Body */}
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-black" ref={chatScrollRef}>
+                                {chatMessages.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center h-full text-neutral-600 opacity-30 space-y-4">
+                                        <MessageSquare size={48} strokeWidth={1} />
+                                        <p className="text-sm text-center max-w-[200px]">How can I help you with your lyrics today?</p>
+                                    </div>
+                                )}
+                                {chatMessages.map((msg, i) => (
+                                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
+                                            ? 'bg-primary text-black rounded-tr-sm font-medium'
+                                            : 'bg-neutral-900 text-neutral-200 rounded-tl-sm border border-neutral-800'
+                                            }`}>
+                                            {msg.text}
+                                        </div>
+                                    </div>
+                                ))}
+                                {chatLoading && (
+                                    <div className="flex justify-start">
+                                        <div className="bg-neutral-900 p-3 rounded-2xl rounded-tl-sm border border-neutral-800 flex gap-1.5 items-center">
+                                            <div className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                            <div className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                            <div className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Chat Input */}
+                            <div className="p-4 bg-black border-t border-white/5 pb-[env(safe-area-inset-bottom)]">
+                                <div className="relative flex items-center">
+                                    <input
+                                        className="w-full bg-neutral-900 border border-white/5 rounded-full pl-5 pr-12 py-3.5 text-sm text-white focus:outline-none focus:border-neutral-700 placeholder-neutral-600"
+                                        placeholder="Message AI..."
+                                        value={chatInput}
+                                        onChange={e => setChatInput(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleSendChat()}
+                                        autoFocus
+                                    />
+                                    <button
+                                        onClick={handleSendChat}
+                                        disabled={!chatInput.trim() || chatLoading}
+                                        className="absolute right-1.5 w-10 h-10 flex items-center justify-center bg-primary text-black rounded-full hover:scale-105 active:scale-95 disabled:opacity-50 transition-all"
+                                    >
+                                        {chatLoading ? <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" /> : <ArrowRight size={18} />}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {isToolkitOpen && (
                         <div
@@ -1400,7 +1559,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
 
                 {/* Sidebar (Left Side) */}
                 <div className={`
-                    absolute lg:static inset-y-0 left-0 z-[60] w-full lg:w-80 xl:w-96 lg:border-r border-white/5 flex flex-col bg-black lg:bg-[#080808] transition-transform duration-300
+                    absolute lg:static inset-y-0 left-0 z-[90] w-full lg:w-80 xl:w-96 lg:border-r border-white/5 flex flex-col bg-black lg:bg-[#080808] transition-transform duration-300
                     ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
                 `}>
                     <div className="p-4 lg:h-20 border-b border-white/5 flex items-center justify-between shrink-0">
@@ -1474,13 +1633,72 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                         onDragStart={(e) => handleDragStart(e, folder.id)}
                                         onDragOver={handleDragOver}
                                         onDrop={(e) => handleDrop(e, folder.id)}
-                                        onClick={() => setCurrentFolderId(folder.id)}
+                                        onClick={() => editingItemId !== folder.id && setCurrentFolderId(folder.id)}
                                         onContextMenu={(e) => handleContextMenu(e, folder)}
-                                        className="aspect-square rounded-lg bg-neutral-900 hover:bg-white/10 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all relative group"
+                                        onTouchStart={() => {
+                                            if (window.innerWidth < 1024) {
+                                                longPressTimer.current = setTimeout(() => {
+                                                    setEditingItemId(folder.id);
+                                                    setEditingValue(folder.title);
+                                                }, 2000);
+                                            }
+                                        }}
+                                        onTouchEnd={() => {
+                                            if (longPressTimer.current) {
+                                                clearTimeout(longPressTimer.current);
+                                                longPressTimer.current = null;
+                                            }
+                                        }}
+                                        onTouchMove={() => {
+                                            if (longPressTimer.current) {
+                                                clearTimeout(longPressTimer.current);
+                                                longPressTimer.current = null;
+                                            }
+                                        }}
+                                        className="aspect-square rounded-lg bg-neutral-900 border border-white/5 hover:bg-white/10 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all relative group"
                                         title={folder.title}
                                     >
-                                        <FolderOpen size={20} className="text-yellow-400" />
-                                        <span className="text-[10px] text-neutral-400 font-bold truncate w-full text-center px-1">{folder.title}</span>
+                                        <FolderOpen size={20} className="text-primary" />
+                                        {editingItemId === folder.id ? (
+                                            <input
+                                                ref={editInputRef}
+                                                value={editingValue}
+                                                autoFocus
+                                                onChange={(e) => setEditingValue(e.target.value)}
+                                                onBlur={async () => {
+                                                    setEditingItemId(null);
+                                                    if (editingValue && editingValue !== folder.title) {
+                                                        try {
+                                                            setNotes(prev => prev.map(n => n.id === folder.id ? { ...n, title: editingValue } : n));
+                                                            await updateNote(folder.id, { title: editingValue });
+                                                        } catch (error) {
+                                                            console.error('Failed to rename folder', error);
+                                                            fetchNotes();
+                                                        }
+                                                    }
+                                                }}
+                                                onKeyDown={async (e) => {
+                                                    if (e.key === 'Enter') {
+                                                        setEditingItemId(null);
+                                                        if (editingValue && editingValue !== folder.title) {
+                                                            try {
+                                                                setNotes(prev => prev.map(n => n.id === folder.id ? { ...n, title: editingValue } : n));
+                                                                await updateNote(folder.id, { title: editingValue });
+                                                            } catch (error) {
+                                                                console.error('Failed to rename folder', error);
+                                                                fetchNotes();
+                                                            }
+                                                        }
+                                                    } else if (e.key === 'Escape') {
+                                                        setEditingItemId(null);
+                                                    }
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="text-[10px] text-white bg-black border border-primary/50 rounded w-[90%] text-center focus:outline-none"
+                                            />
+                                        ) : (
+                                            <span className="text-[10px] text-neutral-400 font-bold truncate w-full text-center px-1">{folder.title}</span>
+                                        )}
 
                                         {trashView ? (
                                             <button
@@ -1705,7 +1923,7 @@ const NotesPage: React.FC<NotesPageProps> = ({
                 {
                     isSidebarOpen && (
                         <div
-                            className="absolute inset-0 bg-black/80 z-[58] lg:hidden"
+                            className="absolute inset-0 bg-black/80 z-[80] lg:hidden"
                             onClick={() => setIsSidebarOpen(false)}
                         ></div>
                     )

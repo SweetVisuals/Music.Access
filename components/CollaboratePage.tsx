@@ -41,11 +41,9 @@ const CollaboratePage: React.FC = () => {
         <div className="w-full max-w-[1900px] mx-auto pb-4 lg:pb-32 pt-4 lg:pt-6 px-4 lg:px-10 xl:px-14 animate-in fade-in duration-500">
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 lg:mb-8 gap-4">
-                <div>
-                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">Collaborate</h1>
-                    <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">
-                        Connect with platforms, influencers, and channels to promote your music.
-                    </p>
+                <div className="hidden lg:block">
+                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Collaborate</h1>
+                    <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Start or join collaborative projects with creative minds worldwide.</p>
                 </div>
 
             </div>

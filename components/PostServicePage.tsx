@@ -80,7 +80,7 @@ const PostServicePage: React.FC = () => {
     return (
         <div className="w-full min-h-screen bg-black -mt-[80px]">
             {/* Hero Section - Seamless Integration */}
-            <div className="relative w-full bg-neutral-900/40 border-b border-white/5 pt-[112px] lg:pt-[120px] pb-10 px-4 lg:px-10 xl:px-14 backdrop-blur-sm">
+            <div className="hidden lg:block relative w-full bg-neutral-900/40 pt-[90px] lg:pt-[120px] pb-6 lg:pb-10 px-4 lg:px-10 xl:px-14 backdrop-blur-sm">
                 <div className="max-w-[1900px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div>
                         <div className="flex items-center gap-2 mb-3">
@@ -88,10 +88,10 @@ const PostServicePage: React.FC = () => {
                                 Seller Studio
                             </span>
                         </div>
-                        <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">
+                        <h1 className="text-2xl lg:text-5xl font-black text-white mb-1 tracking-tighter">
                             Post a Service
                         </h1>
-                        <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">
+                        <p className="text-neutral-500 text-xs lg:text-base max-w-2xl leading-relaxed">
                             Create a professional service listing to offer your skills to artists.
                         </p>
                     </div>
@@ -100,19 +100,19 @@ const PostServicePage: React.FC = () => {
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 blur-[150px] rounded-full pointer-events-none" />
             </div>
 
-            <div className="max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 py-10">
-                <form onSubmit={handlePublish} className="flex flex-col lg:flex-row gap-10">
+            <div className="max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 py-6 lg:py-10">
+                <form onSubmit={handlePublish} className="flex flex-col lg:flex-row gap-6 lg:gap-10">
 
                     {/* LEFT COLUMN: Editor */}
                     <div className="flex-1 min-w-0 space-y-6">
 
                         {/* Card: Basic Details */}
-                        <div className="bg-neutral-900/30 border border-white/5 rounded-2xl p-6 lg:p-8 space-y-6">
+                        <div className="bg-neutral-900/30 rounded-2xl p-5 lg:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="p-2 bg-neutral-800 rounded-lg text-white">
                                     <Type size={18} />
                                 </div>
-                                <h3 className="text-lg font-bold text-white">Service Essentials</h3>
+                                <h3 className="text-base lg:text-lg font-bold text-white">Service Essentials</h3>
                             </div>
 
                             <div className="space-y-6">
@@ -122,7 +122,7 @@ const PostServicePage: React.FC = () => {
                                     onChange={(e) => setTitle(e.target.value)}
                                     placeholder="e.g. Professional Mixing & Mastering"
                                     required
-                                    className="text-lg bg-black/40 border-white/10 focus:border-primary/50"
+                                    className="text-base lg:text-lg bg-black/40 focus:border-primary/50"
                                 />
 
                                 <div className="space-y-2">
@@ -134,7 +134,7 @@ const PostServicePage: React.FC = () => {
                                             e.target.style.height = '140px';
                                             e.target.style.height = `${Math.min(e.target.scrollHeight, 300)}px`;
                                         }}
-                                        className="w-full min-h-[140px] bg-black/40 border border-white/10 rounded-xl p-4 text-sm text-white focus:border-primary/50 focus:bg-black/60 focus:outline-none transition-all resize-none placeholder:text-neutral-600 leading-relaxed"
+                                        className="w-full min-h-[140px] bg-black/40 border-transparent rounded-xl p-4 text-xs lg:text-sm text-white focus:border-primary/50 focus:bg-black/60 focus:outline-none transition-all resize-none placeholder:text-neutral-600 leading-relaxed"
                                         placeholder="Detailed description of what you provide..."
                                         required
                                     />
@@ -143,19 +143,19 @@ const PostServicePage: React.FC = () => {
                         </div>
 
                         {/* Card: Pricing & Delivery */}
-                        <div className="bg-neutral-900/30 border border-white/5 rounded-2xl p-6 lg:p-8 space-y-8">
+                        <div className="bg-neutral-900/30 rounded-2xl p-5 lg:p-8 space-y-8">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="p-2 bg-neutral-800 rounded-lg text-white">
                                     <DollarSign size={18} />
                                 </div>
-                                <h3 className="text-lg font-bold text-white">Pricing & Logistics</h3>
+                                <h3 className="text-base lg:text-lg font-bold text-white">Pricing & Logistics</h3>
                             </div>
 
                             <div className="space-y-8">
                                 {/* Row 1: Model Selection */}
                                 <div className="space-y-4">
                                     <label className="text-xs font-bold text-neutral-400 uppercase tracking-widest ml-1">Pricing Model</label>
-                                    <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 w-full md:w-1/2">
+                                    <div className="flex bg-black/40 p-1 rounded-xl w-full md:w-1/2">
                                         <button
                                             type="button"
                                             onClick={() => setPriceType('fixed')}
@@ -184,7 +184,7 @@ const PostServicePage: React.FC = () => {
                                                 value={price}
                                                 onChange={(e) => setPrice(e.target.value)}
                                                 placeholder="0.00"
-                                                className="w-full h-12 bg-black/40 border border-white/10 rounded-xl pl-8 pr-4 text-white font-mono text-lg focus:border-primary/50 focus:outline-none transition-all placeholder:text-neutral-700"
+                                                className="w-full h-12 bg-black/40 border-transparent rounded-xl pl-8 pr-4 text-white font-mono text-base lg:text-lg focus:border-primary/50 focus:outline-none transition-all placeholder:text-neutral-700"
                                                 required
                                             />
                                         </div>
@@ -198,7 +198,7 @@ const PostServicePage: React.FC = () => {
                                                 value={deliveryDays}
                                                 onChange={(e) => setDeliveryDays(e.target.value)}
                                                 placeholder="3"
-                                                className="w-full h-12 bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 text-white font-mono text-lg focus:border-primary/50 focus:outline-none transition-all placeholder:text-neutral-700"
+                                                className="w-full h-12 bg-black/40 border-transparent rounded-xl pl-10 pr-4 text-white font-mono text-base lg:text-lg focus:border-primary/50 focus:outline-none transition-all placeholder:text-neutral-700"
                                                 required
                                                 min="1"
                                             />
@@ -211,28 +211,28 @@ const PostServicePage: React.FC = () => {
                         </div>
 
                         {/* Card: Features */}
-                        <div className="bg-neutral-900/30 border border-white/5 rounded-2xl p-6 lg:p-8 space-y-6">
+                        <div className="bg-neutral-900/30 rounded-2xl p-5 lg:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="p-2 bg-neutral-800 rounded-lg text-white">
                                     <Check size={18} />
                                 </div>
-                                <h3 className="text-lg font-bold text-white">What's Included?</h3>
+                                <h3 className="text-base lg:text-lg font-bold text-white">What's Included?</h3>
                             </div>
 
-                            <div className="bg-black/20 border border-white/5 rounded-xl p-4">
-                                <div className="flex gap-3 mb-4">
+                            <div className="bg-black/20 rounded-xl p-4">
+                                <div className="flex gap-2 mb-4 w-full">
                                     <input
                                         type="text"
                                         value={newFeature}
                                         onChange={(e) => setNewFeature(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddFeature())}
-                                        placeholder="Add a consolidated feature (e.g. 'Stem Mastering')"
-                                        className="flex-1 h-11 bg-black/50 border border-white/10 rounded-lg px-4 text-sm text-white focus:border-primary/50 focus:outline-none transition-all"
+                                        placeholder="Add feature..."
+                                        className="flex-1 w-full min-w-0 h-10 lg:h-11 bg-black/50 border-transparent rounded-lg px-3 lg:px-4 text-xs lg:text-sm text-white focus:border-primary/50 focus:outline-none transition-all"
                                     />
                                     <button
                                         type="button"
                                         onClick={handleAddFeature}
-                                        className="px-6 h-11 bg-white hover:bg-neutral-200 text-black rounded-lg font-bold text-xs transition-all shadow-lg shadow-white/5"
+                                        className="px-4 lg:px-6 h-10 lg:h-11 bg-white hover:bg-neutral-200 text-black rounded-lg font-bold text-xs transition-all shadow-lg shadow-white/5 shrink-0"
                                     >
                                         Add
                                     </button>
@@ -241,7 +241,7 @@ const PostServicePage: React.FC = () => {
                                 {features.length > 0 ? (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         {features.map((feat, i) => (
-                                            <div key={i} className="flex items-center justify-between p-3 bg-neutral-900/80 border border-white/5 rounded-lg group hover:border-white/20 transition-all">
+                                            <div key={i} className="flex items-center justify-between p-3 bg-neutral-900/80 rounded-lg group hover:bg-neutral-800 transition-all">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-5 h-5 bg-green-500/10 rounded-full flex items-center justify-center text-green-500 shrink-0">
                                                         <Check size={10} strokeWidth={4} />

@@ -1002,7 +1002,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                         </div>
 
                         {/* Info & Actions */}
-                        <div className="flex-1 min-w-0 pb-2 flex flex-col md:flex-row justify-between items-end gap-6 w-full pointer-events-auto">
+                        <div className="flex-1 min-w-0 pb-2 flex flex-col md:flex-row justify-between items-end gap-4 md:gap-6 w-full pointer-events-auto">
 
                             {/* Text Info */}
                             <div className="w-full md:w-auto mt-2 md:mt-0">
@@ -1043,7 +1043,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                             </div>
 
                             {/* Actions & Stats */}
-                            <div className="flex flex-col-reverse md:flex-row items-stretch gap-4 md:gap-6 w-full md:w-auto mt-4 md:mt-0 md:translate-y-6">
+                            <div className="flex flex-col-reverse md:flex-row items-stretch gap-4 md:gap-6 w-full md:w-auto mt-2 md:mt-0 md:translate-y-6">
                                 <div className="flex items-stretch gap-3 w-full md:w-auto">
                                     {(isViewerMode || !isOwnProfile) && (
                                         <>

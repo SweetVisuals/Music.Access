@@ -98,7 +98,7 @@ const RightActions: React.FC<{
 
                 {/* Group 1: Balances */}
                 {isLoggedIn && (
-                    <div className="hidden sm:flex items-center gap-2">
+                    <div className={`hidden ${currentView === 'notes' ? 'lg:flex' : 'sm:flex'} items-center gap-2`}>
                         {/* Daily Claim Button */}
                         {!gemsClaimedToday && !profileLoading && userProfile && (
                             <button
@@ -144,7 +144,7 @@ const RightActions: React.FC<{
                 <div className="h-5 w-px bg-white/10 mx-1 hidden sm:block"></div>
 
                 {/* Group 2: Icons */}
-                <div className="flex items-center gap-1">
+                <div className={`flex items-center gap-1 ${currentView === 'notes' ? 'hidden lg:flex' : ''}`}>
                     {/* Mobile Search Icon */}
                     <button
                         onClick={isSpacer ? undefined : onMobileSearchOpen}
@@ -358,92 +358,95 @@ const RightActions: React.FC<{
                             </div>
                         )}
                     </div>
+                </div>
 
-                    {/* Group 3: Profile */}
-                    <div className="relative ml-2" ref={isSpacer ? null : dropdownRef}>
-                        <button
-                            onClick={isSpacer ? undefined : (isLoggedIn ? () => {
-                                if (isMobile) {
-                                    onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile');
-                                } else {
-                                    setIsProfileOpen(!isProfileOpen);
-                                }
-                            } : onOpenAuth)}
-                            className="flex items-center gap-3 pl-2 group"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-xl bg-neutral-800 border border-transparent overflow-hidden group-hover:border-primary/50 transition-all shadow-lg">
-                                    {isLoggedIn && userProfile ? (
-                                        <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-neutral-500 bg-neutral-900">
-                                            <User size={14} />
-                                        </div>
-                                    )}
-                                </div>
+                {/* Mobile Nav Actions Portal Target */}
+                <div id="mobile-nav-actions" className="lg:hidden flex items-center gap-1"></div>
+
+                {/* Group 3: Profile */}
+                <div className="relative ml-2" ref={isSpacer ? null : dropdownRef}>
+                    <button
+                        onClick={isSpacer ? undefined : (isLoggedIn ? () => {
+                            if (isMobile || (currentView === 'notes' && window.innerWidth < 1024)) {
+                                onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile');
+                            } else {
+                                setIsProfileOpen(!isProfileOpen);
+                            }
+                        } : onOpenAuth)}
+                        className="flex items-center gap-3 pl-2 group"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-neutral-800 border border-transparent overflow-hidden group-hover:border-primary/50 transition-all shadow-lg">
+                                {isLoggedIn && userProfile ? (
+                                    <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-neutral-500 bg-neutral-900">
+                                        <User size={14} />
+                                    </div>
+                                )}
                             </div>
-                            {isLoggedIn && !isMobile && <ChevronDown size={12} className="text-neutral-500 group-hover:text-white transition-colors" />}
-                        </button>
+                        </div>
+                        {isLoggedIn && !isMobile && <ChevronDown size={12} className="text-neutral-500 group-hover:text-white transition-colors" />}
+                    </button>
 
-                        {/* Profile Dropdown */}
-                        {isLoggedIn && isProfileOpen && !isSpacer && (
-                            <div className="absolute right-0 top-full mt-6 lg:mt-3 w-64 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                                <div className="p-4 border-b border-white/5 bg-white/[0.02]">
-                                    <div className="text-lg font-bold text-white truncate tracking-tight">{userProfile?.username || 'User'}</div>
-                                </div>
-                                <div className="p-2">
-                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
-                                        <User size={16} /> My Profile
-                                    </button>
+                    {/* Profile Dropdown */}
+                    {isLoggedIn && isProfileOpen && !isSpacer && (
+                        <div className="absolute right-0 top-full mt-6 lg:mt-3 w-64 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                            <div className="p-4 border-b border-white/5 bg-white/[0.02]">
+                                <div className="text-lg font-bold text-white truncate tracking-tight">{userProfile?.username || 'User'}</div>
+                            </div>
+                            <div className="p-2">
+                                <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
+                                    <User size={16} /> My Profile
+                                </button>
 
-                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('dashboard-overview'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
-                                        <LayoutDashboard size={16} /> Dashboard
-                                    </button>
+                                <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('dashboard-overview'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
+                                    <LayoutDashboard size={16} /> Dashboard
+                                </button>
 
-                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('settings'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
-                                        <Settings size={16} /> Settings
-                                    </button>
+                                <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('settings'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
+                                    <Settings size={16} /> Settings
+                                </button>
 
-                                    <div className="space-y-2 mt-2 px-1">
-                                        <div
+                                <div className="space-y-2 mt-2 px-1">
+                                    <div
+                                        onClick={(e) => {
+                                            if (isSpacer) return;
+                                            e.stopPropagation();
+                                            setIsProfileOpen(false);
+                                            onNavigate('dashboard-wallet');
+                                        }}
+                                        className="flex items-center justify-between bg-neutral-900/80 p-3 rounded-xl border border-transparent cursor-pointer hover:bg-neutral-800 transition-colors shadow-inner"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Wallet size={16} className="text-emerald-500" />
+                                            <span className="text-xs font-mono font-black text-white px-1">
+                                                {showBalance
+                                                    ? `$${(userProfile?.balance !== undefined ? userProfile.balance : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                                    : '$••••••'}
+                                            </span>
+                                        </div>
+                                        <button
                                             onClick={(e) => {
                                                 if (isSpacer) return;
                                                 e.stopPropagation();
-                                                setIsProfileOpen(false);
-                                                onNavigate('dashboard-wallet');
+                                                setShowBalance(!showBalance);
                                             }}
-                                            className="flex items-center justify-between bg-neutral-900/80 p-3 rounded-xl border border-transparent cursor-pointer hover:bg-neutral-800 transition-colors shadow-inner"
+                                            className="p-1.5 -mr-1 text-neutral-500 hover:text-primary transition-colors bg-white/5 rounded-md"
+                                            title={showBalance ? "Hide Balance" : "Show Balance"}
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <Wallet size={16} className="text-emerald-500" />
-                                                <span className="text-xs font-mono font-black text-white px-1">
-                                                    {showBalance
-                                                        ? `$${(userProfile?.balance !== undefined ? userProfile.balance : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                                                        : '$••••••'}
-                                                </span>
-                                            </div>
-                                            <button
-                                                onClick={(e) => {
-                                                    if (isSpacer) return;
-                                                    e.stopPropagation();
-                                                    setShowBalance(!showBalance);
-                                                }}
-                                                className="p-1.5 -mr-1 text-neutral-500 hover:text-primary transition-colors bg-white/5 rounded-md"
-                                                title={showBalance ? "Hide Balance" : "Show Balance"}
-                                            >
-                                                {showBalance ? <EyeOff size={12} /> : <Eye size={12} />}
-                                            </button>
-                                        </div>
+                                            {showBalance ? <EyeOff size={12} /> : <Eye size={12} />}
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="p-2 border-t border-white/5">
-                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onLogout(); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-colors text-left font-bold uppercase tracking-wider">
-                                        <LogOut size={16} /> Sign Out
-                                    </button>
-                                </div>
                             </div>
-                        )}
-                    </div>
+                            <div className="p-2 border-t border-white/5">
+                                <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onLogout(); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-colors text-left font-bold uppercase tracking-wider">
+                                    <LogOut size={16} /> Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         );
@@ -713,13 +716,13 @@ const TopBar: React.FC<TopBarProps> = ({
             <div className="flex items-center gap-2 lg:gap-4">
                 <button
                     onClick={onMenuClick}
-                    className={`lg:hidden p-2 -ml-2 text-neutral-400 hover:text-white transition-all duration-300 ${mobileSearchOpen ? 'opacity-0 -translate-x-8 pointer-events-none' : 'opacity-100 translate-x-0'}`}
+                    className={`lg:hidden p-2 -ml-2 text-neutral-400 hover:text-white transition-all duration-300 ${mobileSearchOpen ? 'opacity-0 pointer-events-none absolute' : 'opacity-100 translate-x-0'}`}
                 >
                     <Menu size={20} />
                 </button>
 
                 {/* Back Button - Show only on detail pages (Listen, etc.) - Hidden on Main Tabs, Dashboard & Profile */}
-                {!['home', 'browse-talent', 'browse-all-talent', 'browse-all-projects', 'browse-all-soundpacks', 'browse-all-releases', 'browse-all-services', 'collaborate', 'following', 'library', 'profile'].includes(currentView) && !currentView.startsWith('dashboard') && (
+                {!['home', 'notes', 'browse-talent', 'browse-all-talent', 'browse-all-projects', 'browse-all-soundpacks', 'browse-all-releases', 'browse-all-services', 'collaborate', 'following', 'library', 'profile'].includes(currentView) && !currentView.startsWith('dashboard') && (
                     <button
                         onClick={() => onNavigate('BACK')}
                         className={`

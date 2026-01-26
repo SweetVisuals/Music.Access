@@ -714,9 +714,11 @@ const App: React.FC = () => {
                           </div>
                         )}
 
-                        <div className="mb-6 lg:mb-8">
-                          <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">Discover</h1>
-                          <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Explore the latest projects, sound kits, and top talent.</p>
+                        <div className="hidden lg:block mb-8 px-4 lg:px-8">
+                          <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Discover</h1>
+                          <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">
+                            The future of sound is here. Browse trending loop kits, beats, and collaborative projects from the industries top creators.
+                          </p>
                         </div>
 
                         <FilterBar filters={filters} onFilterChange={setFilters} />

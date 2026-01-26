@@ -17,14 +17,16 @@ const EraTimeline: React.FC<EraTimelineProps> = ({ strategies, campaigns, strate
 
     if (!eraData) {
         return (
-            <div className={`group relative overflow-hidden rounded-3xl bg-neutral-900 p-8 mb-8 transition-all`}>
-                <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-800" />
-                <div className="relative z-10 flex flex-col items-center justify-center text-center space-y-4">
-                    <div className="w-16 h-16 rounded-full bg-neutral-800 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-500">
-                        <Flag size={24} className="text-neutral-400" />
+            <div className="px-6 md:px-0">
+                <div className={`group relative overflow-hidden rounded-3xl bg-neutral-900 p-8 mb-8 transition-all`}>
+                    <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-800" />
+                    <div className="relative z-10 flex flex-col items-center justify-center text-center space-y-4">
+                        <div className="w-16 h-16 rounded-full bg-neutral-800 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-500">
+                            <Flag size={24} className="text-neutral-400" />
+                        </div>
+                        <h3 className="text-2xl font-black text-white tracking-tight">Define Your Era</h3>
+                        <p className="text-neutral-500 max-w-md">The most successful artists don't just release music—they build eras. Define yours to unlock this planner.</p>
                     </div>
-                    <h3 className="text-2xl font-black text-white tracking-tight">Define Your Era</h3>
-                    <p className="text-neutral-500 max-w-md">The most successful artists don't just release music—they build eras. Define yours to unlock this planner.</p>
                 </div>
             </div>
         );

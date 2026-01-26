@@ -56,7 +56,7 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
     const [activeTab, setActiveTab] = useState<'planner' | 'strategy' | 'wizard'>('planner');
     const [goals, setGoals] = useState<Goal[]>([]);
     const [loadingGoals, setLoadingGoals] = useState(true);
-    const [isGoalsExpanded, setIsGoalsExpanded] = useState(false);
+    const [isGoalsExpanded, setIsGoalsExpanded] = useState(true);
 
     // Shared Strategy Data (needed for both Strategy Tab and Planner Tab context)
     const [strategies, setStrategies] = useState<Strategy[]>([]);
@@ -93,7 +93,7 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
 
     const [openStrategyWizard, setOpenStrategyWizard] = useState<string | null>(null);
     const [showFullCalendar, setShowFullCalendar] = useState(false);
-    const [showAiPlanner, setShowAiPlanner] = useState(false);
+    const [showMobileAiWizard, setShowMobileAiWizard] = useState(false);
 
     return (
         <div className="w-full max-w-[1800px] mx-auto relative animate-in fade-in duration-500 min-h-[500px]">
@@ -138,21 +138,23 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
                     </div>
                 </div>
 
-                {/* Mobile Calendar Trigger - Swapped Position */}
-                <div className="md:hidden pb-8">
-                    <button
-                        onClick={() => setShowFullCalendar(true)}
-                        className="w-full py-5 bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-xl flex flex-col items-center justify-center gap-3 text-neutral-400 hover:text-white transition-all shadow-lg active:scale-95 group"
-                    >
-                        <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-colors shadow-inner">
-                            <CalendarIcon size={24} />
-                        </div>
-                        <div>
-                            <span className="block text-lg font-black text-white">Open Calendar</span>
-                            <span className="block text-xs font-medium text-neutral-500 mt-1">View full schedule & events</span>
-                        </div>
-                    </button>
-                </div>
+                {/* Mobile Calendar Trigger - Only on Planner Tab */}
+                {activeTab === 'planner' && (
+                    <div className="md:hidden pb-8">
+                        <button
+                            onClick={() => setShowFullCalendar(true)}
+                            className="w-full py-5 bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-xl flex flex-col items-center justify-center gap-3 text-neutral-400 hover:text-white transition-all shadow-lg active:scale-95 group"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-colors shadow-inner">
+                                <CalendarIcon size={24} />
+                            </div>
+                            <div>
+                                <span className="block text-lg font-black text-white">Open Calendar</span>
+                                <span className="block text-xs font-medium text-neutral-500 mt-1">View full schedule & events</span>
+                            </div>
+                        </button>
+                    </div>
+                )}
 
                 <div className="h-px bg-neutral-800/20"></div>
             </div>
@@ -179,7 +181,56 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
                         setOpenWizard={setOpenStrategyWizard}
                     />
                 )}
-                {activeTab === 'wizard' && <AiPlanner strategies={strategies} onEventsAdded={() => setActiveTab('planner')} />}
+                {activeTab === 'wizard' && (
+                    <>
+                        {/* Desktop: Inline */}
+                        <div className="hidden md:block">
+                            <AiPlanner strategies={strategies} onEventsAdded={() => setActiveTab('planner')} />
+                        </div>
+
+                        {/* Mobile: Trigger Button */}
+                        <div className="md:hidden pb-8 px-6">
+                            <button
+                                onClick={() => setShowMobileAiWizard(true)}
+                                className="w-full py-5 bg-gradient-to-br from-neutral-900 to-neutral-950 rounded-xl flex flex-col items-center justify-center gap-3 text-neutral-400 hover:text-white transition-all shadow-lg active:scale-95 group"
+                            >
+                                <div className="w-12 h-12 rounded-full bg-neutral-800 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-black transition-colors shadow-inner">
+                                    <Sparkles size={24} />
+                                </div>
+                                <div>
+                                    <span className="block text-lg font-black text-white">Open AI Assistant</span>
+                                    <span className="block text-xs font-medium text-neutral-500 mt-1">Chat to build your roadmap</span>
+                                </div>
+                            </button>
+                        </div>
+
+                        {/* Mobile: Full Screen Modal */}
+                        {showMobileAiWizard && (
+                            <div className="fixed inset-0 z-[60] bg-black flex flex-col animate-in slide-in-from-bottom-5 duration-300">
+                                {/* Header */}
+                                <div className="h-14 border-b border-neutral-800 flex items-center justify-between px-4 bg-neutral-900/50 backdrop-blur-md">
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles size={16} className="text-primary" />
+                                        <span className="font-bold text-white">AI Assistant</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowMobileAiWizard(false)}
+                                        className="p-2 bg-neutral-800 rounded-full text-white hover:bg-neutral-700"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                                {/* Content */}
+                                <div className="flex-1 overflow-hidden">
+                                    <AiPlanner strategies={strategies} onEventsAdded={() => {
+                                        setActiveTab('planner');
+                                        setShowMobileAiWizard(false);
+                                    }} />
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
 
         </div>
@@ -407,7 +458,7 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
             />
 
             {/* Active Goals Section (Swapped with Mobile Calendar Trigger) */}
-            <div className="mb-8 mt-8">
+            <div className="mb-8 mt-8 px-6 md:px-0">
                 <div className="flex items-center justify-between mb-4 cursor-pointer" onClick={() => setIsGoalsExpanded(!isGoalsExpanded)}>
                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
                         <Target className="text-primary" size={18} />
@@ -694,18 +745,25 @@ const StrategyTab: React.FC<StrategyTabProps> = ({ strategies, onUpdate, openWiz
 
     return (
         <div className="space-y-8 w-full">
-            <div className="flex items-center justify-between mb-8 px-6 lg:px-8">
+            <div className="flex flex-col lg:flex-row items-end lg:items-center justify-between mb-8 px-6 lg:px-8 gap-4">
                 <div className="hidden lg:block">
                     <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Roadmap</h1>
                     <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Strategic planning and long-term release schedule.</p>
                 </div>
-                <div>
-                    <h2 className="text-2xl font-black text-white">Strategy Roadmap</h2>
-                    <p className="text-neutral-500">Define your artist identity, era, and execution plan.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <div className="bg-neutral-900/50 rounded-lg px-4 py-2 text-xs font-mono text-neutral-400">
-                        {strategies.filter(s => s.status === 'completed').length} / {STAGE_TEMPLATES.length} Stages Completed
+                <div className="w-full lg:max-w-md flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-[10px] lg:text-xs font-bold uppercase tracking-wider">
+                        <span className="text-neutral-500">Total Completion</span>
+                        <span className="text-white">{Math.round((strategies.filter(s => s.status === 'completed').length / STAGE_TEMPLATES.length) * 100)}%</span>
+                    </div>
+                    <div className="w-full h-1.5 lg:h-2 bg-neutral-800 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-primary shadow-[0_0_15px_rgba(34,197,94,0.4)] transition-all duration-1000 ease-out"
+                            style={{ width: `${(strategies.filter(s => s.status === 'completed').length / STAGE_TEMPLATES.length) * 100}%` }}
+                        ></div>
+                    </div>
+                    <div className="flex justify-between text-[10px] text-neutral-600 font-mono">
+                        <span>Strategy Progress</span>
+                        <span>{strategies.filter(s => s.status === 'completed').length} / {STAGE_TEMPLATES.length} Stages</span>
                     </div>
                 </div>
             </div>
@@ -745,7 +803,7 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
 
     return (
         <div className="w-full pb-12 pt-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4 w-full">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 px-4 w-full">
                 {STAGE_TEMPLATES.map((stage: any, index) => {
                     const status = strategyData[stage.id]?.status || 'not_started';
                     const isLocked = false;

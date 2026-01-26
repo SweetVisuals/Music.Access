@@ -206,6 +206,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             setCanUndo(false);
         }, 15000); // 15 seconds
 
+        showToast("Sent 1 Gem to " + project.producer + "!", "success");
+
         try {
             await giveGemToProject(project.id);
         } catch (error: any) {
@@ -267,7 +269,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                         onAction(project);
                         return;
                     }
-                    navigate(`/listen/${project.shortId || project.id}`);
+                    // Release Type: Play direct, don't open page
+                    if (isTrackPlaying) {
+                        onTogglePlay();
+                    } else {
+                        onPlayTrack(releaseTrack.id);
+                    }
                 }}
             >
                 {/* Full Cover Background */}
@@ -365,13 +372,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                 className={`
                                     flex items-center gap-1 px-2.5 py-1.5 rounded-full backdrop-blur-md border transition-all
                                     ${hasGivenGem
-                                        ? 'bg-primary/10 border-primary/30 text-primary shadow-[0_0_15px_rgba(var(--primary),0.15)]'
+                                        ? 'text-primary border-primary/50 shadow-[0_0_15px_rgba(var(--primary),0.3)] bg-black/40'
                                         : 'bg-white/10 border-white/10 text-white hover:bg-white/20'
                                     }
                                     ${isOwnProject ? 'opacity-50 cursor-not-allowed' : ''}
                                 `}
                             >
-                                <Gem size={12} fill={hasGivenGem ? "currentColor" : "none"} />
+                                <Gem size={12} className={hasGivenGem ? "text-primary drop-shadow-[0_0_5px_rgba(var(--primary),0.5)]" : "text-white"} />
                                 <span className="text-[10px] font-bold">{localGems}</span>
                             </button>
 
@@ -392,12 +399,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     return (
         <>
             <div
-                // ... (rest of the file as is)
                 className={`
                     group h-full flex flex-col bg-neutral-950/50 border border-transparent rounded-xl transition-all duration-300 relative backdrop-blur-sm cursor-pointer
                     ${isLocked ? 'grayscale opacity-75 border-neutral-800' : 'hover:border-primary/40 hover:shadow-[0_0_30px_rgba(var(--primary),0.05)]'}
                 `}
-                style={{ zoom: '110%' }}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 onClick={() => {
@@ -422,6 +427,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                     ) : (
                         <div className="w-full h-full bg-gradient-to-br from-neutral-800/20 to-neutral-900/20" />
                     )}
+
                 </div>
 
                 {/* Locked Overlay */}
@@ -454,7 +460,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                 >
                                     <Info size={14} />
                                 </button>
-                                <div className="absolute right-0 top-full mt-2 w-48 bg-[#0a0a0a]/95 backdrop-blur-xl rounded-lg shadow-2xl overflow-hidden z-50 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-300 transform translate-y-2 group-hover/info:translate-y-0 p-3 pointer-events-none group-hover/info:pointer-events-auto border border-white/5">
+                                <div className="absolute right-0 top-full mt-2 w-48 bg-[#0a0a0a]/95 backdrop-blur-xl rounded-lg shadow-2xl overflow-hidden z-50 opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all duration-300 transform translate-y-2 group-hover/info:translate-y-0 p-3 pointer-events-none group-hover/info:pointer-events-auto border-none">
                                     <div className="flex flex-col gap-2.5">
                                         {/* Header */}
                                         <div className="flex items-center justify-between pb-2 border-b border-white/5">
@@ -618,13 +624,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 </div>
 
                 {/* Tracklist */}
-                <div className="flex-1 bg-[#050505] overflow-y-auto custom-scrollbar relative min-h-0">
+                <div className="flex-1 bg-[#050505] overflow-y-auto no-scrollbar relative min-h-0">
                     <div className="p-2 space-y-2">
                         {(() => {
                             const tracksToShow = [...project.tracks];
-                            // Ensure 5 slots are always shown on mobile (unless hidden)
+                            // Ensure 6 slots are always shown (unless hidden)
                             if (!hideEmptySlots) {
-                                while (tracksToShow.length < 5) {
+                                while (tracksToShow.length < 6) {
                                     tracksToShow.push({ id: `empty-${tracksToShow.length}`, title: 'Empty Slot', duration: 0, isPlaceholder: true } as any);
                                 }
                             }
@@ -791,7 +797,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                 ${isOwnProject
                                     ? 'text-neutral-600 cursor-not-allowed opacity-50'
                                     : hasGivenGem
-                                        ? 'text-primary bg-primary/5 border border-primary/20 shadow-[0_0_10px_rgba(var(--primary),0.1)]'
+                                        ? 'text-primary bg-primary/5 border border-primary/20'
                                         : 'text-neutral-500 hover:text-primary hover:bg-primary/5'
                                 }
                             `}
@@ -803,7 +809,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                         : "Give Gem"
                             }
                         >
-                            <Gem size={12} fill={hasGivenGem ? "currentColor" : "none"} />
+                            <Gem size={12} />
                             <span className={`text-[9px] font-mono font-bold ${hasGivenGem ? 'text-primary' : 'text-neutral-500'}`}>
                                 {canUndo ? "UNDO" : localGems}
                             </span>
@@ -847,7 +853,7 @@ export const ProjectSkeleton: React.FC = () => (
             <div className="h-6 w-3/4 bg-neutral-800 rounded"></div>
         </div>
         <div className="flex-1 bg-[#050505] p-2 space-y-2">
-            {[...Array(5)].map((_, i) => (
+            {[...Array(6)].map((_, i) => (
                 <div key={i} className="h-8 w-full bg-neutral-900/50 rounded"></div>
             ))}
         </div>

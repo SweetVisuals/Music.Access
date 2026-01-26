@@ -21,16 +21,9 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange }) => {
   };
 
   return (
-    <div className="flex flex-col space-y-6 pb-6">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl lg:text-5xl font-black text-white tracking-tighter mb-2">Discover</h1>
-          <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">
-            Explore the latest beats, sound kits, and projects from the community.
-          </p>
-        </div>
-
-        <div className="flex items-center pb-2">
+    <div className="flex flex-col space-y-4 mb-6 lg:mb-8">
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center">
           <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 font-mono tracking-widest">
             <span className="w-1.5 h-1.5 rounded-full bg-primary mr-2 animate-pulse"></span>
             LIVE FEED

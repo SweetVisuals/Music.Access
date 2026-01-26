@@ -306,7 +306,9 @@ export const getProjects = async (): Promise<Project[]> => {
       user:user_id (
         username,
         handle,
-        avatar_url
+        avatar_url,
+        banner_url,
+        bio
       ),
       tracks (
         id,
@@ -375,57 +377,63 @@ export const getProjects = async (): Promise<Project[]> => {
   }
 
   // Transform data to match Project interface
-  return projectsData.map(project => ({
-    id: project.id,
-    shortId: project.short_id,
-    title: project.title,
-    producer: project.user?.username || 'Unknown',
-    producerHandle: project.user?.handle,
-    producerAvatar: project.user?.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
-    coverImage: project.cover_image_url,
-    price: project.project_licenses?.[0]?.price || project.project_licenses?.[0]?.license?.default_price || 0,
-    bpm: project.bpm,
-    key: project.key,
-    genre: project.genre,
-    subGenre: project.sub_genre,
-    type: project.type,
-    tags: project.project_tags?.map((pt: any) => pt.tag?.name).filter(Boolean) || [],
-    tracks: project.tracks?.map((track: any) => {
-      // Use manually fetched URL (prioritize) or fallback logic if we kept the join (we removed it)
-      const mp3Url = track.assigned_file_id ? (assetMap.get(track.assigned_file_id) || '') : '';
+  return projectsData
+    .filter(project => {
+      // Visibility Gate: User must have Avatar, Banner, and Bio
+      const u = project.user;
+      return u && u.avatar_url && u.banner_url && u.bio && u.bio.trim().length > 0;
+    })
+    .map(project => ({
+      id: project.id,
+      shortId: project.short_id,
+      title: project.title,
+      producer: project.user?.username || 'Unknown',
+      producerHandle: project.user?.handle,
+      producerAvatar: project.user?.avatar_url || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541',
+      coverImage: project.cover_image_url,
+      price: project.project_licenses?.[0]?.price || project.project_licenses?.[0]?.license?.default_price || 0,
+      bpm: project.bpm,
+      key: project.key,
+      genre: project.genre,
+      subGenre: project.sub_genre,
+      type: project.type,
+      tags: project.project_tags?.map((pt: any) => pt.tag?.name).filter(Boolean) || [],
+      tracks: project.tracks?.map((track: any) => {
+        // Use manually fetched URL (prioritize) or fallback logic if we kept the join (we removed it)
+        const mp3Url = track.assigned_file_id ? (assetMap.get(track.assigned_file_id) || '') : '';
 
-      return {
-        id: track.id,
-        title: track.title,
-        duration: track.duration_seconds,
-        trackNumber: track.track_number,
-        noteId: track.note_id,
-        statusTags: track.status_tags,
-        assignedFileId: track.assigned_file_id,
-        files: {
-          mp3: mp3Url
-        }
-      };
-    }) || [],
-    description: project.description,
-    licenses: project.project_licenses?.map((pl: any) => ({
-      id: pl.license?.id,
-      type: pl.license?.type,
-      name: pl.license?.name,
-      price: pl.price || pl.license?.default_price,
-      features: pl.license?.features || [],
-      fileTypesIncluded: pl.license?.file_types_included || [],
-      contractId: pl.license?.contract_id
-    })) || [],
-    status: project.status,
-    created: project.created_at,
-    userId: project.user_id,
-    releaseDate: project.release_date,
-    format: project.format,
-    progress: project.progress,
-    gems: project.gems || 0, // Map gems from DB or default to 0
-    tasks: project.tasks?.map((t: any) => ({ id: t.id, projectId: t.project_id, text: t.text, completed: t.completed, createdAt: t.created_at })) || []
-  }));
+        return {
+          id: track.id,
+          title: track.title,
+          duration: track.duration_seconds,
+          trackNumber: track.track_number,
+          noteId: track.note_id,
+          statusTags: track.status_tags,
+          assignedFileId: track.assigned_file_id,
+          files: {
+            mp3: mp3Url
+          }
+        };
+      }) || [],
+      description: project.description,
+      licenses: project.project_licenses?.map((pl: any) => ({
+        id: pl.license?.id,
+        type: pl.license?.type,
+        name: pl.license?.name,
+        price: pl.price || pl.license?.default_price,
+        features: pl.license?.features || [],
+        fileTypesIncluded: pl.license?.file_types_included || [],
+        contractId: pl.license?.contract_id
+      })) || [],
+      status: project.status,
+      created: project.created_at,
+      userId: project.user_id,
+      releaseDate: project.release_date,
+      format: project.format,
+      progress: project.progress,
+      gems: project.gems || 0, // Map gems from DB or default to 0
+      tasks: project.tasks?.map((t: any) => ({ id: t.id, projectId: t.project_id, text: t.text, completed: t.completed, createdAt: t.created_at })) || []
+    }));
 };
 
 
@@ -468,6 +476,25 @@ export const checkIsGemGiven = async (projectId: string) => {
   if (error) {
     if (error.code !== 'PGRST116') { // Ignore if not found which might be common if RLS blocks or table missing
       console.warn('Error checking gem status:', error.message);
+    }
+    return false;
+  }
+
+  return (count || 0) > 0;
+};
+
+export const checkHasGivenAnyGem = async (userId: string): Promise<boolean> => {
+  // Check if the user has given a gem to ANY project
+  if (!userId) return false;
+
+  const { count, error } = await supabase
+    .from('project_gem_givers')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (error) {
+    if (error.code !== 'PGRST116') {
+      console.warn('Error checking gem given status:', error.message);
     }
     return false;
   }
@@ -834,6 +861,9 @@ export const updateUserProfile = async (userId: string, updates: Partial<UserPro
     .eq('id', userId);
 
   if (error) throw error;
+
+  // Dispatch event to notify listeners (e.g. App.tsx) to refetch the profile
+  window.dispatchEvent(new Event('profile-updated'));
 };
 
 /**
@@ -1848,6 +1878,7 @@ export const getServices = async (): Promise<Service[]> => {
     .select(`
       *,
       user:user_id (
+        id,
         username,
         handle,
         avatar_url
@@ -1864,6 +1895,7 @@ export const getServices = async (): Promise<Service[]> => {
     features: service.features || [],
     rateType: service.rate_type,
     user: {
+      id: service.user?.id,
       username: service.user?.username || 'Unknown',
       handle: service.user?.handle || 'unknown',
       avatar: (service.user as any)?.avatar_url,
@@ -2259,6 +2291,10 @@ export const getTalentProfiles = async (): Promise<TalentProfile[]> => {
   const { data, error } = await supabase
     .from('users')
     .select('id, username, handle, location, avatar_url, banner_url, bio, website, gems, balance, promo_credits, role')
+    .not('avatar_url', 'is', null)
+    .not('banner_url', 'is', null)
+    .not('bio', 'is', null)
+    .neq('bio', '') // Ensure bio is not empty string
     .order('created_at', { ascending: false }) // Show new users first
     .limit(50); // Increased limit
 
@@ -3187,8 +3223,14 @@ export const getNotes = async (): Promise<Note[]> => {
     attachedAudio: n.attached_audio,
     attachedAudioName: n.attached_audio_name,
     attachedAudioProducer: n.attached_audio_producer,
-    attachedAudioAvatar: n.attached_audio_avatar
+    attachedAudioAvatar: n.attached_audio_avatar,
+    parentId: n.parent_id,
+    type: n.type || 'note'
   }));
+};
+
+export const createNoteFolder = async (name: string, parentId: string | null = null) => {
+  return createNote(name, '', undefined, undefined, parentId, 'folder');
 };
 
 export const getDeletedNotes = async (): Promise<Note[]> => {
@@ -3227,7 +3269,9 @@ export const createNote = async (
   title: string = 'Untitled Note',
   content: string = '',
   attachedAudio?: string,
-  audioMetadata?: { name?: string; producer?: string; avatar?: string }
+  audioMetadata?: { name?: string; producer?: string; avatar?: string },
+  parentId?: string | null,
+  type: 'note' | 'folder' = 'note'
 ) => {
   const user = await ensureUserExists();
   if (!user) throw new Error('User not logged in');
@@ -3243,6 +3287,8 @@ export const createNote = async (
       attached_audio_name: audioMetadata?.name,
       attached_audio_producer: audioMetadata?.producer,
       attached_audio_avatar: audioMetadata?.avatar,
+      parent_id: parentId,
+      type,
       updated_at: new Date().toISOString()
     })
     .select()
@@ -3260,7 +3306,9 @@ export const createNote = async (
     attachedAudio: data.attached_audio,
     attachedAudioName: data.attached_audio_name,
     attachedAudioProducer: data.attached_audio_producer,
-    attachedAudioAvatar: data.attached_audio_avatar
+    attachedAudioAvatar: data.attached_audio_avatar,
+    parentId: data.parent_id,
+    type: data.type
   } as Note;
 };
 
@@ -3283,6 +3331,7 @@ export const updateNote = async (id: string, updates: Partial<Note>) => {
   if (updates.attachedAudioName !== undefined) dbUpdates.attached_audio_name = updates.attachedAudioName;
   if (updates.attachedAudioProducer !== undefined) dbUpdates.attached_audio_producer = updates.attachedAudioProducer;
   if (updates.attachedAudioAvatar !== undefined) dbUpdates.attached_audio_avatar = updates.attachedAudioAvatar;
+  if (updates.parentId !== undefined) dbUpdates.parent_id = updates.parentId;
 
   const { error } = await supabase
     .from('notes')
@@ -4594,7 +4643,7 @@ export const getDashboardAnalytics = async (timeRange: '7d' | '30d' | '90d' | '6
   return {
     totalRevenue,
     activeOrders,
-    totalPlays: playsHistory.length,
+    totalPlays,
     totalFollowers,
     monthlyData,
     chartData,
@@ -4805,7 +4854,7 @@ export const saveStrategyToCalendar = async (userId: string, strategyData: any) 
 
 
   // --- B. CAMPAIGN EVENTS (Stage 5) ---
-  const campaigns = stage5.campaigns || [];
+  const campaigns = stage5.campaigns?.campaign_list || [];
   let minDate = new Date();
   let maxDate = new Date();
   maxDate.setDate(maxDate.getDate() + 90); // Default 90 days horizon if no campaigns

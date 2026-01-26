@@ -74,6 +74,7 @@ export interface Service {
   features: string[];
   deliveryDays?: number;
   user?: {
+    id?: string;
     username: string;
     handle: string;
     avatar?: string;
@@ -268,6 +269,7 @@ export interface CartItem {
   trackId?: string | null;
   sellerAvatar?: string;
   contractId?: string;
+  requirements?: string; // User provided notes for services
 }
 
 export interface Contract {
@@ -302,6 +304,8 @@ export interface Note {
   attachedAudioName?: string;
   attachedAudioProducer?: string;
   attachedAudioAvatar?: string;
+  parentId?: string | null;
+  type?: 'note' | 'folder';
 }
 
 export interface Notification {
@@ -387,6 +391,7 @@ export interface StageField {
   groupBySource?: string; // Source to group array items by (e.g. 'stage-id.field-id')
   fullWidth?: boolean; // Force field to span full width (col-span-2)
   aiEnabled?: boolean;
+  description?: string; // Helper text or tooltip
 }
 
 export interface StageStep {

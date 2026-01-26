@@ -280,11 +280,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                 </button>
 
                                 <div className="space-y-1.5">
-                                    <button onClick={() => onNavigate('upload')} className="w-full flex items-center justify-center gap-2 py-2 bg-primary hover:bg-primary/90 text-black rounded-md font-bold text-[11px] transition-all shadow-[0_2px_10px_rgba(var(--primary),0.15)]">
+                                    <button onClick={() => onNavigate('upload')} className="w-full flex items-center justify-center gap-2 py-2 bg-primary hover:bg-primary/90 text-black rounded-md font-bold text-[11px] transition-all shadow-[0_2px_10px_rgba(var(--primary),0.15)] border-none">
                                         <Upload size={14} />
                                         <span>Upload Track</span>
                                     </button>
-                                    <button onClick={() => onNavigate('dashboard-studio')} className="w-full flex items-center justify-center gap-2 py-2 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/5 rounded-md font-bold text-[11px] transition-all">
+                                    <button onClick={() => onNavigate('dashboard-studio')} className="w-full flex items-center justify-center gap-2 py-2 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-md font-bold text-[11px] transition-all">
                                         <PlusCircle size={14} />
                                         <span>New Project</span>
                                     </button>
@@ -340,11 +340,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             {/* Quick Actions (Logged In) */}
                             {isLoggedIn && (
                                 <div className="space-y-1.5 mb-4">
-                                    <button onClick={() => onNavigate('upload')} className="w-full flex items-center justify-center gap-2 py-2 bg-primary hover:bg-primary/90 text-black rounded-md font-bold text-[11px] transition-all shadow-[0_2px_10px_rgba(var(--primary),0.15)]">
+                                    <button onClick={() => onNavigate('upload')} className="w-full flex items-center justify-center gap-2 py-2 bg-primary hover:bg-primary/90 text-black rounded-md font-bold text-[11px] transition-all shadow-[0_2px_10px_rgba(var(--primary),0.15)] border-none">
                                         <Upload size={14} />
                                         <span>Upload Track</span>
                                     </button>
-                                    <button onClick={() => onNavigate('dashboard-studio')} className="w-full flex items-center justify-center gap-2 py-2 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-white/5 rounded-md font-bold text-[11px] transition-all">
+                                    <button onClick={() => onNavigate('dashboard-studio')} className="w-full flex items-center justify-center gap-2 py-2 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-md font-bold text-[11px] transition-all">
                                         <PlusCircle size={14} />
                                         <span>New Project</span>
                                     </button>

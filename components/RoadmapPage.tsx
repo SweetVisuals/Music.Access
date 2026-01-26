@@ -26,7 +26,8 @@ import {
     Rocket,
     BarChart,
     Check,
-    Lock
+    Lock,
+    Sparkles
 } from 'lucide-react';
 import { Goal } from '../types';
 import { getGoals, getStrategies, saveStrategy, getCalendarEvents, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, saveStrategyToCalendar, getCurrentUser, markStageStarted } from '../services/supabaseService';
@@ -40,10 +41,12 @@ import { getGoals, getStrategies, saveStrategy, getCalendarEvents, createCalenda
 
 
 import { STAGE_TEMPLATES } from './roadmap/StageTemplates';
+import AiPlanner from './roadmap/AiPlanner';
 import StageWizard from './roadmap/StageWizard';
 import EraTimeline from './roadmap/EraTimeline';
 import CalendarEventModal from './roadmap/CalendarEventModal';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isWithinInterval, isValid, parseISO } from 'date-fns';
+import AiPlannerModal from './roadmap/AiPlannerModal';
 
 interface RoadmapPageProps {
     onNavigate?: (view: View) => void;
@@ -86,14 +89,17 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
 
     // ------------------------------
 
+
+
     const [openStrategyWizard, setOpenStrategyWizard] = useState<string | null>(null);
     const [showFullCalendar, setShowFullCalendar] = useState(false);
+    const [showAiPlanner, setShowAiPlanner] = useState(false);
 
     return (
-        <div className="w-full max-w-[1800px] mx-auto pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+        <div className="w-full max-w-[1800px] mx-auto relative animate-in fade-in duration-500 min-h-[500px]">
 
             {/* Header & Goals Section - Collapsible */}
-            <div className={`transition-all duration-700 ease-in-out overflow-hidden ${openStrategyWizard ? 'max-h-0 opacity-0 mb-0' : 'max-h-[800px] opacity-100 mb-8'}`}>
+            <div className={`px-6 lg:px-8 pt-6 transition-all duration-700 ease-in-out overflow-hidden ${openStrategyWizard ? 'max-h-0 opacity-0 mb-0' : 'max-h-[800px] opacity-100 mb-8'}`}>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
 
                     <div>
@@ -173,7 +179,7 @@ const RoadmapPage: React.FC<RoadmapPageProps> = ({ onNavigate }) => {
                         setOpenWizard={setOpenStrategyWizard}
                     />
                 )}
-                {activeTab === 'wizard' && <RoadmapWizardTab />}
+                {activeTab === 'wizard' && <AiPlanner strategies={strategies} onEventsAdded={() => setActiveTab('planner')} />}
             </div>
 
         </div>
@@ -300,8 +306,8 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
     // Derived: Strategy Campaigns for Calendar Coloring
     const strategyCampaigns = React.useMemo(() => {
         const stage5 = strategies.find(s => s.id === 'stage-5');
-        if (!stage5?.data?.campaigns) return [];
-        return (stage5.data.campaigns as any[]).map((c, i) => {
+        if (!stage5?.data?.campaigns?.campaign_list) return [];
+        return (stage5.data.campaigns.campaign_list as any[]).map((c, i) => {
             const start = c.dates?.from ? new Date(c.dates.from) : undefined;
             const end = c.dates?.to ? new Date(c.dates.to) : undefined;
             // Define styles: [bg, text, border]
@@ -315,11 +321,56 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
             const theme = palettes[i % palettes.length];
             return {
                 name: c.name,
+                dates: c.dates,
                 start,
                 end,
                 style: { bg: theme[0], text: theme[1], border: theme[2] }
             };
-        }).filter(c => c.start && c.end && isValid(c.start) && isValid(c.end));
+        }).filter(c => c.dates?.from && c.dates?.to);
+    }, [strategies]);
+
+    // Derived: Active Era for coloring
+    const activeEra = React.useMemo(() => {
+        const stage4 = strategies.find(s => s.stageId === 'stage-4');
+        if (!stage4?.data) return null;
+
+        // 1. Prioritize explicit era_dates (New)
+        if (stage4.data.era_dates?.from && stage4.data.era_dates?.to) {
+            // Strings are already YYYY-MM-DD. Just return them.
+            // Validate they look like dates at least.
+            if (stage4.data.era_dates.from.length === 10 && stage4.data.era_dates.to.length === 10) {
+                // Determine Color
+                let bgClass = 'bg-yellow-500/10'; // Default
+                if (stage4.data.era_color) {
+                    if (stage4.data.era_color.includes('Purple')) bgClass = 'bg-purple-500/10';
+                    if (stage4.data.era_color.includes('Blue')) bgClass = 'bg-blue-500/10';
+                    if (stage4.data.era_color.includes('Red')) bgClass = 'bg-red-500/10';
+                    if (stage4.data.era_color.includes('Green')) bgClass = 'bg-green-500/10';
+                    if (stage4.data.era_color.includes('Pink')) bgClass = 'bg-pink-500/10';
+                }
+
+                return {
+                    from: stage4.data.era_dates.from,
+                    to: stage4.data.era_dates.to,
+                    style: bgClass
+                };
+            }
+        }
+
+        // 2. Fallback to start-only (Legacy - Convert to YYYY-MM-DD)
+        let start: Date | undefined;
+        if (stage4.data.startDate) start = parseISO(stage4.data.startDate);
+        if (!start && stage4.data.date) start = parseISO(stage4.data.date);
+        if (!start && (stage4 as any).updated_at) start = new Date((stage4 as any).updated_at);
+
+        if (start && isValid(start)) {
+            return {
+                from: format(start, 'yyyy-MM-dd'),
+                to: undefined,
+                style: 'bg-yellow-500/10'
+            };
+        }
+        return null;
     }, [strategies]);
 
     const getTypeColor = (type: string) => {
@@ -338,6 +389,7 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
             <EraTimeline
                 strategies={strategies}
                 campaigns={activeCampaigns}
+                strategyCampaigns={strategyCampaigns}
                 onAddCampaign={() => {
                     setSelectedEvent(undefined);
                     setSelectedDate(new Date());
@@ -405,7 +457,7 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                 bg-[#0a0a0a] transition-all duration-300
                 ${showFullCalendar
                     ? 'fixed top-[60px] bottom-0 inset-x-0 z-[40] flex flex-col shadow-2xl'
-                    : 'rounded-xl overflow-hidden shadow-2xl hidden md:block'
+                    : 'overflow-hidden shadow-2xl hidden md:block'
                 }
             `}>
 
@@ -470,6 +522,7 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                             >
                                 <Plus size={14} /> New Event
                             </button>
+
                         </div>
                     </div>
                 </div>
@@ -500,10 +553,11 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                             {days.map((day) => {
                                 const isToday = isSameDay(day, new Date());
                                 const dayEvents = events.filter(e => isSameDay(new Date(e.startDate), day));
+                                const dayStr = format(day, 'yyyy-MM-dd'); // Normalize to YYYY-MM-DD for matching
 
-                                // Check for Active Strategy Campaign
+                                // Check for Active Strategy Campaign (Date Range)
                                 const activeStrategyCampaign = strategyCampaigns.find(c =>
-                                    c.start && c.end && isWithinInterval(day, { start: c.start, end: c.end })
+                                    c.dates?.from && c.dates?.to && dayStr >= c.dates.from && dayStr <= c.dates.to
                                 );
 
                                 return (
@@ -512,8 +566,12 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                                         className={`
                                             p-2 relative group transition-colors cursor-pointer flex flex-col gap-1
                                             ${activeStrategyCampaign
-                                                ? `${activeStrategyCampaign.style.bg}`
-                                                : `${isToday ? 'bg-primary/5' : 'hover:bg-white/5'}`
+                                                ? 'bg-primary/10 text-primary' // Use simpler fallback as dynamic styles were failing? Or assume styling is known.
+                                                : activeEra && ((activeEra.to && dayStr >= activeEra.from && dayStr <= activeEra.to) || (!activeEra.to && dayStr >= activeEra.from))
+                                                    ? activeEra.style
+                                                    : isToday
+                                                        ? 'bg-primary/5'
+                                                        : 'hover:bg-white/5'
                                             }
                                         `}
                                         onClick={() => handleAddEvent(day)}
@@ -598,7 +656,7 @@ const StrategyTab: React.FC<StrategyTabProps> = ({ strategies, onUpdate, openWiz
         // Removed immediate markStageStarted to prevent "Continue" status before editing
     };
 
-    const handleSaveStage = async (stageId: string, data: any, status: 'in_progress' | 'completed' = 'completed') => {
+    const handleSaveStage = async (stageId: string, data: any, status: 'in_progress' | 'completed' = 'completed', shouldClose: boolean = true) => {
         try {
             await saveStrategy(stageId, data, status);
 
@@ -618,7 +676,7 @@ const StrategyTab: React.FC<StrategyTabProps> = ({ strategies, onUpdate, openWiz
             }
 
             // Only close if completed, otherwise just update without closing (for auto-save/progress)
-            if (status === 'completed') {
+            if (status === 'completed' && shouldClose) {
                 setOpenWizard(null);
             }
             onUpdate(); // Reload strategies
@@ -629,36 +687,37 @@ const StrategyTab: React.FC<StrategyTabProps> = ({ strategies, onUpdate, openWiz
 
     return (
         <div className="space-y-8 w-full">
-            {!openWizard && (
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h2 className="text-2xl font-black text-white">Strategy Roadmap</h2>
-                        <p className="text-neutral-500">Define your artist identity, era, and execution plan.</p>
-                    </div>
+            <div className="flex items-center justify-between mb-8 px-6 lg:px-8">
+                <div>
+                    <h2 className="text-2xl font-black text-white">Strategy Roadmap</h2>
+                    <p className="text-neutral-500">Define your artist identity, era, and execution plan.</p>
+                </div>
+                <div className="flex items-center gap-3">
                     <div className="bg-neutral-900/50 rounded-lg px-4 py-2 text-xs font-mono text-neutral-400">
                         {strategies.filter(s => s.status === 'completed').length} / {STAGE_TEMPLATES.length} Stages Completed
                     </div>
                 </div>
-            )}
+            </div>
 
             {/* Content: Show Grid OR Wizard (Inline) */}
-            {!openWizard ? (
-                <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-left-4 duration-500">
-                    <StrategyTabContent
-                        strategyData={strategyMap}
-                        onStartStage={handleStartStage}
-                        onToggleDetails={(id: string) => setExpandedStage(expandedStage === id ? null : id)}
-                        expandedStage={expandedStage}
-                    />
-                </div>
-            ) : (
+            <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-left-4 duration-500">
+                <StrategyTabContent
+                    strategyData={strategyMap}
+                    onStartStage={handleStartStage}
+                    onToggleDetails={(id: string) => setExpandedStage(expandedStage === id ? null : id)}
+                    expandedStage={expandedStage}
+                />
+            </div>
+
+            {/* Wizard Overlay */}
+            {openWizard && (
                 <StageWizardContainer
                     stageId={openWizard}
                     onClose={() => setOpenWizard(null)}
                     onSave={(data: any) => handleSaveStage(openWizard, data, 'completed')}
-                    onSaveProgress={(data: any) => handleSaveStage(openWizard, data, 'in_progress')}
+                    onSaveProgress={(data: any) => handleSaveStage(openWizard, data, 'in_progress', false)}
                     onSaveAndNext={(data: any, nextId: string) => {
-                        handleSaveStage(openWizard, data, 'completed');
+                        handleSaveStage(openWizard, data, 'completed', false);
                         setOpenWizard(nextId);
                     }}
                     initialData={strategyMap[openWizard]?.data}
@@ -712,10 +771,10 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
                                         ${status === 'completed'
                                             ? 'bg-green-500 text-black'
                                             : isInProgress
-                                                ? 'bg-[#1a1a1a] text-primary animate-pulse border border-primary/20'
+                                                ? 'bg-[#1a1a1a] text-primary animate-pulse'
                                                 : isLocked
                                                     ? 'bg-neutral-800 text-neutral-600'
-                                                    : 'bg-[#1a1a1a] text-primary group-hover:scale-110 group-hover:shadow-primary/20 border border-white/5'
+                                                    : 'bg-[#1a1a1a] text-primary group-hover:scale-110 group-hover:shadow-primary/20'
                                         }
                                     `}>
                                         {status === 'completed' ? <CheckCircle size={20} /> : <div className="text-base font-bold">{index + 1}</div>}
@@ -780,21 +839,76 @@ const StrategyTabContent: React.FC<any> = ({ strategyData, onStartStage, onToggl
 const StageWizardContainer: React.FC<any> = ({ stageId, onClose, onSave, onSaveAndNext, onSaveProgress, initialData }) => {
     const config = STAGE_TEMPLATES.find(t => t.id === stageId);
 
+    // Animation State
+    const [isClosing, setIsClosing] = useState(false);
+    const [shouldRender, setShouldRender] = useState(true);
+
     // Find next stage
     const currentIndex = STAGE_TEMPLATES.findIndex(t => t.id === stageId);
     const nextStage = STAGE_TEMPLATES[currentIndex + 1];
 
+    useEffect(() => {
+        // Reset when stage changes or mounts
+        setShouldRender(true);
+        setIsClosing(false);
+
+        // Lock Body Scroll
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [stageId]);
+
+    const handleInternalClose = () => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 450); // Match duration-450 roughly or standard 300-500ms
+    };
+
     if (!config) return null;
+    if (!shouldRender) return null;
+
     return (
-        <StageWizard
-            config={config}
-            onClose={onClose}
-            onSave={onSave}
-            onSaveProgress={onSaveProgress}
-            onSaveAndNext={nextStage ? (data) => onSaveAndNext(data, nextStage.id) : undefined}
-            nextStageTitle={nextStage?.title}
-            initialData={initialData}
-        />
+        <div
+            className={`fixed left-0 lg:left-[260px] top-[calc(56px+env(safe-area-inset-top))] bottom-0 right-0 z-[50] transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}
+        >
+            <div className="absolute inset-0 bg-black/40 -z-10 backdrop-blur-[2px]" onClick={handleInternalClose} />
+            <div className={`
+                w-full h-full bg-[#0a0a0a] flex flex-col shadow-2xl overflow-hidden relative 
+                ${isClosing ? 'animate-slide-out-right' : 'animate-slide-in-right'}
+            `}>
+
+                {/* Header (replicating CreateProjectModal style for consistency) */}
+                <div
+                    className="h-14 md:h-16 flex items-center justify-between px-4 md:px-8 bg-neutral-900/50 shrink-0"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                            {currentIndex + 1}
+                        </div>
+                        <h2 className="text-base md:text-lg font-bold text-white">{config.title}</h2>
+                    </div>
+                    <button onClick={handleInternalClose} className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                {/* Content Area */}
+                <div className="flex-1 overflow-hidden relative">
+                    <StageWizard
+                        config={config}
+                        onClose={handleInternalClose}
+                        onSave={onSave}
+                        onSaveProgress={onSaveProgress}
+                        onSaveAndNext={nextStage ? (data) => onSaveAndNext(data, nextStage.id) : undefined}
+                        nextStageTitle={nextStage?.title}
+                        initialData={initialData}
+                        hideHeader={true}
+                    />
+                </div>
+            </div>
+        </div>
     );
 }
 

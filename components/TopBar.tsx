@@ -710,12 +710,29 @@ const TopBar: React.FC<TopBarProps> = ({
 
 
             {/* Hamburger Menu (Mobile) - Hide if search open */}
-            <button
-                onClick={onMenuClick}
-                className={`lg:hidden p-2 -ml-2 text-neutral-400 hover:text-white transition-all duration-300 ${mobileSearchOpen ? 'opacity-0 -translate-x-8 pointer-events-none' : 'opacity-100 translate-x-0'}`}
-            >
-                <Menu size={20} />
-            </button>
+            <div className="flex items-center gap-2 lg:gap-4">
+                <button
+                    onClick={onMenuClick}
+                    className={`lg:hidden p-2 -ml-2 text-neutral-400 hover:text-white transition-all duration-300 ${mobileSearchOpen ? 'opacity-0 -translate-x-8 pointer-events-none' : 'opacity-100 translate-x-0'}`}
+                >
+                    <Menu size={20} />
+                </button>
+
+                {/* Back Button - Show only on detail pages (Listen, etc.) - Hidden on Main Tabs, Dashboard & Profile */}
+                {!['home', 'browse-talent', 'browse-all-talent', 'browse-all-projects', 'browse-all-soundpacks', 'browse-all-releases', 'browse-all-services', 'collaborate', 'following', 'library', 'profile'].includes(currentView) && !currentView.startsWith('dashboard') && (
+                    <button
+                        onClick={() => onNavigate('BACK')}
+                        className={`
+                            p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 transition-all duration-200 
+                            ${mobileSearchOpen ? 'opacity-0 -translate-x-8 pointer-events-none hidden' : 'opacity-100 translate-x-0 block'}
+                        `}
+                        title="Go Back"
+                    >
+                        <ArrowLeft size={20} className="hidden lg:block" />
+                        <ArrowLeft size={18} className="lg:hidden" />
+                    </button>
+                )}
+            </div>
 
             {/* Mobile Page Title Portal Target */}
             <div id="mobile-page-title" className={`lg:hidden flex-1 flex justify-center items-center px-2 min-w-0 transition-all duration-300 ${mobileSearchOpen ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100'}`}></div>

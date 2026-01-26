@@ -93,28 +93,25 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, children, disa
 
     // Calculate rotation based on pull distance
     const rotation = (pullDistance / threshold) * 360;
-    const opacity = Math.min(pullDistance / 40, 1);
+
+    // We want 1:1 movement for the content to reveal the background
+    const contentTranslateY = pullDistance > 0 ? pullDistance : 0;
 
     return (
-        <div ref={containerRef} className="relative w-full min-h-full overflow-x-hidden">
-            {/* Pull Indicator - Rectangular Tab Style */}
+        <div ref={containerRef} className="relative w-full overflow-x-hidden">
+            {/* Reveal Panel - Full Width Background */}
             <div
-                className="absolute left-0 right-0 flex justify-center pointer-events-none z-50 transition-transform duration-200 ease-out"
+                className="absolute top-0 left-0 w-full flex items-center justify-center bg-neutral-800 z-0"
                 style={{
-                    transform: `translateY(${pullDistance - 60}px)`,
-                    opacity: showIndicator ? 1 : 0,
+                    height: `${Math.max(pullDistance, 0)}px`,
+                    opacity: pullDistance > 0 ? 1 : 0,
+                    transition: isRefreshing ? 'height 0.2s ease-out' : 'none'
                 }}
             >
-                <div className={`
-                    px-6 py-2.5 bg-neutral-900/90 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl shadow-primary/20 
-                    flex items-center gap-3
-                    transition-all duration-300
-                    ${pullDistance >= threshold ? 'border-primary/40' : 'border-white/10'}
-                    ${isRefreshing ? 'bg-primary/10 border-primary/20' : ''}
-                `}>
+                <div className="flex items-center gap-3 overflow-hidden">
                     <div className={isRefreshing ? 'animate-spin' : ''}>
                         <RefreshCw
-                            size={18}
+                            size={20}
                             className={`${pullDistance >= threshold || isRefreshing ? 'text-primary' : 'text-neutral-400'} transition-colors duration-200`}
                             style={{
                                 transform: isRefreshing ? 'none' : `rotate(${rotation}deg)`,
@@ -122,7 +119,7 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, children, disa
                             }}
                         />
                     </div>
-                    <span className={`text-[13px] font-bold tracking-tight transition-all duration-200 ${pullDistance >= threshold || isRefreshing ? 'text-primary' : 'text-neutral-400'}`}>
+                    <span className={`text-sm font-bold tracking-wide transition-colors duration-200 ${pullDistance >= threshold || isRefreshing ? 'text-primary' : 'text-neutral-400'}`}>
                         {isRefreshing ? 'REFRESHING...' : pullDistance >= threshold ? 'RELEASE TO REFRESH' : 'PULL TO REFRESH'}
                     </span>
                 </div>
@@ -130,12 +127,14 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, children, disa
 
             {/* Content Container */}
             <div
-                className="transition-transform duration-200 ease-out will-change-transform"
+                className="relative z-10 bg-[#050505] min-h-[calc(100vh-120px)] transition-transform duration-200 ease-out will-change-transform"
                 style={{
-                    transform: pullDistance > 0 ? `translateY(${pullDistance * 0.5}px)` : 'none'
+                    transform: `translateY(${contentTranslateY}px)`
                 }}
             >
-                {children}
+                <div>
+                    {children}
+                </div>
             </div>
         </div>
     );

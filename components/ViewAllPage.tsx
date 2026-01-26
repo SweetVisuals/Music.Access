@@ -5,6 +5,8 @@ import { TalentProfile, Project, Service } from '../types';
 import { getTalentProfiles, getServices, getProjects, followUser, unfollowUser, getUserProfile } from '../services/supabaseService';
 import ProjectCard, { ProjectSkeleton } from './ProjectCard';
 import ServiceCard from './ServiceCard';
+import ServiceBookingModal from './ServiceBookingModal';
+import { useCart } from '../contexts/CartContext';
 
 interface ViewAllPageProps {
     type: 'talent' | 'projects' | 'soundpacks' | 'releases' | 'services';
@@ -39,6 +41,34 @@ const ViewAllPage: React.FC<ViewAllPageProps> = ({
     const [talents, setTalents] = useState<TalentProfile[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
     const [services, setServices] = useState<Service[]>([]);
+
+    // Service Booking
+    const [selectedService, setSelectedService] = useState<Service | null>(null);
+    const { addToCart } = useCart();
+
+    const handleAddToCart = (service: Service, notes: string) => {
+        if (!service) return;
+
+        const sellerName = service.user?.username || 'Unknown';
+        const sellerHandle = service.user?.handle || 'unknown';
+        const sellerId = service.user?.id;
+        const sellerAvatar = service.user?.avatar || (service.user as any)?.avatar_url;
+
+        addToCart({
+            id: `svc_${Date.now()}`,
+            title: service.title,
+            type: 'Service',
+            price: service.price,
+            sellerName,
+            sellerHandle,
+            sellerId,
+            sellerAvatar,
+            serviceId: service.id,
+            requirements: notes
+        });
+
+        setSelectedService(null);
+    };
 
     useEffect(() => {
         const fetchCurrentUser = async () => {
@@ -172,7 +202,7 @@ const ViewAllPage: React.FC<ViewAllPageProps> = ({
                         {[...Array(8)].map((_, i) => (
                             type === 'talent' ? <TalentSkeleton key={i} /> :
                                 type === 'services' ? <ServiceSkeleton key={i} /> :
-                                    <div key={i} className="h-[282px]"><ProjectSkeleton /></div>
+                                    <div key={i} className="h-[350px] md:h-[285px]"><ProjectSkeleton /></div>
                         ))}
                     </div>
                 ) : (
@@ -194,7 +224,7 @@ const ViewAllPage: React.FC<ViewAllPageProps> = ({
                         {(type === 'projects' || type === 'soundpacks' || type === 'releases') && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                                 {filteredProjects.map(project => (
-                                    <div key={project.id} className="h-[282px]">
+                                    <div key={project.id} className="h-[350px] md:h-[285px]">
                                         <ProjectCard
                                             project={project}
                                             currentTrackId={currentTrackId}
@@ -215,7 +245,7 @@ const ViewAllPage: React.FC<ViewAllPageProps> = ({
                                             key={service.id}
                                             service={service}
                                             user={service.user}
-                                            onClick={() => navigate(`/@${service.user?.handle}`)} // Or specific service page if available
+                                            onClick={() => setSelectedService(service)}
                                         />
                                     ))}
                                 </div>
@@ -229,7 +259,17 @@ const ViewAllPage: React.FC<ViewAllPageProps> = ({
                     </>
                 )}
             </div>
-        </div>
+            {/* Service Booking Modal */}
+            {selectedService && (
+                <ServiceBookingModal
+                    isOpen={!!selectedService}
+                    onClose={() => setSelectedService(null)}
+                    service={selectedService}
+                    user={selectedService.user || { username: 'Unknown', handle: 'unknown' }}
+                    onAddToCart={handleAddToCart}
+                />
+            )}
+        </div >
     );
 };
 

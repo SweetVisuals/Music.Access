@@ -154,12 +154,12 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ value, onChange, strate
                     <div
                         key={day}
                         className={`
-                            bg-neutral-900/40 rounded-xl p-5 flex flex-col gap-4 min-h-[220px] transition-all duration-300
-                            ${focusedDay === day ? 'shadow-[0_0_20px_-10px_var(--primary)] bg-neutral-900/60' : 'hover:bg-neutral-900/50'}
+                            bg-neutral-900/40 rounded-xl p-4 flex flex-col gap-3 min-h-[200px] transition-all duration-300 border border-white/5
+                            ${focusedDay === day ? 'shadow-[0_0_20px_-10px_var(--primary)] bg-neutral-900/60 transition-all' : 'hover:bg-neutral-900/50'}
                         `}
                     >
-                        <div className="flex items-center justify-between pb-3">
-                            <h4 className="font-bold text-lg text-neutral-200">{day}</h4>
+                        <div className="flex items-center justify-between pb-2">
+                            <h4 className="font-bold text-base text-neutral-200">{day}</h4>
                             <button
                                 onClick={() => {
                                     if (focusedDay === day) {
@@ -170,16 +170,16 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ value, onChange, strate
                                         setSelectedType('campaign');
                                     }
                                 }}
-                                className={`p-1.5 rounded-lg transition-colors ${focusedDay === day ? 'bg-primary text-black' : 'hover:bg-neutral-800 text-neutral-500 hover:text-white'}`}
+                                className={`p-1 rounded-md transition-colors ${focusedDay === day ? 'bg-primary text-black' : 'hover:bg-neutral-800 text-neutral-400 hover:text-white border border-white/5'}`}
                             >
-                                {focusedDay === day ? <X size={16} /> : <Plus size={16} />}
+                                {focusedDay === day ? <X size={14} /> : <Plus size={14} />}
                             </button>
                         </div>
 
                         {/* List Scheduled Items */}
                         <div className="flex-1 space-y-2.5">
                             {schedule[day]?.map((item: any, idx: number) => (
-                                <div key={idx} className="bg-neutral-950 rounded-lg p-3 text-xs flex items-center justify-between group transition-colors">
+                                <div key={idx} className="bg-neutral-950/80 border border-white/5 rounded-lg p-2 text-xs flex items-center justify-between group transition-colors">
                                     <div className="flex flex-col">
                                         <span className={`text-[9px] font-black uppercase tracking-wider mb-1 ${item.type === 'campaign' ? 'text-indigo-400' : 'text-emerald-400'}`}>
                                             {item.type === 'campaign' ? 'Campaign' : 'Bucket'}
@@ -192,10 +192,10 @@ const WeeklySchedule: React.FC<WeeklyScheduleProps> = ({ value, onChange, strate
                                             newSchedule[day] = newSchedule[day].filter((_: any, i: number) => i !== idx);
                                             onChange(newSchedule);
                                         }}
-                                        className="opacity-0 group-hover:opacity-100 p-1.5 text-neutral-500 hover:text-red-500 bg-neutral-900 hover:bg-neutral-800 rounded-md transition-all"
+                                        className="opacity-0 group-hover:opacity-100 p-1 text-neutral-500 hover:text-red-500 bg-neutral-900 hover:bg-neutral-800 rounded-md transition-all border border-white/5"
                                         title="Remove"
                                     >
-                                        <Trash2 size={12} />
+                                        <Trash2 size={10} />
                                     </button>
                                 </div>
                             ))}

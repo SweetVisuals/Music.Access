@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Note, Project, UserProfile } from '../types';
-import { getNotes, createNote, updateNote, deleteNote, getUserFiles, uploadFile, getDeletedNotes, restoreNote, cleanupOldNotes, emptyTrashNotes } from '../services/supabaseService';
+import { getNotes, createNote, updateNote, deleteNote, getUserFiles, uploadFile, getDeletedNotes, restoreNote, cleanupOldNotes, emptyTrashNotes, createNoteFolder } from '../services/supabaseService';
 import ConfirmationModal from './ConfirmationModal';
+import InputModal from './InputModal';
 import { useToast } from '../contexts/ToastContext';
 import {
     Plus,
@@ -32,7 +33,8 @@ import {
     ArrowRight,
     ChevronDown,
     RotateCcw,
-    Trash
+    Trash,
+    Edit2
 } from 'lucide-react';
 import { getRhymesForWord, chatWithGeneralAi } from '../services/geminiService';
 
@@ -252,6 +254,80 @@ const NotesPage: React.FC<NotesPageProps> = ({
         title?: string;
         message?: string;
     }>({ isOpen: false, type: 'delete' });
+
+    // Folder State
+    const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // Context Menu State
+    const [contextMenu, setContextMenu] = useState<{
+        isOpen: boolean;
+        x: number;
+        y: number;
+        note: Note | null;
+    }>({ isOpen: false, x: 0, y: 0, note: null });
+
+    useEffect(() => {
+        const handleClickOutside = () => setContextMenu({ ...contextMenu, isOpen: false });
+        if (contextMenu.isOpen) {
+            window.addEventListener('click', handleClickOutside);
+        }
+        return () => window.removeEventListener('click', handleClickOutside);
+    }, [contextMenu.isOpen]);
+
+    const handleContextMenu = (e: React.MouseEvent, note: Note) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu({
+            isOpen: true,
+            x: e.clientX,
+            y: e.clientY,
+            note
+        });
+    };
+
+    const visibleItems = useMemo(() => {
+        return notes.filter(n => {
+            if (trashView) return n.tags?.includes('TRASH');
+
+            // Filter by Folder
+            // Use 'null' for root to match DB. Ensure strict equality for null/undefined mix
+            const itemParent = n.parentId || null;
+            const matchesParent = itemParent === currentFolderId;
+
+            // Filter by Search
+            const matchesSearch = searchQuery
+                ? n.title.toLowerCase().includes(searchQuery.toLowerCase()) || n.content.toLowerCase().includes(searchQuery.toLowerCase())
+                : true;
+
+            const isNotTrash = !n.tags?.includes('TRASH');
+
+            // If searching, ignore folder structure and show flattened results? 
+            // Usually easier UX to just show all matches.
+            if (searchQuery) return isNotTrash && matchesSearch;
+
+            return isNotTrash && matchesParent;
+        }).sort((a, b) => {
+            // Folders first
+            if (a.type === 'folder' && b.type !== 'folder') return -1;
+            if (a.type !== 'folder' && b.type === 'folder') return 1;
+            // Then date
+            return new Date(b.updated).getTime() - new Date(a.updated).getTime();
+        });
+    }, [notes, currentFolderId, trashView, searchQuery]);
+
+    const getCurrentFolderPath = () => {
+        if (!currentFolderId) return [{ id: null, title: 'My Notebook' }];
+
+        const path = [];
+        let curr = notes.find(n => n.id === currentFolderId);
+        while (curr) {
+            path.unshift({ id: curr.id, title: curr.title });
+            curr = notes.find(n => n.id === curr.parentId);
+        }
+        path.unshift({ id: null, title: 'My Notebook' });
+        return path;
+    };
 
     const handleConfirmAction = async () => {
         if (confirmationModal.type === 'delete' && confirmationModal.noteId) {
@@ -620,6 +696,94 @@ const NotesPage: React.FC<NotesPageProps> = ({
             }
         } catch (error) {
             console.error('Failed to restore note', error);
+        }
+    };
+
+    // Input Modal State
+    const [inputModal, setInputModal] = useState<{
+        isOpen: boolean;
+        type: 'create' | 'rename';
+        title: string;
+        message?: string;
+        initialValue?: string;
+        targetId?: string;
+        onConfirm: (val: string) => void;
+    }>({
+        isOpen: false,
+        type: 'create',
+        title: '',
+        onConfirm: () => { }
+    });
+
+    const handleCreateFolderClick = () => {
+        setInputModal({
+            isOpen: true,
+            type: 'create',
+            title: 'Create New Folder',
+            message: 'Enter a name for your new folder.',
+            initialValue: 'New Folder',
+            onConfirm: async (name) => {
+                try {
+                    const newFolder = await createNoteFolder(name, currentFolderId);
+                    setNotes(prev => [newFolder, ...prev]);
+                } catch (error) {
+                    console.error('Failed to create folder', error);
+                }
+            }
+        });
+    };
+
+    const handleRenameClick = (e: React.MouseEvent, note: Note) => {
+        e.stopPropagation();
+        setInputModal({
+            isOpen: true,
+            type: 'rename',
+            title: 'Rename',
+            message: `Enter a new name for "${note.title}".`,
+            initialValue: note.title,
+            targetId: note.id,
+            onConfirm: async (newName) => {
+                try {
+                    // Update state optimistically
+                    setNotes(prev => prev.map(n => n.id === note.id ? { ...n, title: newName } : n));
+                    await updateNote(note.id, { title: newName });
+
+                    // If active note was renamed, update input title too? 
+                    // (Not strictly necessary as activeNote derived from notes state will update)
+                } catch (error) {
+                    console.error('Failed to rename item', error);
+                    fetchNotes(); // Revert on error
+                }
+            }
+        });
+    };
+
+    const handleDragStart = (e: React.DragEvent, id: string) => {
+        e.dataTransfer.setData('text/plain', id);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleDrop = async (e: React.DragEvent, targetFolderId: string | null) => {
+        e.preventDefault();
+        const draggedId = e.dataTransfer.getData('text/plain');
+        if (!draggedId || draggedId === targetFolderId) return;
+
+        // Prevent dropping folder into itself (simple check, full cycle check is expensive but better)
+        if (draggedId === targetFolderId) return;
+
+        // Optimistic update
+        setNotes(prev => prev.map(n => n.id === draggedId ? { ...n, parentId: targetFolderId } : n));
+
+        try {
+            await updateNote(draggedId, { parentId: targetFolderId });
+        } catch (error) {
+            console.error('Failed to move item', error);
+            fetchNotes();
         }
     };
 
@@ -1244,7 +1408,16 @@ const NotesPage: React.FC<NotesPageProps> = ({
                             <FileText size={14} className="text-primary" />
                             My Notebook
                         </h3>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                            {!trashView && (
+                                <button
+                                    onClick={() => handleCreateFolderClick()}
+                                    className="text-neutral-400 hover:text-white transition-all p-1.5 hover:bg-white/5 rounded-lg"
+                                    title="Create Folder"
+                                >
+                                    <FolderOpen size={16} />
+                                </button>
+                            )}
                             <button
                                 onClick={() => handleCreateNote()}
                                 className="text-neutral-400 hover:text-white transition-all p-1.5 hover:bg-white/5 rounded-lg"
@@ -1282,9 +1455,59 @@ const NotesPage: React.FC<NotesPageProps> = ({
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-2 pb-24 lg:pb-2 space-y-1 custom-scrollbar">
-                        {notes.map(note => (
+                        {currentFolderId && (
+                            <button
+                                onClick={() => setCurrentFolderId(notes.find(n => n.id === currentFolderId)?.parentId || null)}
+                                className="w-full text-left px-3 py-2 text-xs font-bold text-neutral-500 hover:text-white hover:bg-white/5 rounded-lg flex items-center gap-2 mb-2"
+                                onDrop={(e) => handleDrop(e, notes.find(n => n.id === currentFolderId)?.parentId || null)}
+                                onDragOver={handleDragOver}
+                            >
+                                <ChevronLeft size={14} /> Back
+                            </button>
+                        )}
+                        {visibleItems.filter(n => n.type === 'folder').length > 0 && (
+                            <div className="grid grid-cols-3 gap-2 mb-2">
+                                {visibleItems.filter(n => n.type === 'folder').map(folder => (
+                                    <div
+                                        key={folder.id}
+                                        draggable
+                                        onDragStart={(e) => handleDragStart(e, folder.id)}
+                                        onDragOver={handleDragOver}
+                                        onDrop={(e) => handleDrop(e, folder.id)}
+                                        onClick={() => setCurrentFolderId(folder.id)}
+                                        onContextMenu={(e) => handleContextMenu(e, folder)}
+                                        className="aspect-square rounded-lg bg-neutral-900 hover:bg-white/10 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all relative group"
+                                        title={folder.title}
+                                    >
+                                        <FolderOpen size={20} className="text-yellow-400" />
+                                        <span className="text-[10px] text-neutral-400 font-bold truncate w-full text-center px-1">{folder.title}</span>
+
+                                        {trashView ? (
+                                            <button
+                                                onClick={(e) => handleRestoreNote(e, folder.id)}
+                                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-neutral-600 hover:text-green-500 bg-black/50 rounded-full p-0.5"
+                                                title="Restore Folder"
+                                            >
+                                                <RotateCcw size={10} />
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={(e) => handleDeleteNote(e, folder.id)}
+                                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-neutral-600 hover:text-red-500 bg-black/50 rounded-full p-0.5"
+                                            >
+                                                <Trash2 size={10} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {visibleItems.filter(n => n.type !== 'folder').map(note => (
                             <div
                                 key={note.id}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, note.id)}
                                 onClick={() => {
                                     setActiveNoteId(note.id);
                                     setIsSidebarOpen(false);
@@ -1296,9 +1519,12 @@ const NotesPage: React.FC<NotesPageProps> = ({
                                         : 'border-transparent hover:bg-white/5'
                                     }
                                 `}
+                                onContextMenu={(e) => handleContextMenu(e, note)}
                             >
                                 <div className="flex justify-between items-start mb-1">
-                                    <h4 className={`text-sm font-bold truncate pr-4 ${activeNoteId === note.id ? 'text-primary' : 'text-neutral-300'}`}>{note.title}</h4>
+                                    <h4 className={`text-sm font-bold truncate pr-4 flex items-center gap-3 ${activeNoteId === note.id ? 'text-primary' : 'text-neutral-300'}`}>
+                                        <span className="truncate">{note.title}</span>
+                                    </h4>
                                     {note.attachedAudio && (
                                         <Headphones size={12} className={activeNoteId === note.id ? 'text-primary' : 'text-neutral-600'} />
                                     )}
@@ -1325,105 +1551,271 @@ const NotesPage: React.FC<NotesPageProps> = ({
                             </div>
                         ))}
                     </div>
-                </div>
+                </div >
 
                 {/* Main Content Area */}
-                <div className="flex-1 flex flex-col bg-[#050505] relative w-full overflow-hidden">
-                    {activeNote ? (
-                        <div className="flex-1 flex flex-col overflow-hidden">
-                            {/* Desktop Controls */}
-                            <div className="hidden lg:flex h-20 border-b border-white/5 items-center justify-between px-6 bg-neutral-900/30 z-20 shrink-0">
-                                <div className="flex items-center gap-4">
-                                    {viewMode === 'browser' && (
-                                        <button onClick={() => setViewMode('editor')} className="p-1.5 hover:bg-white/5 rounded text-neutral-400 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
-                                    )}
+                < div className="flex-1 flex flex-col bg-[#050505] relative w-full overflow-hidden" >
+                    {
+                        activeNote ? (
+                            <div className="flex-1 flex flex-col overflow-hidden" >
+                                {/* Desktop Controls */}
+                                < div className="hidden lg:flex h-20 border-b border-white/5 items-center justify-between px-6 bg-neutral-900/30 z-20 shrink-0" >
+                                    <div className="flex items-center gap-4">
+                                        {viewMode === 'browser' && (
+                                            <button onClick={() => setViewMode('editor')} className="p-1.5 hover:bg-white/5 rounded text-neutral-400 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
+                                        )}
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                value={activeNote.title}
+                                                onChange={(e) => handleUpdateTitle(e.target.value)}
+                                                className="bg-transparent border-none text-sm font-bold text-white focus:outline-none p-0 w-64"
+                                                placeholder="Untitled Note"
+                                            />
+
+                                        </div>
+                                    </div>
                                     <div className="flex items-center gap-3">
-                                        <input
-                                            value={activeNote.title}
-                                            onChange={(e) => handleUpdateTitle(e.target.value)}
-                                            className="bg-transparent border-none text-sm font-bold text-white focus:outline-none p-0 w-64"
-                                            placeholder="Untitled Note"
-                                        />
+                                        {viewMode === 'editor' && (
+                                            <button
+                                                onClick={() => setRhymeMode(!rhymeMode)}
+                                                className={`
+                                                flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wide transition-all
+                                                ${rhymeMode
+                                                        ? 'bg-primary text-black shadow-[0_0_15px_rgba(var(--primary),0.3)]'
+                                                        : 'text-neutral-500 hover:text-white hover:bg-white/5 border border-white/5'
+                                                    }
+                                            `}
+                                            >
+                                                <Highlighter size={12} />
+                                                <span>Rhymes</span>
+                                            </button>
+                                        )}
+                                        <div className="w-px h-4 bg-neutral-800 hidden sm:block"></div>
                                         <button
-                                            onClick={() => handleCreateNote()}
-                                            className="p-1.5 text-neutral-500 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
-                                            title="New Note"
+                                            onClick={() => setViewMode(viewMode === 'editor' ? 'browser' : 'editor')}
+                                            className="flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase border border-neutral-700 text-neutral-400 hover:text-white hover:border-white"
                                         >
-                                            <Plus size={16} />
+                                            {viewMode === 'editor' ? <FolderOpen size={12} /> : <FileText size={12} />}
+                                            <span>{viewMode === 'editor' ? 'Attach' : 'Editor'}</span>
                                         </button>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    {viewMode === 'editor' && (
+
+                                {/* Main Content Switcher */}
+                                {viewMode === 'editor' ? renderEditorView() : renderBrowserView()}
+                            </div >
+                        ) : (
+                            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar relative"
+                                onDragOver={(e) => currentFolderId ? handleDragOver(e) : undefined}
+                                onDrop={(e) => currentFolderId ? handleDrop(e, currentFolderId) : undefined}
+                            >
+                                <div className="flex items-center gap-2 mb-6">
+                                    {currentFolderId && (
                                         <button
-                                            onClick={() => setRhymeMode(!rhymeMode)}
-                                            className={`
-                                                flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wide transition-all
-                                                ${rhymeMode
-                                                    ? 'bg-primary text-black shadow-[0_0_15px_rgba(var(--primary),0.3)]'
-                                                    : 'text-neutral-500 hover:text-white hover:bg-white/5 border border-white/5'
-                                                }
-                                            `}
+                                            onClick={() => setCurrentFolderId(notes.find(n => n.id === currentFolderId)?.parentId || null)}
+                                            className="p-2 hover:bg-white/5 rounded-full text-neutral-400 hover:text-white transition-colors"
                                         >
-                                            <Highlighter size={12} />
-                                            <span>Rhymes</span>
+                                            <ChevronLeft size={20} />
                                         </button>
                                     )}
-                                    <div className="w-px h-4 bg-neutral-800 hidden sm:block"></div>
-                                    <button
-                                        onClick={() => setViewMode(viewMode === 'editor' ? 'browser' : 'editor')}
-                                        className="flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase border border-neutral-700 text-neutral-400 hover:text-white hover:border-white"
-                                    >
-                                        {viewMode === 'editor' ? <FolderOpen size={12} /> : <FileText size={12} />}
-                                        <span>{viewMode === 'editor' ? 'Attach' : 'Editor'}</span>
-                                    </button>
+                                    <h2 className="text-xl font-bold text-white">
+                                        {currentFolderId ? notes.find(n => n.id === currentFolderId)?.title : (trashView ? 'Recycling Bin' : 'My Notebook')}
+                                    </h2>
                                 </div>
-                            </div>
 
-                            {/* Main Content Switcher */}
-                            {viewMode === 'editor' ? renderEditorView() : renderBrowserView()}
-                        </div>
-                    ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center text-neutral-600 p-8 text-center">
-                            <div className="w-16 h-16 bg-neutral-900 rounded-2xl flex items-center justify-center mb-4">
-                                {trashView ? <Trash2 size={32} /> : <FileText size={32} />}
+                                {visibleItems.length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center h-96 text-neutral-600 opacity-60">
+                                        <div className="w-16 h-16 bg-neutral-900 rounded-2xl flex items-center justify-center mb-4">
+                                            {trashView ? <Trash2 size={32} /> : <FolderOpen size={32} />}
+                                        </div>
+                                        <p className="text-sm">
+                                            {trashView ? 'Trash is empty' : 'This folder is empty'}
+                                        </p>
+                                        {!trashView && (
+                                            <div className="flex gap-3 mt-4">
+                                                <button onClick={() => handleCreateFolderClick()} className="px-4 py-2 bg-neutral-800 text-white text-xs font-bold rounded-lg hover:bg-neutral-700">Create Folder</button>
+                                                <button onClick={() => handleCreateNote()} className="px-4 py-2 bg-primary text-black text-xs font-bold rounded-lg hover:bg-primary/90">Create Note</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                                        {visibleItems.map(item => (
+                                            <div
+                                                key={item.id}
+                                                draggable
+                                                onDragStart={(e) => handleDragStart(e, item.id)}
+                                                onDragOver={(e) => item.type === 'folder' ? handleDragOver(e) : undefined}
+                                                onDrop={(e) => item.type === 'folder' ? handleDrop(e, item.id) : undefined}
+                                                onClick={() => {
+                                                    if (item.type === 'folder') {
+                                                        setCurrentFolderId(item.id);
+                                                    } else {
+                                                        setActiveNoteId(item.id);
+                                                    }
+                                                }}
+                                                className={`
+                                                aspect-square rounded-2xl p-4 flex flex-col items-center justify-center gap-3 text-center
+                                                border border-white/5 bg-neutral-900/40 hover:bg-neutral-800/60 hover:border-white/10 hover:scale-105 hover:shadow-xl transition-all cursor-pointer group relative
+                                            `}
+                                                onContextMenu={(e) => handleContextMenu(e, item)}
+                                            >
+                                                <div className={`
+                                                w-12 h-12 rounded-xl flex items-center justify-center text-black shadow-lg
+                                                ${item.type === 'folder' ? 'bg-[#FFD700]' : 'bg-primary'}
+                                            `}>
+                                                    {item.type === 'folder' ? <FolderOpen size={20} fill="#000" fillOpacity={0.2} /> : <FileText size={20} fill="#000" fillOpacity={0.2} />}
+                                                </div>
+                                                <div className="w-full">
+                                                    <h3 className="text-sm font-bold text-white truncate w-full">{item.title}</h3>
+                                                    <p className="text-[10px] text-neutral-500 font-mono mt-1">{item.updated}</p>
+                                                </div>
+                                                <div className="absolute top-2 right-2 flex gap-1">
+                                                    {item.type === 'folder' && (
+                                                        <div className="text-[9px] font-bold text-neutral-500 bg-black/40 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                                                            DIR
+                                                        </div>
+                                                    )}
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            // Adjust position for the menu button trigger
+                                                            const rect = e.currentTarget.getBoundingClientRect();
+                                                            setContextMenu({
+                                                                isOpen: true,
+                                                                x: rect.left,
+                                                                y: rect.bottom + 5,
+                                                                note: item
+                                                            });
+                                                        }}
+                                                        className="p-1 rounded-md text-neutral-400 hover:text-white hover:bg-black/40 transition-colors backdrop-blur-sm"
+                                                    >
+                                                        <MoreVertical size={14} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                            <h3 className="text-lg font-bold text-white mb-2">{trashView ? 'Recycling Bin' : 'No Note Selected'}</h3>
-                            <p className="text-sm max-w-xs mb-6">
-                                {trashView
-                                    ? 'Notes are permanently deleted after 30 days.'
-                                    : 'Select a note from the sidebar or create a new one to start writing.'}
-                            </p>
-                            {!trashView && (
-                                <button
-                                    onClick={() => handleCreateNote()}
-                                    className="px-6 py-3 bg-white text-black font-bold rounded-xl hover:scale-105 transition-transform"
-                                >
-                                    Create New Note
-                                </button>
-                            )}
-                        </div>
-                    )}
-                </div>
+                        )}
+                </div >
 
                 {/* Overlay for mobile */}
-                {isSidebarOpen && (
-                    <div
-                        className="absolute inset-0 bg-black/80 z-[58] lg:hidden"
-                        onClick={() => setIsSidebarOpen(false)}
-                    ></div>
-                )}
+                {
+                    isSidebarOpen && (
+                        <div
+                            className="absolute inset-0 bg-black/80 z-[58] lg:hidden"
+                            onClick={() => setIsSidebarOpen(false)}
+                        ></div>
+                    )
+                }
+            </div >
+
+
+
+            {/* Context Menu Render */}
+            {contextMenu.isOpen && contextMenu.note && createPortal(
+                <ContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    note={contextMenu.note}
+                    onRename={() => {
+                        const mockEvent = { stopPropagation: () => { } } as React.MouseEvent;
+                        handleRenameClick(mockEvent, contextMenu.note!);
+                    }}
+                    onDelete={() => {
+                        const mockEvent = { stopPropagation: () => { } } as React.MouseEvent;
+                        handleDeleteNote(mockEvent, contextMenu.note!.id);
+                    }}
+                    onClose={() => setContextMenu(prev => ({ ...prev, isOpen: false }))}
+                />,
+                document.body
+            )}
+
+
+            {createPortal(
+                <InputModal
+                    isOpen={inputModal.isOpen}
+                    onClose={() => setInputModal(prev => ({ ...prev, isOpen: false }))}
+                    onConfirm={inputModal.onConfirm}
+                    title={inputModal.title}
+                    message={inputModal.message}
+                    initialValue={inputModal.initialValue}
+                    placeholder="Enter name..."
+                    confirmLabel="Save"
+                />,
+                document.body
+            )}
+
+            {createPortal(
+                <ConfirmationModal
+                    isOpen={confirmationModal.isOpen}
+                    onClose={() => setConfirmationModal(prev => ({ ...prev, isOpen: false }))}
+                    onConfirm={handleConfirmAction}
+                    title={confirmationModal.title || 'Confirm Action'}
+                    message={confirmationModal.message || 'Are you sure?'}
+                    confirmLabel={confirmationModal.type === 'delete' ? 'Delete Note' : 'Empty Trash'}
+                    isDestructive={true}
+                />,
+                document.body
+            )}
+
+        </div >
+    );
+};
+
+// Context Menu Component
+const ContextMenu = ({
+    x,
+    y,
+    note,
+    onRename,
+    onDelete,
+    onClose
+}: {
+    x: number,
+    y: number,
+    note: Note,
+    onRename: () => void,
+    onDelete: () => void,
+    onClose: () => void
+}) => {
+    // Determine position adjustments to keep in viewport
+    const style: React.CSSProperties = {
+        top: y,
+        left: x,
+    };
+
+    // Simple boundary check (can be improved)
+    if (x + 200 > window.innerWidth) style.left = x - 200;
+    if (y + 150 > window.innerHeight) style.top = y - 150;
+
+    return (
+        <div
+            style={style}
+            className="fixed z-[9999] w-48 bg-[#0a0a0a] rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 flex flex-col py-1"
+            onClick={(e) => e.stopPropagation()}
+        >
+            <div className="px-3 py-2 border-b border-white/5 mb-1">
+                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider truncate">{note.title}</p>
             </div>
 
-            <ConfirmationModal
-                isOpen={confirmationModal.isOpen}
-                onClose={() => setConfirmationModal(prev => ({ ...prev, isOpen: false }))}
-                onConfirm={handleConfirmAction}
-                title={confirmationModal.title || 'Confirm Action'}
-                message={confirmationModal.message || 'Are you sure?'}
-                confirmLabel={confirmationModal.type === 'delete' ? 'Delete Note' : 'Empty Trash'}
-                isDestructive={true}
-            />
+            <button
+                onClick={() => { onRename(); onClose(); }}
+                className="w-full text-left px-3 py-2 text-sm text-neutral-300 hover:text-white hover:bg-white/5 flex items-center gap-2 transition-colors"
+            >
+                <Edit2 size={14} />
+                <span>Rename</span>
+            </button>
+
+            <button
+                onClick={() => { onDelete(); onClose(); }}
+                className="w-full text-left px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 flex items-center gap-2 transition-colors"
+            >
+                <Trash2 size={14} />
+                <span>Delete</span>
+            </button>
         </div>
     );
 };

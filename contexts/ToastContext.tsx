@@ -53,7 +53,7 @@ const ToastItem: React.FC<{ toast: Toast; onDismiss: (id: string) => void }> = (
 
     const getIcon = () => {
         switch (toast.type) {
-            case 'success': return <Check size={18} className="text-green-500" />;
+            case 'success': return <Check size={18} className="text-primary" />;
             case 'error': return <AlertCircle size={18} className="text-red-500" />;
             case 'warning': return <AlertTriangle size={18} className="text-yellow-500" />;
             default: return <Info size={18} className="text-blue-500" />;
@@ -62,32 +62,39 @@ const ToastItem: React.FC<{ toast: Toast; onDismiss: (id: string) => void }> = (
 
     const getColors = () => {
         switch (toast.type) {
-            case 'success': return 'border-green-500/20 bg-green-500/10 text-green-100';
-            case 'error': return 'border-red-500/20 bg-red-500/10 text-red-100';
-            case 'warning': return 'border-yellow-500/20 bg-yellow-500/10 text-yellow-100';
-            default: return 'border-blue-500/20 bg-blue-500/10 text-blue-100';
+            case 'success': return { border: 'border-primary/20', bg: 'bg-primary/5', text: 'text-white' };
+            case 'error': return { border: 'border-red-500/20', bg: 'bg-red-500/5', text: 'text-white' };
+            case 'warning': return { border: 'border-yellow-500/20', bg: 'bg-yellow-500/5', text: 'text-white' };
+            default: return { border: 'border-white/10', bg: 'bg-white/5', text: 'text-white' };
         }
     };
+
+    const colors = getColors();
 
     return (
         <div
             className={`
-                pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.5)]
+                pointer-events-auto flex items-center gap-4 p-4 rounded-2xl border bg-[#111] shadow-2xl w-full max-w-sm
                 transition-all duration-300 ease-out transform
-                ${isVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-4 opacity-0 scale-95'}
-                ${getColors()}
+                ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
+                ${colors.border}
             `}
             role="alert"
         >
-            <div className={`p-1.5 rounded-full bg-black/20 shrink-0`}>
+            <div className={`p-2 rounded-xl bg-white/5 shrink-0 border border-white/5`}>
                 {getIcon()}
             </div>
-            <p className="text-sm font-medium pr-2 max-w-[250px] md:max-w-[350px] leading-relaxed">
-                {toast.message}
-            </p>
+
+            <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-bold text-white mb-0.5 capitalize">{toast.type}</h4>
+                <p className="text-xs text-neutral-400 leading-relaxed font-medium">
+                    {toast.message}
+                </p>
+            </div>
+
             <button
                 onClick={handleDismiss}
-                className="p-1 rounded-lg hover:bg-black/20 text-current/50 hover:text-current transition-colors ml-auto"
+                className="p-1.5 rounded-lg hover:bg-white/10 text-neutral-500 hover:text-white transition-colors self-start -mr-1 -mt-1"
             >
                 <X size={14} />
             </button>
@@ -111,7 +118,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         <ToastContext.Provider value={{ showToast }}>
             {children}
             {createPortal(
-                <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2 pointer-events-none px-4 w-full md:w-auto">
+                <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3 pointer-events-none w-full max-w-sm px-4 md:px-0">
                     {toasts.map((toast) => (
                         <ToastItem key={toast.id} toast={toast} onDismiss={dismissToast} />
                     ))}

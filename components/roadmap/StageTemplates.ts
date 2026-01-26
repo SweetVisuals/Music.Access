@@ -249,6 +249,28 @@ export const STAGE_TEMPLATES: StrategyStageConfig[] = [
                         required: true
                     },
                     {
+                        id: 'era_dates',
+                        label: 'Era Duration',
+                        type: 'date-range',
+                        placeholder: 'Select range',
+                        required: true
+                    },
+                    {
+                        id: 'era_color',
+                        label: 'Era Theme Color',
+                        type: 'select',
+                        options: [
+                            'Yellow (#EAB308)',
+                            'Purple (#A855F7)',
+                            'Blue (#3B82F6)',
+                            'Red (#EF4444)',
+                            'Green (#22C55E)',
+                            'Pink (#EC4899)'
+                        ],
+                        required: true,
+                        description: 'This color will highlight your Era on the calendar.'
+                    },
+                    {
                         id: 'era_narrative',
                         label: 'Story Arc',
                         type: 'textarea',

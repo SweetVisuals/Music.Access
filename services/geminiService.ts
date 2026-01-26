@@ -7,7 +7,7 @@ const PROXY_URL = '/api/deepseek';
 
 
 // Helper for DeepSeek API Calls
-const callDeepSeek = async (
+export const callDeepSeek = async (
   systemPromptOrMessages: string | { role: string, content: string }[],
   userPrompt?: string,
   jsonMode = false

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
-    Play, Pause, Heart, Share2, MoreHorizontal,
-    ShoppingCart, User, Disc, Box, Gem, ArrowLeft, Check, ChevronRight
+    Play, Pause, Bookmark, Share2, MoreHorizontal,
+    ShoppingCart, User, Disc, Box, Gem, ArrowLeft, Check, ChevronRight, X, Link as LinkIcon, Facebook, Twitter, Mail
 } from 'lucide-react';
 import { Project } from '../types';
-import { getProjectById, saveProject, unsaveProject, checkIsProjectSaved, getProjects, giveGemToProject, undoGiveGem, getCurrentUser } from '../services/supabaseService';
+import { getProjectById, saveProject, unsaveProject, checkIsProjectSaved, getProjects, giveGemToProject, undoGiveGem, checkIsGemGiven, getCurrentUser } from '../services/supabaseService';
 import WaveformVisualizer from './WaveformVisualizer';
 import { usePurchaseModal } from '../contexts/PurchaseModalContext';
 import { useToast } from '../contexts/ToastContext';
@@ -34,8 +34,9 @@ const ListenPage: React.FC<ListenPageProps> = ({
 
     const [project, setProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(true);
-    const [isLiked, setIsLiked] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
     const [suggestedProjects, setSuggestedProjects] = useState<Project[]>([]);
+    const [isShareOpen, setIsShareOpen] = useState(false);
 
     // Gem & User State
     const [localGems, setLocalGems] = useState(0);
@@ -68,7 +69,9 @@ const ListenPage: React.FC<ListenPageProps> = ({
                     setProject(data);
                     setLocalGems(data.gems || 0); // Initialize local gems
                     const saved = await checkIsProjectSaved(id);
-                    setIsLiked(saved);
+                    // Check if gem is given
+                    const gemGiven = await checkIsGemGiven(id);
+                    setHasGivenGem(gemGiven);
 
                     // Fetch suggestions (mock logic: same genre or random)
                     const allProjects = await getProjects();
@@ -135,31 +138,53 @@ const ListenPage: React.FC<ListenPageProps> = ({
         }
     };
 
-    const handleLike = async () => {
+    const handleSave = async () => {
         if (!project || !project.id) return;
         try {
-            if (isLiked) {
+            if (isSaved) {
                 await unsaveProject(project.id);
-                setIsLiked(false);
-                showToast('Removed from Liked Songs', 'success');
+                setIsSaved(false);
+                showToast('Removed from Library', 'success');
             } else {
                 await saveProject(project.id);
-                setIsLiked(true);
-                showToast('Added to Liked Songs', 'success');
+                setIsSaved(true);
+                showToast('Saved to Library', 'success');
             }
         } catch (error) {
-            console.error('Failed to toggle like:', error);
-            showToast('Failed to update like status', 'error');
+            console.error('Failed to toggle save:', error);
+            showToast('Failed to update library', 'error');
         }
     };
 
-    const handleShare = async () => {
+    const copyLink = async () => {
         try {
             await navigator.clipboard.writeText(window.location.href);
             showToast('Link copied to clipboard', 'success');
+            setIsShareOpen(false);
         } catch (err) {
             showToast('Failed to copy link', 'error');
         }
+    };
+
+    const shareToSocial = (platform: string) => {
+        const url = encodeURIComponent(window.location.href);
+        const text = encodeURIComponent(`Check out ${project?.title} on Music Access!`);
+        let shareUrl = '';
+
+        switch (platform) {
+            case 'twitter':
+                shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
+                break;
+            case 'facebook':
+                shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+                break;
+            case 'email':
+                shareUrl = `mailto:?subject=${text}&body=${url}`;
+                break;
+        }
+
+        if (shareUrl) window.open(shareUrl, '_blank', 'width=600,height=400');
+        setIsShareOpen(false);
     };
 
     if (loading) {
@@ -185,11 +210,13 @@ const ListenPage: React.FC<ListenPageProps> = ({
     // User asked for "suggested panel extend to the bottom".
 
     return (
-        <div className="w-full min-h-[calc(100vh-64px)] bg-black pt-4 lg:pt-0 animate-in fade-in duration-500">
-            <div className="flex flex-col lg:flex-row h-full lg:h-[calc(100vh-64px)]">
+        <div className="w-full min-h-[calc(100vh-64px)] bg-black pt-4 lg:pt-0 animate-in fade-in duration-500 relative">
+            {/* Mobile: Use h-auto so it grows. Desktop: fixed height for split pane. */}
+            <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-64px)]">
 
                 {/* LEFT PANEL: Tracklist + Header + Profile Footer */}
-                <div className="w-full lg:w-[450px] xl:w-[500px] flex flex-col h-[70vh] lg:h-full border-b lg:border-b-0 lg:border-r border-white/5 bg-black relative z-10">
+                {/* Mobile: Allow full height, no fixed scrolling container so layout flows naturally */}
+                <div className="w-full lg:w-[450px] xl:w-[500px] flex flex-col h-auto min-h-[50vh] lg:h-full border-b lg:border-b-0 lg:border-r border-white/5 bg-black relative z-10">
 
                     {/* Header: Project Title & Stats */}
                     <div className="p-6 pb-4 border-b border-white/5 bg-black">
@@ -207,7 +234,8 @@ const ListenPage: React.FC<ListenPageProps> = ({
                     </div>
 
                     {/* Scrollable Tracklist */}
-                    <div className="w-full flex-none max-h-[340px] overflow-y-auto p-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    {/* Mobile: height auto to show all tracks. Desktop: constrained height. */}
+                    <div className="w-full flex-1 lg:flex-none lg:max-h-[calc(100%-250px)] lg:overflow-y-auto p-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         <div className="flex flex-col w-full pb-4">
                             {project.tracks.map((track, idx) => {
                                 const isTrackActive = isCurrentProjectActive && currentTrackId === track.id;
@@ -301,30 +329,31 @@ const ListenPage: React.FC<ListenPageProps> = ({
                                     className={`
                                                 flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all active:scale-95
                                                 ${hasGivenGem
-                                            ? 'bg-primary/10 border-primary/20 text-primary'
+                                            ? 'bg-transparent border-primary/50 text-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]'
                                             : 'bg-white/5 border-white/5 text-neutral-400 hover:text-white hover:border-white/10'
                                         }
                                                 ${isOwnProject && !showUndo ? 'opacity-50 cursor-not-allowed' : ''}
                                             `}
                                     title={isOwnProject ? "Cannot give gems to own project" : "Give Gem"}
                                 >
-                                    <Gem size={14} fill={hasGivenGem ? "currentColor" : "none"} />
+                                    <Gem size={14} className={hasGivenGem ? "drop-shadow-[0_0_5px_rgba(var(--primary),0.5)]" : ""} />
                                     <span className="text-xs font-bold">{showUndo ? "UNDO" : localGems}</span>
                                 </button>
 
-                                {/* Like Button */}
+                                {/* Save Button */}
                                 <button
-                                    onClick={handleLike}
-                                    className={`p-2 rounded-full border transition-all active:scale-95 ${isLiked
-                                        ? 'bg-red-500/10 border-red-500/20 text-red-500'
+                                    onClick={handleSave}
+                                    className={`p-2 rounded-full border transition-all active:scale-95 ${isSaved
+                                        ? 'bg-primary/10 border-primary/20 text-primary'
                                         : 'bg-white/5 border-white/5 text-neutral-400 hover:text-white hover:border-white/10'
                                         }`}
+                                    title={isSaved ? "Remove from Library" : "Save to Library"}
                                 >
-                                    <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
+                                    <Bookmark size={16} fill={isSaved ? "currentColor" : "none"} />
                                 </button>
 
                                 <button
-                                    onClick={handleShare}
+                                    onClick={() => setIsShareOpen(true)}
                                     className="p-2 rounded-full bg-white/5 border border-white/5 text-neutral-400 hover:text-white hover:border-white/10 transition-colors"
                                 >
                                     <Share2 size={16} />
@@ -340,7 +369,8 @@ const ListenPage: React.FC<ListenPageProps> = ({
                 </div>
 
                 {/* RIGHT PANEL: Suggestions (Up Next) - Extended to Bottom */}
-                <div className="flex-1 bg-black flex flex-col h-full overflow-hidden border-l border-white/5">
+                {/* Mobile: h-auto, visible overflow. Desktop: full height, scrolled internally (if needed) or hidden. */}
+                <div className="flex-1 bg-black flex flex-col h-auto lg:h-full lg:overflow-hidden border-l border-white/5">
                     <div className="p-6 pb-4 border-b border-white/5 bg-black z-10 flex items-center justify-between h-[89px] shrink-0">
                         <h3 className="text-xl font-bold text-white tracking-tight">Suggested</h3>
                         <div className="flex gap-2">
@@ -402,7 +432,69 @@ const ListenPage: React.FC<ListenPageProps> = ({
             </div>
 
 
-        </div>
+
+
+            {/* Share Modal */}
+            {
+                isShareOpen && (
+                    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="w-full max-w-sm bg-neutral-900 border-none rounded-2xl p-6 shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-bold text-white">Share Project</h3>
+                                <button
+                                    onClick={() => setIsShareOpen(false)}
+                                    className="p-2 rounded-full hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-4 gap-4 mb-6">
+                                <button onClick={copyLink} className="flex flex-col items-center gap-2 group">
+                                    <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:border-primary/50 transition-all">
+                                        <LinkIcon size={20} className="text-neutral-300 group-hover:text-primary" />
+                                    </div>
+                                    <span className="text-xs text-neutral-400 group-hover:text-white">Copy Link</span>
+                                </button>
+
+                                <button onClick={() => shareToSocial('twitter')} className="flex flex-col items-center gap-2 group">
+                                    <div className="w-12 h-12 rounded-full bg-[#1DA1F2]/10 border border-[#1DA1F2]/20 flex items-center justify-center group-hover:bg-[#1DA1F2]/20 transition-all">
+                                        <Twitter size={20} className="text-[#1DA1F2]" fill="currentColor" />
+                                    </div>
+                                    <span className="text-xs text-neutral-400 group-hover:text-white">Twitter</span>
+                                </button>
+
+                                <button onClick={() => shareToSocial('facebook')} className="flex flex-col items-center gap-2 group">
+                                    <div className="w-12 h-12 rounded-full bg-[#4267B2]/10 border border-[#4267B2]/20 flex items-center justify-center group-hover:bg-[#4267B2]/20 transition-all">
+                                        <span className="font-bold text-[#4267B2] text-xl">f</span>
+                                    </div>
+                                    <span className="text-xs text-neutral-400 group-hover:text-white">Facebook</span>
+                                </button>
+
+                                <button onClick={() => shareToSocial('email')} className="flex flex-col items-center gap-2 group">
+                                    <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-white/10 transition-all">
+                                        <Mail size={20} className="text-neutral-300 group-hover:text-white" />
+                                    </div>
+                                    <span className="text-xs text-neutral-400 group-hover:text-white">Email</span>
+                                </button>
+                            </div>
+
+                            <div className="p-3 rounded-lg bg-black border border-white/10 flex items-center justify-between gap-3">
+                                <span className="text-xs text-neutral-500 truncate flex-1 font-mono">
+                                    {window.location.href}
+                                </span>
+                                <button
+                                    onClick={copyLink}
+                                    className="text-xs font-bold text-primary hover:underline"
+                                >
+                                    Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

@@ -47,8 +47,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, user, onClick, isPre
 
                     <div className="flex flex-col items-end">
                         <div className="flex items-start gap-1">
-                            <span className="text-xl font-black text-primary mt-1 opacity-80">$</span>
-                            <span className="text-6xl font-black text-white tracking-[0.05em] leading-[0.8]">
+                            <span className="text-lg md:text-xl font-black text-primary mt-1 opacity-80">$</span>
+                            <span className="text-4xl md:text-6xl font-black text-white tracking-[0.05em] leading-[0.8]">
                                 {price}
                             </span>
                         </div>

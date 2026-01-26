@@ -42,9 +42,11 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Normalize options to DropdownOption format
-    const normalizedOptions: DropdownOption[] = options.map(opt =>
-        typeof opt === 'string' ? { value: opt, label: opt } : opt
-    );
+    const normalizedOptions: DropdownOption[] = options
+        .filter(opt => opt !== null && opt !== undefined)
+        .map(opt =>
+            typeof opt === 'string' ? { value: opt, label: opt } : opt
+        );
 
     const selectedOption = normalizedOptions.find(opt => opt.value === value);
 

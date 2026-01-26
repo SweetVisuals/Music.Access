@@ -536,6 +536,11 @@ const App: React.FC = () => {
       }
     } else {
       // Handle View enum values
+      if (view === 'BACK') {
+        navigate(-1);
+        return;
+      }
+
       const pathMap: Record<View, string> = {
         'home': '/',
         'profile': '/profile', // Special route for current user's profile
@@ -575,7 +580,7 @@ const App: React.FC = () => {
         'listen': '/listen',
         'storefront': '/'
       };
-      const path = pathMap[view] || '/';
+      const path = pathMap[view as View] || '/';
       navigate(path);
     }
     setIsMobileMenuOpen(false);
@@ -666,7 +671,7 @@ const App: React.FC = () => {
                   onMenuClick={() => setIsMobileMenuOpen(true)}
                 />
 
-                <main ref={mainRef} style={{ paddingBottom: getBottomStackHeightCSS() }} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[calc(56px+env(safe-area-inset-top))]' : (currentView === 'dashboard-messages' || currentView === 'dashboard-orders') ? 'overflow-hidden pt-[calc(56px+env(safe-area-inset-top))] lg:pt-[80px]' : 'overflow-y-auto overscroll-y-contain pt-[calc(80px+env(safe-area-inset-top))] lg:pt-[80px]'} scroll-smooth`}>
+                <main ref={mainRef} style={{ paddingBottom: getBottomStackHeightCSS() }} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[calc(56px+env(safe-area-inset-top))]' : (currentView === 'dashboard-messages' || currentView === 'dashboard-orders') ? 'overflow-hidden pt-[calc(56px+env(safe-area-inset-top))] lg:pt-[80px]' : 'overflow-y-auto overscroll-y-contain pt-[calc(56px+env(safe-area-inset-top))] lg:pt-[56px]'} scroll-smooth`}>
 
                   {currentView === 'listen' && (
                     <ListenPage
@@ -687,10 +692,10 @@ const App: React.FC = () => {
                   )}
 
                   {currentView === 'home' && (
-                    <PullToRefresh onRefresh={fetchProjects}>
+                    <PullToRefresh onRefresh={fetchProjects} disabled={window.innerWidth >= 1024}>
                       <div className="w-full max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 pt-4 lg:pt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {isLoggedIn && !gemsClaimedToday && !profileLoading && userProfile && (
-                          <div className="mb-[13px] mt-4 lg:mt-0 px-3 py-2 lg:px-5 lg:py-4 bg-gradient-to-r from-primary/20 to-transparent border border-primary/20 rounded-xl flex items-center justify-between">
+                          <div className="mb-6 mt-[2px] lg:mt-[2px] px-3 py-3 lg:px-5 lg:py-3 bg-gradient-to-r from-primary/20 to-transparent border border-primary/20 rounded-xl flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 lg:w-10 lg:h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary animate-pulse shrink-0">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 lg:w-4 lg:h-4"><path d="M6 3h12l4 6-10 13L2 9Z" /></svg>
@@ -709,6 +714,11 @@ const App: React.FC = () => {
                           </div>
                         )}
 
+                        <div className="mb-6 lg:mb-8">
+                          <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">Discover</h1>
+                          <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Explore the latest projects, sound kits, and top talent.</p>
+                        </div>
+
                         <FilterBar filters={filters} onFilterChange={setFilters} />
 
                         {error && (
@@ -720,7 +730,7 @@ const App: React.FC = () => {
                         {loading ? (
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mt-6 pb-20">
                             {[...Array(12)].map((_, i) => (
-                              <div key={i} className="h-auto md:h-[282px]">
+                              <div key={i} className="h-[350px] md:h-[285px]">
                                 <ProjectSkeleton />
                               </div>
                             ))}
@@ -875,7 +885,7 @@ const App: React.FC = () => {
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                                   {filteredProjects.filter(p => p.type === 'sound_pack').map(project => (
-                                    <div key={project.id} className="h-[282px]">
+                                    <div key={project.id} className="h-[350px] md:h-[285px]">
                                       <ProjectCard
                                         project={project}
                                         currentTrackId={currentTrackId}
@@ -900,7 +910,7 @@ const App: React.FC = () => {
                               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                                 {filteredProjects.filter(p => p.type !== 'sound_pack').length > 0 ? (
                                   filteredProjects.filter(p => p.type !== 'sound_pack').map(project => (
-                                    <div key={project.id} className="h-[282px]">
+                                    <div key={project.id} className="h-[350px] md:h-[285px]">
                                       <ProjectCard
                                         project={project}
                                         currentTrackId={currentTrackId}
@@ -926,7 +936,7 @@ const App: React.FC = () => {
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mt-6 pb-20">
                             {filteredProjects.length > 0 ? (
                               filteredProjects.map(project => (
-                                <div key={project.id} className="h-[282px]">
+                                <div key={project.id} className="h-[350px] md:h-[285px]">
                                   <ProjectCard
                                     project={project}
                                     currentTrackId={currentTrackId}

@@ -348,7 +348,7 @@ const Studio: React.FC<StudioProps> = ({
                         {/* Create New Card (Shortcut) */}
                         <button
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="h-[280px] rounded-xl flex flex-col items-center justify-center text-neutral-500 hover:text-primary hover:bg-primary/5 transition-all group bg-[#0a0a0a]"
+                            className="h-[350px] md:h-[285px] rounded-xl flex flex-col items-center justify-center text-neutral-500 hover:text-primary hover:bg-primary/5 transition-all group bg-[#0a0a0a]"
                         >
                             <div className="h-16 w-16 rounded-full bg-neutral-900 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
                                 <Plus size={28} />
@@ -361,7 +361,7 @@ const Studio: React.FC<StudioProps> = ({
                             <div
                                 key={project.id}
                                 onClick={() => openProject(project)}
-                                className="group h-[280px] bg-[#0a0a0a] rounded-xl overflow-hidden transition-all relative cursor-pointer hover:shadow-2xl flex flex-col"
+                                className="group h-[350px] md:h-[285px] bg-[#0a0a0a] rounded-xl overflow-hidden transition-all relative cursor-pointer hover:shadow-2xl flex flex-col"
                             >
                                 {/* Top Section: Cover & Info */}
                                 <div className="flex-1 relative p-5 flex flex-col justify-between z-10">

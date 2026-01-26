@@ -42,7 +42,7 @@ const CollaboratePage: React.FC = () => {
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 lg:mb-8 gap-4">
                 <div>
-                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Collaborate</h1>
+                    <h1 className="text-3xl lg:text-5xl font-black text-white mb-1 tracking-tighter">Collaborate</h1>
                     <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">
                         Connect with platforms, influencers, and channels to promote your music.
                     </p>

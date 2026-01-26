@@ -165,6 +165,104 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
         };
     }, []);
 
+    // Ref to access current state in event listeners without deep dependencies
+    const stateRef = useRef({
+        items,
+        selectedIds,
+        dragOverFolderId,
+        touchDragItem,
+        moveFiles
+    });
+
+    useEffect(() => {
+        stateRef.current = {
+            items,
+            selectedIds,
+            dragOverFolderId,
+            touchDragItem,
+            moveFiles
+        };
+    }, [items, selectedIds, dragOverFolderId, touchDragItem, moveFiles]);
+
+    // Global Touch Move & End Handlers for Active Drag
+    useEffect(() => {
+        if (!touchDragItem) return;
+
+        const handleGlobalTouchMove = (e: TouchEvent) => {
+            // CRITICAL: Prevent scrolling while dragging
+            if (e.cancelable) e.preventDefault();
+
+            const touch = e.touches[0];
+            const { touchDragItem: currentDragItem } = stateRef.current;
+
+            // Update ghost position
+            setTouchDragItem(prev => prev ? ({ ...prev, x: touch.clientX, y: touch.clientY }) : null);
+
+            // Hit testing
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            const folderElement = target?.closest('[data-folder-id]');
+
+            if (folderElement) {
+                const folderId = folderElement.getAttribute('data-folder-id');
+                // Ensure we don't drop into ourselves
+                if (folderId && currentDragItem && folderId !== currentDragItem.id) {
+                    setDragOverFolderId(folderId);
+                } else {
+                    setDragOverFolderId(null);
+                }
+            } else {
+                setDragOverFolderId(null);
+            }
+        };
+
+        const handleGlobalTouchEnd = (e: TouchEvent) => {
+            const { dragOverFolderId, touchDragItem, selectedIds, items, moveFiles } = stateRef.current;
+
+            if (touchDragItem && dragOverFolderId) {
+                const targetFolderId = dragOverFolderId;
+                if (touchDragItem.id !== targetFolderId) {
+                    // Logic replicated from moveFileInternal to use captured state
+                    let itemsToMove: string[] = [];
+                    if (selectedIds.has(touchDragItem.id)) {
+                        itemsToMove = Array.from(selectedIds);
+                    } else {
+                        itemsToMove = [touchDragItem.id];
+                    }
+                    itemsToMove = itemsToMove.filter(id => id !== targetFolderId);
+
+                    if (itemsToMove.length > 0) {
+                        const itemsMap = new Map();
+                        items.forEach(i => itemsMap.set(i.id, i));
+
+                        // Optimistic Update
+                        setItems(prevItems => prevItems.map(i => itemsToMove.includes(i.id) ? { ...i, parentId: targetFolderId } : i));
+                        setSelectedIds(new Set());
+
+                        // Trigger Global Operation
+                        moveFiles(itemsToMove, targetFolderId, itemsMap);
+                    }
+                }
+            }
+
+            // Cleanup
+            setTouchDragItem(null);
+            setIsDraggingFiles(false);
+            setDragOverFolderId(null);
+        };
+
+        // Attach non-passive listener for move to allow prevention of default (scrolling)
+        document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+        document.addEventListener('touchend', handleGlobalTouchEnd);
+        document.addEventListener('touchcancel', handleGlobalTouchEnd);
+
+        return () => {
+            document.removeEventListener('touchmove', handleGlobalTouchMove);
+            document.removeEventListener('touchend', handleGlobalTouchEnd);
+            document.removeEventListener('touchcancel', handleGlobalTouchEnd);
+        };
+    }, [!!touchDragItem]); // Only bind/unbind when drag state toggles
+
+
     const handleTouchStart = (e: React.TouchEvent, itemId: string) => {
         // Only allow primary single touch
         if (e.touches.length !== 1) return;
@@ -189,30 +287,8 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     const handleTouchMove = (e: React.TouchEvent) => {
         const touch = e.touches[0];
 
-        if (touchDragItem) {
-            // We are dragging!
-            e.preventDefault(); // Prevent scrolling
-
-            // Update ghost position
-            setTouchDragItem(prev => prev ? ({ ...prev, x: touch.clientX, y: touch.clientY }) : null);
-
-            // Hit testing for highlight
-            // Temporarily hide the ghost or use document configuration to look "through" it
-            // Simple heuristic: elementFromPoint
-            const target = document.elementFromPoint(touch.clientX, touch.clientY);
-            const folderElement = target?.closest('[data-folder-id]');
-
-            if (folderElement) {
-                const folderId = folderElement.getAttribute('data-folder-id');
-                if (folderId && folderId !== touchDragItem.id) {
-                    setDragOverFolderId(folderId);
-                } else {
-                    setDragOverFolderId(null);
-                }
-            } else {
-                setDragOverFolderId(null);
-            }
-        } else {
+        // Logic handled by global listener if dragging
+        if (!touchDragItem) {
             // Not dragging yet, checking if we should cancel timer (user scrolled)
             if (touchStartPositionRef.current) {
                 const diffX = Math.abs(touch.clientX - touchStartPositionRef.current.x);
@@ -230,35 +306,12 @@ const UploadPage: React.FC<UploadPageProps> = ({ onPlayTrack, onTogglePlay, isPl
     };
 
     const handleTouchEnd = (e: React.TouchEvent) => {
+        // Just cleanup timer if we didn't start dragging
         if (longPressTimerRef.current) {
             clearTimeout(longPressTimerRef.current);
             longPressTimerRef.current = null;
         }
-
-        if (touchDragItem) {
-            // Drop logic!
-            if (dragOverFolderId) {
-                // Execute standard drop handler manually
-                // Use a synthetic event or call logic directly
-                // Replicating handleDrop logic partially for internal move
-                const targetFolderId = dragOverFolderId;
-
-                // Reuse existing logic but simplified
-                if (touchDragItem.id !== targetFolderId) {
-                    // Call the internal move logic
-                    // We need to 'fake' the event or extract key logic. 
-                    // Let's extract logic to 'executeMove(sourceIds, targetId)' eventually,
-                    // but for now we'll self-call logic inline or through handleDrop if possible.
-                    // Creating a synthetic event is messy. Let's call a new helper or modify handleDrop.
-
-                    // NOTE: We'll direct call the logic derived from handleDrop below.
-                    moveFileInternal(touchDragItem.id, targetFolderId);
-                }
-            }
-
-            setTouchDragItem(null);
-            setIsDraggingFiles(false);
-        }
+        // Drop logic is handled by global listener
     };
 
     // Extracted from handleDrop for reuse - using Global Context

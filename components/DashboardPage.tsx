@@ -482,7 +482,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                 };
 
                                 return (
-                                    <div key={sale.id} className="h-[282px]">
+                                    <div key={sale.id} className="h-[350px] md:h-[285px]">
                                         <ProjectCard
                                             project={projectData}
                                             isPurchased={true}
@@ -519,8 +519,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
                 {/* Detailed Transaction Modal */}
                 {selectedSale && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedSale(null)}>
-                        <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedSale(null)}>
+                        <div className="bg-[#0a0a0a] border-none rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
                             {/* Header */}
                             <div className="p-6 border-b border-white/5 flex justify-between items-start bg-neutral-900/30">
                                 <div>
@@ -721,7 +721,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                         };
 
                                         return (
-                                            <div key={purchase.id} className="h-full">
+                                            <div key={purchase.id} className="h-[350px] md:h-[285px]">
                                                 <ProjectCard
                                                     project={projectData}
                                                     currentTrackId={currentTrackId}
@@ -1544,8 +1544,8 @@ function CustomerOrderDetail({ purchase, onBack, onSignContract, onViewContract 
 
 function FileDownloadModal({ purchase, onClose }: { purchase: Purchase, onClose: () => void }) {
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-[#0a0a0a] border border-transparent rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl scale-100 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-[#0a0a0a] border-none rounded-xl w-full max-w-2xl overflow-hidden shadow-2xl scale-100 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
                 <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                     <h3 className="text-lg font-bold text-white">Download Files</h3>
                     <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white transition-colors">
@@ -1620,8 +1620,8 @@ function FileDownloadModal({ purchase, onClose }: { purchase: Purchase, onClose:
 
 function ReceiptModal({ purchase, onClose }: { purchase: Purchase, onClose: () => void }) {
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
-            <div className="w-full max-w-md bg-[#111] text-white border border-transparent rounded-xl shadow-2xl overflow-hidden relative flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
+            <div className="w-full max-w-md bg-[#111] text-white border-none rounded-xl shadow-2xl overflow-hidden relative flex flex-col" onClick={e => e.stopPropagation()}>
 
                 {/* Receipt Header */}
                 <div className="p-6 border-b border-white/10 text-center bg-white/5 relative">

@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { UserProfile, Project } from '../types';
+import { UserProfile, Project, Service } from '../types';
 import {
     Verified,
     Mic2,
@@ -30,6 +30,7 @@ import {
     User,
     Lock
 } from 'lucide-react';
+import { useCart } from '../contexts/CartContext';
 import ProjectCard, { ProjectSkeleton } from './ProjectCard';
 import ServiceCard from './ServiceCard';
 import CreateProjectModal from './CreateProjectModal';
@@ -41,6 +42,9 @@ import EmptyStateCard from './EmptyStateCard';
 import CustomDropdown from './CustomDropdown';
 import BannerPositionManager from './BannerPositionManager';
 import { Move } from 'lucide-react';
+import ServiceBookingModal from './ServiceBookingModal';
+import ProfileCompletionAlert from './ProfileCompletionAlert';
+import { checkHasGivenAnyGem } from '../services/supabaseService';
 
 
 interface ProfilePageProps {
@@ -78,6 +82,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     const [loading, setLoading] = useState(false);
     const [isOwnProfile, setIsOwnProfile] = useState(false);
 
+    // Service Booking State
+    const [selectedService, setSelectedService] = useState<Service | null>(null);
+
     // Follow loading state
     const [isFollowLoading, setIsFollowLoading] = useState(false);
 
@@ -101,6 +108,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     const bannerInputRef = useRef<HTMLInputElement>(null);
     const avatarInputRef = useRef<HTMLInputElement>(null);
     const [isBannerAdjustOpen, setIsBannerAdjustOpen] = useState(false);
+    const [hasGivenGem, setHasGivenGem] = useState(false);
+    const [isGemStatusLoading, setIsGemStatusLoading] = useState(true);
 
     // Fetch profile if profileUsername is provided
     useEffect(() => {
@@ -211,6 +220,30 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             }
         }
     };
+
+    // Check Gem Status for Completion Alert
+    useEffect(() => {
+        const checkGemStatus = async () => {
+            if (isOwnProfile && userProfile?.id) {
+                try {
+                    const status = await checkHasGivenAnyGem(userProfile.id);
+                    setHasGivenGem(status);
+                } catch (e) {
+                    console.error("Error checking gem status:", e);
+                } finally {
+                    setIsGemStatusLoading(false);
+                }
+            } else {
+                setIsGemStatusLoading(false);
+            }
+        };
+
+        if (userProfile && isOwnProfile) {
+            checkGemStatus();
+        } else if (userProfile && !isOwnProfile) {
+            setIsGemStatusLoading(false);
+        }
+    }, [userProfile, isOwnProfile]);
 
     const handleToggleFollow = async () => {
         if (!userProfile?.id) {
@@ -533,6 +566,27 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         setLocalProjects(prev => prev.map(p => p.id === project.id ? { ...p, status: newStatus as any } : p));
     };
 
+    const { addToCart } = useCart();
+
+    const handleAddToCart = (service: Service, notes: string) => {
+        if (!service || !userProfile) return;
+
+        addToCart({
+            id: `svc_${Date.now()}`,
+            title: service.title,
+            type: 'Service',
+            price: service.price,
+            sellerName: userProfile.username,
+            sellerHandle: userProfile.handle,
+            sellerId: userProfile.id,
+            sellerAvatar: userProfile.avatar,
+            serviceId: service.id,
+            requirements: notes
+        });
+
+        setSelectedService(null);
+    };
+
     return (
         <div className="relative w-full -mt-4 lg:-mt-12 animate-in fade-in duration-500 min-h-screen overflow-x-hidden">
             {isBannerAdjustOpen && userProfile?.banner && (
@@ -583,6 +637,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                         onDelete={(id) => handleDeleteProject(editingProject)}
                     />
                 )
+            )}
+
+            {selectedService && userProfile && (
+                <ServiceBookingModal
+                    isOpen={!!selectedService}
+                    onClose={() => setSelectedService(null)}
+                    service={selectedService}
+                    user={userProfile}
+                    onAddToCart={handleAddToCart}
+                />
             )}
 
             <div className="w-full max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 pb-20 lg:pb-12 pt-[30px]">
@@ -1041,6 +1105,13 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     </div>
                 ) : (
                     <>
+                        {/* Profile Completion Alert (Owner Only) */}
+                        {!isViewerMode && isOwnProfile && !isGemStatusLoading && (
+                            <div className="mb-6 -mt-2">
+                                <ProfileCompletionAlert userProfile={userProfile} hasGivenGem={hasGivenGem} />
+                            </div>
+                        )}
+
                         {/* TABS NAVIGATION */}
                         <div className="relative bg-[#050505] lg:border-b lg:border-white/10 -mx-4 px-4 lg:-mx-8 lg:px-8 mb-4 lg:mb-6 py-2 transition-all">
 
@@ -1120,7 +1191,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                     setCreateModalInitialType('beat_tape');
                                                     setIsCreateModalOpen(true);
                                                 }}
-                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[350px] md:h-[285px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                             >
                                                 <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                                     <Box size={24} />
@@ -1141,7 +1212,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             localProjects
                                                 .filter(project => project.status === 'published' && project.type === 'beat_tape')
                                                 .map(project => (
-                                                    <div key={project.id} className="h-[282px]">
+                                                    <div key={project.id} className="h-[350px] md:h-[285px]">
                                                         <ProjectCard
                                                             project={project}
                                                             currentTrackId={currentTrackId}
@@ -1180,7 +1251,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                     setCreateModalInitialType('release');
                                                     setIsCreateModalOpen(true);
                                                 }}
-                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[350px] md:h-[285px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                             >
                                                 <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                                     <Disc size={24} />
@@ -1201,7 +1272,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             localProjects
                                                 .filter(project => project.status === 'published' && project.type === 'release')
                                                 .map(project => (
-                                                    <div key={project.id} className="h-[282px]">
+                                                    <div key={project.id} className="h-[350px] md:h-[285px]">
                                                         <ProjectCard
                                                             project={project}
                                                             currentTrackId={currentTrackId}
@@ -1237,7 +1308,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                         {!isViewerMode && isOwnProfile && (
                                             <div
                                                 onClick={() => setIsCreateServiceModalOpen(true)}
-                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[350px] md:h-[285px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                             >
                                                 <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                                     <Mic2 size={24} />
@@ -1261,8 +1332,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                     service={service}
                                                     user={userProfile}
                                                     onClick={() => {
-                                                        // Handle booking logic or navigation
-                                                        console.log('Book service', service.id);
+                                                        if (!isViewerMode && isOwnProfile) return; // Don't book own service
+                                                        setSelectedService(service);
                                                     }}
                                                 />
                                             ))
@@ -1289,7 +1360,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                         {!isViewerMode && isOwnProfile && (
                                             <div
                                                 onClick={() => setIsCreateSoundpackModalOpen(true)}
-                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[282px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[350px] md:h-[285px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                             >
                                                 <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                                     <Box size={24} />
@@ -1368,7 +1439,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             localProjects
                                                 .filter(p => p.status !== 'published')
                                                 .map(project => (
-                                                    <div key={project.id} className="h-[282px]">
+                                                    <div key={project.id} className="h-[350px] md:h-[285px]">
                                                         <ProjectCard
                                                             project={project}
                                                             currentTrackId={currentTrackId}
@@ -1540,7 +1611,7 @@ const ProfileSkeleton = () => (
             {[...Array(4)].map((_, i) => <div key={i} className="h-6 w-24 bg-neutral-900 rounded"></div>)}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => <div key={i} className="h-[282px] bg-neutral-900/50 rounded-xl border border-white/10"><ProjectSkeleton /></div>)}
+            {[...Array(4)].map((_, i) => <div key={i} className="h-[350px] md:h-[285px] bg-neutral-900/50 rounded-xl border border-white/10"><ProjectSkeleton /></div>)}
         </div>
     </div>
 );

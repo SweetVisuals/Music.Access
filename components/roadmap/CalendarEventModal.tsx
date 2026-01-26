@@ -27,14 +27,18 @@ const CalendarEventModal: React.FC<CalendarEventModalProps> = ({
     const campaigns: string[] = [];
     const campaignStrategy = strategies.find(s => s.stageId === 'stage-5');
     if (campaignStrategy?.data?.campaign_list) {
-        campaignStrategy.data.campaign_list.forEach((c: any) => campaigns.push(c.name));
+        campaignStrategy.data.campaign_list.forEach((c: any) => {
+            if (c.name) campaigns.push(c.name);
+        });
     }
 
     // Extract content buckets from Stage 6
     const contentBuckets: string[] = [];
     const bucketStrategy = strategies.find(s => s.stageId === 'stage-6');
     if (bucketStrategy?.data?.bucket_list) {
-        bucketStrategy.data.bucket_list.forEach((b: any) => contentBuckets.push(b.name));
+        bucketStrategy.data.bucket_list.forEach((b: any) => {
+            if (b.name) contentBuckets.push(b.name);
+        });
     }
 
     // --- State ---

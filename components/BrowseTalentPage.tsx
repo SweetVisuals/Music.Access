@@ -7,6 +7,8 @@ import ProjectCard, { ProjectSkeleton } from './ProjectCard';
 import ServiceCard from './ServiceCard';
 import { Project, TalentProfile, Service } from '../types';
 import { getTalentProfiles, getServices, getProjects, getCurrentUser } from '../services/supabaseService';
+import ServiceBookingModal from './ServiceBookingModal';
+import { useCart } from '../contexts/CartContext';
 
 interface BrowseTalentPageProps {
     currentTrackId: string | null;
@@ -31,6 +33,35 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+    // Service Booking
+    const [selectedService, setSelectedService] = useState<Service | null>(null);
+    const { addToCart } = useCart();
+
+    const handleAddToCart = (service: Service, notes: string) => {
+        if (!service) return;
+
+        // Construct seller info from service.user
+        const sellerName = service.user?.username || 'Unknown';
+        const sellerHandle = service.user?.handle || 'unknown';
+        const sellerId = service.user?.id; // Now available from getServices
+        const sellerAvatar = service.user?.avatar || (service.user as any)?.avatar_url;
+
+        addToCart({
+            id: `svc_${Date.now()}`,
+            title: service.title,
+            type: 'Service',
+            price: service.price,
+            sellerName,
+            sellerHandle,
+            sellerId,
+            sellerAvatar,
+            serviceId: service.id,
+            requirements: notes
+        });
+
+        setSelectedService(null);
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -247,13 +278,13 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     {loading ? (
                         [...Array(5)].map((_, i) => (
-                            <div key={i} className="h-auto md:h-[282px]">
+                            <div key={i} className="h-[350px] md:h-[285px]">
                                 <ProjectSkeleton />
                             </div>
                         ))
                     ) : (
                         trendingProjects.slice(0, 5).map(project => (
-                            <div key={project.id} className="h-auto md:h-[282px]">
+                            <div key={project.id} className="h-[350px] md:h-[285px]">
                                 <ProjectCard
                                     project={project}
                                     currentTrackId={currentTrackId}
@@ -285,13 +316,13 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                         {loading ? (
                             [...Array(5)].map((_, i) => (
-                                <div key={i} className="h-auto md:h-[282px]">
+                                <div key={i} className="h-[350px] md:h-[285px]">
                                     <ProjectSkeleton />
                                 </div>
                             ))
                         ) : (
                             soundPacks.slice(0, 5).map(project => (
-                                <div key={project.id} className="h-auto md:h-[282px]">
+                                <div key={project.id} className="h-[350px] md:h-[285px]">
                                     <ProjectCard
                                         project={project}
                                         currentTrackId={currentTrackId}
@@ -319,13 +350,13 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                         {loading ? (
                             [...Array(5)].map((_, i) => (
-                                <div key={i} className="h-auto md:h-[282px]">
+                                <div key={i} className="h-[350px] md:h-[285px]">
                                     <ProjectSkeleton />
                                 </div>
                             ))
                         ) : (
                             releases.slice(0, 5).map(project => (
-                                <div key={project.id} className="h-auto md:h-[282px]">
+                                <div key={project.id} className="h-[350px] md:h-[285px]">
                                     <ProjectCard
                                         project={project}
                                         currentTrackId={currentTrackId}
@@ -358,7 +389,7 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                                 key={service.id}
                                 service={service}
                                 user={service.user || { username: 'Unknown', handle: 'unknown' }}
-                                onClick={() => navigate(`/services/${service.id}`)}
+                                onClick={() => setSelectedService(service)}
                             />
                         ))
                     )}
@@ -370,6 +401,16 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                 </div>
             </div>
 
+            {/* Service Booking Modal */}
+            {selectedService && (
+                <ServiceBookingModal
+                    isOpen={!!selectedService}
+                    onClose={() => setSelectedService(null)}
+                    service={selectedService}
+                    user={selectedService.user || { username: 'Unknown', handle: 'unknown' }}
+                    onAddToCart={handleAddToCart}
+                />
+            )}
         </div >
     );
 };

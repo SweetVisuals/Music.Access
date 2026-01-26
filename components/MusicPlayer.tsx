@@ -247,10 +247,8 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
 
             {/* --- MOBILE EMBEDDED BOTTOM BAR --- */}
             <div
-                className={`lg:hidden fixed left-0 right-0 bg-[#050505] border-t border-white/20 border-b-0 shadow-none transition-all duration-300 ${isMinimized
-                    ? (currentView === 'notes' && !isSidebarOpen
-                        ? 'bottom-[calc(max(8.5rem,var(--notes-toolkit-height,0vh))+env(safe-area-inset-bottom))] translate-y-0 z-[121]'
-                        : 'bottom-[calc(50px+env(safe-area-inset-bottom))] translate-y-0 z-[119]')
+                className={`lg:hidden fixed left-0 right-0 bg-[#050505] border-t border-white/20 border-b-0 shadow-none transition-all duration-300 z-[145] ${isMinimized
+                    ? 'bottom-[calc(50px+env(safe-area-inset-bottom))] translate-y-0'
                     : 'bottom-0 translate-y-full opacity-0 pointer-events-none'
                     }`}
                 onClick={() => setIsMinimized(false)}
@@ -283,11 +281,10 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
 
                 <div className={`flex items-center justify-between px-4 h-14 box-content`}>
                     <div className="flex items-center gap-3 overflow-hidden flex-1">
-                        {/* Producer Avatar (Circular) */}
                         <img
                             src={displayImage}
                             alt="Producer"
-                            className="w-9 h-9 rounded-full border border-white/10 object-cover shrink-0 cursor-pointer"
+                            className="w-9 h-9 rounded-xl border border-white/10 object-cover shrink-0 cursor-pointer"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 const handle = currentProject.producerHandle || currentProject.producer;
@@ -366,9 +363,9 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
                         }}
                     >
                         {/* Skeleton Loader */}
-                        <div className={`absolute inset-0 bg-white/10 rounded-[1.5rem] animate-pulse ${imageLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}></div>
+                        <div className={`absolute inset-0 bg-white/10 rounded-2xl animate-pulse ${imageLoaded ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}></div>
 
-                        <div className={`w-full h-full rounded-[1.5rem] overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-white/10 relative z-10 ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500`}>
+                        <div className={`w-full h-full rounded-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] border border-white/10 relative z-10 ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-500`}>
                             <img
                                 src={displayImage}
                                 alt="Producer"
@@ -600,7 +597,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
                         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
                             {/* Current Playing */}
                             <div className="flex items-center gap-4 p-3 bg-white/5 rounded-2xl border border-white/10">
-                                <img src={displayImage} className="w-12 h-12 rounded-lg object-cover" />
+                                <img src={displayImage} className="w-12 h-12 rounded-xl object-cover" />
                                 <div className="flex-1 min-w-0">
                                     <h4 className="text-sm font-bold text-primary truncate">{currentTrack.title}</h4>
                                     <p className="text-[10px] text-neutral-400 uppercase tracking-wider">{currentProject.producer}</p>
@@ -611,7 +608,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
                             {/* Rest of the tracks in project (Simulated Queue) */}
                             {currentProject.tracks.filter(t => t.id !== currentTrackId).map((track, idx) => (
                                 <div key={track.id || `queue-${idx}`} className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-2xl transition-colors group">
-                                    <img src={displayImage} className="w-12 h-12 rounded-lg object-cover opacity-60" />
+                                    <img src={displayImage} className="w-12 h-12 rounded-xl object-cover opacity-60" />
                                     <div className="flex-1 min-w-0">
                                         <h4 className="text-sm font-bold text-white truncate">{track.title}</h4>
                                         <p className="text-[10px] text-neutral-500 uppercase tracking-wider">{currentProject.producer}</p>
@@ -656,7 +653,7 @@ transition-all duration-500 transform cubic-bezier(0.2, 0.8, 0.2, 1)
                     <div className="flex items-center gap-4 relative z-10">
                         {/* Artwork with playing indicator */}
                         <div
-                            className="h-12 w-12 rounded-lg bg-neutral-900 border border-white/5 overflow-hidden shrink-0 relative group/image shadow-md cursor-pointer"
+                            className="h-12 w-12 rounded-xl bg-neutral-900 border border-white/5 overflow-hidden shrink-0 relative group/image shadow-md cursor-pointer"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 const handle = currentProject.producerHandle || currentProject.producer;

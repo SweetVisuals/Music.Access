@@ -730,7 +730,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             <div className="flex items-center gap-4">
                                                 <div
                                                     onClick={() => avatarInputRef.current?.click()}
-                                                    className="h-20 w-20 rounded-full bg-neutral-900 border border-transparent overflow-hidden shrink-0 relative group cursor-pointer"
+                                                    className="h-20 w-20 rounded-xl bg-neutral-900 border border-transparent overflow-hidden shrink-0 relative group cursor-pointer"
                                                 >
                                                     <img src={userProfile.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'} className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" alt="Avatar Preview" />
                                                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -984,7 +984,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
                         {/* Avatar */}
                         <div className={`
-                    relative z-30 shrink-0 rounded-2xl md:rounded-3xl p-1 md:p-1.5 bg-[#0a0a0a] shadow-2xl pointer-events-auto
+                    relative z-30 shrink-0 rounded-2xl md:rounded-3xl p-1 md:p-1.5 bg-[#0a0a0a] shadow-2xl pointer-events-auto md:translate-y-6
                     ${!isViewerMode ? 'cursor-pointer group/avatar' : ''}
                 `} onClick={triggerAvatarUpload}>
                             <div className="h-24 w-24 md:h-44 md:w-44 rounded-xl md:rounded-2xl bg-neutral-800 overflow-hidden relative border border-white/5">
@@ -1009,7 +1009,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                         <div className="flex-1 min-w-0 pb-2 flex flex-col md:flex-row justify-between items-end gap-4 md:gap-6 w-full pointer-events-auto">
 
                             {/* Text Info */}
-                            <div className="w-full md:w-auto mt-2 md:mt-0">
+                            <div className="w-full md:w-auto mt-2 md:mt-0 md:translate-y-6">
                                 <div className="flex items-center gap-2 md:gap-3 mb-1">
                                     <h1 className="text-2xl md:text-5xl font-black text-white tracking-tight">{userProfile.username}</h1>
                                     {/* Dynamic Plan Badge */}
@@ -1029,9 +1029,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     <span className="font-mono text-neutral-300 font-bold text-sm md:text-base">{userProfile.handle}</span>
 
                                     {userProfile.location && (
-                                        <div className="flex items-center gap-1.5 text-neutral-400 bg-white/5 px-2 py-1 rounded-lg border border-white/5">
-                                            <MapPin size={12} />
-                                            <span className="text-xs font-medium">{userProfile.location}</span>
+                                        <div className="flex items-center gap-1 text-neutral-500">
+                                            <MapPin size={10} />
+                                            <span className="text-[11px] font-medium">{userProfile.location}</span>
                                         </div>
                                     )}
 
@@ -1054,11 +1054,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             <button
                                                 onClick={handleToggleFollow}
                                                 disabled={isFollowLoading || isOwnProfile}
-                                                className={`px-4 md:px-10 py-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all border flex-1 md:flex-auto ${isOwnProfile
-                                                    ? 'bg-neutral-800 border-white/10 text-neutral-500 cursor-not-allowed opacity-50'
+                                                className={`px-4 md:px-10 py-3.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all flex-1 md:flex-auto ${isOwnProfile
+                                                    ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed opacity-50'
                                                     : isFollowing
-                                                        ? 'bg-primary/20 border-primary/20 text-primary hover:bg-red-500/20 hover:border-red-500 hover:text-red-500'
-                                                        : 'bg-primary border-primary text-black hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)]'
+                                                        ? 'bg-primary/20 text-primary hover:bg-red-500/20 hover:text-red-500'
+                                                        : 'bg-primary text-black hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)]'
                                                     } ${isFollowLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
                                                 <UserPlus size={16} />
@@ -1066,7 +1066,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             </button>
                                             <button
                                                 onClick={handleMessage}
-                                                className="px-4 md:px-10 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-white/10 transition-colors flex items-center justify-center gap-2 flex-1 md:flex-auto"
+                                                className="px-4 md:px-10 py-3.5 rounded-xl bg-white/5 text-white font-bold text-xs hover:bg-white/10 transition-colors flex items-center justify-center gap-2 flex-1 md:flex-auto"
                                             >
                                                 <MessageSquare size={16} />
                                                 MESSAGE
@@ -1075,7 +1075,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                     )}
                                 </div>
 
-                                <div className="flex items-center divide-x divide-white/10 bg-neutral-900/50 rounded-xl border border-white/5 backdrop-blur-md w-full md:w-auto">
+                                <div className="flex items-center divide-x divide-white/10 bg-neutral-900/50 rounded-xl backdrop-blur-md w-full md:w-auto">
                                     <div className="px-4 md:px-5 py-2 md:py-3 text-center flex-1 md:flex-none">
                                         <div className="text-base md:text-lg font-black text-white font-mono">{userProfile.streams ? userProfile.streams.toLocaleString() : '0'}</div>
                                         <div className="text-[8px] md:text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Streams</div>

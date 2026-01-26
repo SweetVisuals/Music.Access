@@ -375,7 +375,7 @@ const RightActions: React.FC<{
                                     setIsProfileOpen(!isProfileOpen);
                                 }
                             } : onOpenAuth)}
-                            className="flex items-center gap-3 pl-2 group"
+                            className="flex items-center gap-2 lg:gap-3 lg:pl-2 group"
                         >
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-xl bg-neutral-800 border border-transparent overflow-hidden group-hover:border-primary/50 transition-all shadow-lg">

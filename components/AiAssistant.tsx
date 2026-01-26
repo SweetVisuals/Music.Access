@@ -54,7 +54,14 @@ const AiAssistant: React.FC<AiAssistantProps> = ({ projects, isOpen, onClose }) 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-24 right-8 w-80 h-96 bg-neutral-950 border border-neutral-700 rounded-lg shadow-2xl z-50 flex flex-col animate-in fade-in zoom-in-95 duration-200">
+    <div
+      className={`fixed right-0 left-0 bottom-0 lg:left-auto lg:right-8 lg:bottom-24 lg:w-80 w-full h-[60vh] lg:h-96 bg-neutral-950 border-t lg:border border-neutral-700 lg:rounded-lg shadow-2xl z-[200] flex flex-col animate-in fade-in slide-in-from-bottom-10 lg:zoom-in-95 duration-200`}
+      style={{
+        bottom: window.innerWidth < 1024
+          ? (projects.some(p => p.id === 'current') || true ? 'calc(50px + env(safe-area-inset-bottom))' : 'env(safe-area-inset-bottom)')
+          : '6rem'
+      }}
+    >
       {/* Header */}
       <div className="h-10 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-4 rounded-t-lg">
         <div className="flex items-center space-x-2">

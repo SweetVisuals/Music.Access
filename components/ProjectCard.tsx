@@ -741,7 +741,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                 const handle = project.producerHandle || project.producer;
                                 navigate(`/@${handle}`);
                             }}
-                            className="h-5 w-5 rounded bg-neutral-800 text-neutral-400 border border-transparent flex items-center justify-center text-[9px] font-bold uppercase shrink-0 overflow-hidden cursor-pointer hover:border-white/20 transition-colors"
+                            className="h-5 w-5 rounded-lg bg-neutral-800 text-neutral-400 border border-transparent flex items-center justify-center text-[9px] font-bold uppercase shrink-0 overflow-hidden cursor-pointer hover:border-white/20 transition-colors"
                         >
                             {project.producerAvatar ? (
                                 <img src={project.producerAvatar} alt={project.producer} className="w-full h-full object-cover" />

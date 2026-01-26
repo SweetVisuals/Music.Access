@@ -43,8 +43,10 @@ const CreateSoundpackModal: React.FC<CreateSoundpackModalProps> = ({ isOpen, onC
     const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
     const [selectedSubGenres, setSelectedSubGenres] = useState<string[]>([]);
     const [selectedPackType, setSelectedPackType] = useState<string>('Loop Kit');
-    const [showAllGenres, setShowAllGenres] = useState(false);
-    const [showAllSubGenres, setShowAllSubGenres] = useState(false);
+    // On mobile, expand genres/subgenres by default
+    const isMobileInit = typeof window !== 'undefined' && window.innerWidth < 768;
+    const [showAllGenres, setShowAllGenres] = useState(isMobileInit);
+    const [showAllSubGenres, setShowAllSubGenres] = useState(isMobileInit);
 
     const [availableContracts, setAvailableContracts] = useState<Contract[]>([]);
 

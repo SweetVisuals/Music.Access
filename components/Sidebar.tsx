@@ -228,7 +228,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
             )}
 
             <aside className={`
-        fixed inset-0 z-[100] w-full lg:w-[260px] bg-black lg:bg-[#050505] flex flex-col font-sans transition-transform duration-300 ease-in-out transform
+        fixed inset-0 z-[140] w-full lg:w-[260px] bg-black lg:bg-[#050505] flex flex-col font-sans transition-transform duration-300 ease-in-out transform
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:h-screen
       `}>
                 <div className="h-[calc(56px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] flex items-center justify-between lg:justify-center px-5 shrink-0 border-transparent relative overflow-hidden">
@@ -465,111 +465,119 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                 )}
 
                 {/* Footer */}
-                < div className={`
-                    shrink-0 px-4 py-3 border-t border-transparent bg-[#050505]
-                    transition-all duration-300
-                    ${isPlayerActive ? 'pb-[calc(8rem+env(safe-area-inset-bottom))]' : 'pb-[calc(4.5rem+env(safe-area-inset-bottom))]'} 
-                    lg:pb-4
-                `}>
-                    {isLoggedIn && (
-                        <div className="mb-3 space-y-1.5">
-                            <div className="flex justify-between items-center px-1">
-                                <span className="text-[9px] font-bold text-neutral-600 uppercase tracking-wider">Storage</span>
-                                <span className="text-[9px] font-mono text-neutral-500">{formatStorageSize(storageUsage.used)} / {formatStorageSize(storageUsage.limit)}</span>
-                            </div>
-                            <div className="h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-primary rounded-full"
-                                    style={{ width: `${Math.min((storageUsage.used / storageUsage.limit) * 100, 100)}%` }}
-                                ></div>
+                <div className="shrink-0 relative">
+                    {/* Footer Content - Storage & Profile */}
+                    <div className={`
+                        px-4 py-3 border-t border-transparent bg-[#050505]
+                        ${isPlayerActive ? 'pb-[calc(130px+env(safe-area-inset-bottom))]' : 'pb-[calc(80px+env(safe-area-inset-bottom))]'} lg:pb-4
+                    `}>
+                        {/* Mobile: Profile first, then Storage. Desktop: Storage first, then Profile */}
+                        <div className="flex flex-col-reverse lg:flex-col gap-3">
+                            {/* Storage - appears second on mobile, first on desktop */}
+                            {isLoggedIn && (
+                                <div className="space-y-1.5">
+                                    <div className="flex justify-between items-center px-1">
+                                        <span className="text-[9px] font-bold text-neutral-600 uppercase tracking-wider">Storage</span>
+                                        <span className="text-[9px] font-mono text-neutral-500">{formatStorageSize(storageUsage.used)} / {formatStorageSize(storageUsage.limit)}</span>
+                                    </div>
+                                    <div className="h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-primary rounded-full"
+                                            style={{ width: `${Math.min((storageUsage.used / storageUsage.limit) * 100, 100)}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Profile - hidden on mobile, visible on desktop */}
+                            <div className="hidden lg:block">
+                                {
+                                    isLoggedIn ? (
+                                        userProfile && !profileLoading ? (
+                                            <div
+                                                className="flex items-center gap-3 group cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-all border border-transparent hover:border-white/5"
+                                                onClick={() => onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile')}
+                                            >
+                                                <div className="relative shrink-0">
+                                                    <img
+                                                        src={userProfile.avatar || 'https://i.pravatar.cc/150?u=user'}
+                                                        alt={userProfile.username}
+                                                        className="h-9 w-9 rounded-xl object-cover ring-2 ring-black group-hover:ring-primary/20 transition-all shadow-sm"
+                                                    />
+                                                    <div className="absolute -bottom-1 -right-1 bg-[#050505] p-[2px] rounded-full">
+                                                        <div className="w-2 h-2 bg-emerald-500 rounded-full border border-[#050505]"></div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                    <div className="text-xs font-bold text-white truncate group-hover:text-primary transition-colors leading-tight mb-0.5">{userProfile.username}</div>
+                                                    <div className="text-[10px] text-neutral-500 truncate font-medium leading-tight">{userProfile.email}</div>
+                                                </div>
+
+                                                {/* Plan Badge */}
+                                                {userProfile.plan && (
+                                                    <div className={`
+                                                px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider mr-1
+                                                ${userProfile.plan === 'Pro'
+                                                            ? 'bg-primary/20 text-primary border border-primary/20'
+                                                            : userProfile.plan === 'Studio+'
+                                                                ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20'
+                                                                : 'bg-white/10 text-neutral-400 border border-white/5'
+                                                        }
+                                            `}>
+                                                        {userProfile.plan}
+                                                    </div>
+                                                )}
+
+                                                <MoreVertical size={16} className="text-neutral-600 group-hover:text-white transition-colors opacity-0 group-hover:opacity-100" />
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2 animate-pulse">
+                                                <div className="h-8 w-8 bg-neutral-800 rounded-full"></div>
+                                                <div className="space-y-1 flex-1">
+                                                    <div className="h-2 w-16 bg-neutral-800 rounded"></div>
+                                                    <div className="h-1.5 w-20 bg-neutral-800 rounded"></div>
+                                                </div>
+                                            </div>
+                                        )
+                                    ) : (
+                                        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-neutral-900/90 to-black border border-white/5 p-4 group">
+                                            {/* Ambient Background Glow */}
+                                            <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-primary/20 transition-all duration-500"></div>
+
+                                            <div className="relative z-10">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-neutral-800/80 flex items-center justify-center text-neutral-400 group-hover:text-white group-hover:bg-neutral-800 transition-all shadow-inner">
+                                                        <Users size={14} />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-[11px] font-bold text-white leading-tight">Guest Access</div>
+                                                        <div className="text-[9px] text-neutral-500 font-medium tracking-wide">Join the community</div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <button
+                                                        onClick={onOpenAuth}
+                                                        className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-[10px] font-bold transition-all border border-white/5 hover:border-white/10"
+                                                    >
+                                                        Sign Up
+                                                    </button>
+                                                    <button
+                                                        onClick={onOpenAuth}
+                                                        className="px-3 py-2 bg-primary hover:bg-primary/90 text-black rounded-lg text-[10px] font-bold transition-all shadow-[0_2px_10px_rgba(var(--primary),0.15)] flex items-center justify-center gap-1.5"
+                                                    >
+                                                        <LogIn size={10} />
+                                                        <span>Log In</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                }
                             </div>
                         </div>
-                    )}
-
-                    {
-                        isLoggedIn ? (
-                            userProfile && !profileLoading ? (
-                                <div
-                                    className="flex items-center gap-3 group cursor-pointer p-2 rounded-xl hover:bg-white/5 transition-all border border-transparent hover:border-white/5"
-                                    onClick={() => onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile')}
-                                >
-                                    <div className="relative shrink-0">
-                                        <img
-                                            src={userProfile.avatar || 'https://i.pravatar.cc/150?u=user'}
-                                            alt={userProfile.username}
-                                            className="h-9 w-9 rounded-lg object-cover ring-2 ring-black group-hover:ring-primary/20 transition-all shadow-sm"
-                                        />
-                                        <div className="absolute -bottom-1 -right-1 bg-[#050505] p-[2px] rounded-full">
-                                            <div className="w-2 h-2 bg-emerald-500 rounded-full border border-[#050505]"></div>
-                                        </div>
-                                    </div>
-                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                                        <div className="text-xs font-bold text-white truncate group-hover:text-primary transition-colors leading-tight mb-0.5">{userProfile.username}</div>
-                                        <div className="text-[10px] text-neutral-500 truncate font-medium leading-tight">{userProfile.email}</div>
-                                    </div>
-
-                                    {/* Plan Badge */}
-                                    {userProfile.plan && (
-                                        <div className={`
-                                            px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider mr-1
-                                            ${userProfile.plan === 'Pro'
-                                                ? 'bg-primary/20 text-primary border border-primary/20'
-                                                : userProfile.plan === 'Studio+'
-                                                    ? 'bg-amber-400/20 text-amber-400 border border-amber-400/20'
-                                                    : 'bg-white/10 text-neutral-400 border border-white/5'
-                                            }
-                                        `}>
-                                            {userProfile.plan}
-                                        </div>
-                                    )}
-
-                                    <MoreVertical size={16} className="text-neutral-600 group-hover:text-white transition-colors opacity-0 group-hover:opacity-100" />
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-2 animate-pulse">
-                                    <div className="h-8 w-8 bg-neutral-800 rounded-full"></div>
-                                    <div className="space-y-1 flex-1">
-                                        <div className="h-2 w-16 bg-neutral-800 rounded"></div>
-                                        <div className="h-1.5 w-20 bg-neutral-800 rounded"></div>
-                                    </div>
-                                </div>
-                            )
-                        ) : (
-                            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-neutral-900/90 to-black border border-white/5 p-4 group">
-                                {/* Ambient Background Glow */}
-                                <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-primary/20 transition-all duration-500"></div>
-
-                                <div className="relative z-10">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-8 h-8 rounded-lg bg-neutral-800/80 flex items-center justify-center text-neutral-400 group-hover:text-white group-hover:bg-neutral-800 transition-all shadow-inner">
-                                            <Users size={14} />
-                                        </div>
-                                        <div>
-                                            <div className="text-[11px] font-bold text-white leading-tight">Guest Access</div>
-                                            <div className="text-[9px] text-neutral-500 font-medium tracking-wide">Join the community</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <button
-                                            onClick={onOpenAuth}
-                                            className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-[10px] font-bold transition-all border border-white/5 hover:border-white/10"
-                                        >
-                                            Sign Up
-                                        </button>
-                                        <button
-                                            onClick={onOpenAuth}
-                                            className="px-3 py-2 bg-primary hover:bg-primary/90 text-black rounded-lg text-[10px] font-bold transition-all shadow-[0_2px_10px_rgba(var(--primary),0.15)] flex items-center justify-center gap-1.5"
-                                        >
-                                            <LogIn size={10} />
-                                            <span>Log In</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )
-                    }
-                </div >
+                    </div>
+                </div>
             </aside >
         </>
     );

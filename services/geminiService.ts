@@ -241,7 +241,23 @@ export const chatWithGeneralAi = async (
       content: msg.text
     }));
 
-    let systemPrompt = `You are a creative collaborative assistant in a music production/songwriting app. Current Note Context: ${currentNoteContent ? currentNoteContent.slice(0, 500) : 'None'}`;
+    let systemPrompt = `You are a creative collaborative assistant in a music production/songwriting app. 
+Current Note Context: ${currentNoteContent ? currentNoteContent.slice(0, 2000) : 'None'}
+
+CRITICAL RULES:
+1. MAX 50 WORDS per response, unless generating lyrics or long lists. Keep it punchy.
+2. FORMATTING: Use Markdown (bullet points, **bold**, tables) for all structured data.
+3. SUGGESTIONS: If you suggest changing user's text, you MUST use this EXACT format:
+<diff>
+<original>
+(Edge-to-edge exact matching text from the note context to be replaced)
+</original>
+<replacement>
+(The new text to replace it with)
+</replacement>
+</diff>
+Then ask "Should we insert this?".
+4. Do not wrap the <diff> block in markdown code fences. Output it as raw text.`;
 
     // Construct the full payload for callDeepSeek which accepts an array
     const payload = [

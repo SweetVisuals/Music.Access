@@ -123,7 +123,10 @@ const Studio: React.FC<StudioProps> = ({
                     const { getProjectsByUserId } = await import('../services/supabaseService');
                     const data = await getProjectsByUserId(userProfile.id);
 
-                    const formatted = data.map(p => ({
+                    // Filter out published projects - Studio is for planning/WIP only
+                    const studioData = data.filter(p => p.status !== 'published');
+
+                    const formatted = studioData.map(p => ({
                         ...p,
                         status: (p.status || 'planning') as any,
                         format: (p.format || 'Album') as any,

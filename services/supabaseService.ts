@@ -4863,20 +4863,15 @@ export const saveStrategyToCalendar = async (userId: string, strategyData: any) 
   const eventsToInsert: any[] = [];
 
   // --- A. ERA EVENTS (Stage 4) ---
-  // Goal: Show the Era as a long spanning event or milestone? 
-  // Let's make it a background event or just a "Start of Era" milestone if we don't support spans well visually yet.
-  // Actually, let's look for dates. Stage 4 often doesn't have explicit dates in this template (just concept).
-  // If no dates, we skip or use today. Let's skip Era event for now unless we find a date field in future.
-  // ... Wait, user asked to "add a day to day plan... campaign, era". 
-  // If Stage 5 has campaigns, the "Era" is effectively the sum of campaigns + some buffer?
-  // Let's add a "Start of Era" milestone if we have a title.
   if (stage4.era_title) {
-    // We don't have a start date for the Era in the form. Let's use the start of the first campaign or Today.
-    let eraStart = new Date();
-    if (stage5.campaigns && stage5.campaigns.length > 0) {
-      const dates = stage5.campaigns.map((c: any) => c.dates?.from ? new Date(c.dates.from) : null).filter(Boolean);
+    let eraStart = stage4.era_dates?.from ? new Date(stage4.era_dates.from) : new Date();
+    let eraEnd = stage4.era_dates?.to ? new Date(stage4.era_dates.to) : null;
+
+    // Fallback if no specific dates but campaigns exist
+    if (!stage4.era_dates?.from && stage5.campaigns?.campaign_list?.length > 0) {
+      const dates = stage5.campaigns.campaign_list.map((c: any) => c.dates?.from ? new Date(c.dates.from) : null).filter(Boolean);
       if (dates.length > 0) {
-        eraStart = new Date(Math.min(...dates));
+        eraStart = new Date(Math.min(...dates as any));
       }
     }
 
@@ -4884,10 +4879,10 @@ export const saveStrategyToCalendar = async (userId: string, strategyData: any) 
       user_id: userId,
       title: `Era: ${stage4.era_title}`,
       start_date: eraStart.toISOString(),
-      end_date: null, // Point in time for start? Or maybe end of year? Let's do point in time "Launch"
-      type: 'milestone',
+      end_date: eraEnd ? eraEnd.toISOString() : null,
+      type: 'era',
       status: 'pending',
-      description: stage4.era_narrative || 'New Era Begins',
+      description: stage4.era_narrative || 'Current Era',
       metadata: { source: 'roadmap_strategy_era', stage_id: 'stage-4' }
     });
   }

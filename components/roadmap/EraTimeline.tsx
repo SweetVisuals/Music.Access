@@ -17,7 +17,7 @@ const EraTimeline: React.FC<EraTimelineProps> = ({ strategies, campaigns, strate
 
     if (!eraData) {
         return (
-            <div className="px-6 md:px-0">
+            <div className="px-6 lg:px-8">
                 <div className={`group relative overflow-hidden rounded-3xl bg-neutral-900 p-8 mb-8 transition-all`}>
                     <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-800" />
                     <div className="relative z-10 flex flex-col items-center justify-center text-center space-y-4">
@@ -47,7 +47,10 @@ const EraTimeline: React.FC<EraTimelineProps> = ({ strategies, campaigns, strate
         const combined = [...mappedStrategyCampaigns];
         campaigns.forEach(calEvent => {
             if (!combined.find(c => c.title === calEvent.title)) {
-                combined.push(calEvent);
+                combined.push({
+                    ...calEvent,
+                    endDate: calEvent.endDate || calEvent.startDate // Fallback to start date if no end date
+                });
             }
         });
         return combined.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
@@ -63,7 +66,7 @@ const EraTimeline: React.FC<EraTimelineProps> = ({ strategies, campaigns, strate
     const upcomingCampaigns = allCampaigns.filter(c => new Date(c.startDate) > new Date()).slice(0, 1);
 
     return (
-        <div className="px-6 md:px-0">
+        <div className="px-6 lg:px-8">
             <div className="relative w-full rounded-2xl md:rounded-[2rem] overflow-hidden mb-8 md:mb-10 group shadow-2xl shadow-indigo-900/20">
                 {/* Dynamic Background */}
                 <div className="absolute inset-0 bg-black">

@@ -385,32 +385,37 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
         const stage4 = strategies.find(s => s.stageId === 'stage-4');
         if (!stage4?.data) return null;
 
+        const eraName = stage4.data.era_title || 'Current Era';
+
         // 1. Prioritize explicit era_dates (New)
         if (stage4.data.era_dates?.from) {
             const fromDate = stage4.data.era_dates.from;
             let toDate = stage4.data.era_dates.to;
 
-            // FIX: If toDate is empty OR equals fromDate, treat as open-ended (start date only)
-            if (!toDate || toDate === fromDate) {
+            // FIX: If toDate is empty, treat as open-ended.
+            if (!toDate) {
                 toDate = undefined;
             }
 
             // Validate they look like dates at least.
             if (fromDate.length === 10) {
                 // Determine Color
-                let bgClass = 'bg-yellow-500/10'; // Default
+                let bgClass = 'bg-yellow-500/15'; // Slightly more prominent
+                let textClass = 'text-yellow-400';
                 if (stage4.data.era_color) {
-                    if (stage4.data.era_color.includes('Purple')) bgClass = 'bg-purple-500/10';
-                    if (stage4.data.era_color.includes('Blue')) bgClass = 'bg-blue-500/10';
-                    if (stage4.data.era_color.includes('Red')) bgClass = 'bg-red-500/10';
-                    if (stage4.data.era_color.includes('Green')) bgClass = 'bg-green-500/10';
-                    if (stage4.data.era_color.includes('Pink')) bgClass = 'bg-pink-500/10';
+                    if (stage4.data.era_color.includes('Purple')) { bgClass = 'bg-purple-500/15'; textClass = 'text-purple-400'; }
+                    if (stage4.data.era_color.includes('Blue')) { bgClass = 'bg-blue-500/15'; textClass = 'text-blue-400'; }
+                    if (stage4.data.era_color.includes('Red')) { bgClass = 'bg-red-500/15'; textClass = 'text-red-400'; }
+                    if (stage4.data.era_color.includes('Green')) { bgClass = 'bg-green-500/15'; textClass = 'text-green-400'; }
+                    if (stage4.data.era_color.includes('Pink')) { bgClass = 'bg-pink-500/15'; textClass = 'text-pink-400'; }
                 }
 
                 return {
+                    name: eraName,
                     from: fromDate,
                     to: toDate,
-                    style: bgClass
+                    style: bgClass,
+                    textClass: textClass
                 };
             }
         }
@@ -423,9 +428,11 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
 
         if (start && isValid(start)) {
             return {
+                name: eraName,
                 from: format(start, 'yyyy-MM-dd'),
                 to: undefined,
-                style: 'bg-yellow-500/10'
+                style: 'bg-yellow-500/15',
+                textClass: 'text-yellow-400'
             };
         }
         return null;
@@ -437,6 +444,7 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
             case 'campaign': return 'bg-primary/10 text-primary';
             case 'meeting': return 'bg-purple-500/10 text-purple-400';
             case 'milestone': return 'bg-yellow-500/10 text-yellow-400';
+            case 'era': return 'bg-indigo-500/10 text-indigo-400';
             default: return 'bg-neutral-800 text-neutral-400';
         }
     };
@@ -458,7 +466,7 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
             />
 
             {/* Active Goals Section (Swapped with Mobile Calendar Trigger) */}
-            <div className="mb-8 mt-8 px-6 md:px-0">
+            <div className="mb-8 mt-8 px-6 lg:px-8">
                 <div className="flex items-center justify-between mb-4 cursor-pointer" onClick={() => setIsGoalsExpanded(!isGoalsExpanded)}>
                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
                         <Target className="text-primary" size={18} />
@@ -515,7 +523,7 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                 bg-[#0a0a0a] transition-all duration-300
                 ${showFullCalendar
                     ? 'fixed top-[60px] bottom-0 inset-x-0 z-[40] flex flex-col shadow-2xl'
-                    : 'overflow-hidden shadow-2xl hidden md:block'
+                    : 'hidden md:block mx-6 lg:mx-8 rounded-xl border border-neutral-800 overflow-hidden shadow-2xl'
                 }
             `}>
 
@@ -610,12 +618,24 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                             {/* Days */}
                             {days.map((day) => {
                                 const isToday = isSameDay(day, new Date());
-                                const dayEvents = events.filter(e => isSameDay(new Date(e.startDate), day));
                                 const dayStr = format(day, 'yyyy-MM-dd'); // Normalize to YYYY-MM-DD for matching
+
+                                // Correctly filter events that overlap with this day (spanning events)
+                                const dayEvents = events.filter(e => {
+                                    const start = format(new Date(e.startDate), 'yyyy-MM-dd');
+                                    const end = e.endDate ? format(new Date(e.endDate), 'yyyy-MM-dd') : start;
+                                    return dayStr >= start && dayStr <= end;
+                                });
 
                                 // Check for Active Strategy Campaign (Date Range)
                                 const activeStrategyCampaign = strategyCampaigns.find(c =>
                                     c.dates?.from && c.dates?.to && dayStr >= c.dates.from && dayStr <= c.dates.to
+                                );
+
+                                // Era Check
+                                const isEraActive = activeEra && (
+                                    (activeEra.to && dayStr >= activeEra.from && dayStr <= activeEra.to) ||
+                                    (!activeEra.to && dayStr >= activeEra.from)
                                 );
 
                                 return (
@@ -624,9 +644,13 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                                         className={`
                                             p-2 relative group transition-colors cursor-pointer flex flex-col gap-1
                                             ${activeStrategyCampaign
-                                                ? 'bg-primary/10 text-primary' // Use simpler fallback as dynamic styles were failing? Or assume styling is known.
-                                                : activeEra && ((activeEra.to && dayStr >= activeEra.from && dayStr <= activeEra.to) || (!activeEra.to && dayStr >= activeEra.from))
-                                                    ? activeEra.style
+                                                ? `${activeStrategyCampaign.style.text} ring-1 ring-inset ${activeStrategyCampaign.style.text.replace('text-', 'ring-')}` // Campaign: Text Color + Border
+                                                : ''
+                                            }
+                                            ${isEraActive
+                                                ? activeEra.style // Era: Background Color (Primary)
+                                                : activeStrategyCampaign
+                                                    ? activeStrategyCampaign.style.bg // Fallback: If no Era, use Campaign BG
                                                     : isToday
                                                         ? 'bg-primary/5'
                                                         : 'hover:bg-white/5'
@@ -634,13 +658,26 @@ const PlannerTab: React.FC<PlannerTabProps> = ({
                                         `}
                                         onClick={() => handleAddEvent(day)}
                                     >
-                                        {/* Campaign Label */}
+                                        {/* Era Label - Always show if active, subtle but clear */}
+                                        {isEraActive && (
+                                            <div className={`text-[9px] font-black uppercase tracking-tighter truncate opacity-60 mb-1 flex items-center gap-1 ${activeEra.textClass}`}>
+                                                <Sparkles size={8} />
+                                                <span className="truncate">{activeEra.name}</span>
+                                            </div>
+                                        )}
+
+                                        {/* Campaign Highlight Bar */}
                                         {activeStrategyCampaign && (
-                                            <div className={`text-[8px] font-black uppercase tracking-wider truncate px-1 rounded-sm opacity-80 ${activeStrategyCampaign.style.text}`}>
+                                            <div className={`h-1 w-full rounded-full mb-1 ${activeStrategyCampaign.style.bg.replace('/10', '/60')} shadow-sm`} />
+                                        )}
+
+                                        {/* Campaign Label - Only show if it fits or on specific conditions to avoid clutter */}
+                                        {activeStrategyCampaign && (
+                                            <div className={`text-[8px] font-black uppercase tracking-wider truncate px-1 rounded-sm opacity-100 ${isEraActive ? 'bg-black/20' : ''}`}>
                                                 {activeStrategyCampaign.name}
                                             </div>
                                         )}
-                                        <div className="flex justify-between items-start mb-2">
+                                        <div className="flex justify-between items-start mb-1">
                                             <span className={`
                                                 text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full
                                                 ${isToday ? 'bg-primary text-black' : 'text-neutral-500 group-hover:text-white'}
@@ -940,7 +977,7 @@ const StageWizardContainer: React.FC<any> = ({ stageId, onClose, onSave, onSaveA
 
     return (
         <div
-            className={`fixed left-0 lg:left-[260px] top-[calc(56px+env(safe-area-inset-top))] bottom-0 right-0 z-[50] transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}
+            className={`fixed left-0 lg:left-[260px] top-[calc(56px+env(safe-area-inset-top))] lg:top-[56px] bottom-0 right-0 z-[50] transition-opacity duration-300 ${isClosing ? 'opacity-0' : 'opacity-100'}`}
         >
             <div className="absolute inset-0 bg-black/40 -z-10 backdrop-blur-[2px]" onClick={handleInternalClose} />
             <div className={`

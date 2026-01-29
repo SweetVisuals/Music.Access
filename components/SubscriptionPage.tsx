@@ -173,7 +173,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ onNavigate, userPro
     const targetPlan = plans.find(p => p.name === selectedPlan);
 
     return (
-        <div className="w-full max-w-7xl mx-auto px-4 pt-0 pb-8 lg:px-6 lg:pt-0 lg:pb-[15px] animate-in fade-in duration-700 relative lg:[zoom:1.08] origin-top">
+        <div className="w-full max-w-7xl mx-auto px-4 pt-12 lg:pt-0 pb-8 lg:px-6 lg:pb-[15px] animate-in fade-in duration-700 relative lg:[zoom:1.08] origin-top">
             {/* Header */}
             <div className="text-center pt-0 mb-6 lg:mb-8">
                 <h1 className="text-4xl lg:text-5xl font-black text-white tracking-tighter mb-4 uppercase">

@@ -93,6 +93,23 @@ const AiPlannerModal: React.FC<AiPlannerModalProps> = ({ isOpen, onClose, strate
             const response = await callDeepSeek(payload);
             setMessages(prev => [...prev, { role: 'model', text: response }]);
 
+            // NEW: Auto-trigger integration if user intent is clear or AI says it's doing it
+            const lowerInput = inputValue.toLowerCase();
+            const lowerResponse = response.toLowerCase();
+            const isIntegrationIntent =
+                lowerInput.includes('integrate') ||
+                lowerInput.includes('add to calendar') ||
+                lowerInput.includes('schedule this') ||
+                lowerResponse.includes('integrating') ||
+                lowerResponse.includes('added to your calendar');
+
+            if (isIntegrationIntent) {
+                // Short delay to let the message render
+                setTimeout(() => {
+                    handleGenerateEvents();
+                }, 1000);
+            }
+
         } catch (e) {
             console.error(e);
             setMessages(prev => [...prev, { role: 'model', text: "Sorry, I had a connection error." }]);
@@ -159,7 +176,7 @@ const AiPlannerModal: React.FC<AiPlannerModalProps> = ({ isOpen, onClose, strate
                 endDate: new Date(event.date).toISOString(), // Point event default
                 type: event.type as any,
                 description: event.description,
-                status: 'pending',
+                status: 'completed',
                 metadata: { source: 'ai_planner' }
             });
         }
@@ -215,9 +232,9 @@ const AiPlannerModal: React.FC<AiPlannerModalProps> = ({ isOpen, onClose, strate
                         </div>
 
                         {/* Input Area */}
-                        <div className="p-4 bg-neutral-900/30 border-t border-neutral-800 shrink-0">
-                            {messages.length > 2 && !showPreview && (
-                                <div className="flex justify-center -mt-10 mb-4 opacity-0 animate-in fade-in slide-in-from-bottom-2 fill-mode-forwards duration-500">
+                        <div className="p-4 bg-neutral-900/30 border-t border-neutral-800 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom)+60px)] md:pb-4">
+                            {messages.length >= 2 && !showPreview && (
+                                <div className="flex justify-center -mt-10 mb-4 animate-in fade-in slide-in-from-bottom-2 fill-mode-forwards duration-500">
                                     <button
                                         onClick={handleGenerateEvents}
                                         disabled={isGeneratingEvents}

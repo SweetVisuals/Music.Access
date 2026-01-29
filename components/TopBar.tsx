@@ -23,6 +23,8 @@ interface TopBarProps {
     gemsClaimedToday: boolean;
     profileLoading: boolean;
     onMenuClick: () => void;
+    onToggleDiscoverView?: () => void;
+    isDiscoverFeedMode?: boolean;
 }
 
 const RightActions: React.FC<{
@@ -63,6 +65,8 @@ const RightActions: React.FC<{
     isCartAnimating?: boolean;
     projects: Project[];
     handleNotificationClick: (notification: Notification) => void;
+    onToggleDiscoverView?: () => void;
+    isDiscoverFeedMode?: boolean;
 }> = ({
     isLoggedIn, isFocused, mobileSearchOpen, currentView, userProfile,
     gemsClaimedToday, profileLoading, onClaimGems, onNavigate,
@@ -71,7 +75,7 @@ const RightActions: React.FC<{
     handleMarkAllRead, handleMarkRead, cartRef, isCartOpen, setIsCartOpen, cartItems,
     cartTotal, removeFromCart, dropdownRef, isProfileOpen, setIsProfileOpen,
     onOpenAuth, onLogout, isSpacer = false, onMobileSearchOpen, isCartAnimating, projects,
-    handleNotificationClick
+    handleNotificationClick, onToggleDiscoverView, isDiscoverFeedMode
 }) => {
         const { openPurchaseModal } = usePurchaseModal();
 
@@ -140,6 +144,9 @@ const RightActions: React.FC<{
                         </div>
                     </div>
                 )}
+
+
+                {/* Discover View Toggle (Moved to Profile Dropdown) */}
 
                 <div className="h-5 w-px bg-white/10 mx-1 hidden sm:block"></div>
 
@@ -368,13 +375,7 @@ const RightActions: React.FC<{
                     {/* Group 3: Profile */}
                     <div className="relative" ref={isSpacer ? null : dropdownRef}>
                         <button
-                            onClick={isSpacer ? undefined : (isLoggedIn ? () => {
-                                if (isMobile || (currentView === 'notes' && window.innerWidth < 1024)) {
-                                    onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile');
-                                } else {
-                                    setIsProfileOpen(!isProfileOpen);
-                                }
-                            } : onOpenAuth)}
+                            onClick={isSpacer ? undefined : (isLoggedIn ? () => setIsProfileOpen(!isProfileOpen) : onOpenAuth)}
                             className="flex items-center gap-2 lg:gap-3 lg:pl-2 group"
                         >
                             <div className="flex items-center gap-3">
@@ -388,12 +389,12 @@ const RightActions: React.FC<{
                                     )}
                                 </div>
                             </div>
-                            {isLoggedIn && !isMobile && <ChevronDown size={12} className="text-neutral-500 group-hover:text-white transition-colors" />}
+                            {isLoggedIn && <ChevronDown size={12} className="text-neutral-500 group-hover:text-white transition-colors" />}
                         </button>
 
                         {/* Profile Dropdown */}
                         {isLoggedIn && isProfileOpen && !isSpacer && (
-                            <div className="absolute right-0 top-full mt-6 lg:mt-3 w-64 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                            <div className="absolute right-0 top-full mt-6 lg:mt-3 w-56 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
                                 <div className="p-4 border-b border-white/5 bg-white/[0.02]">
                                     <div className="text-lg font-bold text-white truncate tracking-tight">{userProfile?.username || 'User'}</div>
                                 </div>
@@ -402,13 +403,45 @@ const RightActions: React.FC<{
                                         <User size={16} /> My Profile
                                     </button>
 
-                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('dashboard-overview'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
-                                        <LayoutDashboard size={16} /> Dashboard
-                                    </button>
+
 
                                     <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('settings'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
                                         <Settings size={16} /> Settings
                                     </button>
+
+                                    {/* Discover View Toggle (Mobile Only) */}
+                                    {isMobile && currentView === 'home' && onToggleDiscoverView && (
+                                        <div className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors font-medium">
+                                            <div className="flex items-center gap-3">
+                                                {isDiscoverFeedMode ? <LayoutDashboard size={16} /> : (
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                                                        <line x1="12" y1="18" x2="12.01" y2="18" />
+                                                    </svg>
+                                                )}
+                                                <span>Discover Feed</span>
+                                            </div>
+                                            <div className="flex bg-black p-1 rounded-lg border border-white/5">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); !isDiscoverFeedMode && onToggleDiscoverView(); }}
+                                                    className={`p-1 rounded-md transition-all duration-300 ${isDiscoverFeedMode ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-400'}`}
+                                                    title="Feed View"
+                                                >
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                                                        <line x1="12" y1="18" x2="12.01" y2="18" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); isDiscoverFeedMode && onToggleDiscoverView(); }}
+                                                    className={`p-1 rounded-md transition-all duration-300 ${!isDiscoverFeedMode ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-400'}`}
+                                                    title="Grid View"
+                                                >
+                                                    <LayoutDashboard size={14} strokeWidth={2} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="space-y-2 mt-2 px-1">
                                         <div
@@ -480,7 +513,9 @@ const TopBar: React.FC<TopBarProps> = ({
     onClaimGems,
     gemsClaimedToday,
     profileLoading,
-    onMenuClick
+    onMenuClick,
+    onToggleDiscoverView,
+    isDiscoverFeedMode
 }) => {
     // Hooks
     const { items: cartItems, cartTotal, isOpen: isCartOpen, setIsOpen: setIsCartOpen, removeFromCart } = useCart();
@@ -725,7 +760,7 @@ const TopBar: React.FC<TopBarProps> = ({
                 </button>
 
                 {/* Back Button - Show only on detail pages (Listen, etc.) - Hidden on Main Tabs, Dashboard & Profile */}
-                {!['home', 'notes', 'upload', 'browse-talent', 'browse-all-talent', 'browse-all-projects', 'browse-all-soundpacks', 'browse-all-releases', 'browse-all-services', 'collaborate', 'following', 'library', 'profile'].includes(currentView) && !currentView.startsWith('dashboard') && (
+                {!['home', 'notes', 'upload', 'browse-talent', 'browse-all-talent', 'browse-all-projects', 'browse-all-soundpacks', 'browse-all-releases', 'browse-all-services', 'collaborate', 'following', 'library', 'profile', 'subscription'].includes(currentView) && !currentView.startsWith('dashboard') && (
                     <button
                         onClick={() => onNavigate('BACK')}
                         className={`
@@ -874,6 +909,8 @@ const TopBar: React.FC<TopBarProps> = ({
                     onLogout={onLogout} isSpacer={false} onMobileSearchOpen={() => setMobileSearchOpen(true)}
                     isCartAnimating={isCartAnimating}
                     projects={projects}
+                    onToggleDiscoverView={onToggleDiscoverView}
+                    isDiscoverFeedMode={isDiscoverFeedMode}
                     handleNotificationClick={handleNotificationClick}
                 />
             </div>

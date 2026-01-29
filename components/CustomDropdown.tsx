@@ -21,6 +21,7 @@ interface CustomDropdownProps {
     size?: 'default' | 'compact';
     buttonClassName?: string;
     menuClassName?: string;
+    disabled?: boolean;
 }
 
 const CustomDropdown: React.FC<CustomDropdownProps> = ({
@@ -35,7 +36,8 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     searchable = false,
     error,
     fullWidth = true,
-    size = 'default'
+    size = 'default',
+    disabled = false
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -89,12 +91,12 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
 
             <button
                 type="button"
-                onClick={toggleDropdown}
+                onClick={!disabled ? toggleDropdown : undefined}
                 className={`
                     w-full flex items-center justify-between ${paddingClass} 
                     bg-neutral-900/50 
                     rounded-xl text-sm font-medium text-white transition-all duration-200
-                    hover:bg-[#0c0c0c]
+                    ${!disabled ? 'hover:bg-[#0c0c0c]' : 'opacity-50 cursor-not-allowed'}
                     ${error ? 'ring-1 ring-red-500/50' : ''}
                     focus:outline-none focus:ring-1 focus:ring-primary/20
                     ${buttonClassName}

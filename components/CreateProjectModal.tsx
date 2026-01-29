@@ -128,6 +128,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     // File Selection State
     const [userFiles, setUserFiles] = useState<any[]>([]);
     const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+    const [calculatingTrackIds, setCalculatingTrackIds] = useState<Set<string>>(new Set());
 
     // Fetch files when selector opens
     React.useEffect(() => {
@@ -245,23 +246,49 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                 if (file?.duration && file.duration > 0) {
                     track.duration = file.duration;
                 } else if (file?.url) {
-                    getAudioDuration(file.url)
-                        .then(duration => {
-                            setTracks(currentTracks => {
-                                const tracksCopy = [...currentTracks];
-                                if (tracksCopy[currentTrackIndex!]) {
-                                    tracksCopy[currentTrackIndex!] = {
-                                        ...tracksCopy[currentTrackIndex!],
-                                        duration: Math.round(duration)
-                                    };
-                                }
-                                return tracksCopy;
+                    if (track.id) {
+                        const tId = track.id;
+                        setCalculatingTrackIds(prev => new Set(prev).add(tId));
+
+                        getAudioDuration(file.url)
+                            .then(duration => {
+                                setTracks(currentTracks => {
+                                    const tracksCopy = [...currentTracks];
+                                    if (tracksCopy[currentTrackIndex!]) {
+                                        tracksCopy[currentTrackIndex!] = {
+                                            ...tracksCopy[currentTrackIndex!],
+                                            duration: Math.round(duration)
+                                        };
+                                    }
+                                    return tracksCopy;
+                                });
+                                setCalculatingTrackIds(prev => {
+                                    const next = new Set(prev);
+                                    next.delete(tId);
+                                    return next;
+                                });
+                            })
+                            .catch(err => {
+                                console.warn("Failed to separate audio duration", err);
+                                setCalculatingTrackIds(prev => {
+                                    const next = new Set(prev);
+                                    next.delete(tId);
+                                    return next;
+                                });
+                                // Fallback to 180 if calculation fails
+                                setTracks(currentTracks => {
+                                    const tracksCopy = [...currentTracks];
+                                    if (tracksCopy[currentTrackIndex!]) {
+                                        tracksCopy[currentTrackIndex!] = {
+                                            ...tracksCopy[currentTrackIndex!],
+                                            duration: 180
+                                        };
+                                    }
+                                    return tracksCopy;
+                                });
                             });
-                        })
-                        .catch(err => {
-                            console.warn("Failed to separate audio duration", err);
-                        });
-                    track.duration = 180; // Placeholder until async load finishes
+                    }
+                    track.duration = 0; // Set to 0 while calculating
                 } else {
                     track.duration = 180;
                 }
@@ -295,6 +322,14 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
     };
 
     const handleFinalSave = async () => {
+        if (calculatingTrackIds.size > 0) {
+            // Check if these tracks still exist
+            const relevantIds = Array.from(calculatingTrackIds).filter(id => tracks.some(t => t.id === id));
+            if (relevantIds.length > 0) {
+                alert("Please wait for audio analysis to complete...");
+                return;
+            }
+        }
         setIsSaving(true);
         const finalTags = Array.from(new Set([
             ...(projectData.tags || []),
@@ -406,7 +441,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                 key={s}
                                 className={`flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full transition-all ${step === s ? 'bg-primary text-black font-bold' : step > s ? 'bg-green-500 text-black' : 'bg-neutral-900 text-neutral-500'}`}
                             >
-                                <span className="w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full bg-black/20 text-[10px] md:text-xs">{step > s ? <Check size={12} md:size={14} /> : s}</span>
+                                <span className="w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full bg-black/20 text-[10px] md:text-xs">{step > s ? <Check className="w-3 h-3 md:w-3.5 md:h-3.5" /> : s}</span>
                                 <span className="text-[10px] md:text-xs uppercase tracking-wider hidden md:inline">{s === 1 ? 'Details' : s === 2 ? 'Content' : 'Pricing'}</span>
                             </div>
                         ))}

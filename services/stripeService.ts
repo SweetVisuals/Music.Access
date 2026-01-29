@@ -1,6 +1,19 @@
 import { supabase } from './supabaseService';
 
 export const stripeService = {
+    onboardUser: async (userId: string, email: string, origin: string) => {
+        const { data, error } = await supabase.functions.invoke('stripe-actions', {
+            body: {
+                action: 'create-connect-account',
+                userId,
+                email,
+                origin
+            }
+        });
+        if (error) throw error;
+        return data; // returns { url, accountId }
+    },
+
     createAccount: async (display_name: string, contact_email: string, user_id: string) => {
         const { data, error } = await supabase.functions.invoke('stripe-connect', {
             body: { action: 'create-account', display_name, contact_email, user_id }
@@ -101,7 +114,7 @@ export interface SavedPaymentMethod {
 
 // Direct Payment Helper Functions
 export const listPaymentMethods = async (userId: string): Promise<SavedPaymentMethod[]> => {
-    const { data, error } = await supabase.functions.invoke('stripe-connect', {
+    const { data, error } = await supabase.functions.invoke('stripe-actions', {
         body: { action: 'list-payment-methods', userId }
     });
     if (error) throw error;
@@ -114,9 +127,9 @@ export const createDirectSubscription = async (
     billingCycle: string,
     paymentMethodId?: string
 ) => {
-    const { data, error } = await supabase.functions.invoke('stripe-connect', {
+    const { data, error } = await supabase.functions.invoke('stripe-actions', {
         body: {
-            action: 'create-subscription',
+            action: 'create-direct-subscription',
             userId,
             planName,
             billingCycle,
@@ -135,9 +148,9 @@ export const processMarketplacePayment = async (
     isDirect?: boolean,
     guestEmail?: string
 ) => {
-    const { data, error } = await supabase.functions.invoke('stripe-connect', {
+    const { data, error } = await supabase.functions.invoke('stripe-actions', {
         body: {
-            action: 'create-payment-intent',
+            action: 'create-marketplace-payment-intent',
             items,
             total,
             type,

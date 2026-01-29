@@ -218,6 +218,33 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     };
 
+    // Swipe gesture state
+    const touchStartRef = useRef<number | null>(null);
+    const touchEndRef = useRef<number | null>(null);
+
+    // Min swipe distance for detection
+    const MIN_SWIPE_DISTANCE = 75;
+
+    const onTouchStart = (e: React.TouchEvent) => {
+        touchEndRef.current = null;
+        touchStartRef.current = e.targetTouches[0].clientX;
+    };
+
+    const onTouchMove = (e: React.TouchEvent) => {
+        touchEndRef.current = e.targetTouches[0].clientX;
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStartRef.current || !touchEndRef.current) return;
+
+        const distance = touchStartRef.current - touchEndRef.current;
+        const isLeftSwipe = distance > MIN_SWIPE_DISTANCE;
+
+        if (isLeftSwipe && onClose) {
+            onClose();
+        }
+    };
+
     return (
         <>
             {isOpen && (
@@ -227,7 +254,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                 ></div>
             )}
 
-            <aside className={`
+            <aside
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+                className={`
         fixed inset-0 z-[140] w-full lg:w-[260px] bg-black lg:bg-[#050505] flex flex-col font-sans transition-transform duration-300 ease-in-out transform
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:h-screen
       `}>

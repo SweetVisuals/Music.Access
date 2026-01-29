@@ -7,6 +7,12 @@ export const SCALE_TYPES = ["All Scales", "Major", "Minor"];
 export const KEYS = ["All Keys", "Am", "Cm", "Em", "F#m", "Gm", "Bbm"]; // Kept for backward compatibility references
 
 
+// Layout Constants
+export const TOP_BAR_HEIGHT = 56;
+export const BOTTOM_NAV_HEIGHT = 50;
+export const PLAYER_HEIGHT_MOBILE = 64;
+export const PLAYER_HEIGHT_DESKTOP_EXPANDED = 90;
+
 const DEFAULT_LICENSES: LicenseInfo[] = [
     {
         id: 'l1',

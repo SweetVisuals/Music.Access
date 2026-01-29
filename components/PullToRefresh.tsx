@@ -98,7 +98,7 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, children, disa
     const contentTranslateY = pullDistance > 0 ? pullDistance : 0;
 
     return (
-        <div ref={containerRef} className="relative w-full overflow-x-hidden">
+        <div ref={containerRef} className="relative w-full h-full overflow-x-hidden">
             {/* Reveal Panel - Full Width Background */}
             <div
                 className="absolute top-0 left-0 w-full flex items-center justify-center bg-neutral-800 z-0"
@@ -127,12 +127,12 @@ const PullToRefresh: React.FC<PullToRefreshProps> = ({ onRefresh, children, disa
 
             {/* Content Container */}
             <div
-                className="relative z-10 bg-[#050505] min-h-[calc(100vh-120px)] transition-transform duration-200 ease-out will-change-transform"
+                className="relative z-10 bg-[#050505] h-full transition-transform duration-200 ease-out will-change-transform"
                 style={{
                     transform: `translateY(${contentTranslateY}px)`
                 }}
             >
-                <div>
+                <div className="h-full">
                     {children}
                 </div>
             </div>

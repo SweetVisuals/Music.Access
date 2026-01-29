@@ -30,6 +30,8 @@ interface ProjectCardProps {
     }[];
     onAction?: (project: Project) => void;
     hideEmptySlots?: boolean;
+    className?: string;
+    hideActions?: boolean;
 }
 
 
@@ -55,7 +57,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     onStatusChange,
     customMenuItems,
     onAction,
-    hideEmptySlots = false
+    hideEmptySlots = false,
+    className = '',
+    hideActions = false
 }) => {
     const [description, setDescription] = useState<string | null>(null);
     const [loadingDesc, setLoadingDesc] = useState(false);
@@ -261,7 +265,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
         return (
             <div
-                className="group relative aspect-square bg-neutral-900 border border-transparent rounded-xl overflow-hidden hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.1)] cursor-pointer"
+                className={`group relative aspect-square bg-neutral-900 border border-transparent rounded-xl overflow-hidden hover:border-primary/40 transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.1)] cursor-pointer ${className}`}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 onClick={(e) => {
@@ -377,6 +381,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                         : 'bg-white/10 border-white/10 text-white hover:bg-white/20'
                                     }
                                     ${(isOwnProject || isGemLoading) ? 'opacity-50 cursor-not-allowed' : ''}
+                                    ${/* Hide if requested */ hideActions ? 'hidden' : ''}
                                 `}
                             >
                                 <Gem size={12} className={`${hasGivenGem ? "text-primary drop-shadow-[0_0_5px_rgba(var(--primary),0.5)]" : "text-white"} ${isGemLoading ? 'animate-pulse' : ''}`} />
@@ -403,6 +408,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 className={`
                     group h-full flex flex-col bg-neutral-950/50 border border-transparent rounded-xl transition-all duration-300 relative backdrop-blur-sm cursor-pointer
                     ${isLocked ? 'grayscale opacity-75 border-neutral-800' : 'hover:border-primary/40 hover:shadow-[0_0_30px_rgba(var(--primary),0.05)]'}
+                    ${className}
                 `}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
@@ -761,7 +767,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                         </span>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className={`flex items-center gap-1 shrink-0 ${hideActions ? 'hidden' : ''}`}>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -801,6 +807,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                         ? 'text-primary bg-primary/5 border border-primary/20'
                                         : 'text-neutral-500 hover:text-primary hover:bg-primary/5'
                                 }
+                                ${hideActions ? 'hidden' : ''}
                             `}
                             title={
                                 isOwnProject
@@ -829,6 +836,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                                         ? 'text-neutral-600 cursor-not-allowed opacity-50'
                                         : 'text-neutral-500 hover:text-primary hover:bg-white/5'
                                     }
+                                    ${hideActions ? 'hidden' : ''}
                                 `}
                                 title={isOwnProject ? "Cannot purchase own project" : "Add to Cart"}
                             >

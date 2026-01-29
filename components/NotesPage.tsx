@@ -416,7 +416,7 @@ const NotesPage: React.FC<NotesPageProps> = ({ userProfile, currentProject, curr
 
     const renderEditorView = () => {
         // Shared Editor Component (to avoid code duplication)
-        const EditorComponent = ({ isMobile = false }) => (
+        const renderEditorContent = (isMobile: boolean) => (
             <div className="flex-1 relative font-mono overflow-y-auto custom-scrollbar bg-[#050505] h-full" onScroll={() => { if (textareaRef.current && backdropRef.current) backdropRef.current.scrollTop = textareaRef.current.scrollTop; }}>
                 <div className="grid grid-cols-1 grid-rows-1 min-h-full relative">
                     <div ref={backdropRef} className={`col-start-1 row-start-1 p-5 w-full whitespace-pre-wrap break-words pointer-events-none z-0 ${textSize === 'xs' ? 'text-[11px]' : 'text-[15px]'}`} style={{ paddingBottom: isMobile ? `${rhymeTrayHeight + 200}px` : '100px' }}>{activeNote && renderHighlightedText(activeNote.content + ' ')}</div>
@@ -473,7 +473,7 @@ const NotesPage: React.FC<NotesPageProps> = ({ userProfile, currentProject, curr
                                     <button onClick={() => { const url = audioFiles.find(f => f.name === activeNote.attachedAudio)?.url || activeNote.attachedAudio; const tid = `note-audio-${activeNote.id}`; if (currentTrackId === tid) onTogglePlay(); else onPlayTrack({ id: `p-${activeNote.id}`, title: 'Note Audio', producer: 'System', tracks: [{ id: tid, title: 'Audio', files: { mp3: url } }] } as any, tid); }} className="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center">{(currentTrackId === `note-audio-${activeNote.id}` && isPlaying) ? <Pause size={12} fill="black" /> : <Play size={12} fill="black" />}</button>
                                 </div>
                             )}
-                            <EditorComponent isMobile={true} />
+                            {renderEditorContent(true)}
                         </div>
                         {/* Mobile Chat Panel */}
                         <div className="w-1/2 h-full flex flex-col bg-[#050505] border-l border-white/5 relative overflow-hidden">
@@ -513,7 +513,7 @@ const NotesPage: React.FC<NotesPageProps> = ({ userProfile, currentProject, curr
                                     <button onClick={() => { const url = audioFiles.find(f => f.name === activeNote.attachedAudio)?.url || activeNote.attachedAudio; const tid = `note-audio-${activeNote.id}`; if (currentTrackId === tid) onTogglePlay(); else onPlayTrack({ id: `p-${activeNote.id}`, title: 'Note Audio', producer: 'System', tracks: [{ id: tid, title: 'Audio', files: { mp3: url } }] } as any, tid); }} className="p-1 rounded-full bg-white text-black hover:scale-105 transition-transform">{(currentTrackId === `note-audio-${activeNote.id}` && isPlaying) ? <Pause size={12} fill="black" /> : <Play size={12} fill="black" />}</button>
                                 </div>
                             )}
-                            <EditorComponent isMobile={false} />
+                            {renderEditorContent(false)}
 
                             {/* Desktop Formatting Toolbar (Floating or Bottom) */}
                             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-[#111] border border-white/10 rounded-full shadow-2xl z-30">
@@ -674,7 +674,7 @@ const NotesPage: React.FC<NotesPageProps> = ({ userProfile, currentProject, curr
     return (
         <div className={`w-full flex flex-col overflow-hidden fixed inset-x-0 bottom-0 top-[56px] ${isOverlayOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:top-0 lg:h-full`}>
             <div className="flex-1 flex bg-[#0a0a0a] overflow-hidden relative">
-                <div className={`absolute lg:static inset-y-0 left-0 z-[90] w-full lg:w-80 lg:border-r border-white/5 flex flex-col bg-[#0A0A0A] transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+                <div className={`absolute lg:static inset-y-0 left-0 z-[90] w-full lg:w-96 lg:border-r border-white/5 flex flex-col bg-[#0A0A0A] transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
                     <div className="p-4 border-b border-white/5 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             {currentFolderId && (
@@ -785,18 +785,34 @@ const NotesPage: React.FC<NotesPageProps> = ({ userProfile, currentProject, curr
 
                     {/* Bin Access & Drop Zone */}
                     <div className="p-4 pb-[100px] lg:pb-4 border-t border-white/5 bg-[#0A0A0A]">
-                        <div
-                            onDragOver={handleDragOver}
-                            onDrop={handleDropOnBin}
-                            onClick={() => { setTrashView(!trashView); setCurrentFolderId(null); }}
-                            className={`w-full p-3 rounded-xl border border-dashed flex items-center justify-center gap-2 cursor-pointer transition-all ${trashView
-                                ? 'bg-red-500/10 text-red-500 border-red-500/20'
-                                : 'border-white/10 text-neutral-500 hover:text-white hover:bg-white/5'
-                                }`}
-                        >
-                            <Trash2 size={16} className={trashView ? "fill-current opacity-20" : ""} />
-                            <span className="text-xs font-bold">{trashView ? 'Exit Bin' : 'Trash'}</span>
-                        </div>
+                        {trashView ? (
+                            <div className="flex flex-col gap-2 w-full">
+                                <button
+                                    onClick={() => setConfirmationModal({ isOpen: true, type: 'emptyTrash' })}
+                                    className="w-full p-3 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 flex items-center justify-center gap-2 cursor-pointer hover:bg-red-500/20 transition-all"
+                                >
+                                    <Trash size={16} />
+                                    <span className="text-xs font-bold">Empty Bin</span>
+                                </button>
+                                <button
+                                    onClick={() => { setTrashView(false); setCurrentFolderId(null); }}
+                                    className="w-full p-3 rounded-xl border border-white/10 text-neutral-400 hover:text-white hover:bg-white/5 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                                >
+                                    <RotateCcw size={16} />
+                                    <span className="text-xs font-bold">Exit Bin</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <div
+                                onDragOver={handleDragOver}
+                                onDrop={handleDropOnBin}
+                                onClick={() => { setTrashView(true); setCurrentFolderId(null); }}
+                                className="w-full p-3 rounded-xl border border-dashed border-white/10 text-neutral-500 hover:text-white hover:bg-white/5 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                            >
+                                <Trash2 size={16} />
+                                <span className="text-xs font-bold">Trash</span>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <div className="flex-1 flex flex-col relative w-full overflow-hidden">

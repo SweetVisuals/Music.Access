@@ -47,29 +47,20 @@ const ConnectOnboarding: React.FC<ConnectOnboardingProps> = ({ userProfile, onSt
         setLoading(true);
         setError(null);
         try {
-            let accountId = userProfile.stripe_account_id;
+            // Using the robust 'stripe-actions' flow which handles account creation, stale checks, and link generation
+            // It also updates the DB server-side if a new account is created.
+            const response = await stripeService.onboardUser(
+                userProfile.id!,
+                userProfile.email || 'user@example.com',
+                window.location.origin // Pass origin so the edge function can construct return URLs
+            );
 
-            // 1. Create Account if doesn't exist
-            if (!accountId) {
-                const res = await stripeService.createAccount(
-                    userProfile.username || 'Music User',
-                    userProfile.email || 'user@example.com',
-                    userProfile.id!
-                );
-                accountId = res.accountId;
-
-                // Save to Supabase DB (Client-side update for immediate UI, assume DB handles it or webhook does)
-                // For this demo, we assume the backend syncs or we locally update. 
-                // We really should update the user profile in DB here.
-                await supabase.from('users').update({ stripe_account_id: accountId }).eq('id', userProfile.id);
+            // Redirect to the onboarding URL from Stripe
+            if (response.url) {
+                window.location.href = response.url;
+            } else {
+                throw new Error("No onboarding URL returned");
             }
-
-            // 2. Create Onboarding Link
-            const returnUrl = window.location.href; // Return to current page
-            const { url } = await stripeService.onboardAccount(accountId!, returnUrl);
-
-            // 3. Redirect
-            window.location.href = url;
 
         } catch (err: any) {
             console.error(err);

@@ -7,6 +7,8 @@ import ProjectCard, { ProjectSkeleton } from './components/ProjectCard';
 import MusicPlayer from './components/MusicPlayer';
 import ProfilePage from './components/ProfilePage';
 import UploadPage from './components/UploadPage';
+import DiscoverGrid from './components/DiscoverGrid';
+import DiscoverFeed from './components/DiscoverFeed';
 import DashboardPage from './components/DashboardPage';
 import MessagesPage from './components/MessagesPage';
 import ManageServicesPage from './components/ManageServicesPage';
@@ -35,11 +37,13 @@ import ListenPage from './components/ListenPage';
 import ConnectStorefront from './components/ConnectStorefront';
 import { getProjects, getUserProfile, supabase, signOut, updateUserProfile, getCurrentUser, searchProfiles, searchServices, claimDailyReward } from './services/supabaseService';
 import { Project, FilterState, View, UserProfile, TalentProfile, Service } from './types';
+import { TOP_BAR_HEIGHT, BOTTOM_NAV_HEIGHT, PLAYER_HEIGHT_MOBILE, PLAYER_HEIGHT_DESKTOP_EXPANDED } from './constants';
 
 import { CartProvider } from './contexts/CartContext';
 import { PurchaseModalProvider } from './contexts/PurchaseModalContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { FileOperationProvider } from './contexts/FileOperationContext';
+import { PlayerProvider } from './contexts/PlayerContext';
 import { FileOperationNotificationContainer } from './components/FileOperationNotification';
 import { Verified, Star, UserPlus, MessageCircle, MoreHorizontal } from 'lucide-react';
 import { followUser, unfollowUser } from './services/supabaseService';
@@ -55,6 +59,14 @@ const App: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
+  const [discoverViewMode, setDiscoverViewMode] = useState<'grid' | 'feed'>('feed');
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // User State
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -76,6 +88,31 @@ const App: React.FC = () => {
   const [searchedProfiles, setSearchedProfiles] = useState<TalentProfile[]>([]);
   const [searchedServices, setSearchedServices] = useState<Service[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Swipe Gesture Logic for Opening Sidebar
+  const touchStartRef = useRef<number | null>(null);
+  const touchEndRef = useRef<number | null>(null);
+  const MIN_SWIPE_DISTANCE = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchEndRef.current = null;
+    touchStartRef.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchEndRef.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartRef.current || !touchEndRef.current) return;
+    const distance = touchEndRef.current - touchStartRef.current;
+    const isRightSwipe = distance > MIN_SWIPE_DISTANCE;
+
+    if (isRightSwipe && !isMobileMenuOpen) {
+      setIsMobileMenuOpen(true);
+    }
+  };
+
   // Get current view from URL path
   const getCurrentViewFromPath = (pathname: string): View => {
     // Handle profile routes - both @username and /profile
@@ -121,10 +158,28 @@ const App: React.FC = () => {
     return 'home';
   };
 
-  const [currentView, setCurrentView] = useState<View>(getCurrentViewFromPath(location.pathname));
-  const [profileUsername, setProfileUsername] = useState<string | null>(
-    location.pathname.startsWith('/@') ? decodeURIComponent(location.pathname.substring(2)) : null
-  );
+  // Derive current view and profile identifier in sync with location
+  const [currentView, profileUsername] = useMemo(() => {
+    const pathname = location.pathname;
+    const view = getCurrentViewFromPath(pathname);
+
+    let username: string | null = null;
+    if (pathname.startsWith('/@')) {
+      try {
+        username = decodeURIComponent(pathname.substring(2));
+      } catch (e) {
+        username = pathname.substring(2);
+      }
+    } else if (pathname.startsWith('/store/')) {
+      try {
+        username = decodeURIComponent(pathname.substring(7));
+      } catch (e) {
+        username = pathname.substring(7);
+      }
+    }
+
+    return [view, username] as const;
+  }, [location.pathname]);
 
   const [filters, setFilters] = useState<FilterState>({
     genre: "All Genres",
@@ -137,33 +192,8 @@ const App: React.FC = () => {
     searchQuery: ""
   });
 
-  // Update view and profile username when location changes
+  // Handle side effects of route changes
   useEffect(() => {
-    const newView = getCurrentViewFromPath(location.pathname);
-    let newProfileUsername: string | null = null;
-
-    if (location.pathname.startsWith('/@')) {
-      try {
-        // Extract username from path and decode URI components
-        const encodedUsername = location.pathname.substring(2);
-        newProfileUsername = decodeURIComponent(encodedUsername);
-      } catch (error) {
-        console.warn('Failed to decode profile username:', location.pathname);
-        // Fallback to raw username if decoding fails
-        newProfileUsername = location.pathname.substring(2);
-      }
-    } else if (location.pathname.startsWith('/store/')) {
-      try {
-        const encodedUsername = location.pathname.substring(7); // /store/ is 7 chars
-        newProfileUsername = decodeURIComponent(encodedUsername);
-      } catch (error) {
-        newProfileUsername = location.pathname.substring(7);
-      }
-    }
-
-    setCurrentView(newView);
-    setProfileUsername(newProfileUsername);
-
     // Reset scroll position to top on every view change
     if (mainRef.current) {
       mainRef.current.scrollTo(0, 0);
@@ -453,7 +483,7 @@ const App: React.FC = () => {
 
   const handleSearch = (query: string) => {
     setFilters(prev => ({ ...prev, searchQuery: query }));
-    if (currentView !== 'home') setCurrentView('home');
+    if (currentView !== 'home') navigate('/');
   };
 
   const handleLogin = () => {
@@ -586,17 +616,19 @@ const App: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
+
   const getBottomStackHeightCSS = () => {
     // Base bottom nav height (mobile)
-    const mobileNavHeight = 50; // matched to BottomNav h-[50px]
-    const playerHeightMobile = 64; // approx h-16
-    const playerHeightDesktopExpanded = 90;
+    const mobileNavHeight = BOTTOM_NAV_HEIGHT; // matched to BottomNav h-[50px]
+    const playerHeightMobile = PLAYER_HEIGHT_MOBILE; // approx h-16
+    const playerHeightDesktopExpanded = PLAYER_HEIGHT_DESKTOP_EXPANDED;
+    const SAFETY_BUFFER = 0; // Removing buffer to ensure exact fit for Feed
 
     let baseHeight = 0;
 
     if (window.innerWidth < 1024) {
       // Mobile Logic
-      baseHeight = mobileNavHeight;
+      baseHeight = mobileNavHeight + SAFETY_BUFFER;
       if (currentTrackId) baseHeight += playerHeightMobile;
     } else {
       // Desktop Logic
@@ -631,595 +663,410 @@ const App: React.FC = () => {
     <CartProvider>
       <PurchaseModalProvider>
         <ToastProvider>
-          <FileOperationProvider>
-            <div className="h-screen h-[100dvh] w-full flex overflow-hidden overscroll-y-none selection:bg-primary/30 selection:text-primary transition-colors duration-500">
-              <MobileCart onNavigate={handleNavigate} projects={projects} />
-              <AuthModal
-                isOpen={isAuthModalOpen}
-                onClose={() => setIsAuthModalOpen(false)}
-                onLogin={handleLogin}
-              />
+          <PlayerProvider>
+            <FileOperationProvider>
+              <div className="h-screen h-[100dvh] w-full flex overflow-hidden overscroll-y-none selection:bg-primary/30 selection:text-primary transition-colors duration-500">
+                <MobileCart onNavigate={handleNavigate} projects={projects} />
 
-              <FileOperationNotificationContainer bottomOffset={uploadNotificationBottom} />
+                {/* Edge Swipe Zone for opening Sidebar */}
+                {!isMobileMenuOpen && (
+                  <div
+                    className="fixed top-0 bottom-0 left-0 w-[20px] z-[130] lg:hidden"
+                    onTouchStart={onTouchStart}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={onTouchEnd}
+                  />
+                )}
 
-              <Sidebar
-                currentView={currentView}
-                onNavigate={handleNavigate}
-                isLoggedIn={isLoggedIn}
-                onOpenAuth={() => setIsAuthModalOpen(true)}
-                userProfile={userProfile}
-                profileLoading={profileLoading}
-                isOpen={isMobileMenuOpen}
-                onClose={() => setIsMobileMenuOpen(false)}
-                isPlayerActive={!!currentTrackId}
-              />
-
-              {/* Main Layout Container - Adjusted padding for mobile and smaller sidebar */}
-              <div className="flex-1 flex flex-col relative w-full">
-                <TopBar
-                  projects={projects}
-                  currentView={currentView}
-                  onSearch={handleSearch}
-                  onNavigate={handleNavigate}
-                  isLoggedIn={isLoggedIn}
-                  userProfile={userProfile}
-                  onOpenAuth={() => setIsAuthModalOpen(true)}
-                  onLogout={handleLogout}
-                  onClaimGems={handleClaimDailyGems}
-                  gemsClaimedToday={gemsClaimedToday}
-                  profileLoading={profileLoading}
-                  onMenuClick={() => setIsMobileMenuOpen(true)}
+                <AuthModal
+                  isOpen={isAuthModalOpen}
+                  onClose={() => setIsAuthModalOpen(false)}
+                  onLogin={handleLogin}
                 />
 
-                <main ref={mainRef} style={{ paddingBottom: getBottomStackHeightCSS() }} className={`flex-1 ${currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[calc(56px+env(safe-area-inset-top))]' : (currentView === 'dashboard-messages' || currentView === 'dashboard-orders') ? 'overflow-hidden pt-[calc(56px+env(safe-area-inset-top))] lg:pt-[80px]' : 'overflow-y-auto overscroll-y-contain pt-[calc(56px+env(safe-area-inset-top))] lg:pt-[56px]'} scroll-smooth`}>
+                <FileOperationNotificationContainer bottomOffset={uploadNotificationBottom} />
 
-                  {currentView === 'listen' && (
-                    <ListenPage
-                      currentTrackId={currentTrackId}
-                      isPlaying={isPlaying}
-                      onPlayTrack={handlePlayTrack}
-                      onTogglePlay={handleTogglePlay}
-                      currentProject={currentProject}
-                      onNavigate={handleNavigate}
-                    />
-                  )}
+                <Sidebar
+                  currentView={currentView}
+                  onNavigate={handleNavigate}
+                  isLoggedIn={isLoggedIn}
+                  onOpenAuth={() => setIsAuthModalOpen(true)}
+                  userProfile={userProfile}
+                  profileLoading={profileLoading}
+                  isOpen={isMobileMenuOpen}
+                  onClose={() => setIsMobileMenuOpen(false)}
+                  isPlayerActive={!!currentTrackId}
+                />
 
-                  {currentView === 'storefront' && profileUsername && (
-                    <ConnectStorefront
-                      handle={profileUsername}
-                      currentUser={userProfile}
-                      onNavigate={handleNavigate}
-                    />
-                  )}
+                {/* Main Layout Container - Adjusted padding for mobile and smaller sidebar */}
+                <div className="flex-1 flex flex-col relative w-full">
+                  <TopBar
+                    projects={projects}
+                    currentView={currentView}
+                    onSearch={handleSearch}
+                    onNavigate={handleNavigate}
+                    isLoggedIn={isLoggedIn}
+                    userProfile={userProfile}
+                    onOpenAuth={() => setIsAuthModalOpen(true)}
+                    onLogout={handleLogout}
+                    onClaimGems={handleClaimDailyGems}
+                    gemsClaimedToday={gemsClaimedToday}
+                    profileLoading={profileLoading}
+                    onMenuClick={() => setIsMobileMenuOpen(true)}
+                    onToggleDiscoverView={() => setDiscoverViewMode(prev => prev === 'grid' ? 'feed' : 'grid')}
+                    isDiscoverFeedMode={discoverViewMode === 'feed'}
+                  />
 
-                  {currentView === 'home' && (
-                    <PullToRefresh onRefresh={fetchProjects} disabled={window.innerWidth >= 1024}>
-                      <div className="w-full max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 pt-4 lg:pt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {isLoggedIn && !gemsClaimedToday && !profileLoading && userProfile && (
-                          <div className="mb-6 mt-[2px] lg:mt-[2px] px-3 py-3 lg:px-5 lg:py-3 bg-gradient-to-r from-primary/20 to-transparent border border-primary/20 rounded-xl flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 lg:w-10 lg:h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary animate-pulse shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 lg:w-4 lg:h-4"><path d="M6 3h12l4 6-10 13L2 9Z" /></svg>
-                              </div>
-                              <div>
-                                <h3 className="font-bold text-white text-sm lg:text-base">Daily Reward Available!</h3>
-                                <p className="text-sm text-neutral-300 hidden sm:block">Claim your 10 free Gems for today.</p>
-                              </div>
-                            </div>
-                            <button
-                              onClick={handleClaimDailyGems}
-                              className="px-3 py-1.5 lg:px-4 lg:py-2 bg-primary text-black font-bold rounded-lg text-xs lg:text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
-                            >
-                              Claim
-                            </button>
+
+                  <main ref={mainRef} style={{ paddingBottom: getBottomStackHeightCSS(), '--top-bar-height': `${TOP_BAR_HEIGHT}px` } as any} className={`flex-1 ${(currentView === 'home' && discoverViewMode === 'feed' && !filters.searchQuery && isMobile) ? 'overflow-hidden pt-[calc(var(--top-bar-height)+env(safe-area-inset-top))]' : (currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[calc(var(--top-bar-height)+env(safe-area-inset-top))]' : (currentView === 'dashboard-messages' || currentView === 'dashboard-orders') ? 'overflow-hidden pt-[calc(var(--top-bar-height)+env(safe-area-inset-top))] lg:pt-[80px]' : 'overflow-y-auto overscroll-y-contain pt-[calc(var(--top-bar-height)+env(safe-area-inset-top))] lg:pt-[56px]')} scroll-smooth`}>
+
+                    {currentView === 'listen' && (
+                      <ListenPage
+                        key={location.pathname}
+                        currentTrackId={currentTrackId}
+                        isPlaying={isPlaying}
+                        onPlayTrack={handlePlayTrack}
+                        onTogglePlay={handleTogglePlay}
+                        currentProject={currentProject}
+                        onNavigate={handleNavigate}
+                      />
+                    )}
+
+                    {currentView === 'storefront' && profileUsername && (
+                      <ConnectStorefront
+                        handle={profileUsername}
+                        currentUser={userProfile}
+                        onNavigate={handleNavigate}
+                      />
+                    )}
+
+
+                    {currentView === 'home' && (
+                      <PullToRefresh onRefresh={fetchProjects} disabled={window.innerWidth >= 1024}>
+                        {discoverViewMode === 'feed' && !filters.searchQuery && isMobile ? (
+                          <div className="w-full h-full animate-in fade-in duration-500">
+                            <DiscoverFeed
+                              projects={filteredProjects}
+                              currentTrackId={currentTrackId}
+                              isPlaying={isPlaying}
+                              onPlayTrack={handlePlayTrack}
+                              onTogglePlay={handleTogglePlay}
+                              userProfile={userProfile}
+                            />
                           </div>
-                        )}
-
-                        <div className="hidden mb-8 px-4 lg:px-8">
-                          <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Discover</h1>
-                          <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">
-                            The future of sound is here. Browse trending loop kits, beats, and collaborative projects from the industries top creators.
-                          </p>
-                        </div>
-
-                        <FilterBar filters={filters} onFilterChange={setFilters} />
-
-                        {error && (
-                          <div className="mb-3 p-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-xs rounded-lg font-mono text-center">
-                            {error}
-                          </div>
-                        )}
-
-                        {loading ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mt-6 pb-20">
-                            {[...Array(12)].map((_, i) => (
-                              <div key={i} className="h-[350px] md:h-[285px]">
-                                <ProjectSkeleton />
-                              </div>
-                            ))}
-                          </div>
-                        ) : null}
-
-                        {/* Search Results Sections */}
-                        {filters.searchQuery && (
-                          <div className="space-y-10 pb-20 mt-8">
-
-                            {/* Profiles Section */}
-                            {searchedProfiles.length > 0 && (
-                              <section>
-                                <div className="flex items-center gap-2 mb-4 px-1">
-                                  <h2 className="text-lg font-bold text-white">Profiles</h2>
-                                  <span className="text-xs text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">{searchedProfiles.length}</span>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                                  {searchedProfiles.map(profile => (
-                                    <div
-                                      key={profile.id}
-                                      onClick={() => handleNavigate(`@${profile.handle}`)}
-                                      className="bg-[#0a0a0a] border border-transparent rounded-xl p-5 transition-all group hover:-translate-y-1 flex flex-col h-full cursor-pointer"
-                                    >
-                                      <div className="flex-1">
-                                        {/* Header: User Info & Top Right Role */}
-                                        <div className="flex justify-between items-start mb-3">
-                                          <div className="flex items-center gap-3">
-                                            <div className="relative">
-                                              <img src={profile.avatar} alt={profile.username} className="w-12 h-12 rounded-full border-2 border-[#0a0a0a] shadow-lg object-cover" />
-                                              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-[#0a0a0a] rounded-full" title="Online"></div>
-                                            </div>
-
-                                            <div>
-                                              <h3 className="text-sm font-bold text-white flex items-center gap-1">
-                                                {profile.username}
-                                                {profile.isVerified && <Verified size={12} className="text-blue-400" />}
-                                              </h3>
-                                              <p className="text-[10px] text-neutral-500 font-mono">{profile.handle}</p>
-                                            </div>
-                                          </div>
-
-                                          {profile.role && (
-                                            <span className="px-2 py-0.5 rounded bg-white/5 border border-transparent text-[9px] font-bold text-primary uppercase tracking-wide">
-                                              {profile.role}
-                                            </span>
-                                          )}
-                                        </div>
-
-                                        {/* Stats Grid */}
-                                        <div className="grid grid-cols-3 gap-2 bg-neutral-900/50 rounded-lg p-2 border border-transparent">
-                                          <div className="text-center">
-                                            <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Followers</div>
-                                            <div className="text-xs font-bold text-white">{profile.followers}</div>
-                                          </div>
-                                          <div className="text-center border-l border-transparent">
-                                            <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Plays</div>
-                                            <div className="text-xs font-bold text-white">{profile.streams ? profile.streams.toLocaleString() : '0'}</div>
-                                          </div>
-                                          <div className="text-center border-l border-transparent">
-                                            <div className="text-[9px] text-neutral-500 uppercase tracking-wider mb-0.5">Tracks</div>
-                                            <div className="text-xs font-bold text-white">{profile.tracks || 0}</div>
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      {/* Footer */}
-                                      <div className="flex items-center gap-2 pt-4 border-t border-transparent mt-4">
-                                        <button
-                                          onClick={async (e) => {
-                                            e.stopPropagation();
-                                            if (!userProfile) {
-                                              setIsAuthModalOpen(true);
-                                              return;
-                                            }
-                                            if (profile.id === userProfile.id) return;
-
-                                            if (profile.isFollowing) {
-                                              // Unfollow
-                                              setSearchedProfiles(prev => prev.map(t => t.id === profile.id ? { ...t, isFollowing: false, followers: (parseInt(t.followers) - 1).toString() } : t));
-                                              try { await unfollowUser(profile.id); } catch (err) { console.error(err); }
-                                            } else {
-                                              // Follow
-                                              setSearchedProfiles(prev => prev.map(t => t.id === profile.id ? { ...t, isFollowing: true, followers: (parseInt(t.followers) + 1).toString() } : t));
-                                              try { await followUser(profile.id); } catch (err) { console.error(err); }
-                                            }
-                                          }}
-                                          disabled={userProfile?.id === profile.id}
-                                          className={`flex-1 text-xs font-bold flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors border ${userProfile?.id === profile.id
-                                            ? 'bg-neutral-800 border-neutral-800 text-neutral-500 cursor-not-allowed opacity-50'
-                                            : profile.isFollowing
-                                              ? 'bg-neutral-800 border-neutral-800 text-neutral-500 hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-500'
-                                              : 'text-white bg-primary/10 hover:bg-primary hover:text-black border-primary/20'
-                                            }`}
-                                        >
-                                          <UserPlus size={14} /> {profile.isFollowing ? 'Following' : 'Follow'}
-                                        </button>
-                                        <button className="text-neutral-400 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-transparent hover:border-neutral-700 px-3 py-2 rounded-lg transition-colors" title="Message">
-                                          <MessageCircle size={14} />
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </section>
-                            )}
-
-                            {/* Services Section */}
-                            {searchedServices.length > 0 && (
-                              <section>
-                                <div className="flex items-center gap-2 mb-4 px-1">
-                                  <h2 className="text-lg font-bold text-white">Services</h2>
-                                  <span className="text-xs text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">{searchedServices.length}</span>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                                  {searchedServices.map(service => (
-                                    <div
-                                      key={service.id}
-                                      className="group bg-neutral-900/50 hover:bg-neutral-800/80 border border-neutral-800 hover:border-neutral-700 p-4 rounded-xl transition-all flex flex-col h-full"
-                                    >
-                                      <div className="flex items-start justify-between mb-2">
-                                        <h3 className="font-bold text-white group-hover:text-primary text-sm line-clamp-2">{service.title}</h3>
-                                        <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-1 rounded ml-2 whitespace-nowrap">
-                                          ${service.price}{service.rateType === 'hourly' ? '/hr' : ''}
-                                        </span>
-                                      </div>
-
-                                      <p className="text-xs text-neutral-400 line-clamp-2 mb-3 flex-1">{service.description}</p>
-
-                                      {service.user && (
-                                        <div className="flex items-center gap-2 pt-3 border-t border-neutral-800/50 mt-auto">
-                                          <img src={service.user.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'} className="w-5 h-5 rounded-full" />
-                                          <span className="text-xs text-neutral-500 hover:text-white cursor-pointer transition-colors" onClick={() => handleNavigate(`@${service.user?.handle}`)}>
-                                            {service.user.username}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </section>
-                            )}
-
-                            {/* Sound Packs Section */}
-                            {filteredProjects.filter(p => p.type === 'sound_pack').length > 0 && (
-                              <section>
-                                <div className="flex items-center gap-2 mb-4 px-1">
-                                  <h2 className="text-lg font-bold text-white">Sound Kits</h2>
-                                  <span className="text-xs text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">
-                                    {filteredProjects.filter(p => p.type === 'sound_pack').length}
-                                  </span>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                                  {filteredProjects.filter(p => p.type === 'sound_pack').map(project => (
-                                    <div key={project.id} className="h-[350px] md:h-[285px]">
-                                      <ProjectCard
-                                        project={project}
-                                        currentTrackId={currentTrackId}
-                                        isPlaying={currentProject?.id === project.id && isPlaying}
-                                        onPlayTrack={(trackId) => handlePlayTrack(project, trackId)}
-                                        onTogglePlay={handleTogglePlay}
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
-                              </section>
-                            )}
-
-                            {/* Projects (Beats) Section */}
-                            <section>
-                              <div className="flex items-center gap-2 mb-4 px-1">
-                                <h2 className="text-lg font-bold text-white">Beats</h2>
-                                <span className="text-xs text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">
-                                  {filteredProjects.filter(p => p.type !== 'sound_pack').length}
-                                </span>
-                              </div>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                                {filteredProjects.filter(p => p.type !== 'sound_pack').length > 0 ? (
-                                  filteredProjects.filter(p => p.type !== 'sound_pack').map(project => (
-                                    <div key={project.id} className="h-[350px] md:h-[285px]">
-                                      <ProjectCard
-                                        project={project}
-                                        currentTrackId={currentTrackId}
-                                        isPlaying={currentProject?.id === project.id && isPlaying}
-                                        onPlayTrack={(trackId) => handlePlayTrack(project, trackId)}
-                                        onTogglePlay={handleTogglePlay}
-                                      />
-                                    </div>
-                                  ))
-                                ) : (
-                                  <div className="col-span-full py-10 text-center border border-dashed border-neutral-800 rounded-xl bg-white/5">
-                                    <p className="text-neutral-500 font-mono text-xs">No beats found matching query.</p>
+                        ) : (
+                          <div className="w-full max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 pt-4 lg:pt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            {isLoggedIn && !gemsClaimedToday && !profileLoading && userProfile && (
+                              <div className="mb-6 mt-[2px] lg:mt-[2px] px-3 py-3 lg:px-5 lg:py-3 bg-gradient-to-r from-primary/20 to-transparent border border-primary/20 rounded-xl flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 lg:w-10 lg:h-10 bg-primary/20 rounded-full flex items-center justify-center text-primary animate-pulse shrink-0">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 lg:w-4 lg:h-4"><path d="M6 3h12l4 6-10 13L2 9Z" /></svg>
                                   </div>
-                                )}
-                              </div>
-                            </section>
-
-                          </div>
-                        )}
-
-                        {/* Existing Project Grid (Only show if NO search query is active) */}
-                        {!filters.searchQuery && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 mt-6 pb-20">
-                            {filteredProjects.length > 0 ? (
-                              filteredProjects.map(project => (
-                                <div key={project.id} className="h-[350px] md:h-[285px]">
-                                  <ProjectCard
-                                    project={project}
-                                    currentTrackId={currentTrackId}
-                                    isPlaying={currentProject?.id === project.id && isPlaying}
-                                    onPlayTrack={(trackId) => handlePlayTrack(project, trackId)}
-                                    onTogglePlay={handleTogglePlay}
-                                  />
+                                  <div>
+                                    <h3 className="font-bold text-white text-sm lg:text-base">Daily Reward Available!</h3>
+                                    <p className="text-sm text-neutral-300 hidden sm:block">Claim your 10 free Gems for today.</p>
+                                  </div>
                                 </div>
-                              ))
-                            ) : (
-                              <div className="col-span-full py-20 text-center border border-dashed border-neutral-800 rounded-xl bg-white/5">
-                                <p className="text-neutral-500 font-mono text-xs mb-4">No data found matching query parameters.</p>
                                 <button
-                                  onClick={() => setFilters({ ...filters, genre: "All Genres", rootKey: "All Keys", scaleType: "All Scales", searchQuery: "" })}
-                                  className="px-4 py-2 bg-primary/10 text-primary border border-primary/50 rounded hover:bg-primary hover:text-black transition-colors font-mono text-xs uppercase tracking-wider"
+                                  onClick={handleClaimDailyGems}
+                                  className="px-3 py-1.5 lg:px-4 lg:py-2 bg-primary text-black font-bold rounded-lg text-xs lg:text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 whitespace-nowrap"
                                 >
-                                  Reset Search Query
+                                  Claim
                                 </button>
                               </div>
                             )}
+
+                            <div className="hidden mb-8 px-4 lg:px-8">
+                              <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">Discover</h1>
+                              <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">
+                                The future of sound is here. Browse trending loop kits, beats, and collaborative projects from the industries top creators.
+                              </p>
+                            </div>
+
+                            <FilterBar filters={filters} onFilterChange={setFilters} />
+
+                            <DiscoverGrid
+                              loading={loading}
+                              error={error}
+                              projects={projects}
+                              filteredProjects={filteredProjects}
+                              filters={filters}
+                              setFilters={setFilters}
+                              searchedProfiles={searchedProfiles}
+                              searchedServices={searchedServices}
+                              handleNavigate={handleNavigate}
+                              currentTrackId={currentTrackId}
+                              currentProject={currentProject}
+                              isPlaying={isPlaying}
+                              handlePlayTrack={handlePlayTrack}
+                              handleTogglePlay={handleTogglePlay}
+                              userProfile={userProfile}
+                              setSearchedProfiles={setSearchedProfiles}
+                              unfollowUser={unfollowUser}
+                              followUser={followUser}
+                              setIsAuthModalOpen={setIsAuthModalOpen}
+                            />
                           </div>
                         )}
-                      </div>
-                    </PullToRefresh>
-                  )}
+                      </PullToRefresh>
+                    )}
 
-                  {currentView === 'profile' && (
-                    <ProfilePage
-                      profile={(!profileUsername || (userProfile && userProfile.handle === profileUsername)) ? userProfile : null} // Use local profile if it matches URL, else fetch
-                      profileUsername={profileUsername}
-                      currentProject={currentProject}
-                      currentTrackId={currentTrackId}
-                      isPlaying={isPlaying}
-                      onPlayTrack={handlePlayTrack}
-                      onTogglePlay={handleTogglePlay}
-                    />
-                  )}
-
-                  {currentView === 'browse-talent' && (
-                    <BrowseTalentPage
-                      currentProject={currentProject}
-                      currentTrackId={currentTrackId}
-                      isPlaying={isPlaying}
-                      onPlayTrack={handlePlayTrack}
-                      onTogglePlay={handleTogglePlay}
-                      onOpenAuth={() => setIsAuthModalOpen(true)}
-                    />
-                  )}
-
-                  {/* View All Pages */}
-                  {currentView === 'browse-all-talent' && (
-                    <ViewAllPage
-                      type="talent"
-                      title="Featured Creators"
-                      description="Discover the best emerging producers, vocalists, and engineers."
-                      currentProject={currentProject}
-                      currentTrackId={currentTrackId}
-                      isPlaying={isPlaying}
-                      onPlayTrack={handlePlayTrack}
-                      onTogglePlay={handleTogglePlay}
-                      onOpenAuth={() => setIsAuthModalOpen(true)}
-                    />
-                  )}
-                  {currentView === 'browse-all-projects' && (
-                    <ViewAllPage
-                      type="projects"
-                      title="Trending Projects"
-                      description="Explore the latest and most popular projects from our community."
-                      currentProject={currentProject}
-                      currentTrackId={currentTrackId}
-                      isPlaying={isPlaying}
-                      onPlayTrack={handlePlayTrack}
-                      onTogglePlay={handleTogglePlay}
-                      onOpenAuth={() => setIsAuthModalOpen(true)}
-                    />
-                  )}
-                  {currentView === 'browse-all-soundpacks' && (
-                    <ViewAllPage
-                      type="soundpacks"
-                      title="Sound Kits"
-                      description="High-quality drum kits, loop packs, and presets for your production."
-                      currentProject={currentProject}
-                      currentTrackId={currentTrackId}
-                      isPlaying={isPlaying}
-                      onPlayTrack={handlePlayTrack}
-                      onTogglePlay={handleTogglePlay}
-                      onOpenAuth={() => setIsAuthModalOpen(true)}
-                    />
-                  )}
-                  {currentView === 'browse-all-releases' && (
-                    <ViewAllPage
-                      type="releases"
-                      title="Releases"
-                      description="Fresh releases from artists across the platform."
-                      currentProject={currentProject}
-                      currentTrackId={currentTrackId}
-                      isPlaying={isPlaying}
-                      onPlayTrack={handlePlayTrack}
-                      onTogglePlay={handleTogglePlay}
-                      onOpenAuth={() => setIsAuthModalOpen(true)}
-                    />
-                  )}
-                  {currentView === 'browse-all-services' && (
-                    <ViewAllPage
-                      type="services"
-                      title="Services"
-                      description="Hire talented professionals for your next project."
-                      currentProject={currentProject}
-                      currentTrackId={currentTrackId}
-                      isPlaying={isPlaying}
-                      onPlayTrack={handlePlayTrack}
-                      onTogglePlay={handleTogglePlay}
-                      onOpenAuth={() => setIsAuthModalOpen(true)}
-                    />
-                  )}
-
-                  {currentView === 'following' && (
-                    <FollowingPage
-                      currentProject={currentProject}
-                      currentTrackId={currentTrackId}
-                      isPlaying={isPlaying}
-                      onPlayTrack={handlePlayTrack}
-                      onTogglePlay={handleTogglePlay}
-                    />
-                  )}
-
-                  {currentView === 'collaborate' && (
-                    <CollaboratePage />
-                  )}
-
-                  {currentView === 'library' && (
-                    isLoggedIn ? (
-                      <LibraryPage
+                    {currentView === 'profile' && (
+                      <ProfilePage
+                        profile={(!profileUsername || (userProfile && userProfile.handle === profileUsername)) ? userProfile : null} // Use local profile if it matches URL, else fetch
+                        profileUsername={profileUsername}
                         currentProject={currentProject}
                         currentTrackId={currentTrackId}
                         isPlaying={isPlaying}
                         onPlayTrack={handlePlayTrack}
                         onTogglePlay={handleTogglePlay}
                       />
-                    ) : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-                  )}
+                    )}
 
-                  {currentView === 'upload' && (
-                    isLoggedIn ? (
-                      <UploadPage
+                    {currentView === 'browse-talent' && (
+                      <BrowseTalentPage
                         currentProject={currentProject}
                         currentTrackId={currentTrackId}
                         isPlaying={isPlaying}
                         onPlayTrack={handlePlayTrack}
                         onTogglePlay={handleTogglePlay}
-                        userProfile={userProfile}
+                        onOpenAuth={() => setIsAuthModalOpen(true)}
                       />
-                    ) : (
-                      <div className="flex items-center justify-center h-[60vh]">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                      </div>
-                    )
-                  )}
+                    )}
 
-                  {currentView === 'contracts' && (
-                    isLoggedIn ? <ContractsPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-                  )}
+                    {/* View All Pages */}
+                    {currentView === 'browse-all-talent' && (
+                      <ViewAllPage
+                        type="talent"
+                        title="Featured Creators"
+                        description="Discover the best emerging producers, vocalists, and engineers."
+                        currentProject={currentProject}
+                        currentTrackId={currentTrackId}
+                        isPlaying={isPlaying}
+                        onPlayTrack={handlePlayTrack}
+                        onTogglePlay={handleTogglePlay}
+                        onOpenAuth={() => setIsAuthModalOpen(true)}
+                      />
+                    )}
+                    {currentView === 'browse-all-projects' && (
+                      <ViewAllPage
+                        type="projects"
+                        title="Trending Projects"
+                        description="Explore the latest and most popular projects from our community."
+                        currentProject={currentProject}
+                        currentTrackId={currentTrackId}
+                        isPlaying={isPlaying}
+                        onPlayTrack={handlePlayTrack}
+                        onTogglePlay={handleTogglePlay}
+                        onOpenAuth={() => setIsAuthModalOpen(true)}
+                      />
+                    )}
+                    {currentView === 'browse-all-soundpacks' && (
+                      <ViewAllPage
+                        type="soundpacks"
+                        title="Sound Kits"
+                        description="High-quality drum kits, loop packs, and presets for your production."
+                        currentProject={currentProject}
+                        currentTrackId={currentTrackId}
+                        isPlaying={isPlaying}
+                        onPlayTrack={handlePlayTrack}
+                        onTogglePlay={handleTogglePlay}
+                        onOpenAuth={() => setIsAuthModalOpen(true)}
+                      />
+                    )}
+                    {currentView === 'browse-all-releases' && (
+                      <ViewAllPage
+                        type="releases"
+                        title="Releases"
+                        description="Fresh releases from artists across the platform."
+                        currentProject={currentProject}
+                        currentTrackId={currentTrackId}
+                        isPlaying={isPlaying}
+                        onPlayTrack={handlePlayTrack}
+                        onTogglePlay={handleTogglePlay}
+                        onOpenAuth={() => setIsAuthModalOpen(true)}
+                      />
+                    )}
+                    {currentView === 'browse-all-services' && (
+                      <ViewAllPage
+                        type="services"
+                        title="Services"
+                        description="Hire talented professionals for your next project."
+                        currentProject={currentProject}
+                        currentTrackId={currentTrackId}
+                        isPlaying={isPlaying}
+                        onPlayTrack={handlePlayTrack}
+                        onTogglePlay={handleTogglePlay}
+                        onOpenAuth={() => setIsAuthModalOpen(true)}
+                      />
+                    )}
 
-                  {currentView === 'post-service' && (
-                    isLoggedIn ? <PostServicePage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-                  )}
-
-                  {currentView === 'notes' && (
-                    isLoggedIn ? (
-                      <NotesPage
-                        userProfile={userProfile}
+                    {currentView === 'following' && (
+                      <FollowingPage
                         currentProject={currentProject}
                         currentTrackId={currentTrackId}
                         isPlaying={isPlaying}
                         onPlayTrack={handlePlayTrack}
                         onTogglePlay={handleTogglePlay}
                       />
-                    ) : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-                  )}
+                    )}
 
-                  {currentView === 'checkout' && (
-                    <CheckoutPage />
-                  )}
+                    {currentView === 'collaborate' && (
+                      <CollaboratePage />
+                    )}
 
-                  {currentView === 'dashboard-messages' && (
-                    isLoggedIn ? <MessagesPage isPlayerActive={!!currentTrackId} isPlayerExpanded={isPlayerExpanded} /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-                  )}
-
-                  {currentView === 'dashboard-manage' && (
-                    isLoggedIn ? <ManageServicesPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-                  )}
-
-                  {/* Settings & Help Views */}
-                  {(currentView === 'settings' || currentView === 'dashboard-settings') && (
-                    <SettingsPage userProfile={userProfile} />
-                  )}
-
-                  {(currentView === 'help' || currentView === 'dashboard-help') && (
-                    <GetHelpPage onNavigate={handleNavigate} />
-                  )}
-
-                  {currentView === 'terms' && (
-                    <TermsPage onBack={() => setCurrentView('help')} />
-                  )}
-
-                  {currentView === 'privacy' && (
-                    <PrivacyPage onBack={() => setCurrentView('help')} />
-                  )}
-
-                  {/* Handle remaining Dashboard sub-views via DashboardPage or specifically if needed */}
-                  {(currentView.startsWith('dashboard') &&
-                    currentView !== 'dashboard-messages' &&
-                    currentView !== 'dashboard-manage' &&
-                    currentView !== 'dashboard-settings' &&
-                    currentView !== 'dashboard-help' &&
-                    currentView !== 'dashboard-invoices' &&
-                    currentView !== 'dashboard-invoices' &&
-                    currentView !== 'dashboard-roadmap') && (
+                    {currentView === 'library' && (
                       isLoggedIn ? (
-                        <DashboardPage
-                          view={currentView}
-                          projects={projects}
-                          setProjects={setProjects}
+                        <LibraryPage
+                          currentProject={currentProject}
+                          currentTrackId={currentTrackId}
+                          isPlaying={isPlaying}
+                          onPlayTrack={handlePlayTrack}
+                          onTogglePlay={handleTogglePlay}
+                        />
+                      ) : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+                    )}
+
+                    {currentView === 'upload' && (
+                      isLoggedIn ? (
+                        <UploadPage
+                          currentProject={currentProject}
                           currentTrackId={currentTrackId}
                           isPlaying={isPlaying}
                           onPlayTrack={handlePlayTrack}
                           onTogglePlay={handleTogglePlay}
                           userProfile={userProfile}
-                          onNavigate={handleNavigate}
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-[60vh]">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        </div>
+                      )
+                    )}
+
+                    {currentView === 'contracts' && (
+                      isLoggedIn ? <ContractsPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+                    )}
+
+                    {currentView === 'post-service' && (
+                      isLoggedIn ? <PostServicePage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+                    )}
+
+                    {currentView === 'notes' && (
+                      isLoggedIn ? (
+                        <NotesPage
+                          userProfile={userProfile}
+                          currentProject={currentProject}
+                          currentTrackId={currentTrackId}
+                          isPlaying={isPlaying}
+                          onPlayTrack={handlePlayTrack}
+                          onTogglePlay={handleTogglePlay}
                         />
                       ) : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
                     )}
 
-                  {/* Invoices Page */}
-                  {currentView === 'dashboard-invoices' && (
-                    isLoggedIn ? <InvoicesPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-                  )}
-                  {/* Subscription Page */}
-                  {currentView === 'subscription' && (
-                    <SubscriptionPage onNavigate={handleNavigate} userProfile={userProfile} />
-                  )}
+                    {currentView === 'checkout' && (
+                      <CheckoutPage />
+                    )}
 
-                  {/* Roadmap & Planning Page */}
-                  {currentView === 'dashboard-roadmap' && (
-                    isLoggedIn ? <RoadmapPage onNavigate={(view) => handleNavigate(view as View)} /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
-                  )}
+                    {currentView === 'dashboard-messages' && (
+                      isLoggedIn ? <MessagesPage isPlayerActive={!!currentTrackId} isPlayerExpanded={isPlayerExpanded} /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+                    )}
 
-                </main>
-              </div>
+                    {currentView === 'dashboard-manage' && (
+                      isLoggedIn ? <ManageServicesPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+                    )}
 
-              <MusicPlayer
-                currentProject={currentProject}
-                currentTrackId={currentTrackId}
-                isPlaying={isPlaying}
-                togglePlay={handleTogglePlay}
-                currentView={currentView}
-                onClose={() => {
-                  setIsPlaying(false);
-                  setCurrentProject(null);
-                  setCurrentTrackId(null);
-                }}
-                onNavigate={handleNavigate}
-                isSidebarOpen={isMobileMenuOpen}
-                onNext={handleNextTrack}
-                onPrev={handlePrevTrack}
-                hasPrev={hasPrev}
-                repeatMode={repeatMode}
-                isShuffling={isShuffling}
-                onToggleRepeat={handleToggleRepeat}
-                onToggleShuffle={handleToggleShuffle}
-                isExpanded={isPlayerExpanded}
-                onExpandToggle={() => setIsPlayerExpanded(!isPlayerExpanded)}
-              />
+                    {/* Settings & Help Views */}
+                    {(currentView === 'settings' || currentView === 'dashboard-settings') && (
+                      <SettingsPage userProfile={userProfile} />
+                    )}
 
-              <BottomNav
-                currentView={currentView}
-                onNavigate={handleNavigate}
-              />
-            </div >
-          </FileOperationProvider>
+                    {(currentView === 'help' || currentView === 'dashboard-help') && (
+                      <GetHelpPage onNavigate={handleNavigate} />
+                    )}
+
+                    {currentView === 'terms' && (
+                      <TermsPage onBack={() => handleNavigate('help')} />
+                    )}
+
+                    {currentView === 'privacy' && (
+                      <PrivacyPage onBack={() => handleNavigate('help')} />
+                    )}
+
+                    {/* Handle remaining Dashboard sub-views via DashboardPage or specifically if needed */}
+                    {(currentView.startsWith('dashboard') &&
+                      currentView !== 'dashboard-messages' &&
+                      currentView !== 'dashboard-manage' &&
+                      currentView !== 'dashboard-settings' &&
+                      currentView !== 'dashboard-help' &&
+                      currentView !== 'dashboard-invoices' &&
+                      currentView !== 'dashboard-roadmap') && (
+                        isLoggedIn ? (
+                          <DashboardPage
+                            view={currentView}
+                            projects={projects}
+                            setProjects={setProjects}
+                            currentTrackId={currentTrackId}
+                            isPlaying={isPlaying}
+                            onPlayTrack={handlePlayTrack}
+                            onTogglePlay={handleTogglePlay}
+                            userProfile={userProfile}
+                            onNavigate={handleNavigate}
+                          />
+                        ) : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+                      )}
+
+                    {/* Invoices Page */}
+                    {currentView === 'dashboard-invoices' && (
+                      isLoggedIn ? <InvoicesPage /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+                    )}
+                    {/* Subscription Page */}
+                    {currentView === 'subscription' && (
+                      <SubscriptionPage onNavigate={handleNavigate} userProfile={userProfile} />
+                    )}
+
+                    {/* Roadmap & Planning Page */}
+                    {currentView === 'dashboard-roadmap' && (
+                      isLoggedIn ? <RoadmapPage onNavigate={(view) => handleNavigate(view as View)} /> : <NotLoggedInState onOpenAuth={() => setIsAuthModalOpen(true)} />
+                    )}
+
+                  </main>
+                </div>
+
+                <MusicPlayer
+                  currentProject={currentProject}
+                  currentTrackId={currentTrackId}
+                  isPlaying={isPlaying}
+                  togglePlay={handleTogglePlay}
+                  currentView={currentView}
+                  onClose={() => {
+                    setIsPlaying(false);
+                    setCurrentProject(null);
+                    setCurrentTrackId(null);
+                  }}
+                  onNavigate={handleNavigate}
+                  isSidebarOpen={isMobileMenuOpen}
+                  onNext={handleNextTrack}
+                  onPrev={handlePrevTrack}
+                  hasPrev={hasPrev}
+                  repeatMode={repeatMode}
+                  isShuffling={isShuffling}
+                  onToggleRepeat={handleToggleRepeat}
+                  onToggleShuffle={handleToggleShuffle}
+                  isExpanded={isPlayerExpanded}
+                  onExpandToggle={() => setIsPlayerExpanded(!isPlayerExpanded)}
+                  isHidden={false}
+                  autoMinimize={currentView === 'home' && discoverViewMode === 'feed'}
+                />
+
+                <BottomNav
+                  currentView={currentView}
+                  onNavigate={handleNavigate}
+                />
+              </div >
+            </FileOperationProvider>
+          </PlayerProvider>
         </ToastProvider>
       </PurchaseModalProvider>
     </CartProvider >

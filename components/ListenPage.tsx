@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import {
     Play, Pause, Bookmark, Share2, MoreHorizontal,
     ShoppingCart, User, Disc, Box, Gem, ArrowLeft, Check, ChevronRight, X, Link as LinkIcon, Facebook, Twitter, Mail
@@ -385,18 +385,14 @@ const ListenPage: React.FC<ListenPageProps> = ({
                     <div className="flex-1 overflow-y-auto p-6 pt-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         <div className="flex flex-col gap-3">
                             {suggestedProjects.map((p) => (
-                                <div
+                                <Link
                                     key={p.id}
-                                    onClick={() => {
-                                        // Ensure we push a new entry to history for the breadcrumb effect
-                                        navigate(`/listen/${p.shortId || p.id}`, { replace: false });
-                                        window.scrollTo(0, 0);
-                                    }}
-                                    className="group bg-neutral-900/20 rounded-xl overflow-hidden cursor-pointer hover:bg-white/5 transition-all shrink-0"
+                                    to={`/listen/${p.shortId || p.id}`}
+                                    className="group bg-neutral-900/20 rounded-xl overflow-hidden cursor-pointer hover:bg-white/5 transition-all shrink-0 block"
                                 >
                                     <div className="flex items-center gap-3 p-3">
                                         {/* Cover Art */}
-                                        <div className="relative w-12 h-12 rounded-lg bg-neutral-900 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden">
+                                        <div className="relative w-12 h-12 rounded-lg bg-neutral-900 flex items-center justify-center shrink-0 overflow-hidden">
                                             {p.coverImage ? (
                                                 <img src={p.coverImage} alt={p.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                             ) : (
@@ -416,7 +412,7 @@ const ListenPage: React.FC<ListenPageProps> = ({
                                                 {p.title}
                                             </h4>
                                             <div className="flex items-center gap-2 text-[10px] text-neutral-500 group-hover:text-neutral-400">
-                                                <span className="truncate max-w-[100px]">{p.producer?.username || 'Unknown'}</span>
+                                                <span className="truncate max-w-[100px]">{p.producer || 'Unknown'}</span>
                                                 <span className="w-0.5 h-0.5 bg-neutral-600 rounded-full"></span>
                                                 <span>{p.tracks.length} tracks</span>
                                             </div>
@@ -427,7 +423,7 @@ const ListenPage: React.FC<ListenPageProps> = ({
                                             <ChevronRight size={16} />
                                         </div>
                                     </div>
-                                </div>
+                                </Link>
                             ))}
                         </div>
                     </div>

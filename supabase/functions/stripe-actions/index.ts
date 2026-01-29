@@ -66,7 +66,7 @@ serve(async (req) => {
 
                 const setupIntent = await stripe.setupIntents.create({
                     customer: customerId,
-                    payment_method_types: ['card', 'paypal'],
+                    automatic_payment_methods: { enabled: true },
                     usage: 'off_session',
                 });
 

@@ -211,7 +211,7 @@ const DiscoverFeedItem = ({
                 </div>
 
                 {/* BOTTOM HALF: Info & Interactions */}
-                <div className="absolute inset-x-0 bottom-0 pointer-events-none z-20 pb-[50px] px-4 flex flex-col justify-end">
+                <div className="absolute inset-x-0 bottom-0 pointer-events-none z-20 pb-[60px] px-4 flex flex-col justify-end">
                     <div className="flex justify-between items-end w-full">
                         <div className="flex-1 min-w-0 pr-8">
                             <div className="flex items-center gap-2 mb-2">

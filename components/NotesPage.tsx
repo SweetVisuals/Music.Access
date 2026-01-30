@@ -872,7 +872,7 @@ const NotesPage: React.FC<NotesPageProps> = ({ userProfile, currentProject, curr
                     </div>
 
                     {/* Bin Access & Drop Zone */}
-                    <div className="p-4 pb-[100px] lg:pb-4 border-t border-white/5 bg-[#0A0A0A]">
+                    <div className={`p-4 lg:pb-4 border-t border-white/5 bg-[#0A0A0A] ${currentTrackId ? 'pb-[160px]' : 'pb-[100px]'}`}>
                         {trashView ? (
                             <div className="flex flex-col gap-2 w-full">
                                 <button

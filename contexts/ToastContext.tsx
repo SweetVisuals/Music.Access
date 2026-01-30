@@ -76,7 +76,10 @@ const ToastItem: React.FC<{ toast: Toast; onDismiss: (id: string) => void }> = (
             className={`
                 pointer-events-auto flex items-center gap-4 p-4 rounded-2xl border bg-[#111] shadow-2xl w-full max-w-sm
                 transition-all duration-300 ease-out transform
-                ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
+                ${isVisible
+                    ? 'translate-y-0 md:translate-x-0 opacity-100'
+                    : '-translate-y-8 md:translate-y-0 md:translate-x-full opacity-0'
+                }
                 ${colors.border}
             `}
             role="alert"
@@ -118,7 +121,21 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         <ToastContext.Provider value={{ showToast }}>
             {children}
             {createPortal(
-                <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3 pointer-events-none w-full max-w-sm px-4 md:px-0">
+                <div className={`
+                    fixed z-[9999] flex gap-3 pointer-events-none w-full max-w-sm px-4 md:px-0
+                    
+                    /* Mobile Positioning: Top Center */
+                    top-[calc(56px+env(safe-area-inset-top)+12px)] 
+                    left-1/2 -translate-x-1/2 
+                    flex-col items-center
+
+                    /* Desktop Positioning: Bottom Right */
+                    md:top-auto md:bottom-6 
+                    md:left-auto md:right-6 
+                    md:translate-x-0
+                    md:items-end 
+                    md:flex-col
+                `}>
                     {toasts.map((toast) => (
                         <ToastItem key={toast.id} toast={toast} onDismiss={dismissToast} />
                     ))}

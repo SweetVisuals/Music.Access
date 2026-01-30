@@ -259,7 +259,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                 onTouchMove={onTouchMove}
                 onTouchEnd={onTouchEnd}
                 className={`
-        fixed inset-0 z-[200] w-full lg:w-[260px] bg-black lg:bg-[#050505] flex flex-col font-sans transition-transform duration-300 ease-in-out transform touch-pan-y
+        fixed inset-0 z-[140] w-full lg:w-[260px] bg-black lg:bg-[#050505] flex flex-col font-sans transition-transform duration-300 ease-in-out transform touch-pan-y
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static lg:h-screen
       `}>
                 <div className="h-[calc(56px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] flex items-center justify-between lg:justify-center px-5 shrink-0 border-transparent relative overflow-hidden">

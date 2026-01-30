@@ -165,6 +165,8 @@ const DiscoverFeedItem = ({
         e.stopPropagation();
         // Fallback or Navigator Share
         const url = `${window.location.origin}/listen/${item.project.shortId || item.project.id}`;
+        const isMobile = window.innerWidth < 768; // Identify mobile via width
+
         if (navigator.share) {
             navigator.share({
                 title: item.project.title,
@@ -172,11 +174,11 @@ const DiscoverFeedItem = ({
                 url: url
             }).catch(() => {
                 navigator.clipboard.writeText(url);
-                showToast("Link copied to clipboard", "success");
+                if (!isMobile) showToast("Link copied to clipboard", "success");
             });
         } else {
             navigator.clipboard.writeText(url);
-            showToast("Link copied to clipboard", "success");
+            if (!isMobile) showToast("Link copied to clipboard", "success");
         }
     };
 
@@ -189,8 +191,8 @@ const DiscoverFeedItem = ({
             <div className="absolute inset-0 z-20 pointer-events-none">
 
                 {/* TOP HALF: Project Card */}
-                <div className="absolute inset-x-0 top-0 h-[70%] flex items-center justify-center pointer-events-auto z-10 pt-8">
-                    <div className={`relative w-[85vw] max-w-[380px] h-[45vh] max-h-[470px] -translate-y-5 transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${active && isPlaying ? 'scale-100' : 'scale-95'}`}>
+                <div className="absolute inset-x-0 top-0 h-[70%] flex items-center justify-center pointer-events-none z-10 pt-8">
+                    <div className={`relative w-[85vw] max-w-[380px] h-[45vh] max-h-[470px] -translate-y-[25px] transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] pointer-events-auto ${active && isPlaying ? 'scale-100' : 'scale-95'}`}>
                         {/* Dynamic Glow Behind */}
                         <div className={`absolute -inset-4 bg-gradient-to-tr from-primary/30 via-blue-500/20 to-purple-500/30 rounded-xl blur-2xl opacity-0 transition-opacity duration-1000 ${active && isPlaying ? 'opacity-100' : 'opacity-0'}`}></div>
 
@@ -203,14 +205,13 @@ const DiscoverFeedItem = ({
                                 onTogglePlay={onTogglePlay}
                                 className="w-full h-full shadow-2xl"
                                 hideActions={true}
-                                onAction={() => onTogglePlay()}
                             />
                         </div>
                     </div>
                 </div>
 
                 {/* BOTTOM HALF: Info & Interactions */}
-                <div className="absolute inset-x-0 bottom-0 pointer-events-auto z-20 pb-[55px] px-4 flex flex-col justify-end">
+                <div className="absolute inset-x-0 bottom-0 pointer-events-none z-20 pb-[55px] px-4 flex flex-col justify-end">
                     <div className="flex justify-between items-end w-full">
                         <div className="flex-1 min-w-0 pr-8">
                             <div className="flex items-center gap-2 mb-2">
@@ -225,10 +226,10 @@ const DiscoverFeedItem = ({
                                 {displayTrack.title}
                             </h2>
                             <h3
-                                className="text-white/90 font-bold text-base flex items-center gap-2 cursor-pointer hover:underline drop-shadow-md"
+                                className="text-white/90 font-bold text-base flex items-center gap-2 cursor-pointer hover:underline drop-shadow-md pointer-events-auto"
                                 onClick={() => navigate(`/@${item.project.producerHandle || item.project.producer}`)}
                             >
-                                @{item.project.producer}
+                                {item.project.producer}
                             </h3>
 
                             <div className="mt-6 w-full opacity-90">
@@ -238,9 +239,9 @@ const DiscoverFeedItem = ({
                         </div>
 
                         {/* Right Side Actions - Moved Down */}
-                        <div className="flex flex-col items-center gap-4 mb-0">
+                        <div className="flex flex-col items-center gap-4 mb-0 pointer-events-auto">
                             {/* Gem Button */}
-                            <div className="flex flex-col items-center gap-1 group">
+                            <div className="flex flex-col items-center gap-1 group w-[60px]">
                                 <button
                                     onClick={handleGem}
                                     className={`drop-shadow-lg hover:scale-110 transition-all active:scale-95 ${hasGivenGem ? 'text-primary' : 'text-white'}`}
@@ -253,7 +254,7 @@ const DiscoverFeedItem = ({
                             </div>
 
                             {/* Cart Button */}
-                            <div className="flex flex-col items-center gap-1 group">
+                            <div className="flex flex-col items-center gap-1 group w-[60px]">
                                 <button
                                     onClick={handleCart}
                                     className="text-white drop-shadow-lg hover:scale-110 transition-transform active:scale-95"
@@ -264,7 +265,7 @@ const DiscoverFeedItem = ({
                             </div>
 
                             {/* Bookmark Button */}
-                            <div className="flex flex-col items-center gap-1 group">
+                            <div className="flex flex-col items-center gap-1 group w-[60px]">
                                 <button
                                     onClick={handleSave}
                                     className={`drop-shadow-lg hover:scale-110 transition-transform active:scale-95 ${isSaved ? 'text-primary' : 'text-white'}`}
@@ -277,7 +278,7 @@ const DiscoverFeedItem = ({
                             </div>
 
                             {/* Share Button */}
-                            <div className="flex flex-col items-center gap-1 group">
+                            <div className="flex flex-col items-center gap-1 group w-[60px]">
                                 <button
                                     onClick={handleShare}
                                     className="text-white drop-shadow-lg hover:scale-110 transition-transform active:scale-95"

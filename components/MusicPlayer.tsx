@@ -31,6 +31,7 @@ interface MusicPlayerProps {
     onExpandToggle: () => void;
     isHidden?: boolean;
     autoMinimize?: boolean;
+    hideCloseButton?: boolean;
 }
 
 const MusicPlayer: React.FC<MusicPlayerProps> = ({
@@ -52,7 +53,8 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
     isExpanded,
     onExpandToggle,
     isHidden = false,
-    autoMinimize = false
+    autoMinimize = false,
+    hideCloseButton = false
 }) => {
     const navigate = useNavigate();
     const [isMinimized, setIsMinimized] = useState(true);
@@ -336,12 +338,14 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
                                 >
                                     {isPlaying ? <Pause fill="black" size={14} /> : <Play fill="black" size={14} className="ml-0.5" />}
                                 </button>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); onClose(); }}
-                                    className="text-neutral-500 hover:text-white p-1"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                </button>
+                                {!hideCloseButton && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onClose(); }}
+                                        className="text-neutral-500 hover:text-white p-1"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -365,9 +369,13 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
                                     <ChevronDown size={28} />
                                 </button>
                                 <span className="text-[10px] font-bold tracking-[0.2em] text-white/40 uppercase">Now Playing</span>
-                                <button onClick={onClose} className="text-white/80 p-2 -mr-2 hover:bg-white/10 rounded-full transition-colors active:scale-95">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                </button>
+                                {hideCloseButton ? (
+                                    <div className="w-8"></div> // Spacer to keep title centered if using flex-between
+                                ) : (
+                                    <button onClick={onClose} className="text-white/80 p-2 -mr-2 hover:bg-white/10 rounded-full transition-colors active:scale-95">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    </button>
+                                )}
                             </div>
                         </div>
 

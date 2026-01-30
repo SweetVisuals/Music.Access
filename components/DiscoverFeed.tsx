@@ -53,6 +53,14 @@ const DiscoverFeedItem = ({
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const undoTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Determine the track to display (active track from project, or default feed track)
+    const displayTrack = useMemo(() => {
+        if (currentTrackId && item.project.tracks.some(t => t.id === currentTrackId)) {
+            return item.project.tracks.find(t => t.id === currentTrackId) || item.track;
+        }
+        return item.track;
+    }, [currentTrackId, item.project, item.track]);
+
     useEffect(() => {
         const checkStatus = async () => {
             try {
@@ -138,13 +146,13 @@ const DiscoverFeedItem = ({
         e.stopPropagation();
         const cartItem: CartItem = {
             id: `${item.project.id}-${Date.now()}`,
-            title: item.track.title,
+            title: displayTrack.title,
             type: 'Lease License', // Default implementation
             price: item.project.price || 29.99,
             sellerName: item.project.producer,
             sellerHandle: item.project.producerHandle || item.project.producer,
             projectId: item.project.id,
-            trackId: item.track.id,
+            trackId: displayTrack.id,
             sellerAvatar: item.project.producerAvatar,
             licenseType: 'Basic Lease'
         };
@@ -159,7 +167,7 @@ const DiscoverFeedItem = ({
         if (navigator.share) {
             navigator.share({
                 title: item.project.title,
-                text: `Check out ${item.track.title} by ${item.project.producer}`,
+                text: `Check out ${displayTrack.title} by ${item.project.producer}`,
                 url: url
             }).catch(() => {
                 navigator.clipboard.writeText(url);
@@ -194,13 +202,14 @@ const DiscoverFeedItem = ({
                                 onTogglePlay={onTogglePlay}
                                 className="w-full h-full shadow-2xl"
                                 hideActions={true}
+                                onAction={() => onTogglePlay()}
                             />
                         </div>
                     </div>
                 </div>
 
                 {/* BOTTOM HALF: Info & Interactions */}
-                <div className="absolute inset-x-0 bottom-0 pointer-events-auto z-20 pb-[15px] px-4 flex flex-col justify-end">
+                <div className="absolute inset-x-0 bottom-0 pointer-events-auto z-20 pb-[55px] px-4 flex flex-col justify-end">
                     <div className="flex justify-between items-end w-full">
                         <div className="flex-1 min-w-0 pr-8">
                             <div className="flex items-center gap-2 mb-2">
@@ -212,7 +221,7 @@ const DiscoverFeedItem = ({
                                 </span>
                             </div>
                             <h2 className="text-3xl font-black text-white leading-none mb-1 drop-shadow-lg line-clamp-2 tracking-tight">
-                                {item.track.title}
+                                {displayTrack.title}
                             </h2>
                             <h3
                                 className="text-white/90 font-bold text-base flex items-center gap-2 cursor-pointer hover:underline drop-shadow-md"
@@ -342,7 +351,10 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({
                 const index = Number(bestEntry.target.getAttribute('data-index'));
                 const item = feedItems[index];
 
-                if (item && currentTrackId !== item.track.id) {
+                // Check if we are already playing a track from this project
+                const isProjectTrackPlaying = currentTrackId && item.project.tracks.some(t => t.id === currentTrackId);
+
+                if (item && !isProjectTrackPlaying) {
                     // Clear any pending play
                     if (clickTimeoutRef.current) {
                         clearTimeout(clickTimeoutRef.current);

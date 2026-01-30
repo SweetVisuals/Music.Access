@@ -92,7 +92,7 @@ const App: React.FC = () => {
   // Swipe Gesture Logic for Opening Sidebar
   const touchStartRef = useRef<number | null>(null);
   const touchEndRef = useRef<number | null>(null);
-  const MIN_SWIPE_DISTANCE = 50;
+  const MIN_SWIPE_DISTANCE = 30;
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchEndRef.current = null;
@@ -671,7 +671,7 @@ const App: React.FC = () => {
                 {/* Edge Swipe Zone for opening Sidebar */}
                 {!isMobileMenuOpen && (
                   <div
-                    className="fixed top-0 bottom-0 left-0 w-[20px] z-[130] lg:hidden"
+                    className="fixed top-0 bottom-0 left-0 w-[40px] z-[190] lg:hidden touch-none"
                     onTouchStart={onTouchStart}
                     onTouchMove={onTouchMove}
                     onTouchEnd={onTouchEnd}
@@ -742,7 +742,7 @@ const App: React.FC = () => {
 
 
                     {currentView === 'home' && (
-                      <PullToRefresh onRefresh={fetchProjects} disabled={window.innerWidth >= 1024}>
+                      <PullToRefresh onRefresh={fetchProjects} disabled={window.innerWidth >= 1024 || (discoverViewMode === 'feed' && isMobile)}>
                         {discoverViewMode === 'feed' && !filters.searchQuery && isMobile ? (
                           <div className="w-full h-full animate-in fade-in duration-500">
                             <DiscoverFeed
@@ -1058,6 +1058,7 @@ const App: React.FC = () => {
                   onExpandToggle={() => setIsPlayerExpanded(!isPlayerExpanded)}
                   isHidden={false}
                   autoMinimize={currentView === 'home' && discoverViewMode === 'feed'}
+                  hideCloseButton={isMobile && currentView === 'home' && discoverViewMode === 'feed'}
                 />
 
                 <BottomNav

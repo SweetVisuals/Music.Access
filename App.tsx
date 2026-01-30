@@ -752,6 +752,7 @@ const App: React.FC = () => {
                               onPlayTrack={handlePlayTrack}
                               onTogglePlay={handleTogglePlay}
                               userProfile={userProfile}
+                              onOpenSidebar={() => setIsMobileMenuOpen(true)}
                             />
                           </div>
                         ) : (

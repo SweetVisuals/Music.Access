@@ -40,7 +40,7 @@ const MobileCart: React.FC<MobileCartProps> = ({ onNavigate, projects = [] }) =>
         <div
             id="mobile-cart-root"
             className={`
-            fixed inset-0 z-[130] lg:hidden flex flex-col bg-black 
+            fixed inset-0 z-[200] lg:hidden flex flex-col bg-black 
             transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform
             ${visible ? 'translate-y-0' : 'translate-y-full'}
         `}>

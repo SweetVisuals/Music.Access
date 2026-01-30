@@ -211,7 +211,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             setCanUndo(false);
         }, 15000); // 15 seconds
 
-        showToast("Sent 1 Gem to " + project.producer + "!", "success");
+        // Only show toast on desktop
+        if (window.innerWidth >= 1024) {
+            showToast("Sent 1 Gem to " + project.producer + "!", "success");
+        }
 
         try {
             await giveGemToProject(project.id);

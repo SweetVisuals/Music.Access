@@ -17,6 +17,7 @@ interface DiscoverFeedProps {
     onPlayTrack: (project: Project, trackId: string) => void;
     onTogglePlay: () => void;
     userProfile: UserProfile | null;
+    onOpenSidebar?: () => void;
 }
 
 interface FeedItem {
@@ -92,10 +93,10 @@ const DiscoverFeedItem = ({
         try {
             if (newState) {
                 await saveProject(item.project.id);
-                showToast("Saved to Library", "success");
+                // showToast("Saved to Library", "success");
             } else {
                 await unsaveProject(item.project.id);
-                showToast("Removed from Library", "success"); // Fixed typo in previous thought
+                // showToast("Removed from Library", "success");
             }
         } catch (err) {
             setIsSaved(!newState); // Revert
@@ -127,7 +128,7 @@ const DiscoverFeedItem = ({
         setLocalGems(prev => prev + 1);
         setHasGivenGem(true);
         setCanUndoGem(true);
-        showToast(`Sent 1 Gem to ${item.project.producer}!`, "success");
+        // showToast(`Sent 1 Gem to ${item.project.producer}!`, "success");
 
         if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
         undoTimerRef.current = setTimeout(() => setCanUndoGem(false), 15000);
@@ -157,7 +158,7 @@ const DiscoverFeedItem = ({
             licenseType: 'Basic Lease'
         };
         addToCart(cartItem);
-        showToast("Added to Cart", "success");
+        // showToast("Added to Cart", "success");
     };
 
     const handleShare = (e: React.MouseEvent) => {
@@ -189,7 +190,7 @@ const DiscoverFeedItem = ({
 
                 {/* TOP HALF: Project Card */}
                 <div className="absolute inset-x-0 top-0 h-[70%] flex items-center justify-center pointer-events-auto z-10 pt-8">
-                    <div className={`relative w-[85vw] max-w-[380px] h-[45vh] max-h-[480px] -translate-y-5 transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${active && isPlaying ? 'scale-100' : 'scale-95'}`}>
+                    <div className={`relative w-[85vw] max-w-[380px] h-[45vh] max-h-[470px] -translate-y-5 transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${active && isPlaying ? 'scale-100' : 'scale-95'}`}>
                         {/* Dynamic Glow Behind */}
                         <div className={`absolute -inset-4 bg-gradient-to-tr from-primary/30 via-blue-500/20 to-purple-500/30 rounded-xl blur-2xl opacity-0 transition-opacity duration-1000 ${active && isPlaying ? 'opacity-100' : 'opacity-0'}`}></div>
 
@@ -299,7 +300,8 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({
     isPlaying,
     onPlayTrack,
     onTogglePlay,
-    userProfile
+    userProfile,
+    onOpenSidebar
 }) => {
     const navigate = useNavigate();
     const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
@@ -405,12 +407,41 @@ const DiscoverFeed: React.FC<DiscoverFeedProps> = ({
         }
     };
 
+    const [touchStart, setTouchStart] = useState<{ x: number, y: number } | null>(null);
+
+    const onTouchStart = (e: React.TouchEvent) => {
+        setTouchStart({
+            x: e.targetTouches[0].clientX,
+            y: e.targetTouches[0].clientY
+        });
+    };
+
+    const onTouchEnd = (e: React.TouchEvent) => {
+        if (!touchStart || !onOpenSidebar) return;
+
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+
+        const deltaX = touchEndX - touchStart.x;
+        const deltaY = touchEndY - touchStart.y;
+
+        // Check for horizontal swipe (Right Swipe > 50px)
+        // Also ensure vertical movement is less than horizontal movement (to distinguish from scroll)
+        if (deltaX > 50 && Math.abs(deltaX) > Math.abs(deltaY)) {
+            onOpenSidebar();
+        }
+
+        setTouchStart(null);
+    };
+
     return (
         <div className="relative w-full h-full bg-black overflow-hidden">
             {/* Feed Scroll Container */}
             <div
                 ref={containerRef}
                 className="absolute inset-0 overflow-y-scroll snap-y snap-mandatory scroll-smooth no-scrollbar"
+                onTouchStart={onTouchStart}
+                onTouchEnd={onTouchEnd}
             >
                 <style>{`
                 .no-scrollbar::-webkit-scrollbar { display: none; }

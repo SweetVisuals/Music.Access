@@ -160,6 +160,81 @@ const MobileActionsPortal = ({ rhymeMode, setRhymeMode, setTextSize, isVisible }
     );
 };
 
+interface NoteEditorProps {
+    content: string;
+    textSize: 'xs' | 'sm' | 'base' | 'lg';
+    rhymeMode: boolean;
+    isMobile: boolean;
+    rhymeTrayHeight: number;
+    wordToGroup: Record<string, string>;
+    groupToColor: Record<string, string>;
+    onContentChange: (val: string) => void;
+    onCursorChange: (e: any) => void;
+    onSelectionChange: (e: any) => void;
+}
+
+const NoteEditor = React.memo(({
+    content,
+    textSize,
+    rhymeMode,
+    isMobile,
+    rhymeTrayHeight,
+    wordToGroup,
+    groupToColor,
+    onContentChange,
+    onCursorChange,
+    onSelectionChange
+}: NoteEditorProps) => {
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const backdropRef = useRef<HTMLDivElement>(null);
+
+    const handleScroll = () => {
+        if (textareaRef.current && backdropRef.current) {
+            backdropRef.current.scrollTop = textareaRef.current.scrollTop;
+        }
+    };
+
+    const renderHighlightedText = (text: string) => {
+        if (!text) return null;
+        return text.split(/([^a-zA-Z0-9_']+)/).map((token, i) => {
+            let cls = 'text-transparent';
+            if (rhymeMode) {
+                const g = wordToGroup[token.toLowerCase()];
+                cls = g ? (groupToColor[g] || 'text-neutral-500') : 'text-neutral-500';
+            }
+            return <span key={i} className={`${cls} transition-colors duration-300`}>{token}</span>;
+        });
+    };
+
+    return (
+        <div className="flex-1 relative font-mono overflow-y-auto custom-scrollbar bg-[#050505] h-full">
+            <div className="grid grid-cols-1 grid-rows-1 min-h-full relative">
+                <div
+                    ref={backdropRef}
+                    className={`col-start-1 row-start-1 p-5 w-full whitespace-pre-wrap break-words pointer-events-none z-0 ${textSize === 'xs' ? 'text-[11px]' : 'text-[15px]'}`}
+                    style={{ paddingBottom: isMobile ? `${rhymeTrayHeight + 200}px` : '100px' }}
+                >
+                    {renderHighlightedText(content + ' ')}
+                </div>
+                <textarea
+                    ref={textareaRef}
+                    onScroll={handleScroll}
+                    className={`col-start-1 row-start-1 w-full h-full bg-transparent p-5 resize-none focus:outline-none z-10 whitespace-pre-wrap break-words ${textSize === 'xs' ? 'text-[11px]' : 'text-[15px]'} ${rhymeMode ? 'text-transparent caret-white' : 'text-neutral-300'}`}
+                    style={{ paddingBottom: isMobile ? `${rhymeTrayHeight + 200}px` : '100px' }}
+                    value={content}
+                    onChange={(e) => {
+                        onContentChange(e.target.value);
+                        onCursorChange(e);
+                    }}
+                    onSelect={onSelectionChange}
+                    placeholder="Start writing..."
+                    spellCheck={false}
+                />
+            </div>
+        </div>
+    );
+});
+
 interface NotesPageProps {
     userProfile: UserProfile | null;
     currentProject: Project | null;
@@ -204,6 +279,16 @@ const NotesPage: React.FC<NotesPageProps> = ({ userProfile, currentProject, curr
     const [draggedItem, setDraggedItem] = useState<Note | null>(null);
     const [toolkitTab, setToolkitTab] = useState<'rhymes' | 'chat'>('rhymes');
     const [chatSelection, setChatSelection] = useState<string | null>(null);
+    const [hasOpenedAiChat, setHasOpenedAiChat] = useState(() => {
+        return localStorage.getItem('hasOpenedAiChat') === 'true';
+    });
+
+    useEffect(() => {
+        if (isChatOpen && !hasOpenedAiChat) {
+            setHasOpenedAiChat(true);
+            localStorage.setItem('hasOpenedAiChat', 'true');
+        }
+    }, [isChatOpen, hasOpenedAiChat]);
 
     // DnD Handlers
     const handleDragStart = (e: React.DragEvent, item: Note) => {
@@ -407,45 +492,22 @@ const NotesPage: React.FC<NotesPageProps> = ({ userProfile, currentProject, curr
     };
 
     // UI Renderers
-    const renderHighlightedText = (text: string) => {
-        if (!text) return null; return text.split(/([^a-zA-Z0-9_']+)/).map((token, i) => {
-            let cls = 'text-transparent'; if (rhymeMode) { const g = wordToGroup[token.toLowerCase()]; cls = g ? (groupToColor[g] || 'text-neutral-500') : 'text-neutral-500'; }
-            return <span key={i} className={`${cls} transition-colors duration-300`}>{token}</span>;
-        });
+    const handleEditorChange = (e: any) => {
+        setCursorIndex(e.target.selectionStart);
+        const w = getWordUnderCursor(e.target.value, e.target.selectionStart);
+        if (w && w.length > 2 && w !== lastRhymedWordRef.current) {
+            lastRhymedWordRef.current = w;
+            handleRhymeSearch(w);
+        }
+    };
+
+    const handleEditorSelection = (e: any) => {
+        setCursorIndex(e.target.selectionStart);
+        if (e.target.selectionStart !== e.target.selectionEnd) setSelection({ text: e.target.value.substring(e.target.selectionStart, e.target.selectionEnd) });
+        else setSelection(null);
     };
 
     const renderEditorView = () => {
-        // Shared Editor Component (to avoid code duplication)
-        const renderEditorContent = (isMobile: boolean) => (
-            <div className="flex-1 relative font-mono overflow-y-auto custom-scrollbar bg-[#050505] h-full" onScroll={() => { if (textareaRef.current && backdropRef.current) backdropRef.current.scrollTop = textareaRef.current.scrollTop; }}>
-                <div className="grid grid-cols-1 grid-rows-1 min-h-full relative">
-                    <div ref={backdropRef} className={`col-start-1 row-start-1 p-5 w-full whitespace-pre-wrap break-words pointer-events-none z-0 ${textSize === 'xs' ? 'text-[11px]' : 'text-[15px]'}`} style={{ paddingBottom: isMobile ? `${rhymeTrayHeight + 200}px` : '100px' }}>{activeNote && renderHighlightedText(activeNote.content + ' ')}</div>
-                    <textarea
-                        ref={textareaRef}
-                        className={`col-start-1 row-start-1 w-full h-full bg-transparent p-5 resize-none focus:outline-none z-10 whitespace-pre-wrap break-words ${textSize === 'xs' ? 'text-[11px]' : 'text-[15px]'} ${rhymeMode ? 'text-transparent caret-white' : 'text-neutral-300'}`}
-                        style={{ paddingBottom: isMobile ? `${rhymeTrayHeight + 200}px` : '100px' }}
-                        value={activeNote?.content || ''}
-                        onChange={(e) => {
-                            handleUpdateContent(e.target.value);
-                            setCursorIndex(e.target.selectionStart);
-                            const w = getWordUnderCursor(e.target.value, e.target.selectionStart);
-                            if (w && w.length > 2 && w !== lastRhymedWordRef.current) {
-                                lastRhymedWordRef.current = w;
-                                handleRhymeSearch(w);
-                            }
-                        }}
-                        onSelect={(e: any) => {
-                            setCursorIndex(e.target.selectionStart);
-                            if (e.target.selectionStart !== e.target.selectionEnd) setSelection({ text: e.target.value.substring(e.target.selectionStart, e.target.selectionEnd) });
-                            else setSelection(null);
-                        }}
-                        placeholder="Start writing..."
-                        spellCheck={false}
-                    />
-                </div>
-            </div>
-        );
-
         return (
             <div className="flex-1 flex flex-col relative w-full h-full overflow-hidden">
                 <MobileTitlePortal activeNote={activeNote} onUpdateTitle={handleUpdateTitle} onOpenSidebar={() => setIsSidebarOpen(true)} />
@@ -473,7 +535,19 @@ const NotesPage: React.FC<NotesPageProps> = ({ userProfile, currentProject, curr
                                     <button onClick={() => { const url = audioFiles.find(f => f.name === activeNote.attachedAudio)?.url || activeNote.attachedAudio; const tid = `note-audio-${activeNote.id}`; if (currentTrackId === tid) onTogglePlay(); else onPlayTrack({ id: `p-${activeNote.id}`, title: 'Note Audio', producer: 'System', tracks: [{ id: tid, title: 'Audio', files: { mp3: url } }] } as any, tid); }} className="w-7 h-7 rounded-full bg-white text-black flex items-center justify-center">{(currentTrackId === `note-audio-${activeNote.id}` && isPlaying) ? <Pause size={12} fill="black" /> : <Play size={12} fill="black" />}</button>
                                 </div>
                             )}
-                            {renderEditorContent(true)}
+                            <NoteEditor
+                                key="mobile-editor"
+                                content={activeNote?.content || ''}
+                                textSize={textSize}
+                                rhymeMode={rhymeMode}
+                                isMobile={true}
+                                rhymeTrayHeight={rhymeTrayHeight}
+                                wordToGroup={wordToGroup}
+                                groupToColor={groupToColor}
+                                onContentChange={handleUpdateContent}
+                                onCursorChange={handleEditorChange}
+                                onSelectionChange={handleEditorSelection}
+                            />
                         </div>
                         {/* Mobile Chat Panel */}
                         <div className="w-1/2 h-full flex flex-col bg-[#050505] border-l border-white/5 relative overflow-hidden">
@@ -513,7 +587,19 @@ const NotesPage: React.FC<NotesPageProps> = ({ userProfile, currentProject, curr
                                     <button onClick={() => { const url = audioFiles.find(f => f.name === activeNote.attachedAudio)?.url || activeNote.attachedAudio; const tid = `note-audio-${activeNote.id}`; if (currentTrackId === tid) onTogglePlay(); else onPlayTrack({ id: `p-${activeNote.id}`, title: 'Note Audio', producer: 'System', tracks: [{ id: tid, title: 'Audio', files: { mp3: url } }] } as any, tid); }} className="p-1 rounded-full bg-white text-black hover:scale-105 transition-transform">{(currentTrackId === `note-audio-${activeNote.id}` && isPlaying) ? <Pause size={12} fill="black" /> : <Play size={12} fill="black" />}</button>
                                 </div>
                             )}
-                            {renderEditorContent(false)}
+                            <NoteEditor
+                                key="desktop-editor"
+                                content={activeNote?.content || ''}
+                                textSize={textSize}
+                                rhymeMode={rhymeMode}
+                                isMobile={false}
+                                rhymeTrayHeight={rhymeTrayHeight}
+                                wordToGroup={wordToGroup}
+                                groupToColor={groupToColor}
+                                onContentChange={handleUpdateContent}
+                                onCursorChange={handleEditorChange}
+                                onSelectionChange={handleEditorSelection}
+                            />
 
                             {/* Desktop Formatting Toolbar (Floating or Bottom) */}
                             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-[#111] border border-white/10 rounded-full shadow-2xl z-30">
@@ -629,18 +715,20 @@ const NotesPage: React.FC<NotesPageProps> = ({ userProfile, currentProject, curr
                         </div>
 
                         {/* Integrated Swipe Trigger - Highly Visible */}
-                        <div
-                            className="w-full py-4 bg-black border-t border-white/10 flex items-center justify-center gap-3 cursor-pointer shrink-0 z-[80]"
-                            onClick={() => setIsChatOpen(true)}
-                        >
-                            <div className="flex items-center gap-3 px-6 py-2.5 rounded-full bg-primary/10 border-2 border-primary/30 shadow-[0_0_20px_rgba(var(--primary),0.1)] active:scale-95 transition-all">
-                                <ArrowLeft size={16} className="text-secondary animate-pulse" />
-                                <span className="text-[10px] font-black text-white uppercase tracking-[0.15em] drop-shadow-sm">
-                                    Swipe Left for AI Assistant
-                                </span>
-                                <ArrowLeft size={16} className="text-secondary animate-pulse" />
+                        {!hasOpenedAiChat && (
+                            <div
+                                className="w-full py-4 bg-black border-t border-white/10 flex items-center justify-center gap-3 cursor-pointer shrink-0 z-[80]"
+                                onClick={() => setIsChatOpen(true)}
+                            >
+                                <div className="flex items-center gap-3 px-6 py-2.5 rounded-full bg-primary/10 border-2 border-primary/30 shadow-[0_0_20px_rgba(var(--primary),0.1)] active:scale-95 transition-all">
+                                    <ArrowLeft size={16} className="text-secondary animate-pulse" />
+                                    <span className="text-[10px] font-black text-white uppercase tracking-[0.15em] drop-shadow-sm">
+                                        Swipe Left for AI Assistant
+                                    </span>
+                                    <ArrowLeft size={16} className="text-secondary animate-pulse" />
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -211,7 +211,7 @@ const DiscoverFeedItem = ({
                 </div>
 
                 {/* BOTTOM HALF: Info & Interactions */}
-                <div className="absolute inset-x-0 bottom-0 pointer-events-none z-20 pb-[55px] px-4 flex flex-col justify-end">
+                <div className="absolute inset-x-0 bottom-0 pointer-events-none z-20 pb-[40px] px-4 flex flex-col justify-end">
                     <div className="flex justify-between items-end w-full">
                         <div className="flex-1 min-w-0 pr-8">
                             <div className="flex items-center gap-2 mb-2">
@@ -222,7 +222,7 @@ const DiscoverFeedItem = ({
                                     {item.project.bpm} BPM • {item.project.key || 'C Maj'}
                                 </span>
                             </div>
-                            <h2 className="text-3xl font-black text-white leading-none mb-1 drop-shadow-lg line-clamp-2 tracking-tight">
+                            <h2 className="text-2xl font-black text-white leading-none mb-1 drop-shadow-lg line-clamp-2 tracking-tight">
                                 {displayTrack.title}
                             </h2>
                             <h3

@@ -623,14 +623,20 @@ const App: React.FC = () => {
     const playerHeightMobile = PLAYER_HEIGHT_MOBILE; // approx h-16
     const playerHeightDesktopExpanded = PLAYER_HEIGHT_DESKTOP_EXPANDED;
     const SAFETY_BUFFER = 0; // Removing buffer to ensure exact fit for Feed
-    const CONTENT_BUFFER = 60; // Extra buffer so content doesn't just touch the player, but goes past it
+    const CONTENT_BUFFER = 20; // Extra buffer so content doesn't just touch the player, but goes past it
 
     let baseHeight = 0;
 
     if (isMobile) {
       // Mobile Logic
       baseHeight = mobileNavHeight + SAFETY_BUFFER;
-      if (currentTrackId) baseHeight += playerHeightMobile + CONTENT_BUFFER;
+
+      const isDiscoverFeed = currentView === 'home' && discoverViewMode === 'feed' && !filters.searchQuery;
+
+      if (currentTrackId) {
+        // Only add content buffer if NOT on discover feed
+        baseHeight += playerHeightMobile + (isDiscoverFeed ? 0 : CONTENT_BUFFER);
+      }
     } else {
       // Desktop Logic
       if (isPlayerExpanded) {
@@ -672,7 +678,7 @@ const App: React.FC = () => {
                 {/* Edge Swipe Zone for opening Sidebar */}
                 {!isMobileMenuOpen && (
                   <div
-                    className="fixed bottom-0 left-0 w-[40px] z-[190] lg:hidden touch-none"
+                    className="fixed bottom-0 left-0 w-[50px] z-[9999] lg:hidden touch-none"
                     style={{ top: 'calc(56px + env(safe-area-inset-top, 0px))' }}
                     onTouchStart={onTouchStart}
                     onTouchMove={onTouchMove}

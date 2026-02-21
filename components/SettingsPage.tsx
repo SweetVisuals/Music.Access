@@ -102,7 +102,7 @@ const PasswordChangeModal = ({ isOpen, onClose, showToast }: { isOpen: boolean; 
                             disabled={loading}
                             className="px-8 py-3 bg-emerald-400 text-black rounded-2xl text-xs font-black hover:bg-emerald-300 transition-all disabled:opacity-50"
                         >
-                            {loading ? 'Securing...' : 'Encrypt New Key'}
+                            {loading ? 'Updating...' : 'Update Password'}
                         </button>
                     </div>
                 </form>
@@ -238,24 +238,24 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                 }
 
                 window.dispatchEvent(new CustomEvent('profile-updated'));
-                setMessage({ type: 'success', text: 'Architecture Synchronized successfully.' });
+                setMessage({ type: 'success', text: 'Profile updated successfully.' });
             }
         } catch (error) {
             console.error('Error updating profile:', error);
-            setMessage({ type: 'error', text: 'Synchronization failed.' });
+            setMessage({ type: 'error', text: 'Failed to update profile.' });
         } finally {
             setLoading(false);
         }
     };
 
     const handleDeleteAccount = () => {
-        showToast("Simulation: Zeroizing Account Protocol Initiated.", "info");
+        showToast("Account deletion initiated.", "info");
     };
 
     if (!profile && !userProfile) {
         return (
             <div className="w-full min-h-screen flex items-center justify-center animate-in fade-in duration-500">
-                <div className="text-neutral-500 font-mono text-xs uppercase tracking-widest">Initializing Environment...</div>
+                <div className="text-neutral-500 font-mono text-xs uppercase tracking-widest">Loading settings...</div>
             </div>
         );
     }
@@ -350,6 +350,18 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                                 </button>
                             )}
                         </div>
+
+                        {/* Mobile Overlay Actions */}
+                        <div className="absolute top-4 right-4 md:hidden z-30 flex gap-2">
+                            <button onClick={(e) => { e.stopPropagation(); triggerBannerUpload(); }} className="p-2.5 bg-black/40 backdrop-blur-md hover:bg-black/60 text-white rounded-full border border-white/10 shadow-lg">
+                                <Camera size={16} />
+                            </button>
+                            {displayProfile.banner && (
+                                <button onClick={(e) => { e.stopPropagation(); setIsBannerAdjustOpen(true); }} className="p-2.5 bg-black/40 backdrop-blur-md hover:bg-black/60 text-white rounded-full border border-white/10 shadow-lg">
+                                    <Move size={16} />
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {/* Profile Content Layer */}
@@ -387,8 +399,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                     {/* Header Context */}
                     <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 border-none mt-16 md:mt-24">
                         <div>
-                            <h2 className="text-2xl lg:text-4xl font-black text-white tracking-tighter mb-3">Control Center</h2>
-                            <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed font-medium">Fine-tune your acoustic signature, digital footprint, and core system parameters within the platform.</p>
+                            <h2 className="text-2xl lg:text-4xl font-black text-white tracking-tighter mb-3">Settings</h2>
+                            <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed font-medium">Manage your account preferences, profile details, and system settings.</p>
                         </div>
                         {message && (
                             <div className={`px-6 py-4 rounded-full backdrop-blur-xl ${message.type === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'} text-xs font-black tracking-widest flex items-center gap-3 shadow-[0_0_30px_rgba(0,0,0,0.5)]`}>
@@ -408,12 +420,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                             <section className="space-y-8">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 bg-white/[0.02] rounded-2xl text-primary"><User size={20} /></div>
-                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Digital Identity</h3>
+                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Profile Information</h3>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="space-y-3 group/input">
-                                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest group-focus-within/input:text-primary transition-colors pl-2">Display Nom de Plume</label>
+                                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest group-focus-within/input:text-primary transition-colors pl-2">Display Name</label>
                                         <input
                                             value={displayProfile.username}
                                             onChange={(e) => setProfile({ ...displayProfile, username: e.target.value })}
@@ -422,7 +434,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                                         />
                                     </div>
                                     <div className="space-y-3 group/input">
-                                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest group-focus-within/input:text-primary transition-colors pl-2">System Handle</label>
+                                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest group-focus-within/input:text-primary transition-colors pl-2">Username</label>
                                         <div className="relative">
                                             <span className="absolute left-6 top-1/2 -translate-y-1/2 text-neutral-600 font-bold">@</span>
                                             <input
@@ -433,12 +445,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                                         </div>
                                     </div>
                                     <div className="space-y-3 group/input md:col-span-2">
-                                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest group-focus-within/input:text-primary transition-colors pl-2">Manifesto</label>
+                                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest group-focus-within/input:text-primary transition-colors pl-2">Bio</label>
                                         <textarea
                                             value={displayProfile.bio || ''}
                                             onChange={(e) => setProfile({ ...displayProfile, bio: e.target.value })}
                                             className="w-full bg-white/[0.02] border-none rounded-[2rem] px-6 py-5 text-base font-medium text-white focus:bg-white/[0.05] focus:ring-1 focus:ring-primary/50 focus:outline-none transition-all duration-300 h-40 resize-none leading-relaxed"
-                                            placeholder="Declare your intent to the world..."
+                                            placeholder="Tell us about yourself..."
                                         />
                                     </div>
 
@@ -508,7 +520,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                             <section className="space-y-8">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 bg-white/[0.02] rounded-2xl text-blue-400"><LinkIcon size={20} /></div>
-                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Network Integrations</h3>
+                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Social Links</h3>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -542,7 +554,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                             <section className="space-y-8">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 bg-white/[0.02] rounded-2xl text-purple-400"><Headphones size={20} /></div>
-                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Acoustic Fidelity</h3>
+                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Audio Quality</h3>
                                 </div>
                                 <div className="space-y-6">
                                     <div className="bg-white/[0.02] rounded-[2rem] p-6 lg:p-8 space-y-8">
@@ -570,15 +582,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                             <section className="space-y-8">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 bg-white/[0.02] rounded-2xl text-amber-400"><Activity size={20} /></div>
-                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Telemetry & Access</h3>
+                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Privacy & Notifications</h3>
                                 </div>
 
                                 <div className="bg-white/[0.02] rounded-[2rem] p-4 flex flex-col gap-2">
                                     {/* Public Access Toggle */}
                                     <div className="flex items-center justify-between p-6 sm:p-8 hover:bg-white/[0.02] transition-colors rounded-3xl">
                                         <div className="pr-8">
-                                            <h3 className="text-sm font-black text-white mb-2">Public Broadcasting</h3>
-                                            <p className="text-xs text-neutral-500 leading-relaxed font-medium">Permit deep-catalog search and Browse Talent indexing.</p>
+                                            <h3 className="text-sm font-black text-white mb-2">Public Profile</h3>
+                                            <p className="text-xs text-neutral-500 leading-relaxed font-medium">Allow your profile to be discovered in search and Browse Talent.</p>
                                         </div>
                                         <label className="relative inline-flex items-center cursor-pointer overflow-hidden rounded-full shrink-0">
                                             <input
@@ -619,20 +631,20 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                             <section className="space-y-8">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 bg-white/[0.02] rounded-2xl text-emerald-400"><Shield size={20} /></div>
-                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Security Infrastructure</h3>
+                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Security</h3>
                                 </div>
 
                                 <div className="space-y-4">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 sm:p-8 bg-white/[0.02] hover:bg-white/[0.04] transition-colors rounded-[2rem] gap-6">
                                         <div>
-                                            <h3 className="text-sm font-black text-white mb-2">Encryption Key</h3>
-                                            <p className="text-xs text-neutral-500 max-w-[200px]">Update your master password.</p>
+                                            <h3 className="text-sm font-black text-white mb-2">Password</h3>
+                                            <p className="text-xs text-neutral-500 max-w-[200px]">Update your account password.</p>
                                         </div>
                                         <button
                                             onClick={() => setShowPasswordModal(true)}
                                             className="px-6 py-3 bg-white/5 rounded-2xl text-xs font-black text-white uppercase tracking-widest hover:bg-emerald-400 hover:text-black transition-all shrink-0"
                                         >
-                                            Mutate
+                                            Change Password
                                         </button>
                                     </div>
                                 </div>
@@ -643,17 +655,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between p-8 sm:p-10 bg-red-500/[0.02] hover:bg-red-500/[0.05] transition-colors rounded-[3rem] gap-8 group">
                                     <div>
                                         <h3 className="text-lg font-black text-red-500 mb-2 flex items-center gap-3">
-                                            <Trash2 size={24} /> Terminate Record
+                                            <Trash2 size={24} /> Delete Account
                                         </h3>
                                         <p className="text-sm text-neutral-500 max-w-sm font-medium">
-                                            Total dissolution of profile, audio assets, and localized data. Non-reversible procedure.
+                                            Permanently delete your profile and all associated data. This action cannot be undone.
                                         </p>
                                     </div>
                                     <button
                                         onClick={() => setShowDeleteConfirm(true)}
                                         className="w-full sm:w-auto px-8 py-5 bg-red-500/10 text-red-500 font-black rounded-3xl text-xs uppercase tracking-[0.2em] hover:bg-red-500 hover:text-white transition-all shadow-2xl shrink-0"
                                     >
-                                        Eradicate
+                                        Delete Account
                                     </button>
                                 </div>
                             </section>
@@ -663,13 +675,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                 </div>
 
                 {/* Global Actions */}
-                <div className={`fixed bottom-0 left-0 w-full p-6 lg:p-10 pointer-events-none z-50 flex justify-end transition-all duration-500 transform ${hasUnsavedChanges ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+                <div className={`fixed bottom-24 lg:bottom-0 left-0 w-full p-6 lg:p-10 pointer-events-none z-[160] flex justify-end transition-all duration-500 transform ${hasUnsavedChanges ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
                     <button
                         onClick={handleSave}
                         disabled={loading}
                         className="pointer-events-auto px-10 py-5 bg-primary text-black rounded-full text-sm font-black uppercase tracking-widest hover:bg-primary/90 flex items-center gap-3 transition-all disabled:opacity-50 shadow-[0_20px_50px_rgba(var(--primary),0.4)] hover:scale-105 active:scale-95"
                     >
-                        {loading ? 'Committing...' : <><Save size={18} /> Commit Configuration</>}
+                        {loading ? 'Saving...' : <><Save size={18} /> Save Changes</>}
                     </button>
                 </div>
 
@@ -678,10 +690,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                     isOpen={showDeleteConfirm}
                     onClose={() => setShowDeleteConfirm(false)}
                     onConfirm={handleDeleteAccount}
-                    title="Protocol Authorization Required"
-                    message="Confirming this action will permanently eradicate all entities tied to your signature. Proceed?"
-                    confirmLabel="Eradicate Account"
-                    cancelLabel="Abort Sequence"
+                    title="Confirm Account Deletion"
+                    message="Are you sure you want to permanently delete your account? This action cannot be undone."
+                    confirmLabel="Delete Account"
+                    cancelLabel="Cancel"
                     isDestructive={true}
                 />
 

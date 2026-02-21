@@ -75,15 +75,16 @@ const BannerPositionManager: React.FC<BannerPositionManagerProps> = ({
         const width = container.clientWidth || 1;
         const height = container.clientHeight || 1;
 
-        const deltaXPercent = (deltaX / width) * 100;
-        const deltaYPercent = (deltaY / height) * 100;
+        // Invert direction: dragging right should reveal left side (decrease x)
+        const deltaXPercent = -(deltaX / width) * 100;
+        const deltaYPercent = -(deltaY / height) * 100;
 
         setSettings(prev => ({
             ...prev,
             [device]: {
                 ...prev[device],
-                x: prev[device].x + deltaXPercent,
-                y: prev[device].y + deltaYPercent
+                x: Math.max(0, Math.min(100, prev[device].x + deltaXPercent)),
+                y: Math.max(0, Math.min(100, prev[device].y + deltaYPercent))
             }
         }));
 
@@ -95,11 +96,12 @@ const BannerPositionManager: React.FC<BannerPositionManagerProps> = ({
         (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
     };
 
-    const getTransform = (device: 'desktop' | 'mobile') => {
+    const getStyles = (device: 'desktop' | 'mobile') => {
         const deviceSettings = settings[device];
-        const xOffset = deviceSettings.x - 50;
-        const yOffset = deviceSettings.y - 50;
-        return `translate(${xOffset}%, ${yOffset}%) scale(${deviceSettings.scale})`;
+        return {
+            objectPosition: `${deviceSettings.x}% ${deviceSettings.y}%`,
+            transform: deviceSettings.scale !== 1 ? `scale(${deviceSettings.scale})` : undefined
+        };
     };
 
     return (
@@ -137,8 +139,8 @@ const BannerPositionManager: React.FC<BannerPositionManagerProps> = ({
 
                         <img
                             src={imageUrl}
-                            className="w-full h-full object-cover origin-center transition-transform duration-75 ease-out select-none pointer-events-none"
-                            style={{ transform: getTransform('desktop') }}
+                            className="w-full h-full object-cover origin-center transition-all duration-75 ease-out select-none pointer-events-none"
+                            style={getStyles('desktop')}
                             draggable={false}
                         />
 
@@ -200,8 +202,8 @@ const BannerPositionManager: React.FC<BannerPositionManagerProps> = ({
 
                         <img
                             src={imageUrl}
-                            className="w-full h-full object-cover origin-center transition-transform duration-75 ease-out select-none pointer-events-none"
-                            style={{ transform: getTransform('mobile') }}
+                            className="w-full h-full object-cover origin-center transition-all duration-75 ease-out select-none pointer-events-none"
+                            style={getStyles('mobile')}
                             draggable={false}
                         />
 

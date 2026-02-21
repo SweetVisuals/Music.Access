@@ -271,10 +271,10 @@ const MusicPlayer: React.FC<MusicPlayerProps> = ({
                     {/* --- MOBILE EMBEDDED BOTTOM BAR --- */}
                     <div
                         className={`lg:hidden fixed left-0 right-0 bg-[#050505] border-t border-white/20 border-b-0 shadow-none transition-all duration-300 z-[145] ${isMinimized
-                            ? 'bottom-[calc(50px+env(safe-area-inset-bottom))] translate-y-0'
-                            : 'bottom-0 translate-y-full opacity-0 pointer-events-none'
+                            ? 'translate-y-0'
+                            : 'translate-y-full opacity-0 pointer-events-none'
                             }`}
-                        style={{ bottom: isMinimized ? 'calc(50px + env(safe-area-inset-bottom))' : '0px' }}
+                        style={{ bottom: isMinimized ? 'var(--bottom-nav-h)' : '0px' }}
                         onClick={() => setIsMinimized(false)}
                     >
                         {/* Progress Bar (Scrubbable, Top) */}

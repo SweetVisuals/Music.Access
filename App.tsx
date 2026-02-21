@@ -623,47 +623,33 @@ const App: React.FC = () => {
 
 
   const getBottomStackHeightCSS = () => {
-    // Base bottom nav height (mobile)
-    const mobileNavHeight = BOTTOM_NAV_HEIGHT; // matched to BottomNav h-[50px]
-    const playerHeightMobile = PLAYER_HEIGHT_MOBILE; // approx h-16
     const playerHeightDesktopExpanded = PLAYER_HEIGHT_DESKTOP_EXPANDED;
-    const SAFETY_BUFFER = 0; // Removing buffer to ensure exact fit for Feed
-    const CONTENT_BUFFER = 20; // Extra buffer so content doesn't just touch the player, but goes past it
-
-    let baseHeight = 0;
+    const CONTENT_BUFFER = 20;
 
     if (isMobile) {
-      // Mobile Logic
-      baseHeight = mobileNavHeight + SAFETY_BUFFER;
-
       const isDiscoverFeed = currentView === 'home' && discoverViewMode === 'feed' && !filters.searchQuery;
 
       if (currentTrackId) {
-        // Only add content buffer if NOT on discover feed
-        baseHeight += playerHeightMobile + (isDiscoverFeed ? 0 : CONTENT_BUFFER);
+        // bottom-nav + player-mini + optional buffer
+        return `calc(var(--bottom-nav-h) + var(--player-mini-h) + var(--file-op-height, 0px) + ${isDiscoverFeed ? 0 : CONTENT_BUFFER}px)`;
       }
+      // just bottom-nav
+      return `calc(var(--bottom-nav-h) + var(--file-op-height, 0px))`;
     } else {
       // Desktop Logic
+      let baseHeight = 0;
       if (isPlayerExpanded) {
         baseHeight = playerHeightDesktopExpanded;
       }
-      if (currentTrackId && !isPlayerExpanded) {
-        // Floating player is bottom-6 right-6. It covers content.
-      }
+      return `calc(${baseHeight}px + var(--file-op-height, 0px))`;
     }
-
-    return `calc(${baseHeight}px + var(--file-op-height, 0px) + env(safe-area-inset-bottom))`;
   };
 
   const uploadNotificationBottom = useMemo(() => {
-    // Calculate where the notification should sit
-    // Mobile: Above Player + Nav
-    // Desktop Expanded: Above Player bar
-    // Desktop Floating: Above floating player (approx 180px gap?)
     if (window.innerWidth < 1024) {
       return currentTrackId
-        ? 'calc(130px + env(safe-area-inset-bottom))'
-        : 'calc(70px + env(safe-area-inset-bottom))';
+        ? 'calc(var(--bottom-nav-h) + var(--player-mini-h) + 12px)'
+        : 'calc(var(--bottom-nav-h) + 12px)';
     }
 
     if (isPlayerExpanded) return '110px';
@@ -677,7 +663,7 @@ const App: React.FC = () => {
         <ToastProvider>
           <PlayerProvider>
             <FileOperationProvider>
-              <div className="absolute inset-0 w-full flex overflow-hidden overscroll-y-none selection:bg-primary/30 selection:text-primary transition-colors duration-500">
+              <div className="h-full w-full flex overflow-hidden overscroll-y-none selection:bg-primary/30 selection:text-primary transition-colors duration-500">
                 <MobileCart onNavigate={handleNavigate} projects={projects} />
 
                 {/* Edge Swipe Zone for opening Sidebar */}
@@ -731,7 +717,7 @@ const App: React.FC = () => {
                   />
 
 
-                  <main ref={mainRef} style={{ paddingBottom: getBottomStackHeightCSS(), '--top-bar-height': `${TOP_BAR_HEIGHT}px` } as any} className={`flex-1 ${(currentView === 'home' && discoverViewMode === 'feed' && !filters.searchQuery && isMobile) ? 'overflow-hidden pt-[calc(var(--top-bar-height)+env(safe-area-inset-top))]' : (currentView === 'notes' ? 'h-[calc(100vh-3.5rem)] overflow-hidden pt-[calc(var(--top-bar-height)+env(safe-area-inset-top))]' : (currentView === 'dashboard-messages' || currentView === 'dashboard-orders') ? 'overflow-hidden pt-[calc(var(--top-bar-height)+env(safe-area-inset-top))] lg:pt-[80px]' : 'overflow-y-auto overscroll-y-contain pt-[calc(var(--top-bar-height)+env(safe-area-inset-top))] lg:pt-[56px]')} scroll-smooth`}>
+                  <main ref={mainRef} style={{ paddingBottom: getBottomStackHeightCSS(), '--top-bar-height': `${TOP_BAR_HEIGHT}px` } as any} className={`flex-1 ${(currentView === 'home' && discoverViewMode === 'feed' && !filters.searchQuery && isMobile) ? 'overflow-hidden pt-[calc(var(--top-bar-height)+env(safe-area-inset-top))]' : (currentView === 'notes' ? 'h-full overflow-hidden pt-[calc(var(--top-bar-height)+env(safe-area-inset-top))]' : (currentView === 'dashboard-messages' || currentView === 'dashboard-orders') ? 'overflow-hidden pt-[calc(var(--top-bar-height)+env(safe-area-inset-top))] lg:pt-[80px]' : 'overflow-y-auto overscroll-y-contain pt-[calc(var(--top-bar-height)+env(safe-area-inset-top))] lg:pt-[56px]')} scroll-smooth`}>
 
                     {currentView === 'listen' && (
                       <ListenPage

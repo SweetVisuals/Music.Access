@@ -6,6 +6,7 @@
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#050505" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>MusicAccess</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -43,19 +44,40 @@
     :root {
       --primary: 249 115 22;
       /* Default Orange */
+      /* Total BottomNav height: pt-1.5(6) + h-[54px](54) + pb 16px = 76px + safe-area */
+      --bottom-nav-h: calc(76px + env(safe-area-inset-bottom, 0px));
+      /* Mini player bar height */
+      --player-mini-h: 58px;
     }
 
-    html,
-    body {
+    html {
       background-color: #050505;
       height: 100%;
+      height: 100dvh;
+      height: -webkit-fill-available;
       width: 100%;
       margin: 0;
       padding: 0;
       overflow: hidden;
-      position: fixed;
-      inset: 0;
       overscroll-behavior: none;
+    }
+
+    body {
+      background-color: #050505;
+      height: 100%;
+      height: 100dvh;
+      height: -webkit-fill-available;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    #root {
+      height: 100%;
+      height: 100dvh;
+      height: -webkit-fill-available;
     }
 
     /* Custom Scrollbar */
@@ -266,7 +288,7 @@
 </head>
 
 <body class="bg-dot-grid text-gray-200 overflow-hidden overscroll-y-none antialiased transition-colors duration-500">
-  <div id="root" class="absolute inset-0 flex flex-col overflow-hidden"></div>
+  <div id="root" class="h-full flex flex-col overflow-hidden"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
 

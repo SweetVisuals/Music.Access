@@ -315,20 +315,21 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                                     src={displayProfile.banner}
                                     className="w-full h-full object-cover transition-all duration-700 group-hover/banner:opacity-50 group-hover/banner:scale-105"
                                     alt="Banner"
-                                    style={{
-                                        transform: (() => {
-                                            const s = displayProfile.bannerSettings;
-                                            if (!s) return 'none';
-                                            let set;
-                                            if ('desktop' in s) {
-                                                const isMobile = window.innerWidth < 1024;
-                                                set = isMobile ? s.mobile : s.desktop;
-                                            } else {
-                                                set = s as any;
-                                            }
-                                            return `translate(${set.x - 50}%, ${set.y - 50}%) scale(${set.scale})`;
-                                        })()
-                                    }}
+                                    style={(() => {
+                                        const s = displayProfile.bannerSettings;
+                                        if (!s) return {};
+                                        let set;
+                                        if ('desktop' in s) {
+                                            const isMobile = window.innerWidth < 1024;
+                                            set = isMobile ? s.mobile : s.desktop;
+                                        } else {
+                                            set = s as any;
+                                        }
+                                        return {
+                                            objectPosition: `${set.x}% ${set.y}%`,
+                                            transform: set.scale !== 1 ? `scale(${set.scale})` : undefined
+                                        };
+                                    })()}
                                 />
                                 {/* Gradient Overlay for Text Readability */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-black/40 to-transparent opacity-90" />

@@ -728,26 +728,23 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                 ${!isViewerMode ? 'group-hover/banner:scale-105 group-hover/banner:opacity-50' : ''}
                             `}
                                     alt="Banner"
-                                    style={{
-                                        transform: (() => {
-                                            const s = userProfile.bannerSettings;
-                                            if (!s) return 'none';
+                                    style={(() => {
+                                        const s = userProfile.bannerSettings;
+                                        if (!s) return {};
 
-                                            // Handle multi-device vs legacy single-device
-                                            let set;
-                                            if ('desktop' in s) {
-                                                // Responsive check: simpler to use matchesMedia or just CSS vars
-                                                // Since we are inside a style object, we use window width check
-                                                // Note: this only runs on render.
-                                                const isMobile = window.innerWidth < 1024;
-                                                set = isMobile ? s.mobile : s.desktop;
-                                            } else {
-                                                set = s as any;
-                                            }
+                                        let set;
+                                        if ('desktop' in s) {
+                                            const isMobile = window.innerWidth < 1024;
+                                            set = isMobile ? s.mobile : s.desktop;
+                                        } else {
+                                            set = s as any;
+                                        }
 
-                                            return `translate(${set.x - 50}%, ${set.y - 50}%) scale(${set.scale})`;
-                                        })()
-                                    }}
+                                        return {
+                                            objectPosition: `${set.x}% ${set.y}%`,
+                                            transform: set.scale !== 1 ? `scale(${set.scale})` : undefined
+                                        };
+                                    })()}
                                 />
                                 {/* Gradient Overlay for Text Readability */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90" />

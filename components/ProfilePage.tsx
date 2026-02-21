@@ -407,6 +407,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
             tabs.push('private');
         }
 
+        // Apply Tab Visibility Settings from UserProfile (if established)
+        if (userProfile?.visible_tabs && userProfile.visible_tabs.length > 0) {
+            // We always allow 'private' if it's the owner's view
+            tabs = tabs.filter(t => t === 'private' || userProfile.visible_tabs?.includes(t));
+        }
+
         return tabs;
     };
 

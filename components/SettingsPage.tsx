@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Bell, Shield, Palette, Trash2, Save, Globe, Lock, Check, X, Headphones, Link as LinkIcon, DownloadCloud, Activity, Camera, Move, ArrowLeft } from 'lucide-react';
+import { User, Mail, Bell, Shield, Palette, Trash2, Save, Globe, Lock, Check, X, Link as LinkIcon, Activity, Camera, Move, ArrowLeft, Music, Disc, Mic2, Box } from 'lucide-react';
 import { UserProfile } from '../types';
 import { updateUserProfile, getCurrentUser, updatePassword, uploadFile, getUserProfile } from '../services/supabaseService';
 import CustomDropdown from './CustomDropdown';
@@ -142,8 +142,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
     // Expanded Settings States
     const [notifications, setNotifications] = useState({ email: true, push: true, marketing: false, updates: true });
     const [language, setLanguage] = useState('English (US)');
-    const [audioQuality, setAudioQuality] = useState('Lossless (FLAC)');
-    const [downloadQuality, setDownloadQuality] = useState('High (320kbps)');
     const [socialLinks, setSocialLinks] = useState({ instagram: '', twitter: '', soundcloud: '' });
 
     // File upload refs
@@ -173,9 +171,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
             (profile.role || '') !== (userProfile.role || '') ||
             (profile.location || '') !== (userProfile.location || '') ||
             (profile.website || '') !== (userProfile.website || '') ||
-            (profile.yearsExperience || '') !== (userProfile.yearsExperience || '') ||
-            (profile.satisfactionRate || '') !== (userProfile.satisfactionRate || '') ||
-            (profile.avgTurnaround || '') !== (userProfile.avgTurnaround || '');
+            (profile.avgTurnaround || '') !== (userProfile.avgTurnaround || '') ||
+            JSON.stringify(profile.visible_tabs || []) !== JSON.stringify(userProfile.visible_tabs || []);
 
         setHasUnsavedChanges(isDifferent);
     }, [profile, userProfile]);
@@ -228,7 +225,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                     website: profile.website,
                     yearsExperience: profile.yearsExperience,
                     satisfactionRate: profile.satisfactionRate,
-                    avgTurnaround: profile.avgTurnaround
+                    avgTurnaround: profile.avgTurnaround,
+                    visible_tabs: profile.visible_tabs
                 });
 
                 const refreshedProfile = await getUserProfile();
@@ -545,38 +543,53 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                                 </div>
                             </section>
 
+                            {/* Profile Layout Section */}
+                            <section className="space-y-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-white/[0.02] rounded-2xl text-primary"><Box size={20} /></div>
+                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Profile Layout</h3>
+                                </div>
+
+                                <div className="bg-white/[0.02] rounded-[2rem] p-4 flex flex-col gap-2">
+                                    {[
+                                        { id: 'beat_tapes', label: 'Beat Tapes', icon: <Music size={14} /> },
+                                        { id: 'releases', label: 'Releases', icon: <Disc size={14} /> },
+                                        { id: 'services', label: 'Services', icon: <Mic2 size={14} /> },
+                                        { id: 'sound_packs', label: 'Sound Kits', icon: <Box size={14} /> }
+                                    ].map((tab) => {
+                                        const isVisible = profile?.visible_tabs ? profile.visible_tabs.includes(tab.id) : true;
+                                        return (
+                                            <div
+                                                key={tab.id}
+                                                onClick={() => {
+                                                    const currentTabs = profile?.visible_tabs || ['beat_tapes', 'releases', 'services', 'sound_packs'];
+                                                    const nextTabs = isVisible
+                                                        ? currentTabs.filter(t => t !== tab.id)
+                                                        : [...currentTabs, tab.id];
+                                                    setProfile({ ...profile!, visible_tabs: nextTabs });
+                                                }}
+                                                className="flex items-center justify-between p-6 sm:p-8 cursor-pointer hover:bg-white/[0.02] transition-colors rounded-3xl group"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <span className={`transition-colors ${isVisible ? 'text-primary' : 'text-neutral-600'}`}>
+                                                        {tab.icon}
+                                                    </span>
+                                                    <span className={`text-sm font-bold transition-colors ${isVisible ? 'text-white' : 'text-neutral-500'}`}>
+                                                        {tab.label}
+                                                    </span>
+                                                </div>
+                                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-300 ${isVisible ? 'bg-primary text-black shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)]' : 'bg-black/50 group-hover:bg-white/10'}`}>
+                                                    {isVisible && <Check size={14} strokeWidth={4} />}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </section>
                         </div>
 
                         {/* Right Column: Preferences, Security, System - 5 Cols */}
                         <div className="xl:col-span-5 space-y-20">
-
-                            {/* Playback & Quality */}
-                            <section className="space-y-8">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 bg-white/[0.02] rounded-2xl text-purple-400"><Headphones size={20} /></div>
-                                    <h3 className="text-sm font-black text-white uppercase tracking-widest">Audio Quality</h3>
-                                </div>
-                                <div className="space-y-6">
-                                    <div className="bg-white/[0.02] rounded-[2rem] p-6 lg:p-8 space-y-8">
-                                        <div>
-                                            <CustomDropdown
-                                                label="Streaming Fidelity"
-                                                value={audioQuality}
-                                                onChange={setAudioQuality}
-                                                options={['Standard (128kbps)', 'High (320kbps)', 'Lossless (FLAC)', 'Studio Master (24-bit/96kHz)']}
-                                            />
-                                        </div>
-                                        <div>
-                                            <CustomDropdown
-                                                label="Download Architecture"
-                                                value={downloadQuality}
-                                                onChange={setDownloadQuality}
-                                                options={['Standard (MP3)', 'High (320kbps MP3)', 'WAV (Uncompressed)', 'Stems Package']}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
 
                             {/* Privacy & Notifications */}
                             <section className="space-y-8">

@@ -129,6 +129,7 @@ export interface UserProfile {
     desktop: { x: number; y: number; scale: number };
     mobile: { x: number; y: number; scale: number };
   };
+  visible_tabs?: string[];
 }
 
 export interface TalentProfile {

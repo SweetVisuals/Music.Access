@@ -234,17 +234,42 @@ const DiscoverGrid: React.FC<DiscoverGridProps> = ({
                         </section>
                     )}
 
+                    {/* Songs Section */}
+                    {filteredProjects.filter(p => p.type === 'release').length > 0 && (
+                        <section>
+                            <div className="flex items-center gap-2 mb-4 px-1">
+                                <h2 className="text-lg font-bold text-white">Songs</h2>
+                                <span className="text-xs text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">
+                                    {filteredProjects.filter(p => p.type === 'release').length}
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                                {filteredProjects.filter(p => p.type === 'release').map(project => (
+                                    <div key={project.id} className="h-[350px] md:h-[285px]">
+                                        <ProjectCard
+                                            project={project}
+                                            currentTrackId={currentTrackId}
+                                            isPlaying={currentProject?.id === project.id && isPlaying}
+                                            onPlayTrack={(trackId) => handlePlayTrack(project, trackId)}
+                                            onTogglePlay={handleTogglePlay}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
                     {/* Projects (Beats) Section */}
                     <section>
                         <div className="flex items-center gap-2 mb-4 px-1">
                             <h2 className="text-lg font-bold text-white">Beats</h2>
                             <span className="text-xs text-neutral-500 bg-neutral-900 px-2 py-0.5 rounded-full border border-neutral-800">
-                                {filteredProjects.filter(p => p.type !== 'sound_pack').length}
+                                {filteredProjects.filter(p => p.type !== 'sound_pack' && p.type !== 'release').length}
                             </span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                            {filteredProjects.filter(p => p.type !== 'sound_pack').length > 0 ? (
-                                filteredProjects.filter(p => p.type !== 'sound_pack').map(project => (
+                            {filteredProjects.filter(p => p.type !== 'sound_pack' && p.type !== 'release').length > 0 ? (
+                                filteredProjects.filter(p => p.type !== 'sound_pack' && p.type !== 'release').map(project => (
                                     <div key={project.id} className="h-[350px] md:h-[285px]">
                                         <ProjectCard
                                             project={project}

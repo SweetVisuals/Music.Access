@@ -238,210 +238,210 @@ const Studio: React.FC<StudioProps> = ({
     };
 
     return (
-        <div className="w-full h-full flex flex-col relative">
-            {/* NEW PROJECT MODAL */}
-            {isCreateModalOpen && (
-                <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-md md:p-4 animate-in fade-in duration-200">
-                    <div className="w-full h-[100dvh] md:h-auto md:max-w-md bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-2xl shadow-2xl flex flex-col max-h-none md:max-h-[90vh] overflow-hidden relative">
+        <div className="w-full h-full flex flex-row relative bg-[#0a0a0a] overflow-hidden">
 
-                        {/* Header */}
-                        <div className="p-6 border-b border-white/5 flex justify-between items-center shrink-0">
-                            <div>
-                                <h3 className="text-xl font-bold text-white tracking-tight">New Release</h3>
-                                <p className="text-xs text-neutral-500 mt-1">Start a new musical project</p>
+            {/* MAIN CONTENT AREA */}
+            <div className="flex-1 h-full flex flex-col min-w-0 overflow-y-auto custom-scrollbar">
+                {activeView === 'dashboard' ? (
+                    <div className="w-full flex-1 flex flex-col pb-40 lg:pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+                        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+                            <div className="hidden">
+                                <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">My Studio</h1>
+                                <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Your professional creative workspace for loop kits & projects.</p>
                             </div>
+
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {/* Create New Card (Shortcut) */}
                             <button
-                                onClick={() => setIsCreateModalOpen(false)}
-                                className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900 text-neutral-500 hover:text-white hover:bg-white/10 transition-colors"
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="h-[350px] md:h-[285px] rounded-xl flex flex-col items-center justify-center text-neutral-500 hover:text-primary hover:bg-primary/5 transition-all group bg-[#0a0a0a]"
                             >
-                                <X size={20} />
+                                <div className="h-16 w-16 rounded-full bg-neutral-900 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
+                                    <Plus size={28} />
+                                </div>
+                                <span className="font-mono text-xs font-bold uppercase tracking-widest">Start New Release</span>
                             </button>
-                        </div>
 
-                        {/* Content */}
-                        <div className="p-6 space-y-8 flex-1 overflow-y-auto custom-scrollbar">
-                            <div className="space-y-3">
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
-                                    <Edit size={12} /> Project Title
-                                </label>
-                                <input
-                                    value={newProjectTitle}
-                                    onChange={(e) => setNewProjectTitle(e.target.value)}
-                                    placeholder="e.g. Summer Hitz Vol. 1"
-                                    className="w-full bg-neutral-900/50 rounded-xl px-4 py-4 text-lg text-white font-bold placeholder-neutral-700 focus:ring-1 focus:ring-primary/50 focus:outline-none transition-all"
-                                    autoFocus={window.innerWidth >= 768}
-                                />
-                            </div>
-
-                            <div className="space-y-3">
-                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
-                                    <Disc size={12} /> Release Format
-                                </label>
-                                <div className="grid grid-cols-3 gap-3">
-                                    {(['Album', 'EP', 'Single'] as const).map(fmt => (
-                                        <button
-                                            key={fmt}
-                                            onClick={() => setNewProjectFormat(fmt)}
-                                            className={`
-                                                relative overflow-hidden py-3 rounded-xl text-sm font-bold transition-all
-                                                ${newProjectFormat === fmt
-                                                    ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]'
-                                                    : 'bg-neutral-900 text-neutral-500 hover:text-white'
-                                                }
-                                            `}
-                                        >
-                                            {fmt}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Visual Decor Element */}
-                            <div className="p-4 rounded-xl bg-gradient-to-br from-neutral-900 to-black flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                                    <Music size={20} />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-white">Ready to create?</p>
-                                    <p className="text-xs text-neutral-500">This will create a new workspace for your tracks.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer (Mobile Bottom Bar Safe) */}
-                        <div className="p-6 pt-4 border-t border-white/5 bg-[#0a0a0a] pb-[calc(2rem+env(safe-area-inset-bottom))] md:pb-6 shrink-0 mt-auto">
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setIsCreateModalOpen(false)}
-                                    className="flex-1 py-3.5 bg-neutral-900 text-neutral-400 font-bold rounded-xl hover:bg-neutral-800 hover:text-white transition-all"
+                            {/* Project Workspace Cards */}
+                            {studioProjects.map(project => (
+                                <div
+                                    key={project.id}
+                                    onClick={() => openProject(project)}
+                                    className="group h-[350px] md:h-[285px] bg-[#0a0a0a] rounded-xl overflow-hidden transition-all relative cursor-pointer hover:shadow-2xl flex flex-col"
                                 >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleCreateProject}
-                                    disabled={!newProjectTitle.trim()}
-                                    className="flex-[2] py-3.5 bg-primary text-black font-black tracking-wide rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgb(var(--primary)/0.2)] transition-all flex items-center justify-center gap-2"
-                                >
-                                    <span>Create Workspace</span>
-                                    <ArrowLeft size={16} className="rotate-180" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+                                    {/* Top Section: Cover & Info */}
+                                    <div className="flex-1 relative p-5 flex flex-col justify-between z-10">
+                                        <div className="absolute inset-0 bg-gradient-to-b from-neutral-900 to-[#0a0a0a]"></div>
 
-            {activeView === 'dashboard' ? (
-                <div className="w-full flex-1 flex flex-col pb-40 lg:pb-12 pt-6 px-6 lg:px-8 animate-in fade-in duration-500">
-                    <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
-                        <div className="hidden">
-                            <h1 className="text-3xl lg:text-5xl font-black text-white mb-2 tracking-tighter">My Studio</h1>
-                            <p className="text-neutral-500 text-sm lg:text-base max-w-2xl leading-relaxed">Your professional creative workspace for loop kits & projects.</p>
-                        </div>
-
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {/* Create New Card (Shortcut) */}
-                        <button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="h-[350px] md:h-[285px] rounded-xl flex flex-col items-center justify-center text-neutral-500 hover:text-primary hover:bg-primary/5 transition-all group bg-[#0a0a0a]"
-                        >
-                            <div className="h-16 w-16 rounded-full bg-neutral-900 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg">
-                                <Plus size={28} />
-                            </div>
-                            <span className="font-mono text-xs font-bold uppercase tracking-widest">Start New Release</span>
-                        </button>
-
-                        {/* Project Workspace Cards */}
-                        {studioProjects.map(project => (
-                            <div
-                                key={project.id}
-                                onClick={() => openProject(project)}
-                                className="group h-[350px] md:h-[285px] bg-[#0a0a0a] rounded-xl overflow-hidden transition-all relative cursor-pointer hover:shadow-2xl flex flex-col"
-                            >
-                                {/* Top Section: Cover & Info */}
-                                <div className="flex-1 relative p-5 flex flex-col justify-between z-10">
-                                    <div className="absolute inset-0 bg-gradient-to-b from-neutral-900 to-[#0a0a0a]"></div>
-
-                                    <div className="relative flex justify-between items-start">
-                                        <span className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider ${project.status === 'ready' ? 'bg-green-500/10 text-green-500' :
-                                            project.status === 'planning' ? 'bg-neutral-800 text-neutral-400' :
-                                                'bg-blue-500/10 text-blue-400'
-                                            }`}>
-                                            {project.status}
-                                        </span>
-                                        <div
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            {/* Simple Dropdown for More Actions */}
-                                            <div className="group/menu relative">
-                                                <button className="text-neutral-500 hover:text-white"><MoreVertical size={16} /></button>
-                                                <div className="absolute right-0 top-full mt-1 w-32 bg-neutral-900 rounded-lg shadow-xl hidden group-hover/menu:block z-20">
-                                                    <button onClick={(e) => { e.stopPropagation(); setProjectToDelete(project.id); }} className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-white/5 rounded-t-lg">Delete</button>
-                                                    <button className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-white/5 rounded-b-lg">Rename</button>
+                                        <div className="relative flex justify-between items-start">
+                                            <span className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider ${project.status === 'ready' ? 'bg-green-500/10 text-green-500' :
+                                                project.status === 'planning' ? 'bg-neutral-800 text-neutral-400' :
+                                                    'bg-blue-500/10 text-blue-400'
+                                                }`}>
+                                                {project.status}
+                                            </span>
+                                            <div
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                {/* Simple Dropdown for More Actions */}
+                                                <div className="group/menu relative">
+                                                    <button className="text-neutral-500 hover:text-white"><MoreVertical size={16} /></button>
+                                                    <div className="absolute right-0 top-full mt-1 w-32 bg-neutral-900 rounded-lg shadow-xl hidden group-hover/menu:block z-20">
+                                                        <button onClick={(e) => { e.stopPropagation(); setProjectToDelete(project.id); }} className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-white/5 rounded-t-lg">Delete</button>
+                                                        <button className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-white/5 rounded-b-lg">Rename</button>
+                                                    </div>
                                                 </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="relative">
+                                            <div className="flex items-center gap-2 mb-1 text-[10px] text-neutral-500 font-mono uppercase">
+                                                <Disc size={12} /> {project.format}
+                                            </div>
+                                            <h3 className="text-xl font-bold text-white truncate group-hover:text-primary transition-colors">{project.title}</h3>
+                                            <div className="flex items-center gap-2 text-xs text-neutral-400 mt-1">
+                                                <Calendar size={12} />
+                                                <span>Target: {project.releaseDate || 'TBD'}</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="relative">
-                                        <div className="flex items-center gap-2 mb-1 text-[10px] text-neutral-500 font-mono uppercase">
-                                            <Disc size={12} /> {project.format}
+                                    {/* Bottom Section: Stats */}
+                                    <div className="bg-neutral-900/30 border-t border-white/5 p-5 relative">
+                                        <div className="flex justify-between text-[10px] font-bold text-neutral-500 uppercase mb-2">
+                                            <span>Progress</span>
+                                            <span>{project.progress}%</span>
                                         </div>
-                                        <h3 className="text-xl font-bold text-white truncate group-hover:text-primary transition-colors">{project.title}</h3>
-                                        <div className="flex items-center gap-2 text-xs text-neutral-400 mt-1">
-                                            <Calendar size={12} />
-                                            <span>Target: {project.releaseDate || 'TBD'}</span>
+                                        <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden mb-3">
+                                            <div className="h-full bg-primary transition-all duration-500" style={{ width: `${project.progress}%` }}></div>
+                                        </div>
+                                        <div className="flex items-center gap-4 text-[10px] text-neutral-400">
+                                            <span className="flex items-center gap-1"><Music size={12} /> {project.tracks.length} Tracks</span>
+                                            <span className="flex items-center gap-1"><CheckCircle size={12} /> {project.tasks.filter(t => t.completed).length} Done</span>
                                         </div>
                                     </div>
                                 </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : (
+                    selectedProject && (
+                        <WorkspaceView
+                            project={selectedProject}
+                            onBack={() => setActiveView('dashboard')}
+                            onUpdate={(updated) => {
+                                // Update local state temporarily/optimistically
+                                // Ideally, we might reload data, but for responsiveness we update state
+                                // We need to convert StudioProject back to Project compatible form for setProjects if we want to save it there
+                                // But WorkspaceView handles its own async updates now internally for sub-items?
+                                // Actually WorkspaceView calls onUpdate when items change.
 
-                                {/* Bottom Section: Stats */}
-                                <div className="bg-neutral-900/30 border-t border-white/5 p-5 relative">
-                                    <div className="flex justify-between text-[10px] font-bold text-neutral-500 uppercase mb-2">
-                                        <span>Progress</span>
-                                        <span>{project.progress}%</span>
-                                    </div>
-                                    <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden mb-3">
-                                        <div className="h-full bg-primary transition-all duration-500" style={{ width: `${project.progress}%` }}></div>
-                                    </div>
-                                    <div className="flex items-center gap-4 text-[10px] text-neutral-400">
-                                        <span className="flex items-center gap-1"><Music size={12} /> {project.tracks.length} Tracks</span>
-                                        <span className="flex items-center gap-1"><CheckCircle size={12} /> {project.tasks.filter(t => t.completed).length} Done</span>
-                                    </div>
-                                </div>
+                                // Let's implement onUpdate to update the parent projects state
+                                setProjects(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } as Project : p));
+                                setSelectedProject(updated);
+                            }}
+                            isPlaying={isPlaying}
+                            setProjects={setProjects}
+                            currentTrackId={currentTrackId}
+                            onPlayTrack={onPlayTrack}
+                            onTogglePlay={onTogglePlay}
+                            setProjectToDelete={setProjectToDelete}
+                        />
+                    )
+                )}
+            </div>
+
+            {/* NEW PROJECT COLUMN */}
+            {isCreateModalOpen && activeView === 'dashboard' && (
+                <div className="w-full md:w-[420px] shrink-0 border-l border-white/5 bg-[#0a0a0a] flex flex-col h-full absolute md:relative right-0 top-0 bottom-0 z-[150] md:z-10 shadow-[-20px_0_40px_rgba(0,0,0,0.5)] md:shadow-none animate-slide-in-right">
+                    {/* Header */}
+                    <div className="p-6 border-b border-white/5 flex justify-between items-center shrink-0">
+                        <div>
+                            <h3 className="text-xl font-bold text-white tracking-tight">New Release</h3>
+                            <p className="text-xs text-neutral-500 mt-1">Start a new musical project</p>
+                        </div>
+                        <button
+                            onClick={() => setIsCreateModalOpen(false)}
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900 text-neutral-500 hover:text-white hover:bg-white/10 transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-6 space-y-8 flex-1 overflow-y-auto custom-scrollbar">
+                        <div className="space-y-3">
+                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
+                                <Edit size={12} /> Project Title
+                            </label>
+                            <input
+                                value={newProjectTitle}
+                                onChange={(e) => setNewProjectTitle(e.target.value)}
+                                placeholder="e.g. Summer Hitz Vol. 1"
+                                className="w-full bg-neutral-900/50 rounded-xl px-4 py-4 text-lg text-white font-bold placeholder-neutral-700 focus:ring-1 focus:ring-primary/50 focus:outline-none transition-all"
+                                autoFocus={window.innerWidth >= 768}
+                            />
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-2">
+                                <Disc size={12} /> Release Format
+                            </label>
+                            <div className="grid grid-cols-3 gap-3">
+                                {(['Album', 'EP', 'Single'] as const).map(fmt => (
+                                    <button
+                                        key={fmt}
+                                        onClick={() => setNewProjectFormat(fmt)}
+                                        className={`
+                                            relative overflow-hidden py-3 rounded-xl text-sm font-bold transition-all
+                                            ${newProjectFormat === fmt
+                                                ? 'bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.2)]'
+                                                : 'bg-neutral-900 text-neutral-500 hover:text-white'
+                                            }
+                                        `}
+                                    >
+                                        {fmt}
+                                    </button>
+                                ))}
                             </div>
-                        ))}
+                        </div>
+
+                        {/* Visual Decor Element */}
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-neutral-900 to-black flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                                <Music size={20} />
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-white">Ready to create?</p>
+                                <p className="text-xs text-neutral-500">This will create a new workspace for your tracks.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer (Mobile Bottom Bar Safe) */}
+                    <div className="p-6 pt-4 border-t border-white/5 bg-[#0a0a0a] pb-[calc(2rem+env(safe-area-inset-bottom))] md:pb-6 shrink-0 mt-auto">
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setIsCreateModalOpen(false)}
+                                className="flex-1 py-3.5 bg-neutral-900 text-neutral-400 font-bold rounded-xl hover:bg-neutral-800 hover:text-white transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleCreateProject}
+                                disabled={!newProjectTitle.trim()}
+                                className="flex-[2] py-3.5 bg-primary text-black font-black tracking-wide rounded-xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgb(var(--primary)/0.2)] transition-all flex items-center justify-center gap-2"
+                            >
+                                <span>Create Workspace</span>
+                                <ArrowLeft size={16} className="rotate-180" />
+                            </button>
+                        </div>
                     </div>
                 </div>
-            ) : (
-                selectedProject && (
-                    <WorkspaceView
-                        project={selectedProject}
-                        onBack={() => setActiveView('dashboard')}
-                        onUpdate={(updated) => {
-                            // Update local state temporarily/optimistically
-                            // Ideally, we might reload data, but for responsiveness we update state
-                            // We need to convert StudioProject back to Project compatible form for setProjects if we want to save it there
-                            // But WorkspaceView handles its own async updates now internally for sub-items?
-                            // Actually WorkspaceView calls onUpdate when items change.
-
-                            // Let's implement onUpdate to update the parent projects state
-                            setProjects(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } as Project : p));
-                            setSelectedProject(updated);
-                        }}
-                        isPlaying={isPlaying}
-                        setProjects={setProjects}
-                        currentTrackId={currentTrackId}
-                        onPlayTrack={onPlayTrack}
-                        onTogglePlay={onTogglePlay}
-                        setProjectToDelete={setProjectToDelete}
-                    />
-                )
-            )
-            }
+            )}
 
             {/* Project Delete Confirmation Modal */}
             <ConfirmationModal

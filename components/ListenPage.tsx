@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import {
     Play, Pause, Bookmark, Share2, MoreHorizontal,
-    ShoppingCart, User, Disc, Box, Gem, ArrowLeft, Check, ChevronRight, X, Link as LinkIcon, Facebook, Twitter, Mail
+    ShoppingCart, User, Disc, Box, Gem, ArrowLeft, Check, ChevronRight, X, Link as LinkIcon, Facebook, Twitter, Mail, MessageSquare, Send
 } from 'lucide-react';
 import { Project, View } from '../types';
 import { getProjectById, saveProject, unsaveProject, checkIsProjectSaved, getProjects, giveGemToProject, undoGiveGem, checkIsGemGiven, getCurrentUser } from '../services/supabaseService';
@@ -46,6 +46,13 @@ const ListenPage: React.FC<ListenPageProps> = ({
     const [showUndo, setShowUndo] = useState(false);
     const undoTimerRef = useRef<NodeJS.Timeout | null>(null);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+    // Comments State
+    const [comments, setComments] = useState([
+        { id: 1, user: 'SoundJunkie', text: 'This mix is incredibly clean. The low end is perfectly balanced.', time: '2h ago', avatar: null },
+        { id: 2, user: 'BeatMaker99', text: 'What VST did you use for the bass?', time: '5h ago', avatar: null }
+    ]);
+    const [newComment, setNewComment] = useState("");
 
     const { openPurchaseModal } = usePurchaseModal();
     const { showToast } = useToast();
@@ -218,7 +225,7 @@ const ListenPage: React.FC<ListenPageProps> = ({
 
                 {/* LEFT PANEL: Tracklist + Header + Profile Footer */}
                 {/* Mobile: Allow full height, no fixed scrolling container so layout flows naturally */}
-                <div className="w-full lg:w-[450px] xl:w-[500px] flex flex-col h-auto min-h-[50vh] lg:h-full border-b lg:border-b-0 lg:border-r border-white/5 bg-black relative z-10">
+                <div className="w-full lg:flex-1 flex flex-col h-auto min-h-[50vh] lg:h-full border-b lg:border-b-0 lg:border-r border-white/5 bg-black relative z-10">
 
                     {/* Header: Project Title & Stats */}
                     <div className="p-6 pb-4 border-b border-white/5 bg-black">
@@ -281,16 +288,18 @@ const ListenPage: React.FC<ListenPageProps> = ({
 
                                             {/* Add to Cart - Visible on Hover or Active */}
                                             {/* Add to Cart - Always Visible */}
-                                            <button
-                                                className={`p-2 rounded-full hover:bg-white/10 transition-all ml-1 ${isTrackActive ? 'text-primary' : 'text-neutral-500 hover:text-primary'} opacity-100`}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    openPurchaseModal(project);
-                                                }}
-                                                title="Add to Cart"
-                                            >
-                                                <ShoppingCart size={16} />
-                                            </button>
+                                            {project.type !== 'release' && (
+                                                <button
+                                                    className={`p-2 rounded-full hover:bg-white/10 transition-all ml-1 ${isTrackActive ? 'text-primary' : 'text-neutral-500 hover:text-primary'} opacity-100`}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openPurchaseModal(project);
+                                                    }}
+                                                    title="Add to Cart"
+                                                >
+                                                    <ShoppingCart size={16} />
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 );
@@ -367,12 +376,79 @@ const ListenPage: React.FC<ListenPageProps> = ({
                         <div className="text-xs text-neutral-400 leading-relaxed font-mono">
                             {project.description || "No description provided."}
                         </div>
+
+                        {/* Comments Section */}
+                        <div className="mt-8 pt-6 border-t border-white/5">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <MessageSquare size={16} className="text-neutral-400" />
+                                    <h3 className="text-sm font-bold text-white tracking-wide">Comments</h3>
+                                    <span className="px-1.5 py-0.5 rounded-md bg-white/5 text-[10px] text-neutral-400 font-mono ml-1">{comments.length}</span>
+                                </div>
+                            </div>
+
+                            {/* Comment Input */}
+                            <div className="flex gap-3 mb-6">
+                                <div className="w-8 h-8 rounded-full bg-neutral-800 shrink-0 flex items-center justify-center border border-white/5">
+                                    <User size={14} className="text-neutral-500" />
+                                </div>
+                                <div className="flex-1 relative group">
+                                    <input
+                                        type="text"
+                                        value={newComment}
+                                        onChange={(e) => setNewComment(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && newComment.trim()) {
+                                                setComments([{ id: Date.now(), user: 'You', text: newComment, time: 'Just now', avatar: null }, ...comments]);
+                                                setNewComment("");
+                                            }
+                                        }}
+                                        placeholder="Add a comment..."
+                                        className="w-full bg-neutral-900/50 border border-white/5 rounded-lg pl-3 pr-10 py-2 text-sm text-white focus:outline-none focus:border-primary/50 transition-colors placeholder:text-neutral-600"
+                                    />
+                                    <button
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-neutral-500 hover:text-primary transition-colors disabled:opacity-50"
+                                        disabled={!newComment.trim()}
+                                        onClick={() => {
+                                            if (newComment.trim()) {
+                                                setComments([{ id: Date.now(), user: 'You', text: newComment, time: 'Just now', avatar: null }, ...comments]);
+                                                setNewComment("");
+                                            }
+                                        }}
+                                    >
+                                        <Send size={14} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Comments List */}
+                            <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                                {comments.map(comment => (
+                                    <div key={comment.id} className="flex gap-3 group/comment">
+                                        <div className="w-8 h-8 rounded-full bg-neutral-800 shrink-0 flex items-center justify-center border border-white/5 overflow-hidden">
+                                            {comment.avatar ? (
+                                                <img src={comment.avatar} alt={comment.user} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-xs font-bold text-neutral-500">{comment.user.charAt(0)}</span>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-baseline gap-2 mb-0.5">
+                                                <span className="text-xs font-bold text-neutral-200">{comment.user}</span>
+                                                <span className="text-[10px] text-neutral-600 font-mono">{comment.time}</span>
+                                            </div>
+                                            <p className="text-sm text-neutral-400 leading-snug break-words">{comment.text}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 {/* RIGHT PANEL: Suggestions (Up Next) - Extended to Bottom */}
                 {/* Mobile: h-auto, visible overflow. Desktop: full height, scrolled internally (if needed) or hidden. */}
-                <div className="flex-1 bg-black flex flex-col h-auto lg:h-full lg:overflow-hidden border-l border-white/5">
+                <div className="w-full lg:w-[350px] xl:w-[400px] shrink-0 bg-black flex flex-col h-auto lg:h-full lg:overflow-hidden border-l border-white/5">
                     <div className="p-6 pb-4 border-b border-white/5 bg-black z-10 flex items-center justify-between h-[89px] shrink-0">
                         <h3 className="text-xl font-bold text-white tracking-tight">Suggested</h3>
                         <div className="flex gap-2">

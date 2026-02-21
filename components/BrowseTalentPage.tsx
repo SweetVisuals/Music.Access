@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MOCK_TALENT } from '../constants';
-import { Verified, UserPlus, ChevronRight, Star, Music, Zap, MessageCircle, Disc, Package } from 'lucide-react';
+import { Verified, UserPlus, ChevronRight, Star, Music, Zap, MessageCircle, Disc, Package, Sparkles } from 'lucide-react';
 import ProjectCard, { ProjectSkeleton } from './ProjectCard';
 import ServiceCard from './ServiceCard';
 import { Project, TalentProfile, Service } from '../types';
@@ -280,13 +280,13 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                     {loading ? (
                         [...Array(5)].map((_, i) => (
-                            <div key={i} className="h-[350px] md:h-[285px]">
+                            <div key={i}>
                                 <ProjectSkeleton />
                             </div>
                         ))
                     ) : (
                         trendingProjects.slice(0, 5).map(project => (
-                            <div key={project.id} className="h-[350px] md:h-[285px]">
+                            <div key={project.id}>
                                 <ProjectCard
                                     project={project}
                                     currentTrackId={currentTrackId}
@@ -318,13 +318,13 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                         {loading ? (
                             [...Array(5)].map((_, i) => (
-                                <div key={i} className="h-[350px] md:h-[285px]">
+                                <div key={i}>
                                     <ProjectSkeleton />
                                 </div>
                             ))
                         ) : (
                             soundPacks.slice(0, 5).map(project => (
-                                <div key={project.id} className="h-[350px] md:h-[285px]">
+                                <div key={project.id}>
                                     <ProjectCard
                                         project={project}
                                         currentTrackId={currentTrackId}
@@ -339,12 +339,12 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                 </div>
             )}
 
-            {/* Releases */}
+            {/* Release & Cover Services */}
             {(!loading || releases.length > 0) && (
                 <div className="mb-12">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                            <Disc size={18} className="text-primary" /> Releases
+                            <Sparkles size={18} className="text-primary" /> Release & Cover Services
                         </h2>
                         <button onClick={() => navigate('/browse/releases')} className="text-xs text-neutral-500 hover:text-white flex items-center gap-1">View All <ChevronRight size={12} /></button>
                     </div>
@@ -352,13 +352,13 @@ const BrowseTalentPage: React.FC<BrowseTalentPageProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                         {loading ? (
                             [...Array(5)].map((_, i) => (
-                                <div key={i} className="h-[350px] md:h-[285px]">
+                                <div key={i}>
                                     <ProjectSkeleton />
                                 </div>
                             ))
                         ) : (
                             releases.slice(0, 5).map(project => (
-                                <div key={project.id} className="h-[350px] md:h-[285px]">
+                                <div key={project.id}>
                                     <ProjectCard
                                         project={project}
                                         currentTrackId={currentTrackId}

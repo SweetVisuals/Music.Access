@@ -100,6 +100,14 @@ export const stripeService = {
         });
         if (error) throw error;
         return data;
+    },
+
+    cancelSubscription: async (userId: string, subscriptionId: string) => {
+        const { data, error } = await supabase.functions.invoke('stripe-actions', {
+            body: { action: 'cancel-subscription', userId, subscriptionId }
+        });
+        if (error) throw error;
+        return data;
     }
 };
 

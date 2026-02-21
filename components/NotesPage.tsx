@@ -369,6 +369,25 @@ const NotesPage: React.FC<NotesPageProps> = ({ userProfile, currentProject, curr
 
     useEffect(() => { fetchNotes(); }, [fetchNotes]);
 
+    // Handle createNewNote navigation state from MusicPlayer
+    useEffect(() => {
+        const state = location.state as any;
+        if (state?.createNewNote && !hasHandledNavigation.current && !loading) {
+            hasHandledNavigation.current = true;
+            const title = state.trackTitle ? `Notes — ${state.trackTitle}` : 'Untitled Note';
+            const audioUrl = state.trackUrl || undefined;
+            const meta = state.producerName ? { producerName: state.producerName, producerAvatar: state.producerAvatar } : undefined;
+            handleCreateNote(title, '', audioUrl, meta);
+            // Clear navigation state to prevent re-creation
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, loading]);
+
+    // Reset navigation guard when location changes
+    useEffect(() => {
+        hasHandledNavigation.current = false;
+    }, [location.key]);
+
     // Auto-open sidebar on mobile when no note is selected
     useEffect(() => {
         if (window.innerWidth < 1024 && !activeNoteId && !loading) {
@@ -760,7 +779,7 @@ const NotesPage: React.FC<NotesPageProps> = ({ userProfile, currentProject, curr
     const noteItems = visibleItems.filter(i => i.type !== 'folder');
 
     return (
-        <div className={`w-full flex flex-col overflow-hidden fixed inset-x-0 bottom-0 top-[56px] ${isOverlayOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:top-0 lg:h-full`}>
+        <div className={`w-full flex flex-col overflow-hidden fixed inset-x-0 bottom-0 top-[calc(56px+env(safe-area-inset-top))] ${isOverlayOpen ? 'z-[80]' : 'z-10'} bg-[#050505] lg:relative lg:top-0 lg:h-full`}>
             <div className="flex-1 flex bg-[#0a0a0a] overflow-hidden relative">
                 <div className={`absolute lg:static inset-y-0 left-0 z-[90] w-full lg:w-96 lg:border-r border-white/5 flex flex-col bg-[#0A0A0A] transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
                     <div className="p-4 border-b border-white/5 flex items-center justify-between">

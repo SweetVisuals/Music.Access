@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-    Search, Bell, Menu, User, LogOut, Settings, Terminal, ShoppingBag,
+    Search, Bell, Menu, User, Users, LogOut, Settings, Terminal, ShoppingBag,
     ArrowRight, ArrowLeft, Clock, Gem, Wallet, Eye, EyeOff, Palette, Star,
     Command, Sparkles, Music, Package, Mic, Info, X, ChevronDown, Trash2, Check, LayoutDashboard, Upload
 } from 'lucide-react';
@@ -204,13 +204,15 @@ const RightActions: React.FC<{
                                 {isNotificationsOpen && !isSpacer && (
                                     <>
                                         {/* Desktop Dropdown */}
-                                        <div className="hidden lg:block absolute right-0 top-full mt-3 w-96 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                                            <div className="p-4 border-b border-white/5 flex justify-between items-center">
-                                                <h3 className="text-sm font-bold text-white tracking-tight">Notifications</h3>
+                                        <div className="hidden lg:block absolute right-0 top-full mt-3 w-96 bg-[#0a0a0a]/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.8)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+                                            <div className="p-5 border-b border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent flex justify-between items-center">
+                                                <h3 className="text-xs font-black text-white tracking-widest uppercase flex items-center gap-2">
+                                                    <Bell size={14} className="text-primary" /> Notifications
+                                                </h3>
                                                 {notifications.some(n => !n.read) && (
                                                     <button
                                                         onClick={handleMarkAllRead}
-                                                        className="text-[10px] text-primary hover:underline font-bold uppercase tracking-wider"
+                                                        className="text-[10px] text-primary hover:text-white transition-colors font-bold uppercase tracking-wider bg-primary/10 hover:bg-primary/20 px-2 py-1 rounded-md"
                                                     >
                                                         Mark all read
                                                     </button>
@@ -218,13 +220,13 @@ const RightActions: React.FC<{
                                             </div>
                                             <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                                                 {notifications.filter(n => !n.read).length === 0 ? (
-                                                    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-                                                        <div className="w-12 h-12 bg-neutral-900 rounded-full flex items-center justify-center text-neutral-600 mb-3 border border-white/5">
-                                                            <Bell size={20} />
+                                                    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                                                        <div className="w-16 h-16 bg-neutral-900/50 rounded-full flex items-center justify-center text-neutral-600 mb-4 border border-white/5 shadow-inner">
+                                                            <Check size={24} className="text-neutral-500" />
                                                         </div>
-                                                        <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-1">All Caught Up</h4>
-                                                        <p className="text-[10px] text-neutral-500 max-w-[150px] leading-relaxed">
-                                                            You have no new notifications at the moment.
+                                                        <h4 className="text-xs font-black text-white uppercase tracking-widest mb-2">All Caught Up</h4>
+                                                        <p className="text-[11px] text-neutral-500 max-w-[200px] leading-relaxed">
+                                                            You have no new notifications at the moment. Take a breather.
                                                         </p>
                                                     </div>
                                                 ) : (
@@ -232,14 +234,17 @@ const RightActions: React.FC<{
                                                         <div
                                                             key={notif.id}
                                                             onClick={() => handleNotificationClick(notif)}
-                                                            className={`p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer ${!notif.read ? 'bg-white/[0.03]' : ''}`}
+                                                            className={`p-4 border-b border-white/5 hover:bg-white/[0.06] transition-all cursor-pointer group relative overflow-hidden ${!notif.read ? 'bg-primary/[0.02]' : ''}`}
                                                         >
+                                                            {!notif.read && (
+                                                                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary/50 shadow-[0_0_10px_rgb(var(--primary)/0.5)]"></div>
+                                                            )}
                                                             <div className="flex gap-4">
-                                                                <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${notif.type === 'sale' ? 'bg-green-500' : notif.type === 'system' ? 'bg-blue-500' : 'bg-purple-500'} shadow-[0_0_8px_rgba(0,0,0,0.5)]`}></div>
+                                                                <div className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${notif.type === 'sale' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : notif.type === 'system' ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]' : 'bg-primary shadow-[0_0_10px_rgb(var(--primary)/0.5)]'}`}></div>
                                                                 <div className="flex-1 min-w-0">
-                                                                    <h4 className="text-sm font-bold text-white mb-0.5 leading-tight">{notif.title}</h4>
-                                                                    <p className="text-xs text-neutral-400 leading-relaxed mb-2">{notif.message}</p>
-                                                                    <div className="flex items-center gap-1 text-[10px] text-neutral-600 font-mono">
+                                                                    <h4 className="text-sm font-bold text-white mb-1 leading-tight group-hover:text-primary transition-colors">{notif.title}</h4>
+                                                                    <p className="text-xs text-neutral-400 leading-relaxed mb-3">{notif.message}</p>
+                                                                    <div className="flex items-center gap-1.5 text-[10px] text-neutral-500 font-mono tracking-wider font-bold uppercase">
                                                                         <Clock size={10} /> {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                                     </div>
                                                                 </div>
@@ -248,8 +253,8 @@ const RightActions: React.FC<{
                                                     ))
                                                 )}
                                             </div>
-                                            <div className="p-3 bg-neutral-900/50 text-center border-t border-white/5">
-                                                <button className="text-[10px] font-black text-neutral-500 hover:text-white transition-colors uppercase tracking-widest">View Activity Log</button>
+                                            <div className="p-3 bg-[#050505] text-center border-t border-white/5">
+                                                <button className="text-[10px] font-black text-neutral-500 hover:text-white transition-colors uppercase tracking-widest py-1 w-full rounded-lg hover:bg-white/5">View Activity Log</button>
                                             </div>
                                         </div>
 
@@ -394,27 +399,64 @@ const RightActions: React.FC<{
 
                         {/* Profile Dropdown */}
                         {isLoggedIn && isProfileOpen && !isSpacer && (
-                            <div className="absolute right-0 top-full mt-6 lg:mt-3 w-56 bg-[#0a0a0a] border border-transparent rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                                <div className="p-4 border-b border-white/5 bg-white/[0.02]">
-                                    <div className="text-lg font-bold text-white truncate tracking-tight">{userProfile?.username || 'User'}</div>
+                            <div className="absolute right-0 top-full mt-6 lg:mt-3 w-80 bg-[#0a0a0a]/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.8)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+                                <div className="p-5 bg-white/[0.02]">
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="w-12 h-12 rounded-full bg-neutral-800 border border-transparent overflow-hidden shrink-0">
+                                            {userProfile?.avatar ? (
+                                                <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full bg-neutral-900 flex items-center justify-center text-primary">
+                                                    <User size={18} />
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm font-black text-white truncate tracking-tight">{userProfile?.username || 'User'}</div>
+                                            <div className="text-xs text-neutral-400 truncate mt-0.5">{userProfile?.handle ? `@${userProfile.handle}` : 'musician'}</div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }}
+                                        className="w-full py-2.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 text-[11px] font-black text-primary uppercase tracking-[0.2em] rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_5px_15px_rgba(var(--primary)/0.1)]"
+                                    >
+                                        View Profile <ArrowRight size={13} />
+                                    </button>
                                 </div>
-                                <div className="p-2">
-                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
-                                        <User size={16} /> My Profile
+                                <div className="h-px bg-white/5 w-full"></div>
+                                <div className="p-2 space-y-0.5">
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('dashboard-settings'); }} className="group w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] text-neutral-300 hover:text-white hover:bg-white/[0.06] transition-all text-left font-medium">
+                                        <div className="flex items-center gap-3">
+                                            <Settings size={15} className="text-primary group-hover:scale-110 transition-transform" /> Account Settings
+                                        </div>
                                     </button>
 
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('subscription'); }} className="group w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] text-neutral-300 hover:text-white hover:bg-white/[0.06] transition-all text-left font-medium">
+                                        <div className="flex items-center gap-3">
+                                            <Wallet size={15} className="text-primary group-hover:scale-110 transition-transform" /> Subscription Plan
+                                        </div>
+                                        <span className="text-[9px] font-black text-black bg-[#e5e52a] px-1.5 py-0.5 rounded tracking-wider uppercase">PRO</span>
+                                    </button>
 
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('collaborate'); }} className="group w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] text-neutral-300 hover:text-white hover:bg-white/[0.06] transition-all text-left font-medium">
+                                        <div className="flex items-center gap-3">
+                                            <Users size={15} className="text-primary group-hover:scale-110 transition-transform" /> Team Management
+                                        </div>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
+                                    </button>
 
-                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('settings'); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors text-left font-medium">
-                                        <Settings size={16} /> Settings
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('help'); }} className="group w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] text-neutral-300 hover:text-white hover:bg-white/[0.06] transition-all text-left font-medium">
+                                        <div className="flex items-center gap-3">
+                                            <Info size={15} className="text-primary group-hover:scale-110 transition-transform" /> Help & Support
+                                        </div>
                                     </button>
 
                                     {/* Discover View Toggle (Mobile Only) */}
                                     {isMobile && currentView === 'home' && onToggleDiscoverView && (
-                                        <div className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm text-neutral-300 hover:text-white hover:bg-white/5 transition-colors font-medium">
-                                            <div className="flex items-center gap-3">
-                                                {isDiscoverFeedMode ? <LayoutDashboard size={16} /> : (
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <div className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] text-neutral-300 hover:text-white hover:bg-white/[0.06] transition-colors font-medium">
+                                            <div className="flex items-center gap-3 group">
+                                                {isDiscoverFeedMode ? <LayoutDashboard size={15} className="text-neutral-500 group-hover:text-white transition-colors" /> : (
+                                                    <svg className="text-neutral-500 group-hover:text-white transition-colors" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                         <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
                                                         <line x1="12" y1="18" x2="12.01" y2="18" />
                                                     </svg>
@@ -442,42 +484,13 @@ const RightActions: React.FC<{
                                             </div>
                                         </div>
                                     )}
-
-                                    <div className="space-y-2 mt-2 px-1">
-                                        <div
-                                            onClick={(e) => {
-                                                if (isSpacer) return;
-                                                e.stopPropagation();
-                                                setIsProfileOpen(false);
-                                                onNavigate('dashboard-wallet');
-                                            }}
-                                            className="flex items-center justify-between bg-neutral-900/80 p-3 rounded-xl border border-transparent cursor-pointer hover:bg-neutral-800 transition-colors shadow-inner"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <Wallet size={16} className="text-emerald-500" />
-                                                <span className="text-xs font-mono font-black text-white px-1">
-                                                    {showBalance
-                                                        ? `$${(userProfile?.balance !== undefined ? userProfile.balance : 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                                                        : '$••••••'}
-                                                </span>
-                                            </div>
-                                            <button
-                                                onClick={(e) => {
-                                                    if (isSpacer) return;
-                                                    e.stopPropagation();
-                                                    setShowBalance(!showBalance);
-                                                }}
-                                                className="p-1.5 -mr-1 text-neutral-500 hover:text-primary transition-colors bg-white/5 rounded-md"
-                                                title={showBalance ? "Hide Balance" : "Show Balance"}
-                                            >
-                                                {showBalance ? <EyeOff size={12} /> : <Eye size={12} />}
-                                            </button>
-                                        </div>
-                                    </div>
                                 </div>
-                                <div className="p-2 border-t border-white/5">
-                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onLogout(); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-colors text-left font-bold uppercase tracking-wider">
-                                        <LogOut size={16} /> Sign Out
+                                <div className="h-px bg-white/5 w-full"></div>
+                                <div className="p-2">
+                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onLogout(); }} className="group w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] text-neutral-300 hover:text-white hover:bg-white/[0.06] transition-all text-left font-medium">
+                                        <div className="flex items-center gap-3">
+                                            <LogOut size={15} className="text-red-500/70 group-hover:text-red-500 group-hover:scale-110 transition-all" /> Log Out
+                                        </div>
                                     </button>
                                 </div>
                             </div>

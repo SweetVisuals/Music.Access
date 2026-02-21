@@ -300,8 +300,8 @@ const App: React.FC = () => {
 
   const filteredProjects = useMemo(() => {
     return projects.filter(p => {
-      // EXCLUDE RELEASES FROM DISCOVER - Show them only on Browse page per user request
-      if (p.type === 'release') return false;
+      // EXCLUDE RELEASES FROM DISCOVER - Show them only on Browse page per user request, UNLESS searching
+      if (p.type === 'release' && !filters.searchQuery) return false;
 
       const matchesGenre = filters.genre === "All Genres" || p.genre === filters.genre;
       // Key Filtering Logic
@@ -525,6 +525,11 @@ const App: React.FC = () => {
     if (typeof view === 'string' && view.startsWith('@')) {
       navigate(`/${view}`); // Navigate to /@username
     } else if (typeof view === 'string') {
+      // Handle BACK navigation via browser history
+      if (view === 'BACK') {
+        navigate(-1);
+        return;
+      }
       // Handle strings with query params or known paths
       // If it contains '?', simply navigate to it as a raw path
       if (view.includes('?')) {
@@ -672,7 +677,7 @@ const App: React.FC = () => {
         <ToastProvider>
           <PlayerProvider>
             <FileOperationProvider>
-              <div className="h-screen h-[100dvh] w-full flex overflow-hidden overscroll-y-none selection:bg-primary/30 selection:text-primary transition-colors duration-500">
+              <div className="absolute inset-0 w-full flex overflow-hidden overscroll-y-none selection:bg-primary/30 selection:text-primary transition-colors duration-500">
                 <MobileCart onNavigate={handleNavigate} projects={projects} />
 
                 {/* Edge Swipe Zone for opening Sidebar */}
@@ -886,8 +891,8 @@ const App: React.FC = () => {
                     {currentView === 'browse-all-releases' && (
                       <ViewAllPage
                         type="releases"
-                        title="Releases"
-                        description="Fresh releases from artists across the platform."
+                        title="Release & Cover Services"
+                        description="Professional song releases and high-end cover services from our community."
                         currentProject={currentProject}
                         currentTrackId={currentTrackId}
                         isPlaying={isPlaying}

@@ -22,6 +22,7 @@
             mono: ['JetBrains Mono', 'monospace'],
             signature: ['Dancing Script', 'cursive'],
             display: ['Outfit', 'sans-serif'],
+            milker: ['Milker', 'sans-serif'],
           },
           colors: {
             neutral: {
@@ -51,9 +52,11 @@
       width: 100%;
       margin: 0;
       padding: 0;
-      overflow-x: hidden;
+      overflow: hidden;
+      position: fixed;
+      inset: 0;
+      overscroll-behavior: none;
     }
-
 
     /* Custom Scrollbar */
     ::-webkit-scrollbar {
@@ -263,7 +266,7 @@
 </head>
 
 <body class="bg-dot-grid text-gray-200 overflow-hidden overscroll-y-none antialiased transition-colors duration-500">
-  <div id="root" class="h-screen h-[100dvh] flex flex-col"></div>
+  <div id="root" class="absolute inset-0 flex flex-col overflow-hidden"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
 

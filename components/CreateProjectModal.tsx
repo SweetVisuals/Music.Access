@@ -690,6 +690,20 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
                                                             </div>
                                                         ))}
                                                     </div>
+                                                    {projectData.type === 'beat_tape' && (
+                                                        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
+                                                            <input
+                                                                type="checkbox"
+                                                                id={`stems-included-${idx}`}
+                                                                checked={!!track.stemsIncluded}
+                                                                onChange={(e) => updateTrack(idx, 'stemsIncluded', e.target.checked)}
+                                                                className="w-4 h-4 rounded border-neutral-700 bg-neutral-900 text-primary focus:ring-primary focus:ring-offset-neutral-900 cursor-pointer"
+                                                            />
+                                                            <label htmlFor={`stems-included-${idx}`} className="text-xs font-medium text-neutral-300 cursor-pointer user-select-none select-none">
+                                                                This track includes stems
+                                                            </label>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

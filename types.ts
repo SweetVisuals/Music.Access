@@ -11,6 +11,7 @@ export interface Track {
     stems?: string;
     main?: string; // Main linked asset ID
   };
+  stemsIncluded?: boolean;
   noteId?: string;
   statusTags?: { label: string; active: boolean }[];
   assignedFileId?: string;

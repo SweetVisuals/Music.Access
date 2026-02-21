@@ -28,7 +28,8 @@ import {
     Calendar,
     ChevronDown,
     User,
-    Lock
+    Lock,
+    Settings
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import ProjectCard, { ProjectSkeleton } from './ProjectCard';
@@ -47,6 +48,8 @@ import ProfileCompletionAlert from './ProfileCompletionAlert';
 import { checkHasGivenAnyGem } from '../services/supabaseService';
 
 
+
+
 interface ProfilePageProps {
     profile: UserProfile | null;
     profileUsername?: string;
@@ -58,6 +61,79 @@ interface ProfilePageProps {
 }
 
 type Tab = 'beat_tapes' | 'releases' | 'services' | 'sound_packs' | 'about' | 'private';
+
+interface TabButtonProps {
+    active: boolean;
+    onClick: () => void;
+    icon: React.ReactNode;
+    label: string;
+    count?: number;
+}
+
+const MobileTabButton: React.FC<TabButtonProps> = ({ active, onClick, icon, label, count }) => (
+    <button
+        onClick={onClick}
+        className={`
+            flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold border transition-all whitespace-nowrap shrink-0
+            ${active
+                ? 'bg-white text-black border-white shadow-lg scale-105'
+                : 'bg-neutral-900/50 text-neutral-400 border-white/10 hover:text-white hover:border-neutral-700'
+            }
+        `}
+    >
+        {icon}
+        <span className="uppercase tracking-wide">{label}</span>
+        {count !== undefined && (
+            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full ml-1 ${active ? 'bg-black/10 text-black' : 'bg-white/10 text-neutral-500'}`}>
+                {count}
+            </span>
+        )}
+    </button>
+);
+
+const TabButton: React.FC<TabButtonProps> = ({ active, onClick, icon, label, count }) => (
+    <button
+        onClick={onClick}
+        className={`
+            pb-4 flex items-center gap-2 text-sm font-medium border-b-2 transition-all relative whitespace-nowrap px-2
+            ${active
+                ? 'border-primary text-white'
+                : 'border-white/10 text-neutral-500 hover:text-neutral-300 hover:border-neutral-500'
+            }
+        `}
+    >
+        <span className={`transition-colors ${active ? 'text-primary' : ''}`}>{icon}</span>
+        <span className="tracking-wide font-bold text-xs uppercase">{label}</span>
+        {count !== undefined && (
+            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ml-1 font-bold ${active ? 'bg-primary/20 text-primary' : 'bg-neutral-800 text-neutral-500'}`}>
+                {count}
+            </span>
+        )}
+    </button>
+);
+
+const ProfileSkeleton = () => (
+    <div className="w-full max-w-[1600px] mx-auto pb-0 -mt-6 px-6 lg:px-8 animate-in fade-in duration-500">
+        <div className="relative rounded-3xl overflow-hidden bg-[#0a0a0a] border border-white/10 mb-8 shadow-2xl animate-pulse">
+            <div className="h-16 md:h-36 w-full bg-neutral-900 border-b border-white/5"></div>
+            <div className="relative px-8 pb-8 -mt-12 flex flex-col md:flex-row items-end gap-8">
+                <div className="relative z-30 shrink-0 rounded-3xl p-1.5 bg-[#0a0a0a]">
+                    <div className="h-44 w-44 rounded-2xl bg-neutral-800 border border-neutral-700"></div>
+                </div>
+                <div className="flex-1 w-full pb-2 space-y-4">
+                    <div className="h-10 w-48 bg-neutral-800 rounded-lg"></div>
+                    <div className="h-4 w-32 bg-neutral-800 rounded"></div>
+                </div>
+            </div>
+        </div>
+        <div className="flex gap-8 mb-8 border-b border-white/10 pb-4">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-6 w-24 bg-neutral-900 rounded"></div>)}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-[350px] md:h-[285px] bg-neutral-900/50 rounded-xl border border-white/10"><ProjectSkeleton /></div>)}
+        </div>
+    </div>
+);
 
 const ProfilePage: React.FC<ProfilePageProps> = ({
     profile,
@@ -78,7 +154,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     const [isCreateServiceModalOpen, setIsCreateServiceModalOpen] = useState(false);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(profile);
     const [isViewerMode, setIsViewerMode] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [loading, setLoading] = useState(false);
     const [isOwnProfile, setIsOwnProfile] = useState(false);
@@ -90,17 +166,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     // Follow loading state
     const [isFollowLoading, setIsFollowLoading] = useState(false);
 
-    // Edit Form State
-    const [editForm, setEditForm] = useState({
-        username: '',
-        location: '',
-        bio: '',
-        website: '',
-        role: '',
-        yearsExperience: '',
-        satisfactionRate: '',
-        avgTurnaround: ''
-    });
+
 
     // Local projects state
     const [localProjects, setLocalProjects] = useState<Project[]>([]);
@@ -422,54 +488,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
         setLocalProjects([newProject, ...localProjects]);
     };
 
-    const handleSaveProfile = async () => {
-        if (!userProfile) return;
 
-        const oldProfile = { ...userProfile };
-
-        // Optimistic update
-        const updatedProfile = {
-            ...userProfile,
-            username: editForm.username,
-            location: editForm.location,
-            bio: editForm.bio,
-            website: editForm.website,
-            role: editForm.role,
-            yearsExperience: editForm.yearsExperience,
-            satisfactionRate: editForm.satisfactionRate,
-            avgTurnaround: editForm.avgTurnaround
-        };
-        setUserProfile(updatedProfile);
-        setIsEditModalOpen(false);
-
-        try {
-            // Save to database
-            const currentUser = await getCurrentUser();
-            if (currentUser) {
-                await updateUserProfile(currentUser.id, {
-                    username: editForm.username,
-                    location: editForm.location,
-                    bio: editForm.bio,
-                    website: editForm.website,
-                    role: editForm.role,
-                    yearsExperience: editForm.yearsExperience,
-                    satisfactionRate: editForm.satisfactionRate,
-                    avgTurnaround: editForm.avgTurnaround,
-                    bannerSettings: userProfile.bannerSettings
-                });
-
-                // Refetch to confirm the update
-                const refreshedProfile = await getUserProfile();
-                if (refreshedProfile) {
-                    setUserProfile(refreshedProfile);
-                }
-            }
-        } catch (error) {
-            console.error('Error saving profile:', error);
-            // Revert on error
-            setUserProfile(oldProfile);
-        }
-    };
 
     const handleSaveService = (newService: any) => {
         if (!userProfile) return;
@@ -514,19 +533,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     const triggerBannerUpload = () => !isViewerMode && isOwnProfile && bannerInputRef.current?.click();
     const triggerAvatarUpload = () => !isViewerMode && isOwnProfile && avatarInputRef.current?.click();
 
-    const openEditModal = () => {
-        setEditForm({
-            username: userProfile.username,
-            location: userProfile.location || "",
-            bio: userProfile.bio || "",
-            website: userProfile.website || "",
-            role: userProfile.role || "",
-            yearsExperience: userProfile.yearsExperience || "",
-            satisfactionRate: userProfile.satisfactionRate || "",
-            avgTurnaround: userProfile.avgTurnaround || ""
-        });
-        setIsEditModalOpen(true);
-    };
+
 
     const handleEditProject = (project: Project) => {
         setEditingProject(project);
@@ -655,233 +662,6 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
             <div className="w-full max-w-[1900px] mx-auto px-4 lg:px-10 xl:px-14 pb-20 lg:pb-12 pt-[30px]">
 
-                {/* EDIT PROFILE MODAL - RESPONSIVE */}
-                {isEditModalOpen && createPortal(
-                    <div className="fixed inset-0 z-[200] flex flex-col lg:items-center lg:justify-center bg-black lg:bg-black/80 lg:backdrop-blur-sm lg:p-4 animate-in fade-in duration-200">
-                        <div className="flex-1 lg:flex-none w-full lg:max-w-3xl bg-black lg:bg-[#0a0a0a] lg:border border-transparent lg:rounded-xl lg:shadow-2xl overflow-hidden flex flex-col h-full lg:max-h-[90vh]">
-
-                            {/* HEADER */}
-                            <div className="p-4 border-b border-transparent flex justify-between items-center bg-neutral-900/50 backdrop-blur-md shrink-0">
-                                <h3 className="font-bold text-white text-lg flex items-center gap-2">
-                                    <Edit3 size={18} className="text-primary" /> Edit Profile
-                                </h3>
-                                <button
-                                    onClick={() => setIsEditModalOpen(false)}
-                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-white transition-colors"
-                                >
-                                    <X size={18} />
-                                </button>
-                            </div>
-
-                            {/* BODY */}
-                            <div className="flex-1 overflow-y-auto custom-scrollbar p-0 lg:p-0">
-                                <div className="p-6 space-y-6">
-
-                                    {/* Image Uploads Section (Mobile Friendly) */}
-                                    <div className="space-y-4 pb-4 border-b border-transparent">
-                                        <h4 className="text-xs font-black text-white uppercase tracking-widest mb-3">Profile Assets</h4>
-
-                                        {/* Banner Upload */}
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Banner Image</label>
-                                            <div className="flex gap-2 mb-2">
-                                                <button
-                                                    onClick={() => bannerInputRef.current?.click()}
-                                                    className="flex-1 h-32 rounded-lg bg-neutral-900/50 border border-transparent flex flex-col items-center justify-center text-neutral-500 hover:text-white hover:border-primary/30 hover:bg-white/5 transition-all cursor-pointer overflow-hidden relative group"
-                                                >
-                                                    {userProfile.banner ? (
-                                                        <img
-                                                            src={userProfile.banner}
-                                                            className="w-full h-full object-cover opacity-50 group-hover:opacity-30 transition-opacity"
-                                                            alt="Banner Preview"
-                                                            style={{
-                                                                transform: (() => {
-                                                                    const s = userProfile.bannerSettings;
-                                                                    if (!s) return 'none';
-                                                                    // Default to desktop for this preview or handle mixed
-                                                                    const set = ('desktop' in s) ? s.desktop : (s as any);
-                                                                    return `translate(${set.x - 50}%, ${set.y - 50}%) scale(${set.scale})`;
-                                                                })()
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <div className="absolute inset-0 bg-neutral-900 animate-pulse" />
-                                                    )}
-                                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 drop-shadow-md">
-                                                        <Camera size={24} className="text-primary" />
-                                                        <span className="text-[10px] uppercase font-bold bg-black/50 px-2 py-1 rounded backdrop-blur-sm">Change Image</span>
-                                                    </div>
-                                                </button>
-                                            </div>
-
-                                            {userProfile.banner && (
-                                                <button
-                                                    onClick={() => setIsBannerAdjustOpen(true)}
-                                                    className="w-full py-2 bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-colors mb-4"
-                                                >
-                                                    <Move size={14} /> Adjust Position (Desktop & Mobile)
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        {/* Avatar Upload */}
-                                        <div className="space-y-1.5">
-                                            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Profile Picture</label>
-                                            <div className="flex items-center gap-4">
-                                                <div
-                                                    onClick={() => avatarInputRef.current?.click()}
-                                                    className="h-20 w-20 rounded-xl bg-neutral-900 border border-transparent overflow-hidden shrink-0 relative group cursor-pointer"
-                                                >
-                                                    <img src={userProfile.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541'} className="w-full h-full object-cover group-hover:opacity-50 transition-opacity" alt="Avatar Preview" />
-                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <Camera size={20} className="text-white" />
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => avatarInputRef.current?.click()}
-                                                    className="px-4 py-2 bg-white/5 border border-transparent rounded-lg text-xs font-bold text-white hover:bg-white/10 transition-colors flex items-center gap-2"
-                                                >
-                                                    <Camera size={14} />
-                                                    Change Avatar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-6">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Display Name</label>
-                                                <input
-                                                    value={editForm.username}
-                                                    onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                                                    className="w-full bg-neutral-900/50 border border-transparent rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
-                                                    placeholder="Your Artist Name"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Role</label>
-                                                <div className="relative">
-                                                    <CustomDropdown
-                                                        value={editForm.role}
-                                                        onChange={(val) => setEditForm({ ...editForm, role: val })}
-                                                        options={[
-                                                            { value: 'artist', label: 'Artist' },
-                                                            { value: 'producer', label: 'Producer' },
-                                                            { value: 'engineer', label: 'Engineer' },
-                                                            { value: 'professional', label: 'Professional / Other' },
-                                                            { value: 'listener', label: 'Listener' }
-                                                        ]}
-                                                        placeholder="Select your role..."
-                                                        className="z-[110]"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Handle (Username)</label>
-                                            <div className="relative opacity-70">
-                                                <input
-                                                    value={userProfile.handle}
-                                                    disabled
-                                                    className="w-full bg-neutral-900 border border-transparent rounded-lg px-4 py-3 text-sm text-neutral-400 cursor-not-allowed"
-                                                />
-                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-neutral-600 font-mono">Read-only</div>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Location</label>
-                                                <div className="relative">
-                                                    <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                                    <input
-                                                        value={editForm.location}
-                                                        onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                                                        className="w-full bg-neutral-900/50 border border-transparent rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
-                                                        placeholder="City, Country"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Website</label>
-                                                <div className="relative">
-                                                    <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-                                                    <input
-                                                        value={editForm.website}
-                                                        onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
-                                                        className="w-full bg-neutral-900/50 border border-transparent rounded-lg pl-10 pr-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
-                                                        placeholder="https://your-site.com"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Years Exp.</label>
-                                                <input
-                                                    value={editForm.yearsExperience}
-                                                    onChange={(e) => setEditForm({ ...editForm, yearsExperience: e.target.value })}
-                                                    className="w-full bg-neutral-900/50 border border-transparent rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
-                                                    placeholder="e.g. 5+"
-                                                />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Satisfaction</label>
-                                                <input
-                                                    value={editForm.satisfactionRate}
-                                                    onChange={(e) => setEditForm({ ...editForm, satisfactionRate: e.target.value })}
-                                                    className="w-full bg-neutral-900/50 border border-transparent rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
-                                                    placeholder="e.g. 100%"
-                                                />
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Avg. Turnaround</label>
-                                                <input
-                                                    value={editForm.avgTurnaround}
-                                                    onChange={(e) => setEditForm({ ...editForm, avgTurnaround: e.target.value })}
-                                                    className="w-full bg-neutral-900/50 border border-transparent rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none transition-colors focus:bg-neutral-900"
-                                                    placeholder="e.g. 24h"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Bio</label>
-                                            <textarea
-                                                value={editForm.bio}
-                                                onChange={(e) => {
-                                                    setEditForm({ ...editForm, bio: e.target.value });
-                                                    e.target.style.height = 'auto';
-                                                    e.target.style.height = `${Math.min(e.target.scrollHeight, 400)}px`;
-                                                }}
-                                                style={{ height: 'auto', minHeight: '128px' }}
-                                                className="w-full bg-neutral-900/50 border border-transparent rounded-lg px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none resize-none transition-all focus:bg-neutral-900 custom-scrollbar"
-                                                placeholder="Tell your story..."
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* FOOTER */}
-                            <div className="p-4 border-t border-transparent bg-neutral-900/50 lg:bg-neutral-900/30 backdrop-blur-md flex justify-end gap-3 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:pb-4">
-                                <button onClick={() => setIsEditModalOpen(false)} className="px-6 py-3 lg:py-2 rounded-xl lg:rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors bg-white/5 border border-transparent lg:bg-transparent lg:border-none">
-                                    Cancel
-                                </button>
-                                <button onClick={handleSaveProfile} className="flex-1 lg:flex-none px-8 py-3 lg:py-2 bg-primary text-black rounded-xl lg:rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(var(--primary),0.2)]">
-                                    <Save size={16} /> Save Changes
-                                </button>
-                            </div>
-                        </div>
-                    </div>,
-                    document.body
-                )}
-
                 {/* HEADER SECTION */}
                 <div className="relative rounded-3xl overflow-hidden bg-[#0a0a0a] border border-transparent mb-6 group/header shadow-lg">
 
@@ -897,11 +677,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
 
                         {isOwnProfile && !isViewerMode && (
                             <button
-                                onClick={openEditModal}
-                                className="flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md text-xs font-bold border bg-black/60 border-transparent text-white hover:bg-black/80 transition-all shadow-lg"
+                                onClick={() => navigate('/settings')}
+                                className="flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md text-[10px] uppercase tracking-wider font-bold border bg-black/60 border-transparent text-white hover:bg-black/80 transition-all shadow-lg"
                             >
-                                <Edit3 size={14} />
-                                Edit Profile
+                                <Settings size={14} className="text-primary" />
+                                Settings
                             </button>
                         )}
                         {isOwnProfile && (
@@ -1255,7 +1035,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                                     setCreateModalInitialType('release');
                                                     setIsCreateModalOpen(true);
                                                 }}
-                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center h-[350px] md:h-[285px] text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
+                                                className="border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center aspect-square w-full text-neutral-600 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group bg-[#0a0a0a] relative overflow-hidden"
                                             >
                                                 <div className="h-16 w-16 rounded-full bg-neutral-900 border border-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg relative z-10 group-hover:shadow-primary/20">
                                                     <Disc size={24} />
@@ -1276,7 +1056,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             localProjects
                                                 .filter(project => project.status === 'published' && project.type === 'release')
                                                 .map(project => (
-                                                    <div key={project.id} className="h-[350px] md:h-[285px]">
+                                                    <div key={project.id} className="aspect-square w-full">
                                                         <ProjectCard
                                                             project={project}
                                                             currentTrackId={currentTrackId}
@@ -1443,7 +1223,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                                             localProjects
                                                 .filter(p => p.status !== 'published')
                                                 .map(project => (
-                                                    <div key={project.id} className="h-[350px] md:h-[285px]">
+                                                    <div key={project.id} className={project.type === 'release' ? 'aspect-square w-full' : 'h-[350px] md:h-[285px]'}>
                                                         <ProjectCard
                                                             project={project}
                                                             currentTrackId={currentTrackId}
@@ -1545,77 +1325,5 @@ const StatsCard = ({ value, label }: { value: string, label: string }) => (
     </div>
 )
 
-interface TabButtonProps {
-    active: boolean;
-    onClick: () => void;
-    icon: React.ReactNode;
-    label: string;
-    count?: number;
-}
-
-const MobileTabButton: React.FC<TabButtonProps> = ({ active, onClick, icon, label, count }) => (
-    <button
-        onClick={onClick}
-        className={`
-            flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold border transition-all whitespace-nowrap shrink-0
-            ${active
-                ? 'bg-white text-black border-white shadow-lg scale-105'
-                : 'bg-neutral-900/50 text-neutral-400 border-white/10 hover:text-white hover:border-neutral-700'
-            }
-        `}
-    >
-        {icon}
-        <span className="uppercase tracking-wide">{label}</span>
-        {count !== undefined && (
-            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full ml-1 ${active ? 'bg-black/10 text-black' : 'bg-white/10 text-neutral-500'}`}>
-                {count}
-            </span>
-        )}
-    </button>
-);
-
-const TabButton: React.FC<TabButtonProps> = ({ active, onClick, icon, label, count }) => (
-    <button
-        onClick={onClick}
-        className={`
-            pb-4 flex items-center gap-2 text-sm font-medium border-b-2 transition-all relative whitespace-nowrap px-2
-            ${active
-                ? 'border-primary text-white'
-                : 'border-white/10 text-neutral-500 hover:text-neutral-300 hover:border-neutral-500'
-            }
-        `}
-    >
-        <span className={`transition-colors ${active ? 'text-primary' : ''}`}>{icon}</span>
-        <span className="tracking-wide font-bold text-xs uppercase">{label}</span>
-        {count !== undefined && (
-            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ml-1 font-bold ${active ? 'bg-primary/20 text-primary' : 'bg-neutral-800 text-neutral-500'}`}>
-                {count}
-            </span>
-        )}
-    </button>
-);
 
 export default ProfilePage;
-
-const ProfileSkeleton = () => (
-    <div className="w-full max-w-[1600px] mx-auto pb-0 -mt-6 px-6 lg:px-8 animate-in fade-in duration-500">
-        <div className="relative rounded-3xl overflow-hidden bg-[#0a0a0a] border border-white/10 mb-8 shadow-2xl animate-pulse">
-            <div className="h-16 md:h-36 w-full bg-neutral-900 border-b border-white/5"></div>
-            <div className="relative px-8 pb-8 -mt-12 flex flex-col md:flex-row items-end gap-8">
-                <div className="relative z-30 shrink-0 rounded-3xl p-1.5 bg-[#0a0a0a]">
-                    <div className="h-44 w-44 rounded-2xl bg-neutral-800 border border-neutral-700"></div>
-                </div>
-                <div className="flex-1 w-full pb-2 space-y-4">
-                    <div className="h-10 w-48 bg-neutral-800 rounded-lg"></div>
-                    <div className="h-4 w-32 bg-neutral-800 rounded"></div>
-                </div>
-            </div>
-        </div>
-        <div className="flex gap-8 mb-8 border-b border-white/10 pb-4">
-            {[...Array(4)].map((_, i) => <div key={i} className="h-6 w-24 bg-neutral-900 rounded"></div>)}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => <div key={i} className="h-[350px] md:h-[285px] bg-neutral-900/50 rounded-xl border border-white/10"><ProjectSkeleton /></div>)}
-        </div>
-    </div>
-);

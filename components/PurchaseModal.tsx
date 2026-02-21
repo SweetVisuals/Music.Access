@@ -98,13 +98,13 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-0 md:p-6 animate-in fade-in duration-200">
-            <div className="w-full max-w-6xl bg-[#0a0a0a] border-0 md:border border-neutral-800 rounded-none md:rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-full md:h-auto md:max-h-[85vh] md:m-auto">
+            <div className="w-full max-w-6xl bg-[#050505] rounded-none md:rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row h-full md:h-auto md:max-h-[85vh] md:m-auto">
 
                 {/* Left Side: Project/Track Info */}
-                <div className="w-full md:w-[380px] bg-neutral-950 p-4 md:p-8 border-b md:border-b-0 md:border-r border-neutral-800 flex flex-col shrink-0">
-                    <div className="hidden md:block aspect-square w-full bg-neutral-900 rounded-xl mb-6 border border-white/5 relative overflow-hidden shrink-0">
+                <div className="w-full md:w-[380px] bg-[#0a0a0a] p-4 md:p-8 flex flex-col shrink-0">
+                    <div className="hidden md:block aspect-square w-full bg-[#050505] rounded-3xl mb-6 relative overflow-hidden shrink-0">
                         {/* Gems Overlay (Desktop) */}
-                        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 shadow-lg">
+                        <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/60 backdrop-blur-md">
                             <Gem size={10} className="text-primary" />
                             <span className="text-[9px] font-bold text-white font-mono">
                                 {project.gems !== undefined ? project.gems.toLocaleString() : 0}
@@ -141,7 +141,29 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                     </div>
 
                     <div className="flex-1 min-h-0 flex flex-col">
-                        <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2 md:mb-3">Select Items {project.type === 'beat_tape' && `(${selectedTrackIds.length})`}</h3>
+                        <div className="flex justify-between items-center mb-2 md:mb-3">
+                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Select Items {project.type === 'beat_tape' && `(${selectedTrackIds.length})`}</h3>
+                            {project.type === 'beat_tape' && (
+                                <button
+                                    onClick={() => {
+                                        if (selectedTrackIds.length === project.tracks.length) {
+                                            setSelectedTrackIds([]);
+                                        } else {
+                                            setSelectedTrackIds(project.tracks.map((t, idx) => t.id || `track-${idx}`));
+                                        }
+                                    }}
+                                    className={`
+                                        text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-full transition-all duration-300 border
+                                        ${selectedTrackIds.length === project.tracks.length
+                                            ? 'bg-primary text-black border-primary shadow-[0_0_10px_rgba(var(--primary),0.3)]'
+                                            : 'bg-white/5 text-neutral-400 border-white/10 hover:text-white hover:bg-white/10 hover:border-white/20'
+                                        }
+                                    `}
+                                >
+                                    {selectedTrackIds.length === project.tracks.length ? 'Deselect All' : 'Select All'}
+                                </button>
+                            )}
+                        </div>
 
                         <div className="overflow-y-auto custom-scrollbar flex-1 -mx-2 px-2 space-y-1 max-h-[150px] md:max-h-none">
                             {project.type === 'beat_tape' && (
@@ -149,7 +171,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                     {project.tracks.map((track, idx) => {
                                         const trackId = track.id || `track-${idx}`;
                                         const isSelected = selectedTrackIds.includes(trackId);
-                                        const hasStems = !!track.files?.stems; // Check if stems exist
+                                        const hasStems = !!track.files?.stems || !!track.stemsIncluded; // Check if stems exist or flagged
                                         const stemsSelected = !!wantsStems[trackId];
 
                                         return (
@@ -157,19 +179,22 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                                 key={trackId}
                                                 onClick={() => toggleTrack(trackId)}
                                                 className={`
-                                                    flex items-center gap-3 p-2 md:p-3 rounded-lg cursor-pointer transition-all border
+                                                    flex items-center gap-3 p-2 md:p-3 rounded-2xl cursor-pointer transition-all
                                                     ${isSelected
-                                                        ? 'bg-primary/10 border-primary/30'
-                                                        : 'bg-transparent border-transparent hover:bg-white/5 hover:border-white/5'
+                                                        ? 'bg-white/10'
+                                                        : 'bg-transparent hover:bg-white/5'
                                                     }
                                                 `}
                                             >
-                                                <div className={`w-4 h-4 rounded-[4px] flex items-center justify-center border shrink-0 ${isSelected ? 'border-primary bg-primary' : 'border-neutral-600'}`}>
+                                                <div className={`w-4 h-4 rounded-md flex items-center justify-center shrink-0 ${isSelected ? 'bg-primary text-black' : 'bg-white/10 text-transparent'}`}>
                                                     {isSelected && <Check size={10} className="text-black" />}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className={`text-xs md:text-base font-bold truncate ${isSelected ? 'text-white' : 'text-neutral-400'}`}>
                                                         {track.title}
+                                                    </div>
+                                                    <div className="text-[10px] text-neutral-500 mt-0.5 font-mono">
+                                                        {hasStems ? 'Stems Available' : 'No Stems'}
                                                     </div>
                                                 </div>
 
@@ -178,10 +203,10 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                                     <div
                                                         onClick={(e) => toggleStems(trackId, e)}
                                                         className={`
-                                                            flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9px] font-mono font-bold uppercase transition-all
+                                                            flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-mono font-bold uppercase transition-all
                                                             ${stemsSelected
-                                                                ? 'bg-purple-500/20 text-purple-400 border-purple-500/50 hover:bg-purple-500/30'
-                                                                : 'bg-neutral-800 text-neutral-500 border-neutral-700 hover:text-neutral-300'
+                                                                ? 'bg-purple-500/20 text-purple-400'
+                                                                : 'bg-white/10 text-neutral-500 hover:text-neutral-300'
                                                             }
                                                         `}
                                                         title={stemsSelected ? "Stems included (+Premium Price)" : "Add Stems"}
@@ -208,7 +233,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                 </div>
 
                 {/* Right Side: Licenses */}
-                <div className="flex-1 bg-[#121212] p-4 md:p-6 flex flex-col overflow-hidden">
+                <div className="flex-1 bg-[#050505] p-4 md:p-6 flex flex-col overflow-hidden">
                     <div className="hidden md:flex justify-between items-start mb-6 shrink-0">
                         <div>
                             <h3 className="text-lg font-bold text-white">Select License</h3>
@@ -284,10 +309,10 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                     key={licenseId}
                                     onClick={() => setSelectedLicenseId(licenseId)}
                                     className={`
-                                        relative group cursor-pointer transition-all duration-200 rounded-lg border overflow-hidden mb-3
+                                        relative group cursor-pointer transition-all duration-200 rounded-2xl overflow-hidden mb-3
                                         ${isSelected
-                                            ? 'bg-neutral-800 border-primary'
-                                            : 'bg-[#1a1a1a] border-neutral-800 hover:border-neutral-700'
+                                            ? 'bg-white/10'
+                                            : 'bg-[#0a0a0a] hover:bg-white/5'
                                         }
                                     `}
                                 >
@@ -295,7 +320,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                     {badge && (
                                         <div className={`
                                             w-full text-center py-1 text-[9px] font-bold uppercase tracking-widest
-                                            ${isSelected ? 'bg-primary text-black' : 'bg-neutral-800 text-neutral-500'}
+                                            ${isSelected ? 'bg-primary text-black' : 'bg-black/20 text-neutral-500'}
                                         `}>
                                             {badge}
                                         </div>
@@ -331,7 +356,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                         </div>
 
                                         {/* Features List - Minimalist */}
-                                        <div className="w-full pt-3 border-t border-white/5">
+                                        <div className="w-full pt-3">
                                             <ul className="space-y-1.5">
                                                 {(license.features || []).map((feat, j) => (
                                                     <li key={j} className="flex items-start gap-2 text-[11px] text-neutral-400 group-hover:text-neutral-300 transition-colors">
@@ -350,7 +375,7 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                     </div>
 
                     {/* Footer */}
-                    <div className="mt-auto pt-4 md:pt-6 border-t border-neutral-800 flex flex-col md:flex-row items-center justify-between gap-4 shrink-0 bg-[#121212]">
+                    <div className="mt-auto pt-4 md:pt-6 flex flex-col md:flex-row items-center justify-between gap-4 shrink-0 bg-[#050505]">
                         <div className="hidden md:flex items-center gap-2 text-neutral-500 hover:text-white cursor-pointer">
                             <Info size={14} />
                             <span className="text-xs underline">Read Full License Agreement</span>
@@ -422,10 +447,10 @@ const PurchaseModal: React.FC<PurchaseModalProps> = ({ isOpen, onClose, project,
                                 }}
                                 disabled={(project.type === 'beat_tape' && selectedTrackIds.length === 0) || !selectedLicenseId || isAdded}
                                 className={`
-                                        flex-1 md:flex-none px-4 py-2 text-sm md:px-8 md:py-3 md:text-base font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed
+                                        flex-1 md:flex-none px-4 py-2 text-sm md:px-8 md:py-3 md:text-base font-bold rounded-2xl transition-all duration-300 flex items-center justify-center gap-2 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed
                                         ${isAdded
-                                        ? 'bg-green-500 text-white scale-95 shadow-[0_0_20px_rgba(34,197,94,0.4)]'
-                                        : 'bg-primary text-black hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)] hover:scale-[1.02]'
+                                        ? 'bg-green-500/10 text-green-500 scale-95'
+                                        : 'bg-primary text-black hover:bg-primary/90'
                                     }
                                     `}
                             >

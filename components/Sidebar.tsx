@@ -264,15 +264,23 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
       `}>
                 <div className="h-[calc(56px+env(safe-area-inset-top))] pt-[env(safe-area-inset-top)] flex items-center justify-between lg:justify-center px-5 shrink-0 border-transparent relative overflow-hidden">
                     <div
-                        className="flex items-center gap-2 cursor-pointer group"
+                        className="flex items-center gap-2.5 cursor-pointer group"
                         onClick={() => onNavigate('home')}
                     >
-                        <div className="relative h-[40px] flex items-start pt-[1px] transition-transform scale-100 min-[380px]:scale-[1.1] lg:scale-105 translate-x-[6px] lg:translate-x-[6px] origin-center">
-                            <img
-                                src="/images/MUSIC ACCESS-Photoroom.png"
-                                alt="Music Access"
-                                className="h-[42px] w-auto object-contain object-top"
-                            />
+                        {/* Dynamic Minimalist Equalizer Icon */}
+                        <div className="flex items-center gap-[3px] h-[20px] shrink-0 lg:translate-x-[4px]">
+                            <div className="w-[3px] h-[40%] bg-white group-hover:h-[100%] group-hover:bg-primary transition-all duration-300 ease-[cubic-bezier(0.87,0,0.13,1)]" />
+                            <div className="w-[3px] h-[100%] bg-white group-hover:h-[60%] group-hover:bg-primary transition-all duration-300 ease-[cubic-bezier(0.87,0,0.13,1)] delay-[50ms]" />
+                            <div className="w-[3px] h-[60%] bg-white group-hover:h-[80%] group-hover:bg-primary transition-all duration-300 ease-[cubic-bezier(0.87,0,0.13,1)] delay-[100ms]" />
+                        </div>
+
+                        <div className="flex items-center h-[40px] transition-transform scale-100 min-[380px]:scale-[1.1] lg:scale-105 origin-left lg:origin-center lg:translate-x-[6px]">
+                            <h1 className="flex items-center gap-1.5 text-[20px] font-sans font-black tracking-tighter text-white whitespace-nowrap mt-0.5">
+                                <span>MUSIC</span>
+                                <span className="bg-primary text-black px-1.5 py-0.5 rounded-sm text-[16px] leading-none transform -skew-x-12 group-hover:skew-x-0 group-hover:scale-105 transition-all duration-300 ease-out shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)] group-hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)]">
+                                    ACCESS
+                                </span>
+                            </h1>
                         </div>
                     </div>
 
@@ -327,11 +335,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                 <h3 className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.2em] mb-2 pl-3">Dashboard</h3>
                                 <nav className="space-y-1">
                                     <SidebarItem icon={<LayoutDashboard size={15} />} label="Overview" active={currentView === 'dashboard-overview'} onClick={() => onNavigate('dashboard-overview')} />
-                                    <SidebarItem icon={<Headphones size={15} />} label="My Studio" active={currentView === 'dashboard-studio'} onClick={() => onNavigate('dashboard-studio')} />
 
                                     <SidebarItem icon={<DollarSign size={15} />} label="Sales" active={currentView === 'dashboard-sales'} onClick={() => onNavigate('dashboard-sales')} badge={unreadCounts.sale} />
                                     <SidebarItem icon={<Briefcase size={15} />} label="Manage Orders" active={currentView === 'dashboard-manage'} onClick={() => onNavigate('dashboard-manage')} badge={unreadCounts.manage_order} />
-                                    <SidebarItem icon={<Map size={15} />} label="Roadmap" active={currentView === 'dashboard-roadmap'} onClick={() => onNavigate('dashboard-roadmap')} />
                                 </nav>
                             </div>
 
@@ -350,6 +356,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             < div >
                                 <h3 className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.2em] mb-2 pl-3">Tools</h3>
                                 <nav className="space-y-1">
+                                    <SidebarItem icon={<Headphones size={15} />} label="My Studio" active={currentView === 'dashboard-studio'} onClick={() => onNavigate('dashboard-studio')} />
+                                    <SidebarItem icon={<Map size={15} />} label="Roadmap" active={currentView === 'dashboard-roadmap'} onClick={() => onNavigate('dashboard-roadmap')} />
                                     <SidebarItem icon={<FileText size={15} />} label="Contracts" active={currentView === 'contracts'} onClick={() => onNavigate('contracts')} />
                                     <SidebarItem icon={<PlusCircle size={15} />} label="Post Service" active={currentView === 'post-service'} onClick={() => onNavigate('post-service')} />
                                 </nav>
@@ -359,7 +367,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                             < div className="pb-4" >
                                 <h3 className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.2em] mb-2 pl-3">Resources</h3>
                                 <nav className="space-y-1">
-                                    <SidebarItem icon={<Settings size={15} />} label="Settings" active={currentView === 'dashboard-settings'} onClick={() => onNavigate('dashboard-settings')} />
+
                                     <SidebarItem icon={<CreditCard size={15} />} label="Subscription" active={currentView === 'subscription'} onClick={() => onNavigate('subscription')} />
                                     <SidebarItem icon={<HelpCircle size={15} />} label="Get Help" active={currentView === 'dashboard-help' || currentView === 'help'} onClick={() => onNavigate('help')} />
                                 </nav>
@@ -472,7 +480,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                                 <div className="pb-4">
                                     <h3 className="text-[9px] font-bold text-neutral-600 uppercase tracking-[0.2em] mb-2 pl-3">Resources</h3>
                                     <nav className="space-y-1">
-                                        <SidebarItem icon={<Settings size={15} />} label="Settings" active={currentView === 'settings'} onClick={() => onNavigate('settings')} />
+
                                         <SidebarItem icon={<CreditCard size={15} />} label="Subscription" active={currentView === 'subscription'} onClick={() => onNavigate('subscription')} />
                                         <SidebarItem icon={<HelpCircle size={15} />} label="Get Help" active={currentView === 'help'} onClick={() => onNavigate('help')} />
                                     </nav>

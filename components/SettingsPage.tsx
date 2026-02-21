@@ -341,11 +341,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
 
                         {/* Hover Overlay Desktop */}
                         <div className="absolute inset-0 hidden md:flex items-center justify-center gap-4 opacity-0 group-hover/banner:opacity-100 transition-all duration-300 bg-black/40 backdrop-blur-sm z-20">
-                            <button onClick={(e) => { e.stopPropagation(); triggerBannerUpload(); }} className="px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-full font-bold text-xs flex items-center gap-2 backdrop-blur-md transition-all border border-white/10">
+                            <button onClick={(e) => { e.stopPropagation(); triggerBannerUpload(); }} className="px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-full font-bold text-xs flex items-center gap-2 backdrop-blur-md transition-all">
                                 <Camera size={16} /> Update Image
                             </button>
                             {displayProfile.banner && (
-                                <button onClick={(e) => { e.stopPropagation(); setIsBannerAdjustOpen(true); }} className="px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-full font-bold text-xs flex items-center gap-2 backdrop-blur-md transition-all border border-white/10">
+                                <button onClick={(e) => { e.stopPropagation(); setIsBannerAdjustOpen(true); }} className="px-6 py-3 bg-white/20 hover:bg-white/30 text-white rounded-full font-bold text-xs flex items-center gap-2 backdrop-blur-md transition-all">
                                     <Move size={16} /> Adjust Position
                                 </button>
                             )}
@@ -353,11 +353,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
 
                         {/* Mobile Overlay Actions */}
                         <div className="absolute top-4 right-4 md:hidden z-30 flex gap-2">
-                            <button onClick={(e) => { e.stopPropagation(); triggerBannerUpload(); }} className="p-2.5 bg-black/40 backdrop-blur-md hover:bg-black/60 text-white rounded-full border border-white/10 shadow-lg">
+                            <button onClick={(e) => { e.stopPropagation(); triggerBannerUpload(); }} className="p-2.5 bg-black/40 backdrop-blur-md hover:bg-black/60 text-white rounded-full shadow-lg">
                                 <Camera size={16} />
                             </button>
                             {displayProfile.banner && (
-                                <button onClick={(e) => { e.stopPropagation(); setIsBannerAdjustOpen(true); }} className="p-2.5 bg-black/40 backdrop-blur-md hover:bg-black/60 text-white rounded-full border border-white/10 shadow-lg">
+                                <button onClick={(e) => { e.stopPropagation(); setIsBannerAdjustOpen(true); }} className="p-2.5 bg-black/40 backdrop-blur-md hover:bg-black/60 text-white rounded-full shadow-lg">
                                     <Move size={16} />
                                 </button>
                             )}

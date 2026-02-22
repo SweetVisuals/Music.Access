@@ -53,8 +53,6 @@
     html {
       background-color: #050505;
       height: 100%;
-      height: -webkit-fill-available;
-      height: 100dvh;
       width: 100%;
       margin: 0;
       padding: 0;
@@ -64,10 +62,10 @@
 
     body {
       background-color: #050505;
-      height: 100%;
-      height: -webkit-fill-available;
-      height: 100dvh;
+      position: fixed;
+      inset: 0;
       width: 100%;
+      height: 100%;
       margin: 0;
       padding: 0;
       overflow: hidden;
@@ -75,9 +73,10 @@
     }
 
     #root {
+      position: absolute;
+      inset: 0;
+      width: 100%;
       height: 100%;
-      height: -webkit-fill-available;
-      height: 100dvh;
     }
 
     /* Custom Scrollbar */

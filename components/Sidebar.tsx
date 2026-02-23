@@ -277,7 +277,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, isLoggedIn, 
                         <div className="flex items-center h-[40px] transition-transform scale-100 min-[380px]:scale-[1.1] lg:scale-105 origin-left lg:origin-center lg:translate-x-[6px]">
                             <h1 className="flex items-center gap-1.5 text-[20px] font-sans font-black tracking-tighter text-white whitespace-nowrap mt-0.5">
                                 <span>MUSIC</span>
-                                <span className="bg-primary text-black px-1.5 py-0.5 rounded-sm text-[16px] leading-none transform -skew-x-12 group-hover:skew-x-0 group-hover:scale-105 transition-all duration-300 ease-out shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)] group-hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)]">
+                                <span className="bg-primary text-black px-1.5 py-0.5 rounded-sm text-[16px] leading-none group-hover:scale-105 transition-all duration-300 ease-out shadow-[4px_4px_0px_0px_rgba(255,255,255,0.1)] group-hover:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)]">
                                     ACCESS
                                 </span>
                             </h1>

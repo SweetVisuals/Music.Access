@@ -566,7 +566,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, location, avatar_url, banner_url, banner_settings, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, subscription_status, subscription_id, current_period_end, cancel_at_period_end, stripe_account_id, stripe_customer_id, years_experience, satisfaction_rate, avg_turnaround, is_public')
+    .select('id, username, handle, location, avatar_url, banner_url, banner_settings, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, subscription_status, subscription_id, current_period_end, cancel_at_period_end, stripe_account_id, stripe_customer_id, years_experience, satisfaction_rate, avg_turnaround, is_public, visible_tabs')
     .eq('id', targetUserId)
     .single();
 
@@ -647,7 +647,8 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
         stripe_account_id: userData.stripe_account_id,
         stripe_customer_id: userData.stripe_customer_id,
         bannerSettings: userData.banner_settings,
-        is_public: userData.is_public
+        is_public: userData.is_public,
+        visible_tabs: userData.visible_tabs
       };
     } catch (err) {
       console.error('Error fetching related profile data:', err);
@@ -734,7 +735,7 @@ export const getUserProfile = async (userId?: string): Promise<UserProfile | nul
 export const getUserProfileByHandle = async (handle: string): Promise<UserProfile | null> => {
   const { data, error } = await supabase
     .from('users')
-    .select('id, username, handle, email, location, avatar_url, banner_url, banner_settings, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, years_experience, satisfaction_rate, avg_turnaround, is_public')
+    .select('id, username, handle, email, location, avatar_url, banner_url, banner_settings, bio, website, gems, balance, promo_credits, last_gem_claim_date, role, plan, years_experience, satisfaction_rate, avg_turnaround, is_public, visible_tabs')
     .eq('handle', handle)
     .single();
 
@@ -793,7 +794,8 @@ export const getUserProfileByHandle = async (handle: string): Promise<UserProfil
         itemCount: p.tracks?.length || 0
       })),
       bannerSettings: userData.banner_settings,
-      is_public: userData.is_public
+      is_public: userData.is_public,
+      visible_tabs: userData.visible_tabs
     };
   } else {
     return null;
@@ -855,9 +857,10 @@ export const updateUserProfile = async (userId: string, updates: Partial<UserPro
   if (updates.stripe_account_id !== undefined) updateObj.stripe_account_id = updates.stripe_account_id;
   if (updates.stripe_customer_id !== undefined) updateObj.stripe_customer_id = updates.stripe_customer_id;
   if (updates.bannerSettings !== undefined) updateObj.banner_settings = updates.bannerSettings;
-  // if (updates.yearsExperience !== undefined) updateObj.years_experience = updates.yearsExperience;
-  // if (updates.satisfactionRate !== undefined) updateObj.satisfaction_rate = updates.satisfactionRate;
-  // if (updates.avgTurnaround !== undefined) updateObj.avg_turnaround = updates.avgTurnaround;
+  if (updates.yearsExperience !== undefined) updateObj.years_experience = updates.yearsExperience;
+  if (updates.satisfactionRate !== undefined) updateObj.satisfaction_rate = updates.satisfactionRate;
+  if (updates.avgTurnaround !== undefined) updateObj.avg_turnaround = updates.avgTurnaround;
+  if (updates.visible_tabs !== undefined) updateObj.visible_tabs = updates.visible_tabs;
 
   const { error } = await supabase
     .from('users')

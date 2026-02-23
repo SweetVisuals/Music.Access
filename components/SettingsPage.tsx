@@ -171,7 +171,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
             (profile.role || '') !== (userProfile.role || '') ||
             (profile.location || '') !== (userProfile.location || '') ||
             (profile.website || '') !== (userProfile.website || '') ||
+            (profile.yearsExperience || '') !== (userProfile.yearsExperience || '') ||
             (profile.avgTurnaround || '') !== (userProfile.avgTurnaround || '') ||
+            (profile.is_public !== userProfile.is_public) ||
             JSON.stringify(profile.visible_tabs || []) !== JSON.stringify(userProfile.visible_tabs || []);
 
         setHasUnsavedChanges(isDifferent);
@@ -689,11 +691,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ userProfile }) => {
                 </div>
 
                 {/* Global Actions */}
-                <div className={`fixed bottom-24 lg:bottom-0 left-0 w-full p-6 lg:p-10 pointer-events-none z-[160] flex justify-end transition-all duration-500 transform ${hasUnsavedChanges ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+                <div className={`fixed bottom-20 lg:bottom-0 left-0 w-full p-4 lg:p-10 pointer-events-none z-[160] flex justify-end transition-all duration-500 transform ${hasUnsavedChanges ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
                     <button
                         onClick={handleSave}
                         disabled={loading}
-                        className="pointer-events-auto px-10 py-5 bg-primary text-black rounded-full text-sm font-black uppercase tracking-widest hover:bg-primary/90 flex items-center gap-3 transition-all disabled:opacity-50 shadow-[0_20px_50px_rgba(var(--primary),0.4)] hover:scale-105 active:scale-95"
+                        className={`${hasUnsavedChanges ? 'pointer-events-auto' : 'pointer-events-none'} px-8 md:px-10 py-4 md:py-5 bg-primary text-black rounded-full text-sm font-black uppercase tracking-widest hover:bg-primary/90 flex items-center gap-3 transition-all disabled:opacity-50 shadow-[0_20px_50px_rgba(var(--primary),0.4)] hover:scale-105 active:scale-95`}
                     >
                         {loading ? 'Saving...' : <><Save size={18} /> Save Changes</>}
                     </button>

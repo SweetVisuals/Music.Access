@@ -384,7 +384,7 @@ const RightActions: React.FC<{
                             className="flex items-center gap-2 lg:gap-3 lg:pl-2 group"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-xl bg-neutral-800 border border-transparent overflow-hidden group-hover:border-primary/50 transition-all shadow-lg">
+                                <div className="w-8 h-8 rounded-xl bg-neutral-800 border-none overflow-hidden transition-all text-white">
                                     {isLoggedIn && userProfile ? (
                                         <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
                                     ) : (
@@ -399,10 +399,10 @@ const RightActions: React.FC<{
 
                         {/* Profile Dropdown */}
                         {isLoggedIn && isProfileOpen && !isSpacer && (
-                            <div className="absolute right-0 top-full mt-6 lg:mt-3 w-80 bg-[#0a0a0a]/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.8)] overflow-hidden z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+                            <div className="absolute right-0 top-full mt-6 lg:mt-3 w-80 bg-[#0a0a0a]/95 backdrop-blur-2xl rounded-2xl border-none overflow-hidden z-50 animate-in fade-in slide-in-from-top-4 duration-300">
                                 <div className="p-5 bg-white/[0.02]">
                                     <div className="flex items-center gap-4 mb-4">
-                                        <div className="w-12 h-12 rounded-full bg-neutral-800 border border-transparent overflow-hidden shrink-0">
+                                        <div className="w-12 h-12 rounded-full bg-neutral-800 border-none overflow-hidden shrink-0">
                                             {userProfile?.avatar ? (
                                                 <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
                                             ) : (
@@ -418,7 +418,7 @@ const RightActions: React.FC<{
                                     </div>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate(userProfile?.handle ? `@${userProfile.handle}` : 'profile'); }}
-                                        className="w-full py-2.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 text-[11px] font-black text-primary uppercase tracking-[0.2em] rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_5px_15px_rgba(var(--primary)/0.1)]"
+                                        className="w-full py-2.5 bg-primary/10 hover:bg-primary/20 border-none text-[11px] font-black text-primary uppercase tracking-[0.2em] rounded-xl flex items-center justify-center gap-2 transition-all shadow-none"
                                     >
                                         View Profile <ArrowRight size={13} />
                                     </button>
@@ -433,16 +433,9 @@ const RightActions: React.FC<{
 
                                     <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('subscription'); }} className="group w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] text-neutral-300 hover:text-white hover:bg-white/[0.06] transition-all text-left font-medium">
                                         <div className="flex items-center gap-3">
-                                            <Wallet size={15} className="text-primary group-hover:scale-110 transition-transform" /> Subscription Plan
+                                            <Wallet size={15} className="text-primary group-hover:scale-110 transition-transform" /> Subscription
                                         </div>
-                                        <span className="text-[9px] font-black text-black bg-[#e5e52a] px-1.5 py-0.5 rounded tracking-wider uppercase">PRO</span>
-                                    </button>
-
-                                    <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('collaborate'); }} className="group w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] text-neutral-300 hover:text-white hover:bg-white/[0.06] transition-all text-left font-medium">
-                                        <div className="flex items-center gap-3">
-                                            <Users size={15} className="text-primary group-hover:scale-110 transition-transform" /> Team Management
-                                        </div>
-                                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
+                                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded tracking-wider uppercase ${userProfile?.plan === 'Pro' ? 'bg-[#e5e52a] text-black' : userProfile?.plan === 'Studio+' ? 'bg-primary text-black' : 'bg-white/10 text-white'}`}>{userProfile?.plan || 'BASIC'}</span>
                                     </button>
 
                                     <button onClick={(e) => { e.stopPropagation(); setIsProfileOpen(false); onNavigate('help'); }} className="group w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] text-neutral-300 hover:text-white hover:bg-white/[0.06] transition-all text-left font-medium">
@@ -463,10 +456,10 @@ const RightActions: React.FC<{
                                                 )}
                                                 <span>Discover Feed</span>
                                             </div>
-                                            <div className="flex bg-black p-1 rounded-lg border border-white/5">
+                                            <div className="flex bg-black p-1 rounded-lg border-none">
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); !isDiscoverFeedMode && onToggleDiscoverView(); }}
-                                                    className={`p-1 rounded-md transition-all duration-300 ${isDiscoverFeedMode ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-400'}`}
+                                                    className={`p-1 rounded-md transition-all duration-300 ${isDiscoverFeedMode ? 'bg-neutral-800 text-white shadow-none' : 'text-neutral-600 hover:text-neutral-400'}`}
                                                     title="Feed View"
                                                 >
                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -476,7 +469,7 @@ const RightActions: React.FC<{
                                                 </button>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); isDiscoverFeedMode && onToggleDiscoverView(); }}
-                                                    className={`p-1 rounded-md transition-all duration-300 ${!isDiscoverFeedMode ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-600 hover:text-neutral-400'}`}
+                                                    className={`p-1 rounded-md transition-all duration-300 ${!isDiscoverFeedMode ? 'bg-neutral-800 text-white shadow-none' : 'text-neutral-600 hover:text-neutral-400'}`}
                                                     title="Grid View"
                                                 >
                                                     <LayoutDashboard size={14} strokeWidth={2} />
@@ -699,6 +692,12 @@ const TopBar: React.FC<TopBarProps> = ({
         handleMarkRead(notification.id);
 
         // 2. Determine destination
+        if (notification.link) {
+            onNavigate(notification.link);
+            setIsNotificationsOpen(false);
+            return;
+        }
+
         let destination = 'dashboard-overview';
 
         switch (notification.type) {
@@ -710,10 +709,14 @@ const TopBar: React.FC<TopBarProps> = ({
                 break;
             case 'order':
             case 'manage_order':
-                destination = 'dashboard-orders';
+                destination = 'dashboard-sales'; // Orders go to sales page per request
                 break;
             case 'follow':
-                destination = 'dashboard-overview'; // Or 'profile'
+                if (notification.data && notification.data.handle) {
+                    destination = `@${notification.data.handle}`;
+                } else {
+                    destination = 'dashboard-overview'; // Fallback
+                }
                 break;
             case 'system':
             case 'alert':
